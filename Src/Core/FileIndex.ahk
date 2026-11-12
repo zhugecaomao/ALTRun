@@ -107,7 +107,7 @@ class FileIndex {
             for watch in FileIndex._watcher.Watches
                 roots.Push(watch.Folder)
             for fullPath in changes
-                if (fullPath = "*" || FileIndex.IsWatchedChange(fullPath, roots, options["ScopeDepth"], options["ScopeExclude"])) {
+                if (fullPath = "*" || FileIndex.IsWatchedChange(fullPath, roots, options["ScopeDepth"], FileIndex._Exclude(options))) {
                     FileIndex._changedAt := A_TickCount
                     break
                 }
@@ -181,11 +181,24 @@ class FileIndex {
         SetTimer(FileIndex._timer, 10)
     }
 
+    ; ScopeExclude when it is a valid regular expression; "" (nothing excluded) when it isn't, with a warning in the log once. Preferences
+    ; checks it when saving, but the settings file can be edited by hand
+    static _badExclude := ""
+    static _Exclude(options) {
+        pattern := options["ScopeExclude"]
+        if ((problem := TextTools.RegexError(pattern)) = "")
+            return pattern
+        if (pattern != FileIndex._badExclude)
+            Logger.Warn("FileIndex: ScopeExclude isn't a valid regular expression, nothing is excluded - " problem)
+        FileIndex._badExclude := pattern
+        return ""
+    }
+
     static _ScanSome() {
         if (FileIndex.Data.Count && !BackgroundWork.CanRun())               ; pause while the search window is open or opening, go on
             return                                                          ; when it closes (the cache write too); with no index yet (first run), scan anyway
         options := AppSettings.Feature("FileSearch")
-        exclude := options["ScopeExclude"]
+        exclude := FileIndex._Exclude(options)
         start := A_TickCount
         found := FileIndex._new, initials := FileIndex._newInitials
         while (FileIndex._stack.Length && A_TickCount - start < 15) {

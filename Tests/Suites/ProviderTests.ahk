@@ -572,6 +572,9 @@ class ProviderTests {
         for folder in ["venvs", "my.venv", "cache", "Visual Studio", ".vscode", "github", "idea"]
             eq("default keeps " folder, RegExMatch("D:\Docs\" folder "\x.txt", exclude), 0)
         eq("own folder", FileIndex.IsWatchedChange("D:\Docs\ALTRun\Data\FileIndex.txt", roots, 3, "", "D:\Docs\ALTRun"), false)
+        ; a ScopeExclude that isn't a valid regex (edited by hand) is ignored instead of failing every scan step
+        eq("valid exclude used", FileIndex._Exclude(Map("ScopeExclude", exclude)), exclude)
+        eq("bad exclude ignored", FileIndex._Exclude(Map("ScopeExclude", "i)\\(node_modules")), "")
 
         root := A_Temp "\ALTRunFileIndexWatch"
         try DirDelete(root, true)
@@ -1076,6 +1079,8 @@ class ProviderTests {
         eq("not replaced while scanning", titles(), "")
         ApplicationProvider._Finish(job, false)
         eq("background", titles(), expected)
+        eq("bad Exclude ignored", ApplicationProvider._Exclude(Map("Exclude", "(uninstall")), "")
+        eq("valid Exclude used", ApplicationProvider._Exclude(Map("Exclude", "i)uninstall")), "i)uninstall")
 
         ; Watching folders: a new file rebuilds in the background (after a short quiet); the cache of a background rebuild is written when idle
         savedQuiet := ApplicationProvider.WatchQuietMs, savedGap := ApplicationProvider.WatchMinGapMs
@@ -1974,6 +1979,9 @@ class ProviderTests {
         ok("preview shows match", InStr(item.Subtitle, "...") && InStr(item.Subtitle, "goodwill"))
         item := SnippetProvider.Search(SearchQuery("Best reg"))[1]
         eq("preview from start", item.Subtitle, I18n.T("Snippet.Subtitle", "Best regards"))
+        ok("large text worked out only when shown", IsObject(item.LargeText) && item.DisplayText() = "Best regards")
+        AppSettings.Data["Snippets"].Push(Map("Name", "Today", "Keyword", "td", "Text", "On {date:yyyy}"))
+        eq("large text expands placeholders", SnippetProvider.Search(SearchQuery("snip td"))[1].DisplayText(), "On " A_YYYY)
         ok("snip keyword boosts", InStr(titles("snip goodwill"), "Quote reply=" (SnippetProvider.TextScore + 30) "|"))
         options["SearchText"] := 0
         eq("switched off", titles("goodwill"), "")

@@ -286,12 +286,26 @@ class ApplicationProvider {
         }
         found := Map()
         found.CaseSense := "Off"
-        return {Options: options, Roots: roots, Next: 1, Stack: [], Types: ApplicationProvider._TypesPattern(options), Found: found}
+        return {Options: options, Roots: roots, Next: 1, Stack: [], Types: ApplicationProvider._TypesPattern(options), Found: found
+            , Exclude: ApplicationProvider._Exclude(options)}
+    }
+
+    ; Exclude when it is a valid regular expression; "" (nothing excluded) when it isn't, with a warning in the log once. Preferences
+    ; checks it when saving, but the settings file can be edited by hand (a bad pattern used to fail the scan timer every 10 ms)
+    static _badExclude := ""
+    static _Exclude(options) {
+        pattern := options["Exclude"]
+        if ((problem := TextTools.RegexError(pattern)) = "")
+            return pattern
+        if (pattern != ApplicationProvider._badExclude)
+            Logger.Warn("ApplicationProvider: Exclude isn't a valid regular expression, nothing is excluded - " problem)
+        ApplicationProvider._badExclude := pattern
+        return ""
     }
 
     ; Scans a part: stops after budget ms (0 = all at once); true when done
     static _Step(job, budget) {
-        options := job.Options, exclude := options["Exclude"], maxDepth := options["Depth"]
+        options := job.Options, exclude := job.Exclude, maxDepth := options["Depth"]
         start := A_TickCount
         loop {
             if !job.Stack.Length {
@@ -386,12 +400,12 @@ class ApplicationProvider {
         csvFile := ApplicationProvider._storeFile
         if !FileExist(csvFile)
             return
-        options := AppSettings.Feature("Applications")
+        options := AppSettings.Feature("Applications"), exclude := ApplicationProvider._Exclude(options)
         storeApps := []
         for line in StrSplit(FileRead(csvFile, "UTF-8"), "`n", "`r") {
             if (A_Index = 1 || !RegExMatch(line, '^"(.*)","(.*)"$', &m))    ; the first line is the header
                 continue
-            if (m[1] = "" || m[2] = "" || RegExMatch(m[1], options["Exclude"]))
+            if (m[1] = "" || m[2] = "" || (exclude != "" && RegExMatch(m[1], exclude)))   ; an empty pattern matches everything
                 continue
             if !InStr(m[2], "!")                                            ; only real Store apps of the form "package!app"; normal programs are already indexed from the Start menu
                 continue

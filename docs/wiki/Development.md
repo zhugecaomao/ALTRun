@@ -283,6 +283,8 @@ A few AutoHotkey v2 pitfalls:
 - A very large `static X := Map(...)` fails with "Declaration too long"; build it inside a method instead
 - Strings passed to functions by value are copied whole: passing a big string (a whole file) to a function over and over in a loop makes the time grow with the square of its length; pass it by reference (`&text`), see `Lib\JSON.ahk`
 - Lines starting with `Perf:` in the debug log (`General.SaveLog`) are the timings of startup phases, slow searches and slow background tasks; use `Logger.Ms()` / `Logger.Time(label, start)` to record new ones, and wrap timer callbacks in `Logger.Watch(label, fn)` (logged only over 50 ms)
+- The debug log never holds what was typed in the search box, only its length (`StrLen`); checked by `ProjectTests.NoInputTextInLog`
+- Code that borrows the clipboard (`saved := ClipboardAll()`) puts it back in a `finally` block, so an error half way doesn't lose the user's clipboard; checked by `ProjectTests.ClipboardRestore`
 - Don't download with `Download()` on the main thread (the whole program stops until it finishes); use `HttpGet.Start(url, done, fail)` to download in the background
 - To learn about changes in a folder, use `FolderWatcher` (`Lib\FolderWatcher.ahk`, call `Poll()` on a `WinTimer`, it doesn't wait) instead of rescanning the folder on a timer; when closing it waits for the pending read to finish before releasing the buffer
 - When a nested function changes an outer variable, pass the result back through an object (`state := {Result: ""}`)

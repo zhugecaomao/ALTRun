@@ -17,7 +17,7 @@
 ;   LeadActions  actions shown first in the actions panel, before the built-in ones (the custom commands for a selection, see SelectionActions)
 ;   Valid        false = can't run (e.g. a hint row); Enter autocompletes instead
 ;   AutoComplete the text Tab completes to
-;   LargeText    the text for Ctrl+L Large Type, Title if empty
+;   LargeText    the text for Ctrl+L Large Type, Title if empty; or a function that returns it (worked out only when shown)
 ;   Score        ranking score, higher comes first
 ;   Source       the settings entry the result comes from (the Map of a custom command / snippet / search engine), for editing and deleting
 ;   Exclusive    true = a keyword-mode result ("clip " / "g xxx" / ">cmd"); when there are such results only they are shown
@@ -78,7 +78,8 @@ class ResultItem {
 
     ; the text for Ctrl+L Large Type
     DisplayText() {
-        return (this.LargeText != "") ? this.LargeText : this.CopyText()
+        text := (IsObject(this.LargeText) && HasMethod(this.LargeText)) ? this.LargeText.Call() : this.LargeText
+        return (text != "") ? text : this.CopyText()
     }
 
     ; The hint row for a built-in keyword ("script", "snip", "recent"...): can't run, Enter / Tab / double-click complete "keyword ".

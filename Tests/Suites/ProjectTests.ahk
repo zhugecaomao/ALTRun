@@ -309,6 +309,41 @@ class ProjectTests {
         TestRunner.Equal("ListFunctions.called without .Call", found, "")
     }
 
+    ; The log never holds what was typed in the search box, only its length (Privacy: the debug log is attached to bug reports).
+    ; Flags Input.Value in a Logger call (its line or the ". " lines that continue it) unless it is inside StrLen(
+    static NoInputTextInLog() {
+        found := ""
+        Loop Files, A_ScriptDir "\..\Src\*.ahk", "R" {
+            inLog := false
+            Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
+                code := RegExReplace(A_LoopField, "(^|\s);.*$")
+                inLog := RegExMatch(code, "\bLogger\.\w+\(") || (inLog && RegExMatch(code, "^\s*\."))
+                if (inLog && RegExMatch(RegExReplace(code, "StrLen\([\w.]*Input\.Value\)"), "Input\.Value"))
+                    found .= A_LoopFileName ":" A_Index " "
+            }
+        }
+        TestRunner.Equal("NoInputTextInLog.search box text in a log line", found, "")
+    }
+
+    ; Code that borrows the clipboard (saved := ClipboardAll()) puts it back in a finally block, so an error half way doesn't
+    ; leave the user's clipboard empty or overwritten. Flags a ClipboardAll() with no "finally" before the next method
+    static ClipboardRestore() {
+        found := ""
+        Loop Files, A_ScriptDir "\..\Src\*.ahk", "R" {
+            fileName := A_LoopFileName, open := 0
+            Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8") "`n    static End(", "`n", "`r" {
+                if (open && RegExMatch(A_LoopField, "^    static \w+\(")) {
+                    found .= fileName ":" open " ", open := 0
+                } else if (open && RegExMatch(A_LoopField, "^\s*(\}\s*)?finally\b")) {
+                    open := 0
+                }
+                if RegExMatch(A_LoopField, "^[^;]*:=\s*ClipboardAll\(\)")
+                    open := A_Index
+            }
+        }
+        TestRunner.Equal("ClipboardRestore.borrowed clipboard without finally", found, "")
+    }
+
     ; The version in the compile info (;@Ahk2Exe-SetVersion in ALTRun.ahk) must match App.Version
     static ReleaseVersion() {
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")

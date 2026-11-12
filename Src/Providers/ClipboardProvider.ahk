@@ -256,12 +256,16 @@ class ClipboardProvider {
         App.FocusPreviousWindow()
         Win.WaitModifiersUp()
         ClipboardData.Borrow(AppSettings.Feature("Snippets")["PasteDelay"] + 1000)
-        saved := ClipboardAll()
-        if !setter() {
-            A_Clipboard := saved
-            return false
+        saved := ClipboardAll(), pasted := false
+        try {                                                               ; the user's clipboard comes back unless the paste went out
+            if !setter()
+                return false
+            SendInput("^v")
+            pasted := true
+        } finally {
+            if !pasted
+                A_Clipboard := saved
         }
-        SendInput("^v")
         return true
     }
 

@@ -347,6 +347,17 @@ class PreferencesWindow {
         return {Page: (page = "") ? 1 : page, X: value(3), Y: value(4)}
     }
 
+    ; The regular expression boxes (Exclude on Applications and Search Sources): the first one that isn't valid -> {Page (index in PageKeys),
+    ; Label, Error}; "" when they all are
+    static BadPattern(working) {
+        for field in [["Applications", "Exclude", "Prefs.AppExclude", "Prefs.Page.Applications"], ["FileSearch", "ScopeExclude", "Prefs.ScopeExclude", "Prefs.Page.FileIndex"]]
+            if ((problem := TextTools.RegexError(working["Features"][field[1]][field[2]])) != "")
+                for index, key in PreferencesWindow.PageKeys
+                    if (key = field[4])
+                        return {Page: index, Label: I18n.T(field[3]), Error: problem}
+        return ""
+    }
+
     ; reopen: Apply = reload and reopen on the same page at the same position; OK = only reload in the background
     static Save(reopen := true) {
         for bind in PreferencesWindow.Binds
@@ -356,6 +367,11 @@ class PreferencesWindow {
         appearance["Width"] := Max(PreferencesWindow.MinWindowWidth, appearance["Width"])
         if (general["Hotkey"] = "")
             general["Hotkey"] := "!Space"
+        if IsObject(bad := PreferencesWindow.BadPattern(PreferencesWindow.Working)) {     ; nothing is saved: a bad pattern would only be ignored later
+            PreferencesWindow._SelectRow(bad.Page)
+            MsgBox(I18n.T("Prefs.BadPattern", bad.Label, I18n.T(PreferencesWindow.PageKeys[bad.Page]), bad.Error), I18n.T("Prefs.Title"), "Icon! Owner" PreferencesWindow.Gui.Hwnd)
+            return
+        }
         clash := PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(PreferencesWindow.Working))
         if (IsObject(clash) && MsgBox(I18n.T("Prefs.HotkeyClash", HotkeyBox.Label(clash.Key), clash.First, clash.Second)
                 , I18n.T("Prefs.Title"), "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")

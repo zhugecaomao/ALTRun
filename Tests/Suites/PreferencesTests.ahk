@@ -868,6 +868,16 @@ class PreferencesTests {
         eq("global hotkeys (window-limited left out)", keys, "!Space|!r|^!\|^!c|^!c|")
         ok("default clipboard hotkey clashes with a global ^!c", IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(data))))
         ok("defaults have no clash", !IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(AppSettings.Defaults()))))
+
+        ; the Exclude boxes must be valid regular expressions before saving
+        data := AppSettings.Defaults()
+        eq("default patterns are valid", PreferencesWindow.BadPattern(data), "")
+        data["Features"]["FileSearch"]["ScopeExclude"] := "i)\\(node_modules"
+        bad := PreferencesWindow.BadPattern(data)
+        eq("bad scope exclude: page", IsObject(bad) ? PreferencesWindow.PageKeys[bad.Page] : "", "Prefs.Page.FileIndex")
+        ok("bad scope exclude: error given", IsObject(bad) && bad.Error != "")
+        data["Features"]["Applications"]["Exclude"] := "(readme"
+        eq("first bad pattern: Applications", PreferencesWindow.PageKeys[PreferencesWindow.BadPattern(data).Page], "Prefs.Page.Applications")
         eq("list cell", PrefsForm.Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
     }
 

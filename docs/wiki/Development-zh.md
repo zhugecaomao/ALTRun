@@ -282,6 +282,8 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 - 很大的 `static X := Map(...)` 会报 "Declaration too long", 改成在方法里构造
 - 字符串按值传给函数时会整段复制: 在循环里反复把一个大字符串 (整个文件) 传给函数, 耗时会随长度平方增长, 要按引用传 (`&text`), 见 `Lib\JSON.ahk`
 - 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段、慢搜索和慢的后台任务的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的, 计时器的回调用 `Logger.Watch(label, fn)` 包一层 (超过 50 ms 才记)
+- 调试日志里不写搜索框里输入的文字, 只写长度 (`StrLen`); `ProjectTests.NoInputTextInLog` 检查
+- 借用剪贴板的代码 (`saved := ClipboardAll()`) 在 `finally` 里还原, 中途出错也不会丢掉用户的剪贴板; `ProjectTests.ClipboardRestore` 检查
 - 不要在主线程里用 `Download()` 下载 (下载完之前整个程序都停着), 用 `HttpGet.Start(url, done, fail)` 在后台下载
 - 要知道文件夹里的变化, 用 `FolderWatcher` (`Lib\FolderWatcher.ahk`, 定时 `Poll()` 不等待), 不要定时扫描整个文件夹; 关闭时它会等异步读取结束再放掉缓冲区
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)

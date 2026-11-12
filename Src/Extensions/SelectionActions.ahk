@@ -47,23 +47,24 @@ class SelectionActions {
         try className := WinGetClass("A")
         Win.WaitModifiersUp()                                               ; with the hotkey's Ctrl+Alt still held, Ctrl+C would become Ctrl+Alt+C
         ClipboardData.Borrow(2000)
-        saved := ClipboardAll()
-        A_Clipboard := ""
-        Send(RegExMatch(className, SelectionActions.ConsoleClasses) ? "^{Insert}" : "^c")
-        result := ""
-        if ClipWait(0.8, 1) {
-            if DllCall("IsClipboardFormatAvailable", "UInt", 15) {         ; CF_HDROP: files were copied
-                files := []
-                for line in StrSplit(A_Clipboard, "`n", "`r")
-                    if (line != "")
-                        files.Push(line)
-                if files.Length
-                    result := {Files: files}
-            } else if (Trim(A_Clipboard, " `t`r`n") != "") {
-                result := {Text: A_Clipboard}
+        saved := ClipboardAll(), result := ""
+        try {                                                               ; the user's clipboard comes back even when this fails half way
+            A_Clipboard := ""
+            Send(RegExMatch(className, SelectionActions.ConsoleClasses) ? "^{Insert}" : "^c")
+            if ClipWait(0.8, 1) {
+                if DllCall("IsClipboardFormatAvailable", "UInt", 15) {     ; CF_HDROP: files were copied
+                    files := []
+                    for line in StrSplit(A_Clipboard, "`n", "`r")
+                        if (line != "")
+                            files.Push(line)
+                    if files.Length
+                        result := {Files: files}
+                } else if (Trim(A_Clipboard, " `t`r`n") != "") {
+                    result := {Text: A_Clipboard}
+                }
             }
-        }
-        A_Clipboard := saved
+        } finally
+            A_Clipboard := saved
         return result
     }
 
