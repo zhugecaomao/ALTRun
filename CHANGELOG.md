@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.13]
+
+测试版。
+
+Test build.
+
+### 改进
+- CapsLock "在管理员窗口里也生效": 开启时如果 ALTRun 所在的文件夹不用管理员权限就能修改, 先提醒 (其他程序可以替换 ALTRun, 再通过这个最高权限的计划任务拿到管理员权限), 建议先移到 C:\Program Files 等只有管理员能修改的文件夹; 仍然可以选择开启。SECURITY 和 Wiki 热键页 (中英文) 也写明了
+
 ## [2026.11.11.12]
 
 测试版。
@@ -1332,7 +1341,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...HEAD
+[2026.11.11.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...2026.11.11.13
 [2026.11.11.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...2026.11.11.12
 [2026.11.11.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...2026.11.11.11
 [2026.11.11.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...2026.11.11.10
