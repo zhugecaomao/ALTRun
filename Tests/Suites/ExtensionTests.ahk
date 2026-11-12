@@ -1137,17 +1137,17 @@ class ExtensionTests {
         FileSetTime("20260301000000", root "\Recent\Gone.lnk")
         FileAppend("not a shortcut", root "\Recent\Broken.lnk")                     ; a broken shortcut: skipped without an error
         FileSetTime("20260401000000", root "\Recent\Broken.lnk")
-        folders := QuickSwitch.RecentFolders(10, root "\Recent")
+        folders := FileManagers.RecentFolders(10, root "\Recent")
         eq("count", folders.Length, 2)
         eq("newest first", folders.Length ? folders[1] : "", root "\Docs")
         eq("second", folders.Length > 1 ? folders[2] : "", root "\Projects\Tower")
-        eq("limit", QuickSwitch.RecentFolders(1, root "\Recent").Length, 1)
-        eq("zero", QuickSwitch.RecentFolders(0, root "\Recent").Length, 0)
+        eq("limit", FileManagers.RecentFolders(1, root "\Recent").Length, 1)
+        eq("zero", FileManagers.RecentFolders(0, root "\Recent").Length, 0)
         eq("default hotkey", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["MenuHotkey"], "^+g")
         eq("panel on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["ShowPanel"], 1)
         area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
         ; The panel: 60 px + 20 px a row (8 rows = 220 px), only the search box 40 px (#440: never over the dialog's buttons)
-        panelAt := (x, y, h, wanted := 8, open := false) => (placed := QuickSwitch.PanelLayout(x, y, 800, h, 800, wanted, 60, 20, 40, area, open), placed.X "," placed.Y "," placed.Rows)
+        panelAt := (x, y, h, wanted := 8, open := false) => (placed := QuickSwitchPanel.PanelLayout(x, y, 800, h, 800, wanted, 60, 20, 40, area, open), placed.X "," placed.Y "," placed.Rows)
         eq("panel below", panelAt(400, 200, 500), "400,700,8")
         eq("panel above", panelAt(100, 600, 400), "100,380,8")
         eq("panel kept on screen", panelAt(1500, 100, 500), "1120,600,8")
@@ -1160,50 +1160,50 @@ class ExtensionTests {
         eq("maximized, caret in the panel: the list opens down", panelAt(0, 0, 1040, 8, true), "0,0,8")
         eq("search box below, caret in it: the list opens up", panelAt(100, 50, 930, 8, true), "100,820,8")
         eq("rows fit: the caret changes nothing", panelAt(100, 100, 800, 8, true), "100,900,4")
-        eq("folder name", QuickSwitch.FolderName("D:\Projects\Tower A\"), "Tower A")
-        eq("drive name", QuickSwitch.FolderName("D:\"), "D:\")
+        eq("folder name", QuickSwitchPanel.FolderName("D:\Projects\Tower A\"), "Tower A")
+        eq("drive name", QuickSwitchPanel.FolderName("D:\"), "D:\")
         ; File dialogs: #32770 needs Explorer's file view; the main window of "System Information" (msinfo32) only has a plain list and doesn't count
         fileDialog := ["DUIViewWndClassName1", "DirectUIHWND1", "SHELLDLL_DefView1", "DirectUIHWND2", "ComboBoxEx321", "ComboBox1", "Edit1", "Button1", "Button2", "ToolbarWindow323"]
         oldDialog := ["ToolbarWindow321", "ComboBox1", "SHELLDLL_DefView1", "SysListView321", "Edit1", "Button1", "Button2"]
         msinfo := ["SysTreeView321", "SysListView321", "Static1", "Edit1", "Button1", "Button2", "Button3", "Button4"]
-        eq("file dialog", QuickSwitch.LooksLikeFileDialog("#32770", fileDialog), true)
-        eq("old-style file dialog", QuickSwitch.LooksLikeFileDialog("#32770", oldDialog), true)
-        eq("msinfo32 main window", QuickSwitch.LooksLikeFileDialog("#32770", msinfo), false)
-        eq("other app with a plain list", QuickSwitch.LooksLikeFileDialog("TMyOpenDialog", msinfo), true)
-        eq("no controls: title", QuickSwitch.LooksLikeFileDialog("Qt5QWindowIcon", [], "Open File") " " QuickSwitch.LooksLikeFileDialog("Qt5QWindowIcon", [], "Writer"), "1 0")
+        eq("file dialog", FileDialogs.LooksLikeFileDialog("#32770", fileDialog), true)
+        eq("old-style file dialog", FileDialogs.LooksLikeFileDialog("#32770", oldDialog), true)
+        eq("msinfo32 main window", FileDialogs.LooksLikeFileDialog("#32770", msinfo), false)
+        eq("other app with a plain list", FileDialogs.LooksLikeFileDialog("TMyOpenDialog", msinfo), true)
+        eq("no controls: title", FileDialogs.LooksLikeFileDialog("Qt5QWindowIcon", [], "Open File") " " FileDialogs.LooksLikeFileDialog("Qt5QWindowIcon", [], "Writer"), "1 0")
         ; "Browse for Folder" (folder tree only): its own kind, never a file dialog (pressing Enter there means OK)
         newStyle := ["Static1", "SHBrowseForFolder ShellNameSpace Control1", "SysTreeView321", "Static2", "Edit1", "Button1", "Button2", "Button3"]
         classic := ["SysTreeView321", "Static1", "Static2", "Static3", "Edit1", "Button1", "Button2", "Button3"]
-        eq("browse dialog: new style", QuickSwitch.LooksLikeBrowseDialog("#32770", newStyle), true)
-        eq("browse dialog: classic tree ID", QuickSwitch.LooksLikeBrowseDialog("#32770", classic, 0x3741), true)
-        eq("other dialog with a tree", QuickSwitch.LooksLikeBrowseDialog("#32770", classic, 0x3F2), false)
-        eq("browse dialog: other class", QuickSwitch.LooksLikeBrowseDialog("TMyDialog", newStyle), false)
-        eq("file dialog is not a browse dialog", QuickSwitch.LooksLikeBrowseDialog("#32770", fileDialog), false)
-        eq("browse dialog gone: not selected", QuickSwitch.SelectInBrowseDialog("C:\Windows", 0x7FFFFFF0), false)   ; logged, no hint without a process
-        eq("browse dialog is not a file dialog", QuickSwitch.LooksLikeFileDialog("#32770", newStyle) QuickSwitch.LooksLikeFileDialog("#32770", classic), "00")
+        eq("browse dialog: new style", FileDialogs.LooksLikeBrowseDialog("#32770", newStyle), true)
+        eq("browse dialog: classic tree ID", FileDialogs.LooksLikeBrowseDialog("#32770", classic, 0x3741), true)
+        eq("other dialog with a tree", FileDialogs.LooksLikeBrowseDialog("#32770", classic, 0x3F2), false)
+        eq("browse dialog: other class", FileDialogs.LooksLikeBrowseDialog("TMyDialog", newStyle), false)
+        eq("file dialog is not a browse dialog", FileDialogs.LooksLikeBrowseDialog("#32770", fileDialog), false)
+        eq("browse dialog gone: not selected", FileDialogs.SelectInBrowseDialog("C:\Windows", 0x7FFFFFF0), false)   ; logged, no hint without a process
+        eq("browse dialog is not a file dialog", FileDialogs.LooksLikeFileDialog("#32770", newStyle) FileDialogs.LooksLikeFileDialog("#32770", classic), "00")
         eq("browse dialogs on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["BrowseDialogs"], 1)
         ; How the folder goes in: the file name box when there is one; Alt+D (address bar) only in system dialogs;
         ; dialogs that programs draw themselves get the path typed into the focused box, no Alt+D
-        eq("jump: file name box", QuickSwitch.JumpMethod("#32770", true) " " QuickSwitch.JumpMethod("TMyOpenDialog", true), "edit edit")
-        eq("jump: system dialog with OK, as messages", QuickSwitch.JumpMethod("#32770", true, true) " " QuickSwitch.JumpMethod("TMyOpenDialog", true, true), "message edit")
-        eq("jump: system dialog without the box", QuickSwitch.JumpMethod("#32770", false), "address")
-        eq("jump: drawn dialogs", QuickSwitch.JumpMethod("Qt5QWindowIcon", false) " " QuickSwitch.JumpMethod("SunAwtDialog", false) " " QuickSwitch.JumpMethod("gdkWindowToplevel", false), "type type type")
+        eq("jump: file name box", FileDialogs.JumpMethod("#32770", true) " " FileDialogs.JumpMethod("TMyOpenDialog", true), "edit edit")
+        eq("jump: system dialog with OK, as messages", FileDialogs.JumpMethod("#32770", true, true) " " FileDialogs.JumpMethod("TMyOpenDialog", true, true), "message edit")
+        eq("jump: system dialog without the box", FileDialogs.JumpMethod("#32770", false), "address")
+        eq("jump: drawn dialogs", FileDialogs.JumpMethod("Qt5QWindowIcon", false) " " FileDialogs.JumpMethod("SunAwtDialog", false) " " FileDialogs.JumpMethod("gdkWindowToplevel", false), "type type type")
         ; Directory Opus: "dopusrt /info <file>,paths" output -> tabs; the jump uses the source tab of the lister
         xml := '<?xml version="1.0"?>`n<results command="paths" result="1">`n'
             . '  <path active_lister="1" active_tab="1" tab_state="2" side="1" lister="0x70e2a" tab="0x50e1a" display_path="C:\Program Files">C:\Program Files</path>`n'
             . '  <path active_lister="1" active_tab="2" tab_state="1" side="2" lister="0x70e2a" tab="0xf0f30">D:\R&amp;D &lt;2026&gt;</path>`n'
             . '  <path active_lister="1" active_tab="0" tab_state="0" side="1" lister="0x70e2a" tab="0x1">E:\Background tab</path>`n'
             . '  <path active_lister="0" active_tab="1" tab_state="1" side="1" lister="0x9a0b4" tab="0x2">F:\Second lister</path>`n</results>'
-        tabs := QuickSwitch.ParseDOpusPaths(xml)
+        tabs := FileManagers.ParseDOpusPaths(xml)
         eq("opus tabs", tabs.Length, 4)
         eq("opus tab fields", tabs[1].Path "|" tabs[1].Lister "|" tabs[1].State "|" tabs[1].ActiveLister, "C:\Program Files|" 0x70e2a "|2|1")
         eq("opus entities", tabs[2].Path, "D:\R&D <2026>")
-        eq("opus: active lister's source tab", QuickSwitch.PickDOpusFolder(tabs), "D:\R&D <2026>")
-        eq("opus: a given lister", QuickSwitch.PickDOpusFolder(tabs, 0x9a0b4), "F:\Second lister")
-        eq("opus: unknown lister -> active", QuickSwitch.PickDOpusFolder(tabs, 0x1234), "D:\R&D <2026>")
-        eq("opus: nothing", QuickSwitch.PickDOpusFolder(QuickSwitch.ParseDOpusPaths("")), "")
-        eq("opus not running: no tabs, no dopusrt", WinExist("ahk_class dopus.lister") ? "skip" : QuickSwitch.DOpusTabs().Length, WinExist("ahk_class dopus.lister") ? "skip" : 0)
-        eq("file manager windows", QuickSwitch.IsFileManager(0), false)
+        eq("opus: active lister's source tab", FileManagers.PickDOpusFolder(tabs), "D:\R&D <2026>")
+        eq("opus: a given lister", FileManagers.PickDOpusFolder(tabs, 0x9a0b4), "F:\Second lister")
+        eq("opus: unknown lister -> active", FileManagers.PickDOpusFolder(tabs, 0x1234), "D:\R&D <2026>")
+        eq("opus: nothing", FileManagers.PickDOpusFolder(FileManagers.ParseDOpusPaths("")), "")
+        eq("opus not running: no tabs, no dopusrt", WinExist("ahk_class dopus.lister") ? "skip" : FileManagers.DOpusTabs().Length, WinExist("ahk_class dopus.lister") ? "skip" : 0)
+        eq("file manager windows", FileManagers.IsFileManager(0), false)
         eq("transient windows while switching", QuickSwitch.IsTransientWindow("Shell_TrayWnd") QuickSwitch.IsTransientWindow("XamlExplorerHostIslandWindow"), "11")
         eq("not transient", QuickSwitch.IsTransientWindow("TTOTAL_CMD") QuickSwitch.IsTransientWindow("#32770"), "00")
         ; Windows 11's Alt+Tab window is already hidden when its foreground event is handled: still read its class, and pass over it
@@ -1233,11 +1233,11 @@ class ExtensionTests {
         hiddenDialog.Destroy(), otherWindow.Destroy()
         QuickSwitch.Options := savedOptions
         ; Dragging another window than the dialog: nothing to follow
-        savedDrag := [QuickSwitch._placeTimer, QuickSwitch._panelFor]
-        QuickSwitch._placeTimer := () => 0, QuickSwitch._panelFor := 0x1234
+        savedDrag := [QuickSwitch._placeTimer, QuickSwitchPanel._panelFor]
+        QuickSwitch._placeTimer := () => 0, QuickSwitchPanel._panelFor := 0x1234
         QuickSwitch._OnEvent(0, 0xA, 0x5678, 0, 0, 0, 0)
         eq("drag: another window", QuickSwitch._dragHook, 0)
-        QuickSwitch._placeTimer := savedDrag[1], QuickSwitch._panelFor := savedDrag[2]
+        QuickSwitch._placeTimer := savedDrag[1], QuickSwitchPanel._panelFor := savedDrag[2]
         ; Foreground changes and a possible dialog's controls arrive as events, with no polling (Wine doesn't deliver WinEvents, so only checked on Windows)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
             saved := QuickSwitch._checkTimer
@@ -1267,9 +1267,9 @@ class ExtensionTests {
             QuickSwitch._WatchWindow(first.Hwnd, "panel")                  ; the caret in the panel: the dialog's thread, its windows going
             hooks .= " " QuickSwitch._threadHooks.Length
             ; Dragging the dialog: its location changes move the panel along until the drag ends, no timer
-            savedDrag := [QuickSwitch._placeTimer, QuickSwitch._panelFor, QuickSwitch._dragTimer]
+            savedDrag := [QuickSwitch._placeTimer, QuickSwitchPanel._panelFor, QuickSwitch._dragTimer]
             places := {Count: 0}
-            QuickSwitch._placeTimer := () => places.Count++, QuickSwitch._dragTimer := () => 0, QuickSwitch._panelFor := first.Hwnd
+            QuickSwitch._placeTimer := () => places.Count++, QuickSwitch._dragTimer := () => 0, QuickSwitchPanel._panelFor := first.Hwnd
             QuickSwitch._OnEvent(0, 0xA, first.Hwnd, 0, 0, 0, 0)
             dragHooked := QuickSwitch._dragHook != 0
             Loop 5
@@ -1279,7 +1279,7 @@ class ExtensionTests {
             afterEnd := places.Count
             WinMove(300, 100, , , "ahk_id " first.Hwnd), Sleep(200)
             dragUnhooked := QuickSwitch._dragHook = 0
-            QuickSwitch._placeTimer := savedDrag[1], QuickSwitch._panelFor := savedDrag[2], QuickSwitch._dragTimer := savedDrag[3]
+            QuickSwitch._placeTimer := savedDrag[1], QuickSwitchPanel._panelFor := savedDrag[2], QuickSwitch._dragTimer := savedDrag[3]
             QuickSwitch._UnwatchWindow()
             DllCall("UnhookWinEvent", "Ptr", hook)
             first.Destroy(), second.Destroy()
@@ -1302,7 +1302,7 @@ class ExtensionTests {
             dialog := WinWait("Open ahk_class #32770 ahk_pid " dialogPid, , 10)
             panelShown := false
             Loop 50 {
-                if (panelShown := IsObject(QuickSwitch._panel) && DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd))
+                if (panelShown := IsObject(QuickSwitchPanel._panel) && DllCall("IsWindowVisible", "Ptr", QuickSwitchPanel._panel.Hwnd))
                     break
                 Sleep(100)
             }
@@ -1312,13 +1312,13 @@ class ExtensionTests {
             if !ProcessWaitClose(dialogPid, 3)
                 try ProcessClose(dialogPid)
             Sleep(300)
-            panelGone := !IsObject(QuickSwitch._panel)
+            panelGone := !IsObject(QuickSwitchPanel._panel)
             Sleep(QuickSwitch.SettleMs + 300)                               ; the window in front afterwards: watched for its title only for SettleMs
             idleAfter := QuickSwitch._polling " " (QuickSwitch._phase = "settle")
             DllCall("UnhookWinEvent", "Ptr", QuickSwitch._foregroundHook), QuickSwitch._foregroundHook := 0
             QuickSwitch._UnwatchWindow()
             SetTimer(QuickSwitch._pollTimer, 0), SetTimer(QuickSwitch._checkTimer, 0), QuickSwitch._polling := false
-            QuickSwitch.HidePanel()
+            QuickSwitchPanel.HidePanel()
             TestRunner.True("QuickSwitch.panel below another process's Open dialog", dialog && panelShown)
             eq("no polling while the dialog is open", pollingWhileOpen " " phaseWhileOpen, "0 dialog")
             eq("afterwards: no polling, not watched for longer than SettleMs", idleAfter, "0 0")
@@ -1335,8 +1335,8 @@ class ExtensionTests {
                         SetTimer(probe, -100)
                     return
                 }
-                seen.Detected := QuickSwitch.IsBrowseWindow(dlg)
-                seen.Selected := QuickSwitch.SelectInBrowseDialog(target "\", dlg)
+                seen.Detected := FileDialogs.IsBrowseWindow(dlg)
+                seen.Selected := FileDialogs.SelectInBrowseDialog(target "\", dlg)
                 Sleep(300)
                 PostMessage(0x111, 1, 0, , "ahk_id " dlg)                   ; WM_COMMAND IDOK
                 SetTimer(() => WinExist("ahk_id " dlg) && WinClose("ahk_id " dlg), -3000)   ; never left open
@@ -1348,39 +1348,39 @@ class ExtensionTests {
             eq("DirSelect " options ": OK returns it", StrLower(RTrim(picked, "\")), StrLower(target))
         }
         base := [{Path: "D:\Projects\Tower A", Tag: "TC"}, {Path: "C:\Docs", Tag: "Recent"}]
-        filtered := QuickSwitch.FilterFolders(base, "tower", ["D:\Projects\Tower A", "E:\Archive\Tower B"])
+        filtered := QuickSwitchPanel.FilterFolders(base, "tower", ["D:\Projects\Tower A", "E:\Archive\Tower B"])
         eq("filter count", filtered.Length, 2)
         eq("filter keeps listed first", filtered[1].Tag, "TC")
         eq("filter adds found", filtered[2].Path "|" filtered[2].Tag, "E:\Archive\Tower B|" I18n.T("QuickSwitch.TagSearch"))
-        eq("filter words", QuickSwitch.FilterFolders(base, "proj tow", []).Length, 1)
-        eq("filter empty", QuickSwitch.FilterFolders(base, "", []).Length, 2)
-        hint := QuickSwitch.IndexHint(["D:\Projects", "E:\Archive\Plans"])
+        eq("filter words", QuickSwitchPanel.FilterFolders(base, "proj tow", []).Length, 1)
+        eq("filter empty", QuickSwitchPanel.FilterFolders(base, "", []).Length, 2)
+        hint := QuickSwitchPanel.IndexHint(["D:\Projects", "E:\Archive\Plans"])
         eq("index hint text", hint.Text, I18n.T("QuickSwitch.NoMatchIndex", "Projects, Plans"))
         eq("index hint row", hint.HasOwnProp("Hint") "|" hint.Path "|" hint.Tag, "1||")
-        eq("index hint many folders", InStr(QuickSwitch.IndexHint(["C:\a", "C:\b", "C:\c", "C:\d", "C:\e"]).Text, "a, b, c, d, ...") > 0, true)
-        eq("index hint no folders", QuickSwitch.IndexHint([]).Text, I18n.T("QuickSwitch.NoMatchIndex", "-"))
-        withFile := QuickSwitch.FilterFolders(base, "tower", [{Path: "E:\Tower", IsFolder: true}, {Path: "E:\Tower\plan.dwg", IsFolder: false}])
+        eq("index hint many folders", InStr(QuickSwitchPanel.IndexHint(["C:\a", "C:\b", "C:\c", "C:\d", "C:\e"]).Text, "a, b, c, d, ...") > 0, true)
+        eq("index hint no folders", QuickSwitchPanel.IndexHint([]).Text, I18n.T("QuickSwitch.NoMatchIndex", "-"))
+        withFile := QuickSwitchPanel.FilterFolders(base, "tower", [{Path: "E:\Tower", IsFolder: true}, {Path: "E:\Tower\plan.dwg", IsFolder: false}])
         eq("file entry", withFile[3].IsFile "|" withFile[3].Tag, "1|" I18n.T("QuickSwitch.TagFile"))
         eq("folder entry", withFile[2].IsFile, false)
-        eq("restore file name", QuickSwitch.ShouldRestoreName("Report 2026.docx"), true)
-        eq("no restore empty", QuickSwitch.ShouldRestoreName("  "), false)
-        eq("no restore filter", QuickSwitch.ShouldRestoreName("*.txt"), false)
-        eq("no restore path", QuickSwitch.ShouldRestoreName("C:\Docs\a.txt"), false)
+        eq("restore file name", FileDialogs.ShouldRestoreName("Report 2026.docx"), true)
+        eq("no restore empty", FileDialogs.ShouldRestoreName("  "), false)
+        eq("no restore filter", FileDialogs.ShouldRestoreName("*.txt"), false)
+        eq("no restore path", FileDialogs.ShouldRestoreName("C:\Docs\a.txt"), false)
         ; TC's path is asked for with WM_COPYDATA (another process imitates TC's reply), without touching the clipboard
         A_Clipboard := "clipboard before"
         Run('"' A_AhkPath '" "' A_ScriptDir '\Fixtures\FakeTotalCmd.ahk"', , , &fakePid)
         fakeHwnd := WinWait("ALTRun Fake Total Commander ahk_pid " fakePid, , 5)
-        eq("tc source panel", QuickSwitch.TotalCmdFolder(fakeHwnd), "C:\Work\Current")
-        eq("tc other panel", QuickSwitch.TotalCmdFolder(fakeHwnd, true), "\\server\share\Other")
-        eq("tc active side", QuickSwitch.TotalCmdAsk(fakeHwnd, "A"), "L")
-        eq("tc not a folder", QuickSwitch.TotalCmdAsk(fakeHwnd, "LP"), "ftp://example.com/pub/")
+        eq("tc source panel", FileManagers.TotalCmdFolder(fakeHwnd), "C:\Work\Current")
+        eq("tc other panel", FileManagers.TotalCmdFolder(fakeHwnd, true), "\\server\share\Other")
+        eq("tc active side", FileManagers.TotalCmdAsk(fakeHwnd, "A"), "L")
+        eq("tc not a folder", FileManagers.TotalCmdAsk(fakeHwnd, "LP"), "ftp://example.com/pub/")
         eq("tc clipboard untouched", A_Clipboard, "clipboard before")
         ProcessClose(fakePid), ProcessWaitClose(fakePid, 5)
-        eq("tc closed", QuickSwitch.TotalCmdFolder(fakeHwnd), "")
+        eq("tc closed", FileManagers.TotalCmdFolder(fakeHwnd), "")
         closed := Gui(), closedHwnd := closed.Hwnd
         closed.Destroy()
         threw := false
-        try QuickSwitch.SetDialogPath(A_Temp "\", closedHwnd)               ; the dialog has closed: do nothing (don't type into another window)
+        try FileDialogs.SetDialogPath(A_Temp "\", closedHwnd)               ; the dialog has closed: do nothing (don't type into another window)
         catch
             threw := true
         eq("closed dialog ignored", threw, false)
@@ -1399,15 +1399,15 @@ class ExtensionTests {
                 FileAppend('#NoTrayIcon`nFileAppend(FileSelect("S", A_WinDir "\\Report 2026.txt", "Save probe"), "' result '", "UTF-8")`n', helper, "UTF-8")
                 Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
                 dialog := WinWait("Save probe ahk_class #32770 ahk_pid " dialogPid, , 10)
-                jumpMethod := dialog ? QuickSwitch.DialogJumpMethod(dialog) : "", nameAfter := "no dialog", nameBefore := ""
+                jumpMethod := dialog ? FileDialogs.DialogJumpMethod(dialog) : "", nameAfter := "no dialog", nameBefore := ""
                 if dialog {
                     WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(300)
                     nameBefore := ControlGetText("Edit1", "ahk_id " dialog)    ; "Report 2026", or with ".txt" when extensions are shown
                     Send("{" held " down}")
-                    try QuickSwitch.SetDialogPath(target "\", dialog)
+                    try FileDialogs.SetDialogPath(target "\", dialog)
                     finally Send("{" held " up}")
                     Sleep(500)
-                    shown := WinExist("ahk_id " dialog) ? QuickSwitch.DialogFolder(dialog) : "the dialog closed"
+                    shown := WinExist("ahk_id " dialog) ? FileDialogs.DialogFolder(dialog) : "the dialog closed"
                     nameAfter := WinExist("ahk_id " dialog) ? ControlGetText("Edit1", "ahk_id " dialog) : "the dialog closed"
                     DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; OK
                 }
@@ -1425,65 +1425,65 @@ class ExtensionTests {
             try FileDelete(helper)
             try FileDelete(result)
         }
-        QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; really build the panel once (a wrong Gui option would throw here)
-        TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
-        QuickSwitch._ShowFolders([])                                       ; nothing open (no TC / Explorer, no recent folders)
-        eq("empty panel: no horizontal scrollbar", ControlGetStyle(QuickSwitch._panelList) & 0x100000, 0)   ; WS_HSCROLL
-        eq("empty panel: columns fit", QuickSwitch.ColumnsWidth(QuickSwitch._panelList) <= QuickSwitch.ClientWidth(QuickSwitch._panelList), true)
-        QuickSwitch._ShowFolders(base)
-        eq("panel rows", QuickSwitch._panelList.GetCount(), 2)
-        eq("panel: no horizontal scrollbar", ControlGetStyle(QuickSwitch._panelList) & 0x100000, 0)
-        eq("panel name column", QuickSwitch._panelList.GetText(1, 1), "Tower A")
-        QuickSwitch._panelSearch.Value := "docs"
-        QuickSwitch._panelBase := base
-        QuickSwitch._SearchPanel()
-        eq("panel search filters", QuickSwitch._panelList.GetText(1, 2), "C:\Docs")
-        QuickSwitch._SizeList(0)
-        eq("only the search box: list hidden", QuickSwitch._panelList.Visible "|" QuickSwitch._panelLine.Visible, "0|0")
-        QuickSwitch._SizeList(3)
-        QuickSwitch._panelList.GetPos(, , , &listH)
-        eq("three rows: list shown", QuickSwitch._panelList.Visible "|" QuickSwitch._panelLine.Visible "|" listH, "1|1|" QuickSwitch.ListHeight(3))
-        eq("resize before", QuickSwitch._panelWidth, QuickSwitch.PanelWidthFor(QuickSwitch._panelDialogW ? QuickSwitch._panelDialogW : 600))
-        QuickSwitch._ResizePanel({X: 0, Y: 0, W: 900, H: 500})             ; the dialog gets wider: the panel follows
-        QuickSwitch._panelList.GetPos(, , &listW)
-        eq("resize width", QuickSwitch._panelWidth "|" listW, "900|900")
+        QuickSwitchPanel._BuildPanel(A_ScriptHwnd)                              ; really build the panel once (a wrong Gui option would throw here)
+        TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitchPanel._panel) && IsObject(QuickSwitchPanel._panelList))
+        QuickSwitchPanel._ShowFolders([])                                       ; nothing open (no TC / Explorer, no recent folders)
+        eq("empty panel: no horizontal scrollbar", ControlGetStyle(QuickSwitchPanel._panelList) & 0x100000, 0)   ; WS_HSCROLL
+        eq("empty panel: columns fit", QuickSwitchPanel.ColumnsWidth(QuickSwitchPanel._panelList) <= QuickSwitchPanel.ClientWidth(QuickSwitchPanel._panelList), true)
+        QuickSwitchPanel._ShowFolders(base)
+        eq("panel rows", QuickSwitchPanel._panelList.GetCount(), 2)
+        eq("panel: no horizontal scrollbar", ControlGetStyle(QuickSwitchPanel._panelList) & 0x100000, 0)
+        eq("panel name column", QuickSwitchPanel._panelList.GetText(1, 1), "Tower A")
+        QuickSwitchPanel._panelSearch.Value := "docs"
+        QuickSwitchPanel._panelBase := base
+        QuickSwitchPanel._SearchPanel()
+        eq("panel search filters", QuickSwitchPanel._panelList.GetText(1, 2), "C:\Docs")
+        QuickSwitchPanel._SizeList(0)
+        eq("only the search box: list hidden", QuickSwitchPanel._panelList.Visible "|" QuickSwitchPanel._panelLine.Visible, "0|0")
+        QuickSwitchPanel._SizeList(3)
+        QuickSwitchPanel._panelList.GetPos(, , , &listH)
+        eq("three rows: list shown", QuickSwitchPanel._panelList.Visible "|" QuickSwitchPanel._panelLine.Visible "|" listH, "1|1|" QuickSwitchPanel.ListHeight(3))
+        eq("resize before", QuickSwitchPanel._panelWidth, QuickSwitchPanel.PanelWidthFor(QuickSwitchPanel._panelDialogW ? QuickSwitchPanel._panelDialogW : 600))
+        QuickSwitchPanel._ResizePanel({X: 0, Y: 0, W: 900, H: 500})             ; the dialog gets wider: the panel follows
+        QuickSwitchPanel._panelList.GetPos(, , &listW)
+        eq("resize width", QuickSwitchPanel._panelWidth "|" listW, "900|900")
         area := Win.WorkAreaAt(0, 0), areaW := area.Right - area.Left
-        QuickSwitch._ResizePanel({X: 0, Y: 0, W: areaW + 500, H: 500})     ; wider than the screen: as wide as the work area
-        eq("resize to the work area", QuickSwitch._panelWidth, areaW)
+        QuickSwitchPanel._ResizePanel({X: 0, Y: 0, W: areaW + 500, H: 500})     ; wider than the screen: as wide as the work area
+        eq("resize to the work area", QuickSwitchPanel._panelWidth, areaW)
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
-        eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
-        eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; the IME is composing: not intercepted
+        eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitchPanel._panelSearch.Hwnd), 0)
+        eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitchPanel._panelSearch.Hwnd), "")   ; the IME is composing: not intercepted
         ; Alt+↓ (WM_SYSKEYDOWN) or F4 in the search box opens the ☆ menu, as for a drop-down list; other Alt keys and ↓ alone don't
-        opened := {Count: 0}, savedShow := QuickSwitch.GetOwnPropDesc("ShowFavoritesMenu")
-        QuickSwitch.DefineProp("ShowFavoritesMenu", {Call: (*) => opened.Count++})
+        opened := {Count: 0}, savedShow := QuickSwitchFavorites.GetOwnPropDesc("ShowFavoritesMenu")
+        QuickSwitchFavorites.DefineProp("ShowFavoritesMenu", {Call: (*) => opened.Count++})
         try {
-            search := QuickSwitch._panelSearch.Hwnd
+            search := QuickSwitchPanel._panelSearch.Hwnd
             eq("Alt+Down opens the menu", QuickSwitch._OnKeyDown(0x28, 0, 0x104, search) "|" opened.Count, "0|1")
             eq("F4 opens the menu", QuickSwitch._OnKeyDown(0x73, 0, 0x100, search) "|" opened.Count, "0|2")
             eq("other Alt keys go on (Alt+F4)", QuickSwitch._OnKeyDown(0x73, 0, 0x104, search) "|" opened.Count, "|2")
             eq("Down alone: the next row", QuickSwitch._OnKeyDown(0x28, 0, 0x100, search) "|" opened.Count, "0|2")
             eq("Alt+Down in another window: not ours", QuickSwitch._OnKeyDown(0x28, 0, 0x104, A_ScriptHwnd) "|" opened.Count, "|2")
         } finally
-            QuickSwitch.DefineProp("ShowFavoritesMenu", savedShow)
-        searchHwnd := QuickSwitch._searchHwnd
-        QuickSwitch.HidePanel()
-        eq("panel hidden", QuickSwitch._panel, "")
-        eq("controls released", QuickSwitch._panelSearch "|" QuickSwitch._searchHwnd, "|0")
+            QuickSwitchFavorites.DefineProp("ShowFavoritesMenu", savedShow)
+        searchHwnd := QuickSwitchPanel._searchHwnd
+        QuickSwitchPanel.HidePanel()
+        eq("panel hidden", QuickSwitchPanel._panel, "")
+        eq("controls released", QuickSwitchPanel._panelSearch "|" QuickSwitchPanel._searchHwnd, "|0")
         eq("key after hide", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, searchHwnd), "")   ; after the panel closes: no error, nothing handled
         eq("key no panel", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, 0), "")
-        eq("width min", QuickSwitch.PanelWidthFor(300), 420)
-        eq("width follows a wide dialog", QuickSwitch.PanelWidthFor(1600), 1600)
-        eq("width at most the work area", QuickSwitch.PanelWidthFor(1600, 1200), 1200)
-        eq("width min with a work area", QuickSwitch.PanelWidthFor(300, 1200), 420)
-        eq("dark color", QuickSwitch.IsDarkColor("1E1E1E"), true)
-        eq("light color", QuickSwitch.IsDarkColor("FAFAFA"), false)
-        eq("bad color", QuickSwitch.IsDarkColor("abc"), false)
+        eq("width min", QuickSwitchPanel.PanelWidthFor(300), 420)
+        eq("width follows a wide dialog", QuickSwitchPanel.PanelWidthFor(1600), 1600)
+        eq("width at most the work area", QuickSwitchPanel.PanelWidthFor(1600, 1200), 1200)
+        eq("width min with a work area", QuickSwitchPanel.PanelWidthFor(300, 1200), 420)
+        eq("dark color", QuickSwitchPanel.IsDarkColor("1E1E1E"), true)
+        eq("light color", QuickSwitchPanel.IsDarkColor("FAFAFA"), false)
+        eq("bad color", QuickSwitchPanel.IsDarkColor("abc"), false)
         savedTheme := ThemeManager.Current
         ThemeManager.Current := Map("Background", "202020", "Title", "EEEEEE", "Separator", "333333")
-        colors := QuickSwitch.PanelColors()
+        colors := QuickSwitchPanel.PanelColors()
         eq("theme colors", colors.Background "|" colors.Text "|" colors.Dark, "202020|EEEEEE|1")
         ThemeManager.Current := Map()
-        eq("no theme", QuickSwitch.PanelColors().Background, "FFFFFF")
+        eq("no theme", QuickSwitchPanel.PanelColors().Background, "FFFFFF")
         ThemeManager.Current := savedTheme
         eq("panel search default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["PanelSearch"], "folders")
         try DirDelete(root, true)
@@ -1565,50 +1565,50 @@ class ExtensionTests {
         try {
             eq("default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["Favorites"].Length, 0)
             QuickSwitch.Options := Map("RecentFolders", 0)
-            eq("no setting", QuickSwitch.Favorites().Length "|" QuickSwitch.IsFavorite("C:\Docs"), "0|0")
+            eq("no setting", QuickSwitchFavorites.Favorites().Length "|" QuickSwitchFavorites.IsFavorite("C:\Docs"), "0|0")
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", ["%TEMP%\ALTRun Fav\", "", "D:"])
-            eq("listed", QuickSwitch.Favorites()[1] "|" QuickSwitch.Favorites()[3], A_Temp "\ALTRun Fav|D:\")
-            eq("is favorite", QuickSwitch.IsFavorite(StrUpper(A_Temp) "\alt" "run fav\") "|" QuickSwitch.IsFavorite("D:\"), "1|1")
-            eq("not a favorite", QuickSwitch.IsFavorite("D:\Other") "|" QuickSwitch.IsFavorite(""), "0|0")
+            eq("listed", QuickSwitchFavorites.Favorites()[1] "|" QuickSwitchFavorites.Favorites()[3], A_Temp "\ALTRun Fav|D:\")
+            eq("is favorite", QuickSwitchFavorites.IsFavorite(StrUpper(A_Temp) "\alt" "run fav\") "|" QuickSwitchFavorites.IsFavorite("D:\"), "1|1")
+            eq("not a favorite", QuickSwitchFavorites.IsFavorite("D:\Other") "|" QuickSwitchFavorites.IsFavorite(""), "0|0")
             favoriteRows := 0                                                  ; the favorites are in the star menu, not in the panel's list
-            for entry in QuickSwitch.MenuFolders(false)
+            for entry in QuickSwitchFavorites.MenuFolders(false)
                 favoriteRows += (entry.Group = "favorite")
             eq("not in the panel list", favoriteRows, 0)
-            found := QuickSwitch.SearchBase([{Path: "D:\", Group: "open"}, {Path: "C:\Work", Group: "open"}])   ; the panel's search finds them, first
+            found := QuickSwitchPanel.SearchBase([{Path: "D:\", Group: "open"}, {Path: "C:\Work", Group: "open"}])   ; the panel's search finds them, first
             eq("searched first, once", found.Length "|" found[1].Path "|" found[1].Group "|" found[1].Tag "|" found[2].Group "|" found[3].Path
                 , "3|" A_Temp "\ALTRun Fav|favorite|" I18n.T("QuickSwitch.TagFavorite") "|favorite|C:\Work")
-            eq("add twice", QuickSwitch.AddFavorite(A_Temp "\ALTRun Fav"), false)
-            eq("add empty", QuickSwitch.AddFavorite(""), false)
-            eq("add", QuickSwitch.AddFavorite("E:\Projects\") "|" QuickSwitch.Options["Favorites"][4], "1|E:\Projects")
+            eq("add twice", QuickSwitchFavorites.AddFavorite(A_Temp "\ALTRun Fav"), false)
+            eq("add empty", QuickSwitchFavorites.AddFavorite(""), false)
+            eq("add", QuickSwitchFavorites.AddFavorite("E:\Projects\") "|" QuickSwitch.Options["Favorites"][4], "1|E:\Projects")
             eq("saved", FileExist(AppSettings.File) != "", true)
-            eq("remove", QuickSwitch.RemoveFavorite(A_Temp "\ALTRun Fav") "|" QuickSwitch.Options["Favorites"].Length "|" QuickSwitch.Options["Favorites"][1], "1|3|")
-            eq("remove missing", QuickSwitch.RemoveFavorite("X:\None"), false)
+            eq("remove", QuickSwitchFavorites.RemoveFavorite(A_Temp "\ALTRun Fav") "|" QuickSwitch.Options["Favorites"].Length "|" QuickSwitch.Options["Favorites"][1], "1|3|")
+            eq("remove missing", QuickSwitchFavorites.RemoveFavorite("X:\None"), false)
             QuickSwitch.Options := Map("RecentFolders", 0)
-            eq("add without the setting", QuickSwitch.AddFavorite("C:\Docs") "|" QuickSwitch.Options["Favorites"].Length, "1|1")
-            eq("row icons", QuickSwitch.RowIcon({Path: "C:\A", Group: "favorite"}) QuickSwitch.RowIcon({Path: "C:\A", Group: "open"})
-                . QuickSwitch.RowIcon({Path: "C:\A.txt", Group: "search", IsFile: true}), "312")
+            eq("add without the setting", QuickSwitchFavorites.AddFavorite("C:\Docs") "|" QuickSwitch.Options["Favorites"].Length, "1|1")
+            eq("row icons", QuickSwitchPanel.RowIcon({Path: "C:\A", Group: "favorite"}) QuickSwitchPanel.RowIcon({Path: "C:\A", Group: "open"})
+                . QuickSwitchPanel.RowIcon({Path: "C:\A.txt", Group: "search", IsFile: true}), "312")
             menuRoot := A_Temp "\ALTRun Fav Menu"                             ; the star menu: one level of subfolders, hidden ones left out
             try DirDelete(menuRoot, true)
             for name in ["Gamma", "Alpha", "Beta", "Hidden", "Alpha\Deep"]
                 DirCreate(menuRoot "\" name)
             FileSetAttrib("+H", menuRoot "\Hidden", "D")
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot, "", "\\server\share\Docs"])
-            items := QuickSwitch.FavoritesMenuItems()
+            items := QuickSwitchFavorites.FavoritesMenuItems()
             names := ""
             for folder in items[1].Subfolders
-                names .= (names = "" ? "" : "|") QuickSwitch.FolderName(folder)
+                names .= (names = "" ? "" : "|") QuickSwitchPanel.FolderName(folder)
             eq("menu items", items.Length "|" items[1].Name "|" items[2].Path, "2|ALTRun Fav Menu|\\server\share\Docs")
             eq("menu subfolders, sorted by name", names "|" items[1].More "|" items[1].MoreAtLeast, "Alpha|Beta|Gamma|0|0")
-            items := QuickSwitch.FavoritesMenuItems(2)
+            items := QuickSwitchFavorites.FavoritesMenuItems(2)
             eq("menu at most 2", items[1].Subfolders.Length "|" items[1].More, "2|1")
-            items := QuickSwitch.FavoritesMenuItems(1, 2)                      ; reading stops after 2: "1+ more"
+            items := QuickSwitchFavorites.FavoritesMenuItems(1, 2)                      ; reading stops after 2: "1+ more"
             eq("menu reads at most 2", items[1].Subfolders.Length "|" items[1].More "|" items[1].MoreAtLeast, "1|1|1")
             for name in ["Folder 10", "folder 2", "Folder 1"]                    ; as Explorer sorts: numbers by value, case ignored
                 DirCreate(menuRoot "\Numbered\" name)
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot "\Numbered"])
             names := ""
-            for folder in QuickSwitch.FavoritesMenuItems()[1].Subfolders
-                names .= (names = "" ? "" : "|") QuickSwitch.FolderName(folder)
+            for folder in QuickSwitchFavorites.FavoritesMenuItems()[1].Subfolders
+                names .= (names = "" ? "" : "|") QuickSwitchPanel.FolderName(folder)
             eq("menu: numbers sorted by value", names, "Folder 1|folder 2|Folder 10")
             ; a favorite with 2000 subfolders: 500 read, the first 30 by name shown, "470+ more"; on NTFS (Windows) the 500 read are the
             ; first by name, created here in reverse order
@@ -1618,7 +1618,7 @@ class ExtensionTests {
                 DirCreate(many "\F" Format("{:04}", 2001 - A_Index))
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [many])
             start := Logger.Ms()
-            items := QuickSwitch.FavoritesMenuItems()
+            items := QuickSwitchFavorites.FavoritesMenuItems()
             elapsed := Round(Logger.Ms() - start)
             start := Logger.Ms(), all := 0                                      ; for comparison: all 2000 read, as before
             Loop Files many "\*", "D"
@@ -1633,15 +1633,15 @@ class ExtensionTests {
                 sorted := sorted && StrCompare(items[1].Subfolders[A_Index], items[1].Subfolders[A_Index + 1]) < 0
             eq("2000 subfolders: 30 shown, sorted, 470+ more", items[1].Subfolders.Length "|" sorted "|" items[1].More "|" items[1].MoreAtLeast, "30|1|470|1")
             if (EnvGet("GITHUB_ACTIONS") = "true")
-                eq("2000 subfolders: the first by name (NTFS)", QuickSwitch.FolderName(items[1].Subfolders[1]) "|" QuickSwitch.FolderName(items[1].Subfolders[30]), "F0001|F0030")
+                eq("2000 subfolders: the first by name (NTFS)", QuickSwitchPanel.FolderName(items[1].Subfolders[1]) "|" QuickSwitchPanel.FolderName(items[1].Subfolders[30]), "F0001|F0030")
             eq("more text", I18n.T("QuickSwitch.MoreFolders", items[1].More (items[1].MoreAtLeast ? "+" : "")), StrReplace(I18n.T("QuickSwitch.MoreFolders", 0), "0", "470+"))
             try DirDelete(many, true)
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot, "", "\\server\share\Docs"])
-            items := QuickSwitch.FavoritesMenuItems()
+            items := QuickSwitchFavorites.FavoritesMenuItems()
             eq("menu: network folder not read", items[2].Subfolders.Length "|" items[2].More, "0|0")
-            eq("reads subfolders", QuickSwitch.ReadsSubfolders(A_Temp) "|" QuickSwitch.ReadsSubfolders("\\server\share") "|" QuickSwitch.ReadsSubfolders(""), "1|0|0")
-            eq("menu label", QuickSwitch.MenuLabel("R&D"), "R&&D")
-            eq("menu item jumps", QuickSwitch.JumpTo.Bind(QuickSwitch, "C:\Docs").Call("Docs", 1, Menu()), "")   ; a menu passes its item name, position and menu
+            eq("reads subfolders", QuickSwitchFavorites.ReadsSubfolders(A_Temp) "|" QuickSwitchFavorites.ReadsSubfolders("\\server\share") "|" QuickSwitchFavorites.ReadsSubfolders(""), "1|0|0")
+            eq("menu label", QuickSwitchFavorites.MenuLabel("R&D"), "R&&D")
+            eq("menu item jumps", QuickSwitchPanel.JumpTo.Bind(QuickSwitch, "C:\Docs").Call("Docs", 1, Menu()), "")   ; a menu passes its item name, position and menu
             picked := {Name: ""}                                               ; the drop-down (TrackPopupMenuEx without TPM_RETURNCMD) sends the script's window
             testMenu := Menu()                                                 ; the chosen item's WM_COMMAND: it runs the item, as with Menu.Show
             testMenu.Add("First", (name, *) => picked.Name := name)
@@ -1654,10 +1654,10 @@ class ExtensionTests {
             ; favorite itself, then the subfolders and a disabled "more"; & in a name stays a character; Add (the dialog's folder) and Edit
             DirCreate(menuRoot "\R&D Notes")
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot, menuRoot "\R&D Notes"])
-            savedMax := QuickSwitch.MaxSubfolders, QuickSwitch.MaxSubfolders := 2
+            savedMax := QuickSwitchFavorites.MaxSubfolders, QuickSwitchFavorites.MaxSubfolders := 2
             try {
-                expected := QuickSwitch.FavoritesMenuItems()
-                built := QuickSwitch.BuildFavoritesMenu("C:\Some Dialog Folder"), h := built.Handle   ; kept: the menu goes with its object
+                expected := QuickSwitchFavorites.FavoritesMenuItems()
+                built := QuickSwitchFavorites.BuildFavoritesMenu("C:\Some Dialog Folder"), h := built.Handle   ; kept: the menu goes with its object
                 text := (hm, pos) => (buf := Buffer(1024, 0), DllCall("GetMenuString", "Ptr", hm, "UInt", pos, "Ptr", buf, "Int", 512, "UInt", 0x400), StrGet(buf))
                 count := (hm) => DllCall("GetMenuItemCount", "Ptr", hm, "Int")
                 eq("menu: 2 favorites, a line, Add, Edit", count(h), 5)
@@ -1669,32 +1669,32 @@ class ExtensionTests {
                 sub := DllCall("GetSubMenu", "Ptr", h, "Int", 0, "Ptr")
                 eq("submenu: the favorite, a line, 2 subfolders, more", count(sub), 5)
                 eq("submenu: the favorite first, as the default item", text(sub, 0) "|" DllCall("GetMenuDefaultItem", "Ptr", sub, "UInt", 1, "UInt", 0, "Int"), text(h, 0) "|0")
-                eq("submenu: the first subfolders by name", text(sub, 2) "|" text(sub, 3), QuickSwitch.FolderName(expected[1].Subfolders[1]) "|" QuickSwitch.FolderName(expected[1].Subfolders[2]))
+                eq("submenu: the first subfolders by name", text(sub, 2) "|" text(sub, 3), QuickSwitchPanel.FolderName(expected[1].Subfolders[1]) "|" QuickSwitchPanel.FolderName(expected[1].Subfolders[2]))
                 eq("submenu: more, disabled", text(sub, 4) "|" ((DllCall("GetMenuState", "Ptr", sub, "UInt", 4, "UInt", 0x400, "UInt") & 3) != 0)
                     , I18n.T("QuickSwitch.MoreFolders", expected[1].More) "|1")
-                built := QuickSwitch.BuildFavoritesMenu(menuRoot)
+                built := QuickSwitchFavorites.BuildFavoritesMenu(menuRoot)
                 eq("menu: no Add when the dialog's folder is a favorite", count(built.Handle), 4)
                 QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])
-                built := QuickSwitch.BuildFavoritesMenu(""), h := built.Handle
+                built := QuickSwitchFavorites.BuildFavoritesMenu(""), h := built.Handle
                 eq("menu without favorites: a disabled note, a line, Edit", count(h) "|" text(h, 0) "|" text(h, 2), "3|" I18n.T("QuickSwitch.NoFavorites") "|" I18n.T("QuickSwitch.EditFavorites"))
             } finally
-                QuickSwitch.MaxSubfolders := savedMax
+                QuickSwitchFavorites.MaxSubfolders := savedMax
             try DirDelete(menuRoot, true)
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])     ; in the panel: the star button right of the search box
-            QuickSwitch._BuildPanel(A_ScriptHwnd)
-            eq("panel: star button", IsObject(QuickSwitch._panelStar), true)
-            QuickSwitch._panelStar.GetPos(&starX, , &starW)
-            QuickSwitch._panelSearch.GetPos(&searchX, , &searchW)
-            eq("panel: star right of the search box", searchX + searchW < starX && starX + starW <= QuickSwitch._panelWidth, true)
-            QuickSwitch._ToggleFavorite("C:\Fav Test\", true)
+            QuickSwitchPanel._BuildPanel(A_ScriptHwnd)
+            eq("panel: star button", IsObject(QuickSwitchPanel._panelStar), true)
+            QuickSwitchPanel._panelStar.GetPos(&starX, , &starW)
+            QuickSwitchPanel._panelSearch.GetPos(&searchX, , &searchW)
+            eq("panel: star right of the search box", searchX + searchW < starX && starX + starW <= QuickSwitchPanel._panelWidth, true)
+            QuickSwitchFavorites._ToggleFavorite("C:\Fav Test\", true)
             favoriteRows := 0
-            for entry in QuickSwitch._panelFolders
+            for entry in QuickSwitchPanel._panelFolders
                 favoriteRows += (entry.Group = "favorite")
-            eq("panel: added, not listed", QuickSwitch.IsFavorite("C:\Fav Test") "|" favoriteRows, "1|0")
-            QuickSwitch._ToggleFavorite("C:\Fav Test", false)
-            eq("panel: removed", QuickSwitch.IsFavorite("C:\Fav Test"), 0)
-            QuickSwitch.HidePanel(), Hud.Hide()
-            eq("panel: star released", QuickSwitch._panelStar, "")
+            eq("panel: added, not listed", QuickSwitchFavorites.IsFavorite("C:\Fav Test") "|" favoriteRows, "1|0")
+            QuickSwitchFavorites._ToggleFavorite("C:\Fav Test", false)
+            eq("panel: removed", QuickSwitchFavorites.IsFavorite("C:\Fav Test"), 0)
+            QuickSwitchPanel.HidePanel(), Hud.Hide()
+            eq("panel: star released", QuickSwitchPanel._panelStar, "")
         } finally {
             QuickSwitch.Options := savedOptions, AppSettings.File := savedFile
             try FileDelete(A_Temp "\ALTRun-favorites-test.json")

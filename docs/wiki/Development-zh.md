@@ -29,7 +29,8 @@ Src\UI\             SearchWindow (+ SearchSession、SearchKeys 键盘、ResultRo
                     PrefsForm 表单工具和布局尺寸), ItemEditor, HotkeyEditor (自定义热键窗口), HotkeyBox, LargeType, Hud (简短提示),
                     ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (同步任务编辑和同步窗口)
 Src\Providers\      搜索功能, 每个功能一个类
-Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框), AutoDate, CapsLockSwitch +
+Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框; + QuickSwitchPanel、QuickSwitchFavorites、
+                    FileDialogs、FileManagers), AutoDate, CapsLockSwitch +
                     CapsLockHelper, SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
                     DelayedStart, RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
@@ -93,7 +94,7 @@ AutoHotkey 同一时间只运行一个线程, 但热键、计时器、`OnMessage
 - 同一个函数可能同时运行两次。`SafeFile` 每次写入用自己的临时文件, 并以最新的内容为准; `Everything` 每个查询 id 一个回复位置 (等回复时可能又开始一个查询); `ExplorerTabs.Open` 只拿没有被其他正在运行的 Open 拿走的新标签
 - `Critical("On")` 让一小段代码不被打断 (画结果行、图标缓存); 期间消息会排队, 所以要短, 结束后重绘 (`SearchWindow`)
 - **共用的消息**: 同一个消息有几个处理函数, 只在是自己的消息时才返回值: `WM_COPYDATA` (0x4A) 有 `App` (后启动的 ALTRun 传来的命令行)、`Everything` (查询回复)、`QuickSwitch` (Total Commander 的回复) 和 `CapsLockHelper`, 各自检查 `dwData`; 按键消息 (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) 每个窗口的处理函数都会收到, 各自检查窗口
-- **菜单**: `Menu.Show` / `TrackPopupMenuEx` 会把 ALTRun 隐藏的主窗口设成前台; 没选菜单项就关掉时, 要把焦点还回去 (`QuickSwitch._DialogAfterMenu`)
+- **菜单**: `Menu.Show` / `TrackPopupMenuEx` 会把 ALTRun 隐藏的主窗口设成前台; 没选菜单项就关掉时, 要把焦点还回去 (`QuickSwitchFavorites._DialogAfterMenu`)
 - **网络路径**: 服务器离线时, `FileExist`、`DirExist` 和解析路径 (`SHParseDisplayName`) 会在调用的线程里等网络超时 (CI 上 21 秒), ALTRun 卡住。不要在界面线程里不限时地访问网络路径 (`\\server\share`、映射的网络驱动器): 直接当作存在 (`Path.ExistsOrRemote`), 或者在单独的线程里限时检查 (`ExplorerTabs.FolderWithin`)
 - **按键状态**: 远程桌面软件注入所有按键, `GetKeyState(key, "P")` 永远看不到它们按下; 用 `App.IsKeyDown(key)` (逻辑或物理按下)
 
@@ -253,7 +254,7 @@ GitHub → Actions → **Everything** 在 Windows 上用真实的 Everything 检
 AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一份, `obj.prop .= x` 也会重新生成整个字符串。字符串很长时 (文件索引把所有文件名放在一个字符串里), 线性的工作会变成平方级: 长字符串在局部变量或数组里拼接, 需要一小段一小段读取的文字放在 `Buffer` 里 (按偏移用 `StrGet` 读)。
 
 ### Quick Switch
-GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。然后打开文件夹面板的 ☆ 菜单 (点星号、在搜索框里按 Alt+↓), 按 Esc 关掉: 对话框要在 2 秒内回到前台; 失败时打印 Esc 之后到过前台的每个窗口。修改 `Src\Extensions\QuickSwitch.ahk` 或这个检查的 PR 会运行它, main 上也会, 每周一也运行一次 (运行环境的新镜像可能改变窗口到前台的方式; **Explorer tabs** 也是每周一运行); 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
+GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。然后打开文件夹面板的 ☆ 菜单 (点星号、在搜索框里按 Alt+↓), 按 Esc 关掉: 对话框要在 2 秒内回到前台; 失败时打印 Esc 之后到过前台的每个窗口。修改 Quick Switch (`Src\Extensions\QuickSwitch*.ahk`、`FileDialogs.ahk`、`FileManagers.ahk`) 或这个检查的 PR 会运行它, main 上也会, 每周一也运行一次 (运行环境的新镜像可能改变窗口到前台的方式; **Explorer tabs** 也是每周一运行); 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
 
 ### 延迟启动
 GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查延迟启动: 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改延迟启动或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。
