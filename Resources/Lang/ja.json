@@ -264,6 +264,7 @@
   "Prefs.CapsLockElevated": "管理者として実行中のウィンドウでも有効にする",
   "Prefs.CapsLockElevated.Desc": "Caps Lock だけを扱う小さなヘルパーを管理者権限で実行します (オンにするときに 1 回確認)。ALTRun 本体は通常の権限のままです。",
   "Prefs.CapsLockElevated.NeedsMode": "先に上で Caps Lock の切り替え方法を選んでください。",
+  "Prefs.CapsLockElevatedWritable": "管理者権限のないプログラムでも ALTRun のフォルダー内のファイルを変更できます:\n{1}\n\nそのようなプログラムがそこにある ALTRun を置き換えてからこのヘルパーを起動すると、確認なしで管理者権限で実行されます。先に ALTRun を管理者しか変更できないフォルダー (例: C:\\Program Files) に移動することをおすすめします。\n\nそれでも有効にしますか?",
   "Prefs.CapsLockElevatedFailed": "管理者ウィンドウ用の Caps Lock を設定できませんでした (確認がキャンセルされた可能性があります)。このオプションはオフのままです。",
   "Prefs.CapsLockNotify": "Caps Lock のオン / オフを通知する",
   "Prefs.ChangeDataFolder": "場所を変更...",

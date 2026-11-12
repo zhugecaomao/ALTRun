@@ -43,7 +43,7 @@ Out of scope:
 - **Builds**: every release is built from the public source code by [GitHub Actions](.github/workflows/release.yml); no binaries are built on personal computers. Each change runs 8,000+ automated tests on Windows, and the repository is scanned by CodeQL.
 - **Updates**: one-click updates download only from this repository's GitHub Releases over HTTPS (download and release page addresses outside the repository are ignored), verify the SHA256 checksum published by GitHub before replacing any file, and restore the previous version if any step fails.
 - **Code signing**: see the [code signing policy](README.md#code-signing-policy).
-- **Least privilege**: ALTRun runs as a normal user. It needs no administrator rights and installs no services or drivers.
+- **Least privilege**: ALTRun runs as a normal user. It needs no administrator rights and installs no services or drivers. The one exception is optional: "Also in windows running as administrator" for Caps Lock (Preferences → Keyboard) creates a scheduled task with highest privileges that starts ALTRun as a Caps Lock helper. Keep ALTRun in a folder only administrators can change (for example `C:\Program Files`) before turning it on, otherwise a program with normal rights could replace ALTRun and get administrator rights through that task; ALTRun warns when its folder can be changed.
 - **Clipboard**: content marked by password managers and other programs as private (`ExcludeClipboardContentFromMonitorProcessing`, `CanIncludeInClipboardHistory = 0`) is never recorded; content copied from KeePass, KeePassXC, 1Password and Bitwarden is ignored by default.
 
 ## Privacy policy
@@ -131,7 +131,7 @@ Changes to this policy are recorded in the [changelog](CHANGELOG.md) and the [hi
 - **构建**: 每个发布版本都由 [GitHub Actions](.github/workflows/release.yml) 从公开源码编译, 不在个人电脑上构建。每次修改都在 Windows 上运行 8000 余项自动测试, 仓库开启了 CodeQL 扫描。
 - **更新**: 一键更新只从本仓库的 GitHub Releases 通过 HTTPS 下载 (不是本仓库的下载地址和发布页面地址一律不用), 替换文件前先核对 GitHub 给出的 SHA256, 任何一步出错都还原到原来的版本。
 - **代码签名**: 见 [代码签名策略](README.md#code-signing-policy)。
-- **最小权限**: ALTRun 以普通用户身份运行, 不需要管理员权限, 不安装服务或驱动。
+- **最小权限**: ALTRun 以普通用户身份运行, 不需要管理员权限, 不安装服务或驱动。唯一的例外是可选的: CapsLock 的 "在管理员窗口里也生效" (偏好设置 → 键盘) 会建一个最高权限的计划任务, 用来启动 ALTRun 作为 CapsLock 助手。开启前请把 ALTRun 放在只有管理员能修改的文件夹 (例如 `C:\Program Files`), 否则普通权限的程序可以替换 ALTRun, 通过这个任务拿到管理员权限; 文件夹可以被修改时 ALTRun 会提醒。
 - **剪贴板**: 带有 "不要记录" 标记的内容 (`ExcludeClipboardContentFromMonitorProcessing`、`CanIncludeInClipboardHistory = 0`, 密码管理器常用) 从不记录; 默认忽略 KeePass、KeePassXC、1Password、Bitwarden 复制的内容。
 
 ## 隐私说明

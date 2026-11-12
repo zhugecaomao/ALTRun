@@ -731,6 +731,7 @@ class I18n {
         s["Prefs.CapsLockElevated"]    := "Also in windows running as administrator"
         s["Prefs.CapsLockElevated.Desc"] := "Runs a small helper with administrator rights that only handles Caps Lock (confirm once when turning it on). ALTRun itself keeps normal rights."
         s["Prefs.CapsLockElevated.NeedsMode"] := "Choose how Caps Lock switches above first."
+        s["Prefs.CapsLockElevatedWritable"] := "Programs without administrator rights can change the files in ALTRun's folder:`n{1}`n`nOne of them could replace ALTRun there and then start this helper, which runs with administrator rights without asking. Move ALTRun to a folder only administrators can change (for example C:\Program Files) first.`n`nTurn it on anyway?"
         s["Prefs.CapsLockElevatedFailed"] := "Caps Lock for administrator windows could not be set up (the confirmation may have been cancelled). The option stays off."
         s["Caps.HelperFailed"]         := "Caps Lock in administrator windows could not start. Turn the option off and on again in Preferences → Hotkeys."
         s["Prefs.SelectionHotkey"]     := "Selection hotkey"

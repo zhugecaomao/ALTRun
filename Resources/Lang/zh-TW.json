@@ -265,6 +265,7 @@
   "Prefs.CapsLockElevated": "在系統管理員視窗裡也生效",
   "Prefs.CapsLockElevated.Desc": "用系統管理員權限執行一個只管 CapsLock 的小助手 (開啟時確認一次); ALTRun 本身還是一般權限",
   "Prefs.CapsLockElevated.NeedsMode": "先在上面選擇 CapsLock 的切換方式",
+  "Prefs.CapsLockElevatedWritable": "沒有系統管理員權限的程式也能修改 ALTRun 所在資料夾裡的檔案:\n{1}\n\n這樣的程式可以把那裡的 ALTRun 換掉, 再啟動這個助手, 不經確認就以系統管理員權限執行。建議先把 ALTRun 移到只有系統管理員能修改的資料夾 (例如 C:\\Program Files)。\n\n仍然開啟嗎?",
   "Prefs.CapsLockElevatedFailed": "沒能設定系統管理員視窗裡的 CapsLock 切換 (可能取消了確認), 這個選項保持關閉。",
   "Prefs.CapsLockNotify": "顯示大寫鎖定開 / 關的提示",
   "Prefs.ChangeDataFolder": "變更位置...",

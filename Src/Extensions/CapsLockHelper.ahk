@@ -136,6 +136,20 @@ class CapsLockHelper {
         return code
     }
 
+    ; A folder holding what the task runs as administrator that programs with normal rights can change, "" if none: such a program could
+    ; replace ALTRun there and start the task (schtasks /run needs no confirmation), getting administrator rights. Running as administrator
+    ; every folder looks writable, so nothing is checked then; nor for the Store package, whose files are protected (the task starts it
+    ; through its execution alias)
+    static WritableFolder(isWritable := (dir) => Path.IsWritable(dir), admin := A_IsAdmin) {
+        if (App.PackageFamily != "" || admin)
+            return ""
+        SplitPath(A_AhkPath, , &ahkDir)
+        for dir in (A_IsCompiled ? [App.ExeDir] : [A_ScriptDir, ahkDir])
+            if isWritable(dir)
+                return dir
+        return ""
+    }
+
     ; Deletes the scheduled task (UAC confirmed once; canceling is fine, it won't run anymore with the option off)
     static Uninstall() {
         CapsLockHelper.Stop()

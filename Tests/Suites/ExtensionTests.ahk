@@ -53,6 +53,12 @@ class ExtensionTests {
         eq("task: no time limit, runs on battery", (InStr(xml, "<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>") && InStr(xml, "<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>")) ? 1 : 0, 1)
         eq("task: escaped path", InStr(xml, "<Command>C:\A &amp; B\ALTRun.exe</Command><Arguments>-CapsLockHelper</Arguments>") ? 1 : 0, 1)
         eq("task: no trigger (started by ALTRun)", InStr(xml, "<Triggers>") ? 1 : 0, 0)
+        ; the task runs ALTRun with administrator rights: a folder of it that normal programs can change is pointed out before turning it on
+        eq("writable folder: found", CapsLockHelper.WritableFolder((dir) => true, false), A_ScriptDir)
+        checked := []
+        eq("writable folder: none", CapsLockHelper.WritableFolder((dir) => (checked.Push(dir), false), false), "")
+        eq("writable folder: what is checked", checked.Length, A_IsCompiled ? 1 : 2)          ; the script's folder and AutoHotkey's, or the exe's
+        eq("writable folder: not checked as administrator", CapsLockHelper.WritableFolder((dir) => true, true), "")
         shown := []                                                         ; the Caps Lock notice goes to Notify (in the helper, ALTRun is told instead)
         savedNotify := CapsLockSwitch.Notify, CapsLockSwitch.Notify := (on) => shown.Push(on)
         before := GetKeyState("CapsLock", "T")
