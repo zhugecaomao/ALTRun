@@ -2,7 +2,7 @@
 ; ApplicationProvider.ahk - application search (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Indexes the shortcuts and programs in the Start menu and on the desktop (Features.Applications.Folders), and
-; Store apps (PowerShell Get-StartApps, run in the background without blocking the UI). Chinese names also
+; Microsoft Store apps (listed from shell:AppsFolder through COM, in the process). Chinese names also
 ; match by pinyin initials ("wx" -> 微信).
 ;
 ; The index is cached in Data\AppIndex.json and read directly at start-up. It is rescanned in the background in batches (at most about 15 ms per timer tick, so hotkeys aren't blocked),
@@ -12,7 +12,7 @@
 ;   - as a fallback (what watching misses: software installed while ALTRun wasn't running, folders that didn't exist or couldn't be watched at start-up): it also rebuilds when the cache is older than
 ;     FallbackMinutes, checked at start-up and every minute after (formerly the RefreshMinutes setting, no longer read)
 ;   - the cache write after a background rebuild waits until keyboard and mouse have been idle a while (writing the JSON is done in one go), and is done at once on exit if still pending
-; Store apps (PowerShell) are scanned in the background at most once an hour.
+; Store apps are listed at most once an hour in the background, only while the search window is hidden (listing them takes about 0.1-0.2 s in one go).
 ; The tray menu's "Rebuild index" or the system command "Rebuild ALTRun Index" rebuilds immediately (in one go, showing the result).
 ;
 ; Unwanted applications: Ctrl+Del (or right-click "Delete") in the results adds them to the Hidden list so they no longer show,
@@ -27,7 +27,7 @@ class ApplicationProvider {
     static Id        := "Applications"
     static IndexFile := AppSettings.DataDir "\AppIndex.json"
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
-    static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
+    static _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; background rebuild: see _NewJob
     static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60
     static _watcher := "", _watchTimer := "", _watchTypes := ""
@@ -360,7 +360,7 @@ class ApplicationProvider {
             ApplicationProvider._SaveWhenIdle()
         if (job.Options["StoreApps"] && (manual || !ApplicationProvider._storeScanned
                 || A_TickCount - ApplicationProvider._storeScanned >= 3600000))
-            ApplicationProvider._StartStoreScan()
+            manual ? ApplicationProvider._ScanStoreApps() : ApplicationProvider._QueueStoreScan()
         Logger.Debug("ApplicationProvider: indexed " apps.Length " apps" (manual ? "" : " (background)"))
         return apps.Length
     }
@@ -371,47 +371,43 @@ class ApplicationProvider {
     }
 
     ;---------------------------------------------------------------------------
-    ; Microsoft Store apps (PowerShell in the background)
+    ; Microsoft Store apps (COM: shell:AppsFolder lists the Start menu's apps with their AppIDs, the same as Get-StartApps)
     ;---------------------------------------------------------------------------
-    static _StartStoreScan() {
-        if (ApplicationProvider._storePid && ProcessExist(ApplicationProvider._storePid))
-            return
-        outFile := A_Temp "\ALTRun_StoreApps.csv"
-        try FileDelete(outFile)
-        command := "powershell.exe -NoProfile -Command `"Get-StartApps | Select-Object Name, AppID | ConvertTo-Csv -NoTypeInformation | Out-File -Encoding UTF8 -FilePath '" outFile "'`""
-        try {
-            Run(command, , "Hide", &pid)
-        } catch as e {
-            Logger.Error("ApplicationProvider: cannot start Get-StartApps - " e.Message)
-            return
-        }
-        ApplicationProvider._storePid := pid, ApplicationProvider._storeScanned := A_TickCount
-        ApplicationProvider._storeFile := outFile
+    ; Background: waits until the search window is hidden, as listing them blocks for about 0.1-0.2 s
+    static _QueueStoreScan() {
         if (ApplicationProvider._storeTimer = "")
-            ApplicationProvider._storeTimer := Logger.Watch("store apps scan", () => ApplicationProvider._CheckStoreScan())
-        SetTimer(ApplicationProvider._storeTimer, 500)
+            ApplicationProvider._storeTimer := Logger.Watch("store apps scan", () => ApplicationProvider._TryStoreScan())
+        SetTimer(ApplicationProvider._storeTimer, 1000)
     }
 
-    static _CheckStoreScan() {
-        if ProcessExist(ApplicationProvider._storePid)
+    static _TryStoreScan() {
+        if !BackgroundWork.CanRun()
             return
         SetTimer(ApplicationProvider._storeTimer, 0)
-        ApplicationProvider._storePid := 0
-        csvFile := ApplicationProvider._storeFile
-        if !FileExist(csvFile)
-            return
+        ApplicationProvider._ScanStoreApps()
+    }
+
+    ; Replaces the Store apps in Apps and writes the cache; the previous ones are kept when they can't be listed
+    static _ScanStoreApps() {
+        if (ApplicationProvider._storeTimer != "")
+            SetTimer(ApplicationProvider._storeTimer, 0)                   ; a manual rebuild also does a pending background one
+        ApplicationProvider._storeScanned := A_TickCount
         options := AppSettings.Feature("Applications"), exclude := ApplicationProvider._Exclude(options)
-        storeApps := []
-        for line in StrSplit(FileRead(csvFile, "UTF-8"), "`n", "`r") {
-            if (A_Index = 1 || !RegExMatch(line, '^"(.*)","(.*)"$', &m))    ; the first line is the header
-                continue
-            if (m[1] = "" || m[2] = "" || (exclude != "" && RegExMatch(m[1], exclude)))   ; an empty pattern matches everything
-                continue
-            if !InStr(m[2], "!")                                            ; only real Store apps of the form "package!app"; normal programs are already indexed from the Start menu
-                continue
-            storeApps.Push(ApplicationProvider._Entry(m[1], "shell:AppsFolder\" m[2], "", options))
+        start := A_TickCount, storeApps := []
+        try {
+            for item in ComObject("Shell.Application").NameSpace("shell:AppsFolder").Items() {
+                id := item.Path
+                if !InStr(id, "!")                                          ; only real Store apps of the form "package!app"; normal programs are already indexed from the Start menu
+                    continue
+                name := item.Name
+                if (name = "" || (exclude != "" && RegExMatch(name, exclude)))  ; an empty pattern matches everything
+                    continue
+                storeApps.Push(ApplicationProvider._Entry(name, "shell:AppsFolder\" id, "", options))
+            }
+        } catch as e {
+            Logger.Error("ApplicationProvider: cannot list store apps - " e.Message)
+            return
         }
-        try FileDelete(csvFile)
 
         apps := []
         for entry in ApplicationProvider.Apps
@@ -421,7 +417,7 @@ class ApplicationProvider {
             apps.Push(entry)
         ApplicationProvider.Apps := apps
         ApplicationProvider._SaveCache()
-        Logger.Debug("ApplicationProvider: indexed " storeApps.Length " store apps")
+        Logger.Debug("ApplicationProvider: indexed " storeApps.Length " store apps in " (A_TickCount - start) " ms")
     }
 
     static _MergeStoreApps(apps) {
