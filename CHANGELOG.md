@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.17]
+
+测试版。
+
+Test build.
+
+### 改进
+- 商店应用改为在程序内通过系统接口 (shell:AppsFolder) 列出, 不再启动隐藏的 PowerShell; 后台更新 (最多每小时一次) 等搜索窗口隐藏后才做, 手动重建索引时马上做
+
 ## [2026.11.11.16]
 
 测试版。
@@ -1379,7 +1388,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.17...HEAD
+[2026.11.11.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.16...2026.11.11.17
 [2026.11.11.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.15...2026.11.11.16
 [2026.11.11.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...2026.11.11.15
 [2026.11.11.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...2026.11.11.14

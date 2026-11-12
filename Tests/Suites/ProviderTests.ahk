@@ -1041,6 +1041,54 @@ class ProviderTests {
         }
     }
 
+    ; Store apps are listed through COM (shell:AppsFolder): they replace the previous ones, other apps are kept, Exclude applies.
+    ; Wine has no Store apps: only checked that nothing else is lost
+    static StoreAppsScan() {
+        eq := (n, a, e) => TestRunner.Equal("StoreAppsScan." n, a, e)
+        options := AppSettings.Feature("Applications"), savedExclude := options["Exclude"]
+        savedFile := ApplicationProvider.IndexFile, savedApps := ApplicationProvider.Apps, savedScanned := ApplicationProvider._storeScanned
+        ApplicationProvider.IndexFile := A_Temp "\ALTRunStoreAppsScan.json"
+        normal := Map("Title", "Editor", "Target", "C:\Tools\Editor.exe", "Detail", "", "Search", "")
+        old := Map("Title", "Old", "Target", "shell:AppsFolder\Old_1!App", "Detail", "", "Search", "")
+        store() {
+            list := []
+            for entry in ApplicationProvider.Apps
+                if (InStr(entry["Target"], "shell:AppsFolder\") = 1)
+                    list.Push(entry)
+            return list
+        }
+        try {
+            ApplicationProvider.Apps := [normal, old]
+            start := A_TickCount
+            ApplicationProvider._ScanStoreApps()
+            ms := A_TickCount - start
+            eq("other apps kept", ApplicationProvider.Apps.Length && ApplicationProvider.Apps[1] == normal, true)
+            if DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+                return
+            apps := store()
+            FileAppend("INFO StoreAppsScan: " apps.Length " store apps in " ms " ms`n", "*")
+            eq("listed", apps.Length > 0, true)
+            eq("previous replaced", InStr(JSON.Stringify(apps), "Old_1!App"), 0)
+            good := true
+            for entry in apps
+                good := good && InStr(entry["Target"], "!") > 0 && entry["Title"] != ""
+            eq("package!app targets with names", good, true)
+            if !apps.Length
+                return
+            name := apps[1]["Title"]
+            options["Exclude"] := "^\Q" name "\E$"
+            ApplicationProvider._ScanStoreApps()
+            excluded := true
+            for entry in store()
+                excluded := excluded && entry["Title"] != name
+            eq("Exclude applies", excluded, true)
+        } finally {
+            options["Exclude"] := savedExclude
+            ApplicationProvider.IndexFile := savedFile, ApplicationProvider.Apps := savedApps, ApplicationProvider._storeScanned := savedScanned
+            try FileDelete(A_Temp "\ALTRunStoreAppsScan.json")
+        }
+    }
+
     static AppIndexRefresh() {
         eq := (n, a, e) => TestRunner.Equal("AppIndexRefresh." n, a, e)
         root := A_Temp "\ALTRunAppIndexTest"
