@@ -613,7 +613,7 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.Hotkeys", 100)                         ; narrow label column: the list starts at the left edge (Caps Lock is on the Keyboard page)
         PrefsForm.List("Hotkeys", 500
             , [["Prefs.Col.Key", "Key", 150], ["Prefs.Col.Action", "Action", 200], ["Prefs.Col.WinTitle", "WinTitle", 190]]
-            , (owner, title, item, original) => HotkeyEditor.Edit(owner, item, original)   ; its own window: groups with descriptions, a summary line
+            , (owner, title, item, original) => HotkeyEditor.Edit(owner, item, original, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands"))   ; its own window: groups with descriptions, a summary line; the commands being edited (one just added can be chosen)
             , () => Map("Key", "", "Action", "Search", "SearchText", "", "WinTitle", ""), "", "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.HotkeyKeys(item)})
         PrefsForm.Note("Prefs.HotkeysNote")

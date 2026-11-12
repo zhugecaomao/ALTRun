@@ -62,6 +62,7 @@
 #Include %A_ScriptDir%\..\Src\UI\Hud.ahk
 #Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
 #Include %A_ScriptDir%\..\Src\UI\HotkeyEditor.ahk
+#Include %A_ScriptDir%\..\Src\UI\CommandPicker.ahk
 #Include %A_ScriptDir%\..\Src\UI\SyncEditor.ahk
 #Include %A_ScriptDir%\..\Src\UI\SyncPreview.ahk
 #Include %A_ScriptDir%\..\Src\UI\HotkeyBox.ahk

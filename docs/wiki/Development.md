@@ -26,7 +26,7 @@ Src\Core\           App (startup, single instance, shutdown), ErrorHandler (unca
                     ProviderRegistry, FileIndex, BackgroundWork (when background work may run)
 Src\UI\             SearchWindow (+ SearchSession, SearchKeys, ResultRows, SearchStatusBar, TypeAhead, SearchInputLanguage,
                     WindowFade), ResultActions (actions panel, edit, delete), PreferencesWindow (+ PrefsPages: the pages,
-                    PrefsForm: form helpers and layout constants), ItemEditor, HotkeyEditor (the custom hotkey window), HotkeyBox, LargeType, Hud (short notices),
+                    PrefsForm: form helpers and layout constants), ItemEditor, HotkeyEditor (the custom hotkey window), CommandPicker (choosing a hotkey's command), HotkeyBox, LargeType, Hud (short notices),
                     ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (sync task editor and sync window)
 Src\Providers\      Search features, one class per feature
 Src\Extensions\     Features outside the search window: SnippetExpander, QuickSwitch (file dialogs; + QuickSwitchPanel, QuickSwitchFavorites,

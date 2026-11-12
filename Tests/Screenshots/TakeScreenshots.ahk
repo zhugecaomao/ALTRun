@@ -87,6 +87,8 @@ class Shots {
             ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
             ["prefs-hotkeys",    "Light", "-Preferences 16", () => Shots.Preferences()],     ; Wiki: custom hotkeys
             ["hotkey-editor",    "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
+            ["hotkey-editor-command", "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 1), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (running a custom command)
+            ["command-picker",   "Light", "-Preferences 16", () => Shots.CommandPicker(), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (Choose Command)
             ["prefs-quickswitch", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
             ["prefs-dialogpanel", "Light", "-Preferences 18", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
             ["prefs-datestamp",  "Light", "-Preferences 19", () => Shots.Preferences()],     ; Wiki: date stamp
@@ -851,6 +853,34 @@ class Shots {
         settings["CustomCommands"].Push(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; A custom command and a hotkey that runs it, for the hotkey edit window and Choose Command
+    static CommandHotkey() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["CustomCommands"].Push(Map("Id", "np4k2x7q", "Title", "Edit in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "en", "Selection", "Text files"))
+        settings["Hotkeys"] := [Map("Key", "^!n", "Action", "custom:np4k2x7q", "WinTitle", "")]   ; the only one (the demo settings have no Hotkeys: the defaults)
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; "Choose..." in the edit window of the hotkey above: the list with that command selected
+    static CommandPicker() {
+        editor := Shots.SyncWindow("Edit...", "Edit Hotkey", 1)
+        button := 0
+        for ctrl in WinGetControlsHwnd(editor)
+            if (!button && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = "Choose...")
+                button := ctrl
+        if !button
+            throw Error("hotkey editor: Choose... button not found")
+        PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK, posted: the window is modal
+        window := WinWait("Choose Command ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 20)
+        if !window
+            throw Error("Choose...: window not shown")
+        WinSetAlwaysOnTop(1, window)
+        Sleep(800)
+        return window
     }
 
     ; Content types of a selection and commands that use them (made up), for Preferences → Selection
