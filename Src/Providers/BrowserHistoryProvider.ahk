@@ -26,12 +26,21 @@ class BrowserHistoryProvider {
     static Init() {                                                         ; nothing at start-up: read only when searched
     }
 
+    ; The search window hidden while in history search: leaving it too (with "keep the last search" the box keeps "h ..." and no other
+    ; search follows, so the pages would stay in memory until the next one). Showing it again reads them again when old
+    static Hidden() => BrowserHistoryProvider._Leave()
+
+    ; Leaving history search: the pages are let go ReloadMs later unless history search starts again
+    static _Leave() {
+        if BrowserHistoryProvider._active
+            SetTimer(BrowserHistoryProvider._releaseTimer, -BrowserHistoryProvider.ReloadMs)
+        BrowserHistoryProvider._active := false
+    }
+
     static Search(query) {
         options := AppSettings.Feature("BrowserHistory")
         if !query.MatchKeyword([options["Keyword"]], &rest, &keyword) {
-            if BrowserHistoryProvider._active
-                SetTimer(BrowserHistoryProvider._releaseTimer, -BrowserHistoryProvider.ReloadMs)
-            BrowserHistoryProvider._active := false
+            BrowserHistoryProvider._Leave()
             return []
         }
         if !query.HasRest                                                   ; "h" alone: the keyword's hint, Enter completes "h "

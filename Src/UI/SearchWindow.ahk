@@ -455,6 +455,7 @@ class SearchWindow {
                 WindowFade.Out(SearchWindow.Gui.Hwnd)                       ; the window hides at once as usual, leaving a shadow that fades out
             SearchWindow.Gui.Hide()
             SearchKeys.Unhook()
+            ProviderRegistry.WindowHidden()
             SearchWindow._PrepareLater()
         }
         LargeType.Close()

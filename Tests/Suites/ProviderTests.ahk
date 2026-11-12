@@ -2131,6 +2131,17 @@ class ProviderTests {
         BrowserHistoryProvider.Items := kept, BrowserHistoryProvider._loaded := A_TickCount, BrowserHistoryProvider._active := true
         BrowserHistoryProvider._releaseTimer.Call()
         eq("kept while searching history again", BrowserHistoryProvider.Items.Length > 0, true)
+        BrowserHistoryProvider._active := true                               ; the search window hidden in history search ("keep the last search": no other search follows)
+        savedProviders := ProviderRegistry.Providers
+        ProviderRegistry.Providers := [ApplicationProvider, BrowserHistoryProvider]   ; one without Hidden() is skipped
+        ProviderRegistry.WindowHidden()
+        ProviderRegistry.Providers := savedProviders
+        eq("hidden: leaves history search", BrowserHistoryProvider._active, false)
+        SetTimer(BrowserHistoryProvider._releaseTimer, 0)
+        kept := BrowserHistoryProvider.Items
+        BrowserHistoryProvider._releaseTimer.Call()
+        eq("hidden: pages let go", BrowserHistoryProvider.Items.Length "|" BrowserHistoryProvider._loaded, "0|0")
+        BrowserHistoryProvider.Items := kept
         BrowserHistoryProvider._active := false
         ; Chromium's time: microseconds since 1601-01-01 UTC
         offset := DateDiff(A_Now, A_NowUTC, "Seconds")

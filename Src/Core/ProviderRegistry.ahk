@@ -14,6 +14,7 @@
 ;   static Fallbacks(query)                    results when nothing else matched (web search engines)
 ;   static SearchOnly(text)                    the provider's own search mode (the file search mode)
 ;   static Warm() / IconItems()                see WarmUp / IconSpecs
+;   static Hidden()                            the search window was hidden (e.g. let go of data only its keyword mode needs)
 ; Disabled features (Features.<Id>.Enabled = 0) are neither initialized nor searched.
 ;
 ; Search() merges every feature's results, adds the Knowledge boost and sorts by score, keeping the best result per
@@ -74,6 +75,17 @@ class ProviderRegistry {
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".Warm failed - " e.Message)
             }
+        }
+    }
+
+    ; After the search window hides: each enabled feature with Hidden() (see the list at the top)
+    static WindowHidden() {
+        for provider in ProviderRegistry.Providers {
+            if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "Hidden")
+                continue
+            try provider.Hidden()
+            catch as e
+                Logger.Error("ProviderRegistry: " provider.Id ".Hidden failed - " e.Message)
         }
     }
 

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 浏览器历史搜索 (`h`): 在历史搜索里直接隐藏搜索窗口时 (开着 "保留上次搜索" 时常见), 读入的网页列表 1 分钟后也会释放, 不再一直占着几 MB 内存; 再打开时按需重新读取
+
 ## [2026.11.12.1]
 
 测试版。
@@ -1340,7 +1349,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...HEAD
+[2026.11.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...2026.11.12.2
 [2026.11.12.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...2026.11.12.1
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
