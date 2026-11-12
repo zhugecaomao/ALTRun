@@ -1,0 +1,53 @@
+# Downloads AutoHotkey v2 into tools/ahk (and the Ahk2Exe compiler into tools/ahk2exe when asked). This is the one place their versions
+# are pinned, so the tests, the integration checks, the benchmarks and the release build all run on the same interpreter, and each
+# archive is checked against its SHA256 before it is used.
+# Moving to a new version: change the tag and the hash together. The weekly Tests run uses "latest" (the newest stable v2 release,
+# no hash check), so a problem with a new release shows there before it is pinned.
+name: Set up AutoHotkey
+description: Download the pinned AutoHotkey v2 (and Ahk2Exe) and check their SHA256
+
+inputs:
+  ahk2exe:
+    description: "Also download the Ahk2Exe compiler (true / false)"
+    default: "false"
+  latest:
+    description: "Use the newest stable AutoHotkey v2 release instead of the pinned one (true / false; only for the weekly check)"
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Download AutoHotkey v2
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        AHK_TAG: v2.0.31
+        AHK_SHA256: ca1a595aca4528755d8d4cd7fed23d497a37bd9a0b6892072612d68dee1bd00a
+        AHK2EXE_TAG: Ahk2Exe1.1.37.02a2
+        AHK2EXE_SHA256: c29b8c3a5124850d79fc9e66e2ca79677c377d7f31631ad3022ba159c5d9e3be
+        WANT_AHK2EXE: ${{ inputs.ahk2exe }}
+        WANT_LATEST: ${{ inputs.latest }}
+      run: |
+        New-Item -ItemType Directory tools -Force | Out-Null
+        function Get-Release($repo, $tag, $pattern, $sha256, $dir) {
+          gh release download $tag --repo $repo --pattern $pattern --dir tools
+          if ($LASTEXITCODE -ne 0) { throw "Couldn't download $pattern of $repo $tag" }
+          $zip = (Get-ChildItem tools -Filter $pattern)[0].FullName
+          $actual = (Get-FileHash $zip -Algorithm SHA256).Hash
+          if ($sha256 -and $actual -ne $sha256) { throw "$repo $tag`: SHA256 is $actual, expected $sha256" }
+          Write-Host "$repo $tag (SHA256 $actual)"
+          Expand-Archive $zip $dir
+        }
+        $tag = $env:AHK_TAG; $hash = $env:AHK_SHA256
+        if ($env:WANT_LATEST -eq 'true') {
+          $tag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $tag) { throw "No AutoHotkey v2 release found" }
+          $hash = ''
+          Write-Host "Newest AutoHotkey v2: $tag (pinned: $env:AHK_TAG)"
+        }
+        Get-Release AutoHotkey/AutoHotkey $tag "AutoHotkey_*.zip" $hash tools/ahk
+        if (-not (Test-Path tools/ahk/AutoHotkey64.exe)) { throw "AutoHotkey64.exe missing" }
+        if ($env:WANT_AHK2EXE -eq 'true') {
+          Get-Release AutoHotkey/Ahk2Exe $env:AHK2EXE_TAG "Ahk2Exe*.zip" $env:AHK2EXE_SHA256 tools/ahk2exe
+          if (-not (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)) { throw "Ahk2Exe.exe missing" }
+        }

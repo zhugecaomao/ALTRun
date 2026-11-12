@@ -21,6 +21,10 @@ on:
 permissions:
   contents: write
 
+concurrency:                                                            # a new push to the branch stops the run for the old one; runs started by hand aren't stopped
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 jobs:
   # A push also counts the screenshot script changes that merging main brought in: shoot only when the branch itself changed it
   # (compared with where it left main), so a merge of main doesn't start a full run that only commits pixel noise
@@ -81,15 +85,8 @@ jobs:
           $proc = Start-Process python -ArgumentList '-m pip install --quiet --disable-pip-version-check --timeout 30 pillow' -PassThru -NoNewWindow -RedirectStandardOutput pip.log -RedirectStandardError pip.err
           "PIP_PID=$($proc.Id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Download AutoHotkey v2
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory tools -Force | Out-Null
-          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
-          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
-          Write-Host "AutoHotkey $ahkTag"
-          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
-          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+      - name: Download AutoHotkey v2                                      # pinned, the same as the release build (.github/actions/setup-ahk)
+        uses: ./.github/actions/setup-ahk
 
       # Windows 11's short context menu has no "Send to": the "sendto" scene (normal-scale group) needs the full one, so the VM is set to always show it
       # (only the current user's registry, only on the GitHub VM; takes effect after Explorer restarts). Screenshots go on as usual if it fails

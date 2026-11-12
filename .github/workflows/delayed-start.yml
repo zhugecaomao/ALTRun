@@ -10,6 +10,7 @@ on:
       - Src/Extensions/DelayedStart.ahk
       - Tests/Integration/DelayedStartCheck.ahk
       - .github/workflows/delayed-start.yml
+      - .github/actions/setup-ahk/**
   push:
     branches: [main]
     paths:
@@ -17,10 +18,15 @@ on:
       - Src/Extensions/DelayedStart.ahk
       - Tests/Integration/DelayedStartCheck.ahk
       - .github/workflows/delayed-start.yml
+      - .github/actions/setup-ahk/**
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:                                                            # a new commit on a PR stops the run for the old one; on main every commit keeps its run
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -31,13 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Download AutoHotkey v2
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory tools -Force | Out-Null
-          $ahkTag = 'v2.0.31'
-          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
-          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+      - name: Download AutoHotkey v2                                      # pinned, the same as the release build (.github/actions/setup-ahk)
+        uses: ./.github/actions/setup-ahk
 
       - name: As a standard user
         shell: pwsh

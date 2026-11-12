@@ -3,7 +3,7 @@
 # Development guide
 
 ## Environment
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later. Release builds and the two benchmarks use a pinned version, currently v2.0.31 (`$ahkTag` in `.github/workflows/release.yml`, `bench.yml` and `file-index-bench.yml`; change all three together); the unit tests on CI always use the latest stable release, so a new AutoHotkey version is tested before it is pinned
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later. Every workflow (unit tests, integration checks, benchmarks, release builds) uses one pinned version, currently v2.0.31 with Ahk2Exe 1.1.37.02a2, set with their SHA256 in `.github/actions/setup-ahk/action.yml` (change the tag and the hash together); the Tests workflow also runs on Mondays with the newest stable release, so a new AutoHotkey version is tested before it is pinned
 - Any editor; VS Code with the AutoHotkey v2 Language Support extension is recommended
 
 ```
@@ -214,7 +214,7 @@ Versions are dates. `App.Version` in `Src\Core\App.ahk` and `;@Ahk2Exe-SetVersio
    - Don't use `##` headings inside the section (the Release workflow takes everything up to the next `##`); remove the test build sections and their compare links; at the end of the file, `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD` and `[未发布]: .../compare/YYYY.MM.DD...HEAD`
 3. Merging to main runs a check build (`publish = false`) by itself; then run **Release** on main with `publish = true`
 
-On Windows the Release workflow: reads the version → downloads AutoHotkey and Ahk2Exe → runs the unit tests (when publishing; for a test build the Tests workflow tests the same commit) → compiles `ALTRun.exe` → signs it when SignPath is configured → checks the program icon → runs the upgrade test with a 2.x `ALTRun.ini` → runs the single instance test on the compiled program → packages `ALTRun_v<version>.zip`. With `publish = true` it then: takes that CHANGELOG section as the release notes → creates the GitHub release (GitHub provides the SHA256 that one-key updates verify) → updates the Scoop and winget manifests in `packaging/` and commits them to main → submits the new version to winget-pkgs when `WINGET_TOKEN` is configured (`packaging/Submit-Winget.ps1`: syncs the token owner's fork of winget-pkgs first, then opens the pull request with wingetcreate; if it fails, the **Submit to winget** workflow submits a released version again).
+On Windows the Release workflow: reads the version → downloads AutoHotkey and Ahk2Exe (pinned, SHA256 checked) → runs the unit tests (when publishing; for a test build the Tests workflow tests the same commit) → compiles `ALTRun.exe` → signs it when SignPath is configured → checks the program icon → runs the upgrade test with a 2.x `ALTRun.ini` → runs the single instance test on the compiled program → packages `ALTRun_v<version>.zip`. With `publish = true` it then: takes that CHANGELOG section as the release notes → creates the GitHub release (GitHub provides the SHA256 that one-key updates verify) → updates the Scoop and winget manifests in `packaging/` and commits them to main → submits the new version to winget-pkgs when `WINGET_TOKEN` is configured (`packaging/Submit-Winget.ps1`: syncs the token owner's fork of winget-pkgs first, then opens the pull request with wingetcreate; if it fails, the **Submit to winget** workflow submits a released version again).
 
 ## Benchmark
 GitHub → Actions → **Bench** → Run workflow: on a GitHub Windows VM, simulates daily use with real keystrokes and compares

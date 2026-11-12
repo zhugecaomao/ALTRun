@@ -1,14 +1,20 @@
-# Every PR and commit on main: unit tests and /validate (syntax check + #Warn warnings) on Windows
+# Every PR and commit on main: unit tests and /validate (syntax check + #Warn warnings) on Windows; on Mondays also with the newest AutoHotkey v2 release
 name: Tests
 
 on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: '7 2 * * 1'                                                   # Mondays 02:07 UTC: the tests on the newest AutoHotkey v2 release (.github/actions/setup-ahk)
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:                                                            # a new commit on a PR stops the run for the old one; on main every commit keeps its run
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -19,15 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Download AutoHotkey v2
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory tools -Force | Out-Null
-          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
-          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
-          Write-Host "AutoHotkey $ahkTag"
-          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
-          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+      - name: Download AutoHotkey v2                                      # pinned (.github/actions/setup-ahk); the weekly run tries the newest release
+        uses: ./.github/actions/setup-ahk
+        with:
+          latest: ${{ github.event_name == 'schedule' }}
 
       # The steps below stop a script that hangs (a dialog nobody closes) and print the dialog's text (Tests/Tools/RunAhk.ps1).
       # Checked here with a script that is stuck on a message box: stopped after 5 s, its text printed, exit code 124
