@@ -122,9 +122,9 @@ class PreferencesTests {
                 names .= each "|"
             eq("menu names: built-in, then the user's", names, "Text|Url|File|Folder|Files|-|PO|")
             box := {Value: "po, Files"}
-            menu := ItemEditor._TagMenu(field, box)
-            eq("menu checks what is in the box", menu[1].Checked "|" menu[5].Checked "|" menu[7].Checked "|" menu[6], "0|1|1|-")
-            menu[1].Click.Call("", "")
+            tagMenu := ItemEditor._TagMenu(field, box)
+            eq("menu checks what is in the box", tagMenu[1].Checked "|" tagMenu[5].Checked "|" tagMenu[7].Checked "|" tagMenu[6], "0|1|1|-")
+            tagMenu[1].Click.Call("", "")
             eq("menu click adds", box.Value, "po, Files, Text")
             eq("known types: no warning", SelectionActions.UnknownTypesWarning("text, PO"), "")
             eq("unknown type warned", SelectionActions.UnknownTypesWarning("PO, Invoice, PDFs"), "Not a content type: Invoice, PDFs. Add it in Preferences → Selection, or the command won't be shown for it.")
