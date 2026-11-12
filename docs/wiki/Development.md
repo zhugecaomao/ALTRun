@@ -269,6 +269,7 @@ GitHub → Actions → **Delayed start** checks delayed start against the real W
 - Screenshot tests check major windows across languages and themes; they do not verify every interaction.
 - Performance benchmarks simulate common operations on Windows and compare before / after timings; compare runs in the same environment.
 - Wiki automation detects missing pages and broken links, but cannot tell whether explanations are accurate or cover every setting. When settings change, check the code and both language versions item by item.
+- Runs of workflows whose file is gone (temporary probes) stay in the Actions sidebar. GitHub → Actions → **Clean up runs** (`.github/workflows/cleanup-runs.yml`) lists the workflows whose file is missing on every branch, with their runs; run it with "delete" on to delete those runs. Run it after removing a temporary workflow and its branch.
 
 ### Diagnosing key problems on a user's PC
 
