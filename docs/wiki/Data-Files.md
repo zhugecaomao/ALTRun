@@ -7,7 +7,7 @@
 |---|---|
 | Default (the program folder is writable, portable) | `Data\` in the program folder |
 | The program folder isn't writable (for example under `C:\Program Files`) | `%APPDATA%\ALTRun\Data\` |
-| You picked another folder in Preferences → Advanced → Data → Change Location | That folder (the `ALTRun.json` in the default location only keeps a `DataLocation` entry pointing there), see [Using the same settings on several PCs](FAQ#using-the-same-settings-on-several-pcs) |
+| You picked another folder in Preferences → Advanced → Data → Change Location | That folder (the `ALTRun.json` in the default location only keeps a `DataLocation` entry pointing there; it can have environment variables, for example `%OneDrive%\ALTRun\Data-%COMPUTERNAME%` for a folder per PC), see [Using the same settings on several PCs](FAQ#using-the-same-settings-on-several-pcs) |
 
 Preferences → Advanced → Data → "Open Data Folder" opens it.
 

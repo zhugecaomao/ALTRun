@@ -36,6 +36,8 @@ class AppSettings {
     static CurrentVersion := 6
     static Portable := Path.IsWritable(A_ScriptDir)                          ; the program folder is writable: data goes in the program folder (portable)
     static UserDir := A_AppData "\ALTRun"                                   ; used when the program folder isn't writable (e.g. installed in Program Files)
+    static DataLocation := ""                                                ; "DataLocation" as written (may have %environment variables%); "" = the default folder
+    static DataLocationMissing := ""                                         ; an environment variable in it this PC doesn't have: the default folder is used
     static DataDir := AppSettings.ResolveDataDir()
     static File := AppSettings.DataDir "\ALTRun.json"
     static ThemesDir := (AppSettings.Portable ? A_ScriptDir : AppSettings.UserDir) "\Themes"   ; the user's own theme files (see ThemeManager)
@@ -59,23 +61,28 @@ class AppSettings {
     ;   2. the program folder is writable: <program folder>\Data (portable, the default)
     ;   3. otherwise: %APPDATA%\ALTRun\Data
     static ResolveDataDir() {
-        if ((location := AppSettings.DataLocationIn(AppSettings.DefaultDataDir() "\ALTRun.json")) != "")
-            return location
-        return AppSettings.DefaultDataDir()
+        location := AppSettings.DataLocationIn(AppSettings.DefaultDataDir() "\ALTRun.json", &raw, &missing)
+        AppSettings.DataLocation := (location != "" || missing != "") ? raw : ""
+        AppSettings.DataLocationMissing := missing
+        return (location != "") ? location : AppSettings.DefaultDataDir()
     }
 
     static DefaultDataDir() => AppSettings.Portable ? A_ScriptDir "\Data" : AppSettings.UserDir "\Data"
 
     ; The folder given by "DataLocation" in the settings file ("" when missing, empty or the default location). Called at start-up:
-    ; it only looks for this entry without parsing the whole file (without a redirect the same file is fully read right after)
-    static DataLocationIn(settingsFile) {
+    ; it only looks for this entry without parsing the whole file (without a redirect the same file is fully read right after).
+    ; raw: the entry as written; missing: an environment variable in it this PC doesn't have (then "": the default folder is used)
+    static DataLocationIn(settingsFile, &raw := "", &missing := "") {
+        raw := "", missing := ""
         if !FileExist(settingsFile)
             return ""
         try {
             if !RegExMatch(SafeFile.ReadText(settingsFile), '"DataLocation"\s*:\s*("(?:[^"\\]|\\.)*")', &m)   ; a busy file is tried again
                 return ""
-            location := Trim(JSON.Parse("[" m[1] "]")[1])
-            if (location != "" && (location := Path.Full(location)) != AppSettings.DefaultDataDir())
+            raw := Trim(JSON.Parse("[" m[1] "]")[1])
+            if (raw = "" || (missing := Path.MissingEnv(raw)) != "")
+                return ""
+            if ((location := Path.Full(raw)) != AppSettings.DefaultDataDir())
                 return location
         }
         return ""
@@ -169,6 +176,8 @@ class AppSettings {
         } else {
             changed := true                                                 ; first run: write a file with the defaults
         }
+        if (AppSettings.DataLocationMissing != "")
+            Logger.Warn("AppSettings: DataLocation " AppSettings.DataLocation " has %" AppSettings.DataLocationMissing "%, which this PC doesn't have; the default data folder is used")
 
         if (data.Count && AppSettings._KeepPrevious(data))
             changed := true

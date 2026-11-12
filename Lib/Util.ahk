@@ -84,6 +84,18 @@ class Path {
         return StrGet(buf)
     }
 
+    ; The name of the first %variable% in text that isn't an environment variable on this PC ("" = all are): ExpandEnv leaves
+    ; those as they are, so "%OneDrive%\ALTRun" on a PC without OneDrive would become a folder named "%OneDrive%"
+    static MissingEnv(text) {
+        pos := 1
+        while (pos := RegExMatch(text, "%([^%\\/:*?`"<>|]+)%", &m, pos)) {
+            if (EnvGet(m[1]) = "")
+                return m[1]
+            pos += m.Len
+        }
+        return ""
+    }
+
     ; Whether a full path can be offered without waiting: local paths are checked (FileExist), paths on the network (\\server\share,
     ; a mapped network drive) are taken as they are, since FileExist waits for the network timeout when the server is offline
     ; (seconds). For lists such as the actions panel; the action itself reports a path that turns out to be missing

@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.11.12.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 高级 → 数据 → "更改位置..." 改成一个小对话框: 可编辑的下拉列表列出这台电脑上有的常用位置 (`%OneDrive%\ALTRun\Data`、每台电脑一个文件夹的 `%OneDrive%\ALTRun\Data-%COMPUTERNAME%`、工作或学校 OneDrive、Dropbox、文档、默认位置), 也可以直接输入或点 "浏览..."; 下面显示这个位置的意思 (共用 / 每台电脑一个 / 每个用户一个) 和在这台电脑上是哪个文件夹。环境变量按写的样子保存, 公司和家里的电脑共用一个 OneDrive 时可以各用各的文件夹
+- 数据页显示保存的位置 (带环境变量时) 和这台电脑上的实际文件夹, 下面加了使用环境变量的说明
+
+### 修复
+- 数据文件夹位置里的环境变量在这台电脑上不存在时 (例如没装 OneDrive), 不再在程序文件夹里建一个名叫 `%OneDrive%` 的文件夹, 而是用默认位置并在偏好设置里说明; 对话框里不能选这样的位置
+
 ## [2026.11.12]
 
 ### Summary
@@ -1327,7 +1340,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...HEAD
+[2026.11.12.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...2026.11.12.1
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09

@@ -35,7 +35,7 @@ class Shots {
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
-                         , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
+                         , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
     static Themes() {
@@ -102,6 +102,7 @@ class Shots {
             ["sync-preview",     "Light", "-Preferences 21", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
             ["prefs-usage",      "Light", "-Preferences 22", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
             ["prefs-advanced",   "Light", "-Preferences 23", () => Shots.Preferences()],     ; Wiki: data files
+            ["data-location",    "Light", "-Preferences 23", () => Shots.DataLocation(), () => Shots.DemoOneDrive()],   ; Wiki: FAQ, several PCs (Change Location..., its list open)
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -1050,6 +1051,39 @@ class Shots {
         finally DllCall("DeleteObject", "Ptr", hbm)
         Shots.Log("saved " outFile " (" (right - left) "x" (bottom - top) ")")
         return ""                                                           ; already saved
+    }
+
+    ; Preferences → Advanced → Change Location...: the dialog with the per-PC OneDrive entry chosen and its list open (the dialog and the list in one shot)
+    static DataLocation() {
+        prefs := Shots.Preferences()
+        button := 0
+        for ctrl in WinGetControlsHwnd(prefs)
+            if (!button && ControlGetVisible(ctrl) && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = "Change Location...")
+                button := ctrl
+        if !button
+            throw Error("advanced page: Change Location... button not found")
+        PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK, posted: the dialog is modal
+        window := WinWait("Data Folder Location ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 20)
+        if !window
+            throw Error("Change Location...: dialog not shown")
+        WinSetAlwaysOnTop(1, window)
+        Sleep(800)
+        combo := ""
+        for ctrl in WinGetControlsHwnd(window)
+            if (WinGetClass(ctrl) = "ComboBox")
+                combo := ctrl
+        ControlChooseString("%OneDrive%\ALTRun\Data-%COMPUTERNAME%", combo)                  ; the per-PC OneDrive entry: the dialog's lines follow it
+        Sleep(500)
+        SendMessage(0x14F, 1, 0, combo)                                     ; CB_SHOWDROPDOWN
+        Sleep(800)
+        list := WinExist("ahk_class ComboLBox ahk_pid " Shots.Pid)
+        return list ? [window, list] : window
+    }
+
+    ; A demo OneDrive folder for the data location dialog (the runner has no OneDrive): ALTRun started after this inherits %OneDrive%
+    static DemoOneDrive() {
+        DirCreate(Shots.DemoDir "\OneDrive")
+        EnvSet("OneDrive", Shots.DemoDir "\OneDrive")
     }
 
     static Preferences() {

@@ -619,10 +619,14 @@ class CoreTests {
         eq("full: env", Path.Full("%SystemRoot%\Temp"), A_WinDir "\Temp")
         eq("full: relative", Path.Full("..\Shared\Data", "C:\Apps\ALTRun"), "C:\Apps\Shared\Data")
         eq("full: builtin", Path.Full("A_AppData\ALTRun"), A_AppData "\ALTRun")
+        eq("missing env: none", Path.MissingEnv("%SystemRoot%\Temp\Data-%COMPUTERNAME%"), "")
+        eq("missing env: found", Path.MissingEnv("%SystemRoot%\%ALTRUN_TEST_NO_VAR%\Data"), "ALTRUN_TEST_NO_VAR")
+        eq("missing env: a lone percent sign", Path.MissingEnv("C:\100% done"), "")
         root := A_Temp "\ALTRun-location-test"
         try DirDelete(root, true)
         DirCreate(root "\user\Data")
-        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir, DataDir: AppSettings.DataDir}
+        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir, DataDir: AppSettings.DataDir
+            , Location: AppSettings.DataLocation, Missing: AppSettings.DataLocationMissing}
         AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; default location = root\user\Data
         settingsFile := root "\user\Data\ALTRun.json"
         eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
@@ -635,9 +639,16 @@ class CoreTests {
         FileDelete(settingsFile)
         FileAppend('{"DataLocation": "%SystemRoot%\\Temp"}', settingsFile, "UTF-8")
         eq("environment variable", AppSettings.ResolveDataDir(), A_WinDir "\Temp")
+        eq("environment variable: kept as written", AppSettings.DataLocation "|" AppSettings.DataLocationMissing, "%SystemRoot%\Temp|")
+        FileDelete(settingsFile)
+        FileAppend('{"DataLocation": "%ALTRUN_TEST_NO_VAR%\\ALTRun\\Data"}', settingsFile, "UTF-8")   ; e.g. %OneDrive% on a PC without OneDrive
+        eq("variable this PC doesn't have = default", AppSettings.ResolveDataDir(), root "\user\Data")
+        eq("variable this PC doesn't have: reported", AppSettings.DataLocation "|" AppSettings.DataLocationMissing
+            , "%ALTRUN_TEST_NO_VAR%\ALTRun\Data|ALTRUN_TEST_NO_VAR")
         FileDelete(settingsFile)
         FileAppend('{"DataLocation": ""}', settingsFile, "UTF-8")
         eq("empty = default", AppSettings.ResolveDataDir(), root "\user\Data")
+        eq("empty = default: nothing to show", AppSettings.DataLocation "|" AppSettings.DataLocationMissing, "|")
         FileDelete(settingsFile)
 
         AppSettings.DataDir := "E:\Elsewhere"                                ; settings from elsewhere in use: only the file at the default location changes
@@ -657,9 +668,42 @@ class CoreTests {
         AppSettings.SetDataLocation("E:\Sync\ALTRun")
         eq("set without a settingsFile: creates it", AppSettings.ResolveDataDir(), "E:\Sync\ALTRun")
 
+        AppSettings.SetDataLocation("%SystemRoot%\Temp")
+        eq("set with a variable: written as it is", JSON.Parse(FileRead(settingsFile, "UTF-8"))["DataLocation"], "%SystemRoot%\Temp")
+        AppSettings.SetDataLocation("%APPDATA%\ALTRun\Data")                 ; not the default here (UserDir is the test folder): kept
+        eq("set: another folder written with a variable", AppSettings.ResolveDataDir(), A_AppData "\ALTRun\Data")
+
         AppSettings.DataDir := saved.DataDir, AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
+        AppSettings.DataLocation := saved.Location, AppSettings.DataLocationMissing := saved.Missing
         eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")
+
+        ; The dialog of Preferences → Advanced → Change Location...: what each place means, the places offered on this PC
+        eq("kind: per computer", PrefsPages.DataFolderKind("%OneDrive%\ALTRun\Data-%COMPUTERNAME%"), "Computer")
+        eq("kind: per user", PrefsPages.DataFolderKind("D:\Sync\ALTRun\Data-%USERNAME%"), "User")
+        eq("kind: shared", PrefsPages.DataFolderKind("D:\Sync\ALTRun\Data"), "Shared")
+        eq("kind: the default as offered", PrefsPages.DataFolderKind(PrefsPages.DefaultDataFolderText()), "Default")
+        has := (list, value) => CoreTests._Has(list, value)
+        oneDrive := EnvGet("OneDrive"), business := EnvGet("OneDriveCommercial")
+        EnvSet("OneDrive", root), EnvSet("OneDriveCommercial", root)
+        presets := PrefsPages.DataFolderPresets()
+        eq("presets: OneDrive shared and per computer", has(presets, "%OneDrive%\ALTRun\Data") "|" has(presets, "%OneDrive%\ALTRun\Data-%COMPUTERNAME%"), "1|1")
+        eq("presets: work OneDrive only when it is another one", has(presets, "%OneDriveCommercial%\ALTRun\Data"), 0)
+        eq("presets: the default last", presets[presets.Length], PrefsPages.DefaultDataFolderText())
+        EnvSet("OneDrive"), EnvSet("OneDriveCommercial", root "\work")
+        presets := PrefsPages.DataFolderPresets()
+        eq("presets: no OneDrive on this PC", has(presets, "%OneDrive%\ALTRun\Data") "|" has(presets, "%OneDriveCommercial%\ALTRun\Data"), "0|1")
+        for each in presets
+            eq("presets: every one usable here (" each ")", Path.MissingEnv(each), "")
+        (oneDrive = "") ? EnvSet("OneDrive") : EnvSet("OneDrive", oneDrive)
+        (business = "") ? EnvSet("OneDriveCommercial") : EnvSet("OneDriveCommercial", business)
         DirDelete(root, true)
+    }
+
+    static _Has(list, value) {
+        for each in list
+            if (each == value)
+                return 1
+        return 0
     }
 
     ; Calculator: number bases and date arithmetic

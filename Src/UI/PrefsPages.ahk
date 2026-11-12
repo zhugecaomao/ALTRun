@@ -760,13 +760,26 @@ class PrefsPages {
 
         PrefsForm.Section("Prefs.Section.Data")
         ; The settings file is ALTRun.json in the data folder, so no extra line; an ellipsis in the middle when the path is too long (SS_PATHELLIPSIS), the full path on hover
-        folder := PrefsForm.Info("Prefs.Group.DataFolder", AppSettings.DataDir, " r1 cGray 0x8100")
+        ; With environment variables ("%OneDrive%\ALTRun\Data-%COMPUTERNAME%"): as written, and the folder on this PC below it
+        shown := (AppSettings.DataLocation != "") ? AppSettings.DataLocation : AppSettings.DataDir
+        folder := PrefsForm.Info("Prefs.Group.DataFolder", shown, " r1 cGray 0x8100")
         Win.AddTooltip(folder.Hwnd, AppSettings.DataDir)
+        if (AppSettings.DataLocationMissing != "" || shown != AppSettings.DataDir) {
+            PrefsForm._y -= 2
+            here := PrefsForm.Add("Text", "x" PrefsForm.InputX() " w" PrefsForm.InputW() " r1 0x8100"
+                . (AppSettings.DataLocationMissing != "" ? " cC42B1C" : " cGray")
+                , (AppSettings.DataLocationMissing != "") ? I18n.T("Prefs.DataFolderMissingNow", "%" AppSettings.DataLocationMissing "%", AppSettings.DataDir)
+                : I18n.T("Prefs.DataFolderHere", AppSettings.DataDir))
+            Win.AddTooltip(here.Hwnd, AppSettings.DataDir)
+            PrefsForm.Below(6, here)
+        }
         PrefsForm._y += 4
         PrefsForm.Buttons(""
             , ["Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile())]
             , ["Prefs.OpenDataFolder", (*) => PrefsPages._OpenFolder(AppSettings.DataDir)]
             , ["Prefs.ChangeDataFolder", (*) => PrefsPages._ChangeDataFolder()])
+        PrefsForm._y -= 6                                                   ; right below the description of the buttons
+        PrefsForm.Desc("", PrefsForm.InputX(), I18n.T("Prefs.DataFolderNote"))
 
         ; What a problem report needs: the debug log (moved here from the General page, next to opening the log) and system info
         PrefsForm.Section("Prefs.Group.Diagnostics")
@@ -899,17 +912,123 @@ class PrefsPages {
         MsgBox(I18n.T("Prefs.ResetDone"), App.Name, 64)
     }
 
-    ; Switch to another data folder (e.g. one in OneDrive shared by several PCs): copy the current settings and data there (if ALTRun settings are already there,
-    ; they can be used directly); the location goes into ALTRun.json at the default location ("DataLocation") and ALTRun reloads. The old folder is left alone, like a backup
+    ; "Change Location...": a small dialog with an editable list of typical places (environment variables allowed, so the same
+    ; entry works on every PC: %OneDrive%\ALTRun\Data-%COMPUTERNAME% gives each PC its own folder), Browse..., what the choice
+    ; means and where it is on this PC. A variable this PC doesn't have can't be accepted (it would become a folder named "%OneDrive%")
     static _ChangeDataFolder() {
-        current := AppSettings.DataDir
-        folder := DirSelect("*" current, 3, I18n.T("Prefs.DataFolderPrompt"))
-        if (folder = "")
-            return
-        folder := RTrim(folder, "\")
+        owner := PreferencesWindow.Gui, title := I18n.T("Prefs.DataFolderTitle"), state := {Text: ""}, w := 500
+        current := (AppSettings.DataLocation != "") ? AppSettings.DataLocation : PrefsPages.DefaultDataFolderText()
+        g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
+        g.SetFont("s9", ThemeManager.FontName())
+        g.MarginX := 14, g.MarginY := 12
+        g.AddText("xm w" w, I18n.T("Prefs.DataFolderPrompt"))
+        box := g.AddComboBox("xm y+6 w" (w - 90), PrefsPages.DataFolderPresets())
+        box.Text := current
+        browseButton := g.AddButton("x+10 yp-1 w80", I18n.T("Prefs.DataFolderBrowse"))
+        meaning := g.AddText("xm y+10 w" w " cGray", "")
+        here := g.AddText("xm y+4 w" w " r1 0x8100", "")                  ; SS_PATHELLIPSIS: a long path keeps its end
+        g.SetFont("s8")
+        g.AddText("xm y+10 w" w " cGray", I18n.T("Prefs.DataFolderVars"))
+        g.SetFont("s9")
+        ok := g.AddButton("x" (14 + w - 170) " y+14 w80 Default", I18n.T("Prefs.OK"))
+        g.AddButton("x+10 yp w80", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => g.Destroy())
+        box.OnEvent("Change", (*) => SetTimer(Update, -1))                ; picked from the list: the edit text changes after this event
+        browseButton.OnEvent("Click", Browse)
+        ok.OnEvent("Click", Accept)
+        g.OnEvent("Escape", (*) => g.Destroy())
+        g.OnEvent("Close", (*) => g.Destroy())
+        Update()
+        owner.Opt("+Disabled")
+        g.Show()
+        WinWaitClose(g.Hwnd)
+        owner.Opt("-Disabled")
+        try WinActivate("ahk_id " owner.Hwnd)
+        if (state.Text != "")
+            PrefsPages._UseDataFolder(state.Text)
+        return
+
+        Update() {
+            try {                                                           ; the timer can come after the dialog was closed
+                if !WinExist("ahk_id " g.Hwnd)
+                    return
+            } catch
+                return
+            text := Trim(box.Text)
+            if (text = "" || (missing := Path.MissingEnv(text)) != "") {
+                meaning.Value := ""
+                here.SetFont("cC42B1C")
+                here.Value := (text = "") ? "" : I18n.T("Prefs.DataFolderMissing", "%" missing "%")
+                ok.Enabled := false
+                return
+            }
+            switch PrefsPages.DataFolderKind(text) {                        ; the keys written out, for I18nUnused
+                case "Default":  meaning.Value := I18n.T("Prefs.DataFolderKind.Default")
+                case "Computer": meaning.Value := I18n.T("Prefs.DataFolderKind.Computer")
+                case "User":     meaning.Value := I18n.T("Prefs.DataFolderKind.User")
+                default:         meaning.Value := I18n.T("Prefs.DataFolderKind.Shared")
+            }
+            here.SetFont("cDefault")
+            here.Value := I18n.T("Prefs.DataFolderHere", Path.Full(text))
+            ok.Enabled := true
+        }
+        Browse(*) {
+            g.Opt("+OwnDialogs")
+            start := Path.MissingEnv(box.Text) = "" && Trim(box.Text) != "" ? Path.Full(box.Text) : AppSettings.DataDir
+            folder := DirSelect("*" start, 3, I18n.T("Prefs.DataFolderPrompt"))
+            if (folder = "")
+                return
+            box.Text := RTrim(folder, "\")
+            Update()
+        }
+        Accept(*) {
+            text := Trim(box.Text)
+            if (text = "" || Path.MissingEnv(text) != "")
+                return
+            state.Text := text
+            g.Destroy()
+        }
+    }
+
+    ; The places offered in the data folder dialog: only those whose environment variable / folder exists on this PC; the default folder last
+    static DataFolderPresets() {
+        list := []
+        oneDrive := EnvGet("OneDrive"), business := EnvGet("OneDriveCommercial"), profile := EnvGet("USERPROFILE")
+        if (oneDrive != "")
+            list.Push("%OneDrive%\ALTRun\Data", "%OneDrive%\ALTRun\Data-%COMPUTERNAME%")
+        if (business != "" && business != oneDrive)                       ; with only a work or school account, %OneDrive% is that one too
+            list.Push("%OneDriveCommercial%\ALTRun\Data")
+        if (profile != "" && DirExist(profile "\Dropbox"))                ; Dropbox has no environment variable; this is its usual folder
+            list.Push("%USERPROFILE%\Dropbox\ALTRun\Data", "%USERPROFILE%\Dropbox\ALTRun\Data-%COMPUTERNAME%")
+        if (profile != "" && A_MyDocuments = profile "\Documents")       ; not when Documents was moved (into OneDrive, by the company...)
+            list.Push("%USERPROFILE%\Documents\ALTRun")
+        list.Push(PrefsPages.DefaultDataFolderText())
+        return list
+    }
+
+    ; The default data folder as it is written in the dialog (portable: relative to the program folder)
+    static DefaultDataFolderText() => AppSettings.Portable ? "Data" : "%APPDATA%\ALTRun\Data"
+
+    ; What a data folder means, for the gray line in the dialog: Default / Computer (one per PC) / User (one per Windows user) / Shared
+    static DataFolderKind(text) {
+        if (Path.Full(text) = AppSettings.DefaultDataDir())
+            return "Default"
+        if InStr(text, "%COMPUTERNAME%")
+            return "Computer"
+        if InStr(text, "%USERNAME%")
+            return "User"
+        return "Shared"
+    }
+
+    ; Switch to the data folder text (as written, may have environment variables): copy the current settings and data there (if ALTRun settings
+    ; are already there, they can be used directly); text goes into ALTRun.json at the default location ("DataLocation") and ALTRun reloads.
+    ; The old folder is left alone, like a backup. The same folder written another way (an environment variable instead of the full path) is only saved
+    static _UseDataFolder(text) {
+        current := AppSettings.DataDir, folder := Path.Full(text)
         owner := " Owner" PreferencesWindow.Gui.Hwnd
-        if (folder = current)
+        if (folder = current) {
+            try AppSettings.SetDataLocation(text), AppSettings.DataLocation := (folder = AppSettings.DefaultDataDir()) ? "" : text
             return
+        }
         if (InStr(folder "\", current "\") = 1 || InStr(current "\", folder "\") = 1)
             return MsgBox(I18n.T("Prefs.DataFolderNested"), App.Name, "Icon!" owner)
         useExisting := false
@@ -928,7 +1047,7 @@ class PrefsPages {
                 AppSettings.Save(), Knowledge.Save(), Usage.Save(), ClipboardProvider.Save()
                 DirCopy(current, folder, true)
             }
-            AppSettings.SetDataLocation(folder)
+            AppSettings.SetDataLocation(text)
         } catch as e {
             return MsgBox(I18n.T("Prefs.DataFolderFailed", folder, e.Message), App.Name, "Icon!")
         }
