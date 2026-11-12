@@ -1561,6 +1561,15 @@ Func | PTTools | PT Tools (AHK)=99
             all := Usage.Summary(0)
             eq("count item", all["CustomCommands"] "|" all["WebSearch"] "|" all["FileSearch"] "|" all.Has("Help"), "1|1|1|0")
 
+            Usage.Days := Map()
+            Usage.CountItem({Provider: "System", Kind: ""})                 ; run from the search window: the feature and the command
+            Usage.CountCommand("Lock")
+            Usage.CountCommand("Lock")                                      ; from a hotkey: only the command
+            Usage.CountCommand("")
+            all := Usage.Summary(0)
+            eq("count command", all["System"] "|" all["System:Lock"] "|" all.Count, "1|2|2")
+            eq("commands not in total", Usage.Total(all) "|" Usage.Daily(1)[1][2], "1|1")
+
             valid := Usage.ValidDays(Map("2026-11-01", Map("A", 2, "B", "x"), "bad", Map("A", 1), "2026-11-02", "not a map"))
             eq("load: only usable days and counts", valid.Count "|" valid["2026-11-01"].Count "|" valid["2026-11-01"]["A"], "1|1|2")
             eq("load: not a map", Usage.ValidDays([1, 2]).Count, 0)

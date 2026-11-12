@@ -145,6 +145,7 @@ class SystemProvider {
                 if (MsgBox(I18n.T("Sys.ConfirmTitle", command["Title"]), App.Name, "YesNo Icon?") != "Yes")
                     return
             }
+            Usage.CountCommand(id)                                          ; per command, also from hotkeys (T22: which commands are used)
             return command["Run"].Call()
         }
         Logger.Error("SystemProvider: unknown command " id)

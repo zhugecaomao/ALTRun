@@ -199,6 +199,6 @@ Preferences → Usage (like Alfred's Usage):
 - Uses per day for the last 30 days (bar chart)
 - Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, Quick Switch, date stamp)
 
-Only counts are kept, never what you typed or opened. They're saved in `Data\Usage.json` (the last 400 days). The "Clear Usage Statistics" button starts over.
+Only counts are kept, never what you typed or opened; system commands are also counted one by one (also when run with a hotkey; not shown on the page yet). They're saved in `Data\Usage.json` (the last 400 days). The "Clear Usage Statistics" button starts over.
 
 ![Preferences → Usage](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-usage.png)
