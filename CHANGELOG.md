@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.18]
+
+测试版。
+
+Test build.
+
+### 改进
+- 自动更新解压只用 Windows 自带的 tar.exe, 去掉 PowerShell (Expand-Archive) 后备; 这样 ALTRun 自己不会再在后台运行 PowerShell (运行你的 .ps1 脚本不变)。解压失败时和以前一样提示打开下载页手动更新
+
 ## [2026.11.11.17]
 
 测试版。
@@ -1388,7 +1397,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.18...HEAD
+[2026.11.11.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.17...2026.11.11.18
 [2026.11.11.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.16...2026.11.11.17
 [2026.11.11.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.15...2026.11.11.16
 [2026.11.11.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...2026.11.11.15
