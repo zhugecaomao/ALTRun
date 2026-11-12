@@ -2151,6 +2151,47 @@ class ExtensionTests {
     }
 
     ; The user's content types of a selection and the custom commands shown first for them (#434)
+    ; {hwnd} / {pid} in a command shown for a selection (the Ctrl+Alt+\ panel): kept in the row, filled in when it runs with the window
+    ; in front before the panel opened (App.PreviousWindow, the window the selection came from), next to the selection itself
+    static SelectionWindowArgs() {
+        eq := (n, a, e) => TestRunner.Equal("SelectionWindowArgs." n, a, e)
+        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedCommands := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["SelectionTypes"] := []
+        AppSettings.Data["CustomCommands"] := [
+            Map("Title", "Info", "Type", "Command", "Target", "C:\Tools\info.exe", "Arguments", "{hwnd} {pid} {query}", "Keyword", "", "Selection", "Text"),
+            Map("Title", "Send", "Type", "File", "Target", "C:\Tools\send.exe", "Arguments", "--to {hwnd}", "Keyword", "", "Selection", "File")
+        ]
+        g := Gui("+ToolWindow", "ALTRun selection window test")
+        g.Show("x-3000 y-3000 w120 h40 NoActivate")
+        hwnd := g.Hwnd, pid := DllCall("GetCurrentProcessId")
+        savedPrevious := App.PreviousWindow
+        savedOpen := ActionCatalog.GetOwnPropDesc("OpenFile"), opened := ""
+        ActionCatalog.DefineProp("OpenFile", {Call: (this, target, arguments := "") => opened := target "|" arguments})
+        try {
+            info := SelectionActions.ItemFor({Text: "hello"}).LeadActions[1]
+            eq("text: placeholders kept in the row", info.WindowArgs "|" info.Arguments, "1|{hwnd} {pid} hello")
+            App.PreviousWindow := hwnd
+            info.OnRun.Call(info)
+            eq("text: filled when run", opened, "C:\Tools\info.exe|" hwnd " " pid " hello")
+            fileAction := SelectionActions.ItemFor({Files: ["C:\a\my file.pdf"]}).LeadActions[1]
+            eq("file: placeholder kept, selection appended", fileAction.WindowArgs "|" fileAction.Arguments, '1|--to {hwnd} "C:\a\my file.pdf"')
+            opened := ""
+            fileAction.OnRun.Call(fileAction)
+            eq("file: filled when run", opened, 'C:\Tools\send.exe|--to ' hwnd ' "C:\a\my file.pdf"')
+            g.Destroy()
+            opened := ""
+            info.OnRun.Call(info)
+            eq("window gone: empty", opened, "C:\Tools\info.exe|  hello")
+        } finally {
+            ActionCatalog.DefineProp("OpenFile", savedOpen)
+            App.PreviousWindow := savedPrevious
+            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["CustomCommands"] := savedCommands
+            try g.Destroy()
+        }
+    }
+
     static SelectionCommands() {
         eq := (n, a, e) => TestRunner.Equal("SelectionCommands." n, a, e)
         ok := (n, c) => TestRunner.True("SelectionCommands." n, c)
