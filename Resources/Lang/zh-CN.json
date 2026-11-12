@@ -334,6 +334,7 @@
   "Prefs.DataFolderExisting": "{1} 里已经有 ALTRun 的设置。\n\n是: 使用那个文件夹里的设置\n否: 用现在的设置覆盖它\n\n然后 ALTRun 重新载入。原来的文件夹保持不变。",
   "Prefs.DataFolderFailed": "无法使用 {1}:\n\n{2}",
   "Prefs.DataFolderTitle": "数据文件夹位置",
+  "Prefs.DataFolderLabel": "ALTRun 的设置和数据放在:",
   "Prefs.DataFolderBrowse": "浏览...",
   "Prefs.DataFolderHere": "这台电脑上是: {1}",
   "Prefs.DataFolderMissing": "这台电脑没有 {1}。",

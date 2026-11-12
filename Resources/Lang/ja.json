@@ -334,6 +334,7 @@
   "Prefs.DataFolderExisting": "{1} には既に ALTRun の設定があります。\n\nはい: そのフォルダーの設定を使用\nいいえ: 現在の設定で上書き\n\nその後 ALTRun を再読み込みします。元のフォルダーはそのまま残ります。",
   "Prefs.DataFolderFailed": "{1} を使用できません:\n\n{2}",
   "Prefs.DataFolderTitle": "データフォルダーの場所",
+  "Prefs.DataFolderLabel": "ALTRun の設定とデータを保存するフォルダー:",
   "Prefs.DataFolderBrowse": "参照...",
   "Prefs.DataFolderHere": "このコンピューター: {1}",
   "Prefs.DataFolderMissing": "このコンピューターには {1} がありません。",

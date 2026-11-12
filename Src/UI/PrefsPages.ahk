@@ -778,7 +778,7 @@ class PrefsPages {
             , ["Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile())]
             , ["Prefs.OpenDataFolder", (*) => PrefsPages._OpenFolder(AppSettings.DataDir)]
             , ["Prefs.ChangeDataFolder", (*) => PrefsPages._ChangeDataFolder()])
-        PrefsForm._y -= 6                                                   ; right below the description of the buttons
+        PrefsForm._y -= 2                                                   ; below the description of the buttons, a little apart from it
         PrefsForm.Desc("", PrefsForm.InputX(), I18n.T("Prefs.DataFolderNote"))
 
         ; What a problem report needs: the debug log (moved here from the General page, next to opening the log) and system info
@@ -921,7 +921,7 @@ class PrefsPages {
         g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
-        g.AddText("xm w" w, I18n.T("Prefs.DataFolderPrompt"))
+        g.AddText("xm w" w, I18n.T("Prefs.DataFolderLabel"))
         box := g.AddComboBox("xm y+6 w" (w - 90), PrefsPages.DataFolderPresets())
         box.Text := current
         browseButton := g.AddButton("x+10 yp-1 w80", I18n.T("Prefs.DataFolderBrowse"))

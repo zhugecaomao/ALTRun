@@ -1247,6 +1247,7 @@ class I18n {
         s["Prefs.DataFolderNested"]    := "The new folder cannot be inside the current data folder, or the other way round."
         s["Prefs.DataFolderFailed"]    := "Could not use {1}:`n`n{2}"
         s["Prefs.DataFolderTitle"]     := "Data Folder Location"
+        s["Prefs.DataFolderLabel"]     := "Folder for ALTRun's settings and data:"
         s["Prefs.DataFolderBrowse"]    := "Browse..."
         s["Prefs.DataFolderHere"]      := "This computer: {1}"
         s["Prefs.DataFolderMissing"]   := "This computer has no {1}."
