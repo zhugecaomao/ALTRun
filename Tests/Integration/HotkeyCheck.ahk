@@ -11,6 +11,10 @@
 ;   deleted     Ctrl+Alt+F11 points to a command that doesn't exist: nothing runs, ALTRun's log says so
 ;   script      Ctrl+Alt+F12 runs a script with "@altrun.selection Text" (in <appDir>\Scripts) while text is selected: the script writes
 ;               its first argument to its marker, so the marker holds that text, and the clipboard is what it was before
+;   alt         double-tap left Alt (DoubleTap = LAlt, #501) over a window with a menu bar: the search window shows; after Esc the
+;               window isn't left in menu mode (a lone Alt opens its menu bar, the second tap closes it again)
+;   alt-once    one Alt tap doesn't show the search window
+;   alt-space   Alt+Space (the main hotkey) shows it, a lone Alt tap right after doesn't toggle it again
 ; Each is tried Rounds times. Prints one line per round (PASS / FAIL) and ALTRun's log on failure; the exit code is the number of
 ; failed rounds.
 ;
@@ -27,7 +31,7 @@ global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 3
 global Work := "C:\HotkeyCheck\work", LogFile := A_Temp "\ALTRun.log"
 global PlainMarker := Work "\plain.txt", QueryMarker := Work "\query.txt", ScriptMarker := Work "\script.txt"
 global ScriptsDir := AppDir "\Scripts"                                    ; a portable copy (its folder is writable): the Scripts folder is in it
-global Failures := 0, AppPid := 0, Source := "", SourceEdit := ""
+global Failures := 0, AppPid := 0, Source := "", SourceEdit := "", MenuPid := 0, MenuWin := 0
 OnError(Crashed)
 
 try {
@@ -40,6 +44,12 @@ try {
         Deleted(A_Index)
     Loop Rounds
         ScriptSelection(A_Index)
+    Loop Rounds
+        DoubleTapAlt(A_Index)
+    Loop Rounds
+        SingleAlt(A_Index)
+    Loop Rounds
+        AltSpaceThenAlt(A_Index)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -58,12 +68,13 @@ Crashed(e, *) {
 }
 
 Setup() {
-    global AppPid, Source, SourceEdit
+    global AppPid, Source, SourceEdit, MenuPid, MenuWin
     try DirDelete(Work, true)
     DirCreate(Work)
     cmd := A_WinDir "\System32\cmd.exe"                                     ; full paths: nothing depends on the working folder
     settings := Map("SchemaVersion", 7
-        , "General", Map("Language", "en", "LaunchAtLogin", 0, "CheckForUpdates", 0, "SaveLog", 1, "SendToMenu", 0, "StartMenuShortcut", 0)
+        , "General", Map("Language", "en", "LaunchAtLogin", 0, "CheckForUpdates", 0, "SaveLog", 1, "SendToMenu", 0, "StartMenuShortcut", 0
+            , "DoubleTap", "LAlt")
         , "Window", Map("ShowTips", 0)
         , "CustomCommands", [
             Map("Id", "plain001", "Title", "Write plain marker", "Type", "Command", "Target", cmd, "Arguments", '/c echo plain> "' PlainMarker '"', "Keyword", "")
@@ -94,6 +105,13 @@ Setup() {
     Source := Gui("+AlwaysOnTop", "HotkeyCheck source")                     ; the program with the selection: an edit box of this script
     SourceEdit := Source.AddEdit("w300 r1", "hello123")
     Source.Show()
+    ; a window with a menu bar, in a process of its own (a lone Alt opens the menu bar, like in Notepad: its menu loop would hold this script)
+    FileAppend('#NoTrayIcon`ng := Gui("+AlwaysOnTop", "HotkeyCheck menu")`nm := Menu(), m.Add("Item", (*) => 0)`n'
+        . 'g.MenuBar := MenuBar(), g.MenuBar.Add("&File", m)`ng.AddEdit("w300 r1")`ng.OnEvent("Close", (*) => ExitApp())`ng.Show()`n'
+        , Work "\menu.ahk", "UTF-8")
+    Run('"' A_AhkPath '" "' Work '\menu.ahk"', Work, , &MenuPid)
+    if !(MenuWin := WinWait("HotkeyCheck menu ahk_pid " MenuPid, , 10))
+        throw Error("the menu window didn't open")
     Say("INFO ALTRun pid " AppPid ", " Rounds " round(s) each")
 }
 
@@ -148,6 +166,78 @@ ScriptSelection(n) {
         , "marker: " (text = "" ? "not written in 5 s" : Trim(text, "`r`n ")) ", clipboard: " clip)
 }
 
+; Double-tap left Alt (hook hotkeys ignore other scripts' keys at SendLevel 0: sent at level 1, like a person's)
+DoubleTapAlt(n) {
+    FrontMenu()
+    TapAlt(), Sleep(120), TapAlt()
+    shown := WinWait(SearchTitle(), , 3)
+    if shown {
+        SendEvent("{Esc}")
+        WinWaitClose(shown, , 3)
+    }
+    Sleep(500)
+    inMenu := InMenuMode(MenuWin), back := WinActive(MenuWin)
+    Result("alt", n, shown && !inMenu && back, (shown ? "shown" : "not shown in 3 s") (inMenu ? ", the window was left in menu mode" : "")
+        . (back ? "" : ", the window didn't get the focus back"))
+    LeaveMenu()
+}
+
+SingleAlt(n) {
+    FrontMenu()
+    TapAlt()
+    Sleep(900)                                                              ; longer than a double tap may take
+    shown := WinExist(SearchTitle())
+    if shown {
+        SendEvent("{Esc}")
+        WinWaitClose(shown, , 3)
+    }
+    Result("alt-once", n, !shown, shown ? "one tap showed the search window" : "not shown")
+    LeaveMenu()
+}
+
+AltSpaceThenAlt(n) {
+    FrontMenu()
+    SendLevel(1), SendEvent("!{Space}"), SendLevel(0)
+    shown := WinWait(SearchTitle(), , 3)
+    still := false
+    if shown {
+        Sleep(150), TapAlt(), Sleep(700)
+        still := WinExist(SearchTitle())
+        SendEvent("{Esc}")
+        WinWaitClose(shown, , 3)
+    }
+    Result("alt-space", n, shown && still, !shown ? "Alt+Space didn't show it in 3 s" : still ? "still shown after a lone Alt" : "a lone Alt after Alt+Space hid it")
+    LeaveMenu()
+}
+
+TapAlt() {
+    SendLevel(1)
+    SendEvent("{LAlt}")
+    SendLevel(0)
+}
+
+SearchTitle() => "ALTRun ahk_class AutoHotkeyGUI ahk_pid " AppPid
+
+; Whether hwnd's thread is in a menu loop (GetGUIThreadInfo: GUI_INMENUMODE | GUI_SYSTEMMENUMODE | GUI_POPUPMENUMODE)
+InMenuMode(hwnd) {
+    info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)
+    NumPut("UInt", info.Size, info)
+    tid := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt")
+    return tid && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info) && (NumGet(info, 4, "UInt") & 0x1C) != 0
+}
+
+LeaveMenu() {                                                               ; a failed round mustn't leave the menu open for the next
+    if InMenuMode(MenuWin)
+        SendEvent("{Esc}{Esc}")
+}
+
+FrontMenu() {
+    WinActivate(MenuWin)
+    if !WinWaitActive(MenuWin, , 3)
+        throw Error("the menu window didn't come to the front")
+    Sleep(200)
+}
+
 FrontSource() {
     WinActivate(Source.Hwnd)
     if !WinWaitActive(Source.Hwnd, , 3)
@@ -194,6 +284,8 @@ LogSince(offset) {
 TearDown() {
     global AppPid
     try Source.Destroy()
+    if MenuPid
+        try ProcessClose(MenuPid)
     if AppPid {
         DetectHiddenWindows(true)
         try WinClose("ahk_class AutoHotkey ahk_pid " AppPid)

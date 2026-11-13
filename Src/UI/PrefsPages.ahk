@@ -12,8 +12,8 @@ class PrefsPages {
         PrefsForm.Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
         sides := PrefsForm.Check("General.HotkeySides", "Prefs.HotkeySides")    ; how the hotkey boxes record, on every page: takes effect at once
         sides.OnEvent("Click", (ctrl, *) => HotkeyBox.Sides := ctrl.Value = 1)
-        PrefsForm.Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift", "LCtrl", "RCtrl", "LShift", "RShift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")
-                , I18n.T("Prefs.DoubleTap.LCtrl"), I18n.T("Prefs.DoubleTap.RCtrl"), I18n.T("Prefs.DoubleTap.LShift"), I18n.T("Prefs.DoubleTap.RShift")]]
+        PrefsForm.Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift", "LCtrl", "RCtrl", "LShift", "RShift", "LAlt"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")
+                , I18n.T("Prefs.DoubleTap.LCtrl"), I18n.T("Prefs.DoubleTap.RCtrl"), I18n.T("Prefs.DoubleTap.LShift"), I18n.T("Prefs.DoubleTap.RShift"), I18n.T("Prefs.DoubleTap.LAlt")]]
             , ["General.Language", "Prefs.Language", "K", "choice", PrefsPages._LanguageValues(), PrefsPages._LanguageLabels()])
         PrefsForm.Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]

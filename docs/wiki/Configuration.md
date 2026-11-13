@@ -63,7 +63,7 @@ Preferences → General (`SelectionHotkey` is on the "Selection" page).
 |---|---|---|
 | Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](Hotkeys#setting-hotkeys)) |
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
-| DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary): the same key twice, so left Shift then right Shift doesn't count; `LCtrl` / `RCtrl` / `LShift` / `RShift` = only the left or right one; empty = off |
+| DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary): the same key twice, so left Shift then right Shift doesn't count; `LCtrl` / `RCtrl` / `LShift` / `RShift` = only the left or right one; `LAlt` = the left Alt (not the right one: it is AltGr on many keyboards; a lone Alt press also opens the menu bar of some programs, which the second press closes again); empty = off |
 | HotkeySides | 0 | 1 = hotkeys recorded in Preferences keep the side of `Ctrl` / `Alt` / `Shift` / `Win` you press (`<!Space` = left Alt + Space only), see [Setting hotkeys](Hotkeys#setting-hotkeys); hotkeys already set don't change |
 | SelectionHotkey | `^!\` | Press it after selecting text / files / a URL to open their actions directly (Ctrl+Alt+\), see [Actions on selected content](Usage#actions-on-selected-content); empty = off |
 | Language | `auto` | `auto` follows the Windows display language, or a language code: `en` / `zh-CN` (Simplified Chinese) / `zh-TW` (Traditional Chinese) / `ja`; apart from English, each language is a file in `Resources\Lang\` (the old `zh` means `zh-CN`) |

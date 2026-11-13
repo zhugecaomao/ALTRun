@@ -403,6 +403,7 @@
   "Prefs.DoubleTap.RCtrl": "右 Ctrl",
   "Prefs.DoubleTap.LShift": "左 Shift",
   "Prefs.DoubleTap.RShift": "右 Shift",
+  "Prefs.DoubleTap.LAlt": "左 Alt",
   "Prefs.Edit": "編輯...",
   "Prefs.EditJson": "編輯 ALTRun.json...",
   "Prefs.EditJson.Desc": "所有設定都在裡面, 包括這裡沒有的; 儲存後 ALTRun 自動重新載入",
