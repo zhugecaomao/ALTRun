@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.12.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置左边的页面列表分成几组, 组和组之间留一点空隙并画一条细线: 常规 (General、Search Window、Keyboard、Appearance、Features) / 搜索 (Applications、File Search、Search Sources、Web Search、Calculator、Clipboard、Snippets) / 命令和触发 (Custom Commands、Scripts、Selection、Hotkeys) / 窗口工具 (Quick Switch、Dialog Panel、Date Stamp) / 自动化 (Delayed Start、Folder Sync) / Usage、Advanced。页面顺序跟着分组调整 (Web Search、Calculator、Clipboard、Snippets 都放进搜索组, Scripts 和 Selection 挪到 Custom Commands 后面); 窗口大小不变, 每行稍微矮一点
+- 点 **应用** 后重新打开偏好设置时按页名找回原来那一页 (命令行 `-Preferences Hotkeys`, 以前是页码), 以后调整页面顺序也不会打开错页; 写页码还能用
+
 ## [2026.11.12.8]
 
 测试版。
@@ -1420,7 +1430,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...HEAD
+[2026.11.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...2026.11.12.9
 [2026.11.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...2026.11.12.8
 [2026.11.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...2026.11.12.7
 [2026.11.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...2026.11.12.6

@@ -22,17 +22,24 @@
 
 class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
+    static _gapLines := []                                                  ; the y of the line in each gap of the page list (client pixels)
     static _lists := Map()                                                  ; setting path of a list page (e.g. "CustomCommands") -> the method that adds / edits items
-    ; the order of the pages (matching PageBuilders, checked by a test); search entries like "ALTRun Preferences: Appearance" come from it without opening the window
-    static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
-        , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Selection", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
-        , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp", "Prefs.Page.DelayedStart", "Prefs.Page.Sync"
+    ; the order of the pages; search entries like "ALTRun Preferences: Appearance" come from it without opening the window.
+    ; Commands and tests open a page by its key (or by its name, the key without "Prefs.Page.", on the command line), never by its number
+    static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features"
+        , "Prefs.Page.Applications", "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.WebSearch", "Prefs.Page.Calculator", "Prefs.Page.Clipboard", "Prefs.Page.Snippets"
+        , "Prefs.Page.Commands", "Prefs.Page.Scripts", "Prefs.Page.Selection", "Prefs.Page.Hotkeys"
+        , "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp"
+        , "Prefs.Page.DelayedStart", "Prefs.Page.Sync"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
+    ; the first page of each group after the first (basics / search / commands and triggers / window tools / automation / usage and advanced):
+    ; the page list has a gap with a line above each of them
+    static GroupStarts := ["Prefs.Page.Applications", "Prefs.Page.Commands", "Prefs.Page.QuickSwitch", "Prefs.Page.DelayedStart", "Prefs.Page.Usage"]
     static _page := 0
     static _dirty := false, _ready := false, ApplyButton := ""
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
     static _positionReset := false
-    ; pageIndex: page number, or the page's key (e.g. "Prefs.Page.Advanced")
+    ; pageIndex: the page's key (e.g. "Prefs.Page.Advanced"), or its number
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
             index := IsInteger(pageIndex) ? pageIndex : PreferencesWindow._PageIndex(pageIndex)
@@ -52,7 +59,7 @@ class PreferencesWindow {
         PreferencesWindow.Pages := []
         for index, key in PreferencesWindow.PageKeys
             PreferencesWindow.Pages.Push({Key: key, Name: I18n.T(key), Wiki: PreferencesWindow.WikiPage(key), Controls: [], Built: false
-                , Builder: PreferencesWindow.PageBuilders[index]})
+                , Builder: PreferencesWindow.PageBuilders[key]})
 
         g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
         g.SetFont("s9", ThemeManager.FontName())
@@ -73,23 +80,39 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        ; The image list's height is the row height (a roomier sidebar). The rows are measured with an empty image list first, then the
-        ; icons are drawn once at the height that makes the rows fill the list, leaving only a few pixels below the last one
-        cellH := PreferencesWindow.PageRowHeight()
-        sizer := (NavIcons.FontName() != "") ? NavIcons.EmptyList(cellH) : 0
-        if sizer
-            pageList.SetImageList(sizer, 1)
-        for index, name in names
-            pageList.Add("Icon" index, name)
-        if sizer {
-            old := pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, cellH + PreferencesWindow._SpareRowHeight(pageList)), 1)
-            if old
-                DllCall("comctl32\ImageList_Destroy", "Ptr", old)
+        ; The pages are in groups with a gap and a line between them (GroupStarts). The rows of a report ListView can't have gaps, so the
+        ; list shows tiles one row high and as wide as the list, each put at its place: hover, selection and ↑ ↓ Home End work as in a list.
+        ; Where tile view isn't available (Wine) it stays a plain list without gaps
+        if IsObject(layout := PreferencesWindow._TileView(pageList)) {
+            if (NavIcons.FontName() != "")
+                pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, Round(layout.RowH * 96 / A_ScreenDPI) - 2), 0)   ; tiles use the normal image list
+            for index, name in names {
+                pageList.Add("Icon" index, name)
+                point := Buffer(8, 0)
+                NumPut("Int", 0, "Int", layout.Tops[index], point)
+                SendMessage(0x1031, index - 1, point, pageList)              ; LVM_SETITEMPOSITION32
+            }
+            PreferencesWindow._gapLines := layout.Lines
+        } else {
+            ; The image list's height is the row height (a roomier sidebar). The rows are measured with an empty image list first, then the
+            ; icons are drawn once at the height that makes the rows fill the list, leaving only a few pixels below the last one
+            cellH := PreferencesWindow.PageRowHeight()
+            sizer := (NavIcons.FontName() != "") ? NavIcons.EmptyList(cellH) : 0
+            if sizer
+                pageList.SetImageList(sizer, 1)
+            for index, name in names
+                pageList.Add("Icon" index, name)
+            if sizer {
+                old := pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, cellH + PreferencesWindow._SpareRowHeight(pageList)), 1)
+                if old
+                    DllCall("comctl32\ImageList_Destroy", "Ptr", old)
+            }
+            pageList.ModifyCol(1, "AutoHdr")                                ; the only column fills the list width (a column narrower than the list would add a column separator on the right)
+            PreferencesWindow._gapLines := []
         }
-        pageList.ModifyCol(1, "AutoHdr")                                    ; the only column fills the list width (a column narrower than the list would add a column separator on the right)
         DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; the same hover / selection look as Explorer
         pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (the ItemSelect event sometimes doesn't arrive)
-        pageList.OnNotify(-12, (ctrl, lParam) => PreferencesWindow._OnPageListDraw(lParam))   ; NM_CUSTOMDRAW: no dotted focus rectangle
+        pageList.OnNotify(-12, (ctrl, lParam) => PreferencesWindow._OnPageListDraw(lParam))   ; NM_CUSTOMDRAW: no dotted focus rectangle; the lines between the groups
         for code in [-2, -3, -5, -6]                                        ; NM_CLICK / NM_DBLCLK / NM_RCLICK / NM_RDBLCLK (a fast second click counts as a double-click)
             pageList.OnNotify(code, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))
         PreferencesWindow.PageList := pageList
@@ -130,9 +153,42 @@ class PreferencesWindow {
             PreferencesWindow.SelectPage(row)
     }
 
+    ; Switches the (still empty) page list to tiles one row high and as wide as the list -> PageLayout(...); "" when tile view isn't available
+    static _TileView(pageList) {
+        client := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", pageList.Hwnd, "Ptr", client)       ; measured while empty: no scroll bar
+        if (SendMessage(0x108E, 4, 0, pageList) != 1)                       ; LVM_SETVIEW LV_VIEW_TILE (-1: not available)
+            return ""
+        starts := []
+        for key in PreferencesWindow.GroupStarts
+            starts.Push(PreferencesWindow._PageIndex(key))
+        layout := PreferencesWindow.PageLayout(NumGet(client, 12, "Int"), PreferencesWindow.PageKeys.Length, starts, A_ScreenDPI / 96)
+        info := Buffer(40, 0)                                               ; LVTILEVIEWINFO: LVTVIM_TILESIZE | LVTVIM_COLUMNS, LVTVIF_FIXEDSIZE, no second line
+        NumPut("UInt", 40, "UInt", 0x3, "UInt", 0x3, "Int", NumGet(client, 8, "Int"), "Int", layout.RowH, "Int", 0, info)
+        SendMessage(0x10A2, 0, info, pageList)                              ; LVM_SETTILEVIEWINFO
+        return layout
+    }
+
+    ; Where the rows of the page list go (pixels): rows as high as fit (at most 28 at 96 DPI) with a gap of 9 to 12 before each group start
+    ; (row numbers in starts), the rest of the height below the last row. -> {RowH, Gap, Tops (each row's top), Lines (the y of each gap's line)}
+    static PageLayout(clientH, rows, starts, scale := 1) {
+        gap := Round(9 * scale)
+        rowH := Min(Round(28 * scale), (clientH - starts.Length * gap) // rows)
+        if starts.Length
+            gap := Min(Round(12 * scale), Max(gap, (clientH - rows * rowH) // starts.Length))
+        tops := [], lines := [], y := 0
+        Loop rows {
+            for start in starts
+                if (start = A_Index)
+                    lines.Push(y + gap // 2), y += gap
+            tops.Push(y), y += rowH
+        }
+        return {RowH: rowH, Gap: gap, Tops: tops, Lines: lines}
+    }
+
     ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles
     ; by "whether the keyboard was used recently", so the first time Preferences opens the dots sometimes show and sometimes don't; CDIS_FOCUS is removed before each row is drawn
-    ; The icon cell height of the page list to start with: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
+    ; The icon cell height of the plain page list (without tile view) to start with: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
     ; (a row is about the cell plus 2; the list is ButtonY - 24 high with a 2 px border). _SpareRowHeight then measures the real rows (with NavIcons.EmptyList)
     static PageRowHeight() => Min(26, (PrefsForm.ButtonY - 24 - 4) // PreferencesWindow.PageKeys.Length - 2)
 
@@ -150,13 +206,32 @@ class PreferencesWindow {
         return (rowH > 0 && target > rowH) ? (target - rowH) * 96 // A_ScreenDPI : 0
     }
 
+    ; No focus rectangle on the rows (see above); after painting, a line in each gap between the groups: a light gray between the
+    ; window color and gray text (so it follows high contrast themes), inset like the rows' highlight
     static _OnPageListDraw(lParam) {
         stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
         if (stage = 0x1)                                                    ; CDDS_PREPAINT
-            return 0x20                                                     ; CDRF_NOTIFYITEMDRAW
+            return 0x30                                                     ; CDRF_NOTIFYITEMDRAW | CDRF_NOTIFYPOSTPAINT
         if (stage = 0x10001) {                                              ; CDDS_ITEMPREPAINT
             offset := 6 * A_PtrSize + 16                                    ; NMCUSTOMDRAW.uItemState
             NumPut("UInt", NumGet(lParam, offset, "UInt") & ~0x10, lParam, offset)   ; CDIS_FOCUS
+        } else if (stage = 0x2 && PreferencesWindow._gapLines.Length) {     ; CDDS_POSTPAINT
+            hdc := NumGet(lParam, 4 * A_PtrSize, "Ptr")
+            client := Buffer(16, 0)
+            DllCall("GetClientRect", "Ptr", NumGet(lParam, 0, "Ptr"), "Ptr", client)
+            window := DllCall("GetSysColor", "Int", 5, "UInt"), gray := DllCall("GetSysColor", "Int", 17, "UInt")   ; COLOR_WINDOW, COLOR_GRAYTEXT
+            color := 0
+            Loop 3
+                shift := (A_Index - 1) * 8, color |= ((((window >> shift) & 0xFF) * 3 + ((gray >> shift) & 0xFF)) // 4) << shift
+            pen := DllCall("CreatePen", "Int", 0, "Int", 1, "UInt", color, "Ptr")
+            old := DllCall("SelectObject", "Ptr", hdc, "Ptr", pen, "Ptr")
+            inset := Round(6 * A_ScreenDPI / 96)
+            for y in PreferencesWindow._gapLines {
+                DllCall("MoveToEx", "Ptr", hdc, "Int", inset, "Int", y, "Ptr", 0)
+                DllCall("LineTo", "Ptr", hdc, "Int", NumGet(client, 8, "Int") - inset, "Int", y)
+            }
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
+            DllCall("DeleteObject", "Ptr", pen)
         }
         return 0                                                            ; CDRF_DODEFAULT
     }
@@ -168,9 +243,10 @@ class PreferencesWindow {
             PreferencesWindow.PageList.Modify(PreferencesWindow._page, "Select Focus")
     }
 
+    ; a page key -> its number in the list (1 when there is no such page)
     static _PageIndex(nameKey) {
-        for index, page in PreferencesWindow.Pages
-            if (page.Key = nameKey)
+        for index, key in PreferencesWindow.PageKeys
+            if (key = nameKey)
                 return index
         return 1
     }
@@ -344,12 +420,24 @@ class PreferencesWindow {
             general["LaunchAtLogin"] := 0
     }
 
-    ; Command line "-Preferences page [x y]" (reopening after Apply) -> {Page, X, Y}
+    ; Command line "-Preferences page [x y]" (reopening after Apply) -> {Page (a page key, or 1), X, Y}. page is the page's name, the key
+    ; without "Prefs.Page." (e.g. "Hotkeys", "QSPanel"; any case); a number still works (in the current order)
     static ParseArgs(args) {
         value(i) => (args.Length >= i && IsInteger(args[i])) ? Integer(args[i]) : ""
-        page := value(2)
-        return {Page: (page = "") ? 1 : page, X: value(3), Y: value(4)}
+        page := 1
+        if (args.Length >= 2) {
+            if IsInteger(args[2])
+                page := (args[2] >= 1 && args[2] <= PreferencesWindow.PageKeys.Length) ? PreferencesWindow.PageKeys[Integer(args[2])] : 1
+            else
+                for key in PreferencesWindow.PageKeys
+                    if (PreferencesWindow.PageName(key) = args[2])
+                        page := key
+        }
+        return {Page: page, X: value(3), Y: value(4)}
     }
+
+    ; A page's name on the command line: its key without "Prefs.Page." ("Prefs.Page.Hotkeys" -> "Hotkeys")
+    static PageName(key) => RegExReplace(key, "^Prefs\.Page\.")
 
     ; The regular expression boxes (Exclude on Applications and Search Sources): the first one that isn't valid -> {Page (index in PageKeys),
     ; Label, Error}; "" when they all are
@@ -402,7 +490,7 @@ class PreferencesWindow {
             ApplicationProvider.ExpireCache()
         if stale.Files
             FileIndex.ExpireCache()
-        page := PreferencesWindow._page
+        page := PreferencesWindow.PageName(PreferencesWindow.Pages[Max(1, PreferencesWindow._page)].Key)
         WinGetPos(&x, &y, , , PreferencesWindow.Gui.Hwnd)
         PreferencesWindow.Close()
         App.Restart(reopen ? "-Preferences " page " " x " " y : "-Reloaded")
@@ -411,11 +499,14 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Pages
     ;---------------------------------------------------------------------------
-    ; how each page is built, one per PageKeys entry
-    static PageBuilders := ["BuildGeneral", "BuildWindow", "BuildKeyboard", "BuildAppearance", "BuildFeatures", "BuildApplications"
-        , "BuildFileSearch", "BuildFileIndex", "BuildCommands", "BuildSelection", "BuildSnippets", "BuildClipboard", "BuildWebSearch"
-        , "BuildCalculator", "BuildScripts", "BuildHotkeys", "BuildQuickSwitch", "BuildQuickSwitchPanel", "BuildDateStamp", "BuildDelayedStart", "BuildSync"
-        , "BuildUsage", "BuildAdvanced"]
+    ; how each page is built (PrefsPages.BuildXxx), by page key
+    static PageBuilders := Map("Prefs.Page.General", "BuildGeneral", "Prefs.Page.Window", "BuildWindow", "Prefs.Page.Keyboard", "BuildKeyboard"
+        , "Prefs.Page.Appearance", "BuildAppearance", "Prefs.Page.Features", "BuildFeatures", "Prefs.Page.Applications", "BuildApplications"
+        , "Prefs.Page.FileSearch", "BuildFileSearch", "Prefs.Page.FileIndex", "BuildFileIndex", "Prefs.Page.WebSearch", "BuildWebSearch"
+        , "Prefs.Page.Calculator", "BuildCalculator", "Prefs.Page.Clipboard", "BuildClipboard", "Prefs.Page.Snippets", "BuildSnippets"
+        , "Prefs.Page.Commands", "BuildCommands", "Prefs.Page.Scripts", "BuildScripts", "Prefs.Page.Selection", "BuildSelection", "Prefs.Page.Hotkeys", "BuildHotkeys"
+        , "Prefs.Page.QuickSwitch", "BuildQuickSwitch", "Prefs.Page.QSPanel", "BuildQuickSwitchPanel", "Prefs.Page.DateStamp", "BuildDateStamp"
+        , "Prefs.Page.DelayedStart", "BuildDelayedStart", "Prefs.Page.Sync", "BuildSync", "Prefs.Page.Usage", "BuildUsage", "Prefs.Page.Advanced", "BuildAdvanced")
     static _helpButton := ""
     ; Builds every page (for the tests that check each page's layout)
     static BuildAll() {

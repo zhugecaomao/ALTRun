@@ -8,7 +8,7 @@
 ; Command-line arguments:
 ;   -Startup        used when starting with Windows; doesn't show the search window
 ;   -Reloaded       after reloading (saved settings etc.); doesn't show the search window
-;   -Preferences N [X Y]  after reloading, open page N of Preferences (at X, Y: "Apply" was clicked in Preferences)
+;   -Preferences PAGE [X Y]  after reloading, open that page of Preferences (its name, e.g. Hotkeys; at X, Y: "Apply" was clicked in Preferences)
 ;   -SendTo <path...>  Explorer's "Send to" menu: add the files / folders as custom commands (one opens the edit dialog)
 ;   -Update         check for updates and install a new version right away (asks first when ALTRun is already running and gets it handed over)
 ;   -Updated <version>  the new version started by a one-click update: says it was updated; doesn't show the search window
@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.12.8"
+    static Version := "2026.11.12.9"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
