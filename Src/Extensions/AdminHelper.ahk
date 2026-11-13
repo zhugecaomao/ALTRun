@@ -43,6 +43,7 @@ class AdminHelper {
         if AdminHelper.Window(A_ScriptHwnd)                                 ; one is already running
             ExitApp()
         DllCall("SetWindowTextW", "Ptr", A_ScriptHwnd, "Str", AdminHelper.Title)
+        Persistent(true)                                                    ; keeps running without a hotkey too (only dialog jumps)
         if (arg = AdminHelper.OldArg)                                       ; started by the task of an older version: move it to the new name
             SetTimer(() => AdminHelper.MoveTask(), -2000)                    ; after the hotkey is set up, which matters more
         DllCall("ChangeWindowMessageFilterEx", "Ptr", A_ScriptHwnd, "UInt", 0x4A, "UInt", 1, "Ptr", 0)   ; WM_COPYDATA, MSGFLT_ALLOW

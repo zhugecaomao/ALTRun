@@ -65,7 +65,7 @@ class AdminDialogCheck {
             deadline := A_TickCount + 10000
             while (!AdminHelper.Window() && A_TickCount < deadline)
                 Sleep(100)
-            AdminDialogCheck.Check("the helper started", AdminHelper.Window() != 0)
+            AdminDialogCheck.Check("the helper started", AdminHelper.Window() != 0, "its process " (ProcessExist(helperPid) ? "runs, without its window" : "has ended"))
             AdminDialogCheck.Front(dialog), AdminDialogCheck.Signal(io "\go2.txt")
             AdminDialogCheck.WaitFor(io "\done2.txt", 20)
             deadline := A_TickCount + 5000
