@@ -17,7 +17,7 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             unit tests; exit co
 ALTRun.ahk          Entry point: #Includes every module and calls App.Start()
 Lib\                Shared libraries with nothing ALTRun-specific, usable in other projects as is
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
-                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
+                    Everything IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
                     TaskScheduler, TaskbarProgress, Sqlite: read-only queries through Windows' winsqlite3.dll)
 Src\Core\           App (startup, single instance, shutdown), ErrorHandler (uncaught errors), I18n (UI text),
                     AppSettings + SchemaMigration (settings and version upgrades),
@@ -302,6 +302,7 @@ A few AutoHotkey v2 pitfalls:
 - Strings passed to functions by value are copied whole: passing a big string (a whole file) to a function over and over in a loop makes the time grow with the square of its length; pass it by reference (`&text`), see `Lib\JSON.ahk`
 - Lines starting with `Perf:` in the debug log (`General.SaveLog`) are the timings of startup phases, slow searches and slow background tasks; use `Logger.Ms()` / `Logger.Time(label, start)` to record new ones, and wrap timer callbacks in `Logger.Watch(label, fn)` (logged only over 50 ms)
 - Don't download with `Download()` on the main thread (the whole program stops until it finishes); use `HttpGet.Start(url, done, fail)` to download in the background
+- To run a program and read what it prints, use `ChildProcess.Start(commandLine, done, options)` (`Lib\ChildProcess.ahk`) instead of `RunWait` or `cmd /c ... > file`: it starts the program itself (no cmd.exe, so `& | > %` in an argument stay text; quote each argument with `Win.QuoteArg`), reads its output on a short timer without waiting, and runs it in a job object, so `ChildProcess.Kill`, its timeout and ALTRun ending stop everything it started. Programs it starts end with it, so it is not for starting something that should stay open
 - To learn about changes in a folder, use `FolderWatcher` (`Lib\FolderWatcher.ahk`, call `Poll()` on a `WinTimer`, it doesn't wait) instead of rescanning the folder on a timer; when closing it waits for the pending read to finish before releasing the buffer
 - When a nested function changes an outer variable, pass the result back through an object (`state := {Result: ""}`)
 - Give every `Edit` control a row count (`r1 -Multi`), otherwise long text turns it into a multi-line box (a test checks this)
