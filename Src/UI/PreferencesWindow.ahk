@@ -178,8 +178,9 @@ class PreferencesWindow {
             gap := Min(Round(12 * scale), Max(gap, (clientH - rows * rowH) // starts.Length))
         tops := [], lines := [], y := 0
         Loop rows {
+            row := A_Index                                                  ; (A_Index inside the for loop below is the for loop's)
             for start in starts
-                if (start = A_Index)
+                if (start = row)
                     lines.Push(y + gap // 2), y += gap
             tops.Push(y), y += rowH
         }

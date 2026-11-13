@@ -815,7 +815,7 @@ class PreferencesTests {
         PreferencesWindow.Show("Prefs.Page.Selection", -3000, -3000)
         try {
             index := PreferencesWindow._PageIndex("Prefs.Page.Selection")
-            eq("page after Commands", index, PreferencesWindow._PageIndex("Prefs.Page.Commands") + 1)
+            eq("page in the commands and triggers group (Commands, Scripts, Selection)", index, PreferencesWindow._PageIndex("Prefs.Page.Commands") + 2)
             ui := PrefsPages._selection
             eq("types listed", ui.List.View.GetCount(), 2)
             eq("kind shown", ui.List.View.GetText(2, 2), "File (extensions)")
