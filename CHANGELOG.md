@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- 双击左 Alt 也能呼出搜索窗口 (#501): 偏好设置 → 常规 → "双击呼出" 选 **左 Alt**。只有左 Alt: 右 Alt 在法语、德语、波兰语等键盘上是 AltGr, 用来打字符。单独按一下 Alt 会打开部分程序 (记事本、资源管理器) 的菜单栏, 按第二下又关掉, 可能看到闪一下; Alt+Space、Alt+Tab 等组合不算
+
 ## [2026.11.13.2]
 
 测试版。
@@ -1429,7 +1438,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...HEAD
+[2026.11.13.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...2026.11.13.3
 [2026.11.13.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...2026.11.13.2
 [2026.11.13.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...2026.11.13.1
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13

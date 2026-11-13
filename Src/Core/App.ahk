@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.13.2"
+    static Version := "2026.11.13.3"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -482,7 +482,7 @@ class App {
         }
 
         tap := AppSettings.General.Has("DoubleTap") ? AppSettings.General["DoubleTap"] : ""
-        for key in App.TapKeys(tap) {                                       ; double-tap Ctrl / Shift (or only the left / right one) to show
+        for key in App.TapKeys(tap) {                                       ; double-tap Ctrl / Shift (or only the left / right one) / left Alt to show
             App._TryHotkey("~" key, (*) => App._TapDown())
             App._TryHotkey("~" key " up", (*) => App._TapUp())
         }
@@ -587,16 +587,18 @@ class App {
     }
 
     ; a separate method makes the closure, so each hotkey keeps its own Action
-    ; Double-tap Ctrl / Shift: two separate short presses of the same key (no other key in between, e.g. Ctrl+C), at most DoubleTapMs apart.
+    ; Double-tap Ctrl / Shift / left Alt: two separate short presses of the same key (no other key in between, e.g. Ctrl+C), at most DoubleTapMs apart.
+    ; Only the left Alt (#501): the right one is AltGr on many layouts (French, German, Polish...), pressed to type characters. A lone Alt
+    ; press also opens the menu bar of some programs: the first tap opens it, the second closes it again
     ; Left Shift then right Shift isn't a double tap: typing capitals with alternating Shift keys opened the window (AutoHotkey forum)
     static DoubleTapMs := 400, TapHoldMs := 300
     static _tapLast := 0, _tapDownAt := 0, _tapHeld := false, _tapKey := ""
 
-    ; The keys of the DoubleTap setting: "Ctrl" / "Shift" = either side, "LCtrl" / "RCtrl" / "LShift" / "RShift" = only that one; [] = off
+    ; The keys of the DoubleTap setting: "Ctrl" / "Shift" = either side, "LCtrl" / "RCtrl" / "LShift" / "RShift" / "LAlt" = only that one; [] = off
     static TapKeys(setting) {
         if (setting = "Ctrl" || setting = "Shift")
             return ["L" setting, "R" setting]
-        return RegExMatch(setting, "i)^[LR](Ctrl|Shift)$") ? [setting] : []
+        return RegExMatch(setting, "i)^([LR](Ctrl|Shift)|LAlt)$") ? [setting] : []
     }
 
     static _TapDown() {

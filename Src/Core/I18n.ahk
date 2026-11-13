@@ -764,6 +764,7 @@ class I18n {
         s["Prefs.DoubleTap.RCtrl"] := "Right Ctrl"
         s["Prefs.DoubleTap.LShift"] := "Left Shift"
         s["Prefs.DoubleTap.RShift"] := "Right Shift"
+        s["Prefs.DoubleTap.LAlt"] := "Left Alt"
         s["Prefs.CapsLock"]            := "Caps Lock"
         s["Menu.CheatSheet"]           := "Shortcuts and Syntax"
         s["Status.Open"]               := "Open"

@@ -659,6 +659,9 @@ class CoreTests {
         eq("same key twice", App.TapDecision("LShift", "LShift", 80, 250, "LShift"), "show")
         eq("left then right shift: a new first tap", App.TapDecision("RShift", "RShift", 80, 250, "LShift"), "first")
         eq("left then right ctrl", App.TapDecision("RControl", "RCtrl", 80, 250, "LCtrl"), "first")
+        eq("left alt", App.TapDecision("LAlt", "LAlt", 80, 250, "LAlt"), "show")
+        eq("alt+tab", App.TapDecision("Tab", "LAlt", 80, 250), "reset")
+        eq("alt+space (the hotkey) then alt", App.TapDecision("Space", "LAlt", 80, 250), "reset")
         keys(setting) {                                                     ; the hotkeys registered for a DoubleTap setting
             text := ""
             for key in App.TapKeys(setting)
@@ -670,6 +673,8 @@ class CoreTests {
         eq("keys: left shift only", keys("LShift"), "LShift")
         eq("keys: right ctrl only", keys("RCtrl"), "RCtrl")
         eq("keys: off", keys(""), "")
+        eq("keys: left alt only", keys("LAlt"), "LAlt")
+        eq("keys: no right alt (AltGr)", keys("RAlt") "|" keys("Alt"), "|")
         eq("keys: unknown", keys("Alt"), "")
     }
 

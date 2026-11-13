@@ -577,7 +577,7 @@ class AppSettings {
             "General", Map(
                 "Hotkey"              , "!Space",
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
-                "DoubleTap"           , "",                                ; double-tap Ctrl / Shift shows the search window (as in Listary); LCtrl / RCtrl / LShift / RShift = only that key; "" = off
+                "DoubleTap"           , "",                                ; double-tap Ctrl / Shift shows the search window (as in Listary); LCtrl / RCtrl / LShift / RShift / LAlt = only that key; "" = off
                 "SelectionHotkey"     , "^!\",                              ; after selecting text / files: open their actions directly (Ctrl+Alt+\)
                 "HotkeySides"         , 0,                                  ; hotkeys recorded in Preferences keep the side of Ctrl / Alt / Shift / Win pressed (<!Space = left Alt + Space)
                 "Language"            , "auto",                             ; auto or a language code in Resources\Lang (zh-CN / zh-TW / ja), en

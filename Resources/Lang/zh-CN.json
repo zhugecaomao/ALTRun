@@ -402,6 +402,7 @@
   "Prefs.DoubleTap.RCtrl": "右 Ctrl",
   "Prefs.DoubleTap.LShift": "左 Shift",
   "Prefs.DoubleTap.RShift": "右 Shift",
+  "Prefs.DoubleTap.LAlt": "左 Alt",
   "Prefs.Edit": "编辑...",
   "Prefs.EditJson": "编辑 ALTRun.json...",
   "Prefs.EditJson.Desc": "所有设置都在里面, 包括这里没有的; 保存后 ALTRun 自动重新载入",
