@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.14]
+
+测试版。
+
+Test build.
+
+### 新增
+- 命令编辑窗口点确定时, 占位符用不上 (写了 `{selection}`; `{query}` 没有关键字、内容类型或热键; 不认识的 `{xxx}`) 就说明原因并问是否仍然保存; 选 "否" 回到编辑窗口
+
 ## [2026.11.12.13]
 
 测试版。
@@ -1474,7 +1483,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.14...HEAD
+[2026.11.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.13...2026.11.12.14
 [2026.11.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...2026.11.12.13
 [2026.11.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...2026.11.12.12
 [2026.11.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...2026.11.12.11

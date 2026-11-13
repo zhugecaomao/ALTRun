@@ -28,7 +28,7 @@ When a folder is renamed or a file is moved, the commands pointing to it stop wo
 
 For the `Command` type with only a program name (for example `cmd.exe`), the program is looked up in PATH and the programs registered with Windows (App Paths). The results only appear in Preferences; no command is changed or deleted.
 
-The Status column also points out placeholders that won't work, without checking (a path that Check Paths found missing or offline is shown instead):
+The Status column also points out placeholders that won't work, without checking (a path that Check Paths found missing or offline is shown instead). The edit window explains the same when you click OK and asks whether to save anyway:
 
 | Status | Meaning |
 |---|---|
