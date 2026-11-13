@@ -270,6 +270,19 @@ class PrefsPages {
         }
         PrefsForm._y -= 3
         PrefsForm.Desc("Prefs.FeatureKeyword", PrefsForm.InputX())
+        PrefsForm.LinesButton("Features.Bookmarks.BrowserFolders", "Prefs.BrowserFolders", {Summary: (lines) => PrefsPages.BrowserFolderSummary(lines)})
+    }
+
+    ; Other browsers on the Features page: each folder with the number of profiles found in it on this computer
+    static BrowserFolderSummary(lines) {
+        parts := []
+        for line in lines {
+            if (IsObject(line) || Trim(line) = "")
+                continue
+            count := BookmarkProvider.ProfileCount(Path.Full(line))
+            parts.Push(line " (" (count ? I18n.T("Prefs.BrowserFolders.Profiles", count) : I18n.T("Prefs.BrowserFolders.NotFound")) ")")
+        }
+        return TextTools.JoinList(parts)
     }
 
     static BuildApplications() {

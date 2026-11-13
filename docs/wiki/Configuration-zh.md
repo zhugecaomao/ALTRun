@@ -173,6 +173,7 @@
 |---|---|---|
 | Keyword | `bm` | 只搜书签的关键字 |
 | InDefaultResults | 1 | 直接输入名称时也显示匹配的书签 (排在应用和命令后面, 最多 8 条) |
+| BrowserFolders | `[]` | 其他浏览器: 便携版或其他基于 Chromium 的浏览器的 User Data (或用户配置) 文件夹, 书签和浏览器历史记录都包括它们的配置。可以用变量, 相对路径从 ALTRun 所在的文件夹算起。见[便携版和其他浏览器](Bookmarks-zh#便携版和其他浏览器) |
 
 偏好设置 → 功能 → 功能选项里也能改。读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 

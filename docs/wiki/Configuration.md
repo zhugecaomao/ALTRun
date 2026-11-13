@@ -173,6 +173,7 @@ The index updates itself by watching the `Folders`: when a shortcut is added, re
 |---|---|---|
 | Keyword | `bm` | Keyword that searches bookmarks only |
 | InDefaultResults | 1 | Also show matching bookmarks when you type a name directly (after apps and commands, at most 8) |
+| BrowserFolders | `[]` | Other browsers: User Data (or profile) folders of portable or other Chromium-based browsers; bookmarks and browser history include their profiles. Variables work, relative paths start from ALTRun's folder. See [Portable and other browsers](Bookmarks#portable-and-other-browsers) |
 
 Also in Preferences → Features → Feature options. Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
 

@@ -3,11 +3,12 @@
 ;-------------------------------------------------------------------------------
 ; Like Alfred's Web Bookmarks: typing a bookmark's name finds it (InDefaultResults, after applications and commands),
 ; "bm word" (Keyword) searches bookmarks only. Enter opens in the default browser, Alt+Enter copies the URL.
-; Reads the Bookmarks file (JSON) of every profile (Default, Profile 1...) of Chromium browsers (Chrome, Edge, Brave, Vivaldi).
+; Reads the Bookmarks file (JSON) of every profile (Default, Profile 1...) of Chromium browsers (Chrome, Edge, Brave, Vivaldi),
+; and of the folders in BrowserFolders (portable or other Chromium browsers: their User Data folder, or one profile folder).
 ; Firefox keeps its bookmarks in an SQLite database, which can't be read.
 ; Read once at start-up; then every 30 s a background check whether the files changed (modified time) reads them again (not while typing; one read takes 20 ~ 30 ms).
 ;
-; Settings (ALTRun.json -> Features.Bookmarks): Enabled / Keyword / InDefaultResults
+; Settings (ALTRun.json -> Features.Bookmarks): Enabled / Keyword / InDefaultResults / BrowserFolders (also used by browser history)
 ;===============================================================================
 
 class BookmarkProvider {
@@ -52,17 +53,51 @@ class BookmarkProvider {
         return results
     }
 
-    ; The Bookmarks files of every profile of every browser
-    static Files() {
+    ; The Bookmarks files of every profile of every browser: [[browser, path]]
+    static Files() => BookmarkProvider.ProfileFiles("Bookmarks")
+
+    ; The file named fileName ("Bookmarks", "History") in every profile of every browser: [[browser, path]], each file once.
+    ; The four browsers' User Data folders under %LocalAppData%, then the folders in BrowserFolders (browser "Other")
+    static ProfileFiles(fileName) {
+        roots := []
+        for browser in BookmarkProvider.Browsers
+            roots.Push([browser[1], EnvGet("LOCALAPPDATA") "\" browser[2]])
+        for folder in BookmarkProvider.ExtraFolders()
+            roots.Push(["Other", folder])
+        files := [], seen := Map()
+        for root in roots
+            for profileFile in BookmarkProvider.FilesIn(root[2], fileName)
+                if !seen.Has(key := StrLower(profileFile)) {                ; a folder in BrowserFolders may be one of the four too
+                    seen[key] := true
+                    files.Push([root[1], profileFile])
+                }
+        return files
+    }
+
+    ; The full paths of the folders in Features.Bookmarks.BrowserFolders (variables expanded; relative to the program folder)
+    static ExtraFolders() {
+        folders := []
+        options := AppSettings.Feature("Bookmarks")
+        if (options.Has("BrowserFolders") && options["BrowserFolders"] is Array)
+            for folder in options["BrowserFolders"]
+                if (!IsObject(folder) && Trim(folder) != "")
+                    folders.Push(Path.Full(folder))
+        return folders
+    }
+
+    ; The number of browser profiles in folder (a profile folder has a Preferences file): for Preferences to show whether a folder is right
+    static ProfileCount(folder) => BookmarkProvider.FilesIn(folder, "Preferences").Length
+
+    ; fileName in folder: a User Data folder (one subfolder per profile: Default, Profile 1...) or a single profile folder
+    static FilesIn(folder, fileName) {
         files := []
-        for browser in BookmarkProvider.Browsers {
-            root := EnvGet("LOCALAPPDATA") "\" browser[2]
-            if !DirExist(root)
-                continue
-            Loop Files, root "\*", "D"
-                if FileExist(A_LoopFileFullPath "\Bookmarks")
-                    files.Push([browser[1], A_LoopFileFullPath "\Bookmarks"])
-        }
+        if !DirExist(folder)
+            return files
+        if FileExist(folder "\" fileName)                                   ; a profile folder itself
+            files.Push(folder "\" fileName)
+        Loop Files, folder "\*", "D"
+            if FileExist(A_LoopFileFullPath "\" fileName)
+                files.Push(A_LoopFileFullPath "\" fileName)
         return files
     }
 

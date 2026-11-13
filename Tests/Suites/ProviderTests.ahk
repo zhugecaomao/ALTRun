@@ -2763,6 +2763,54 @@ class ProviderTests {
         ok("media commands", InStr(ids, "MediaPlayPause|MediaNext|MediaPrev|MediaStop|"))
     }
 
+    ; Other browsers (#492): Features.Bookmarks.BrowserFolders adds the profiles of portable browsers to bookmarks and history,
+    ; a User Data folder (profiles inside) or one profile folder, relative to the program folder or with variables; each file once
+    static BrowserFolders() {
+        eq := (n, a, e) => TestRunner.Equal("BrowserFolders." n, a, e)
+        ok := (n, c) => TestRunner.True("BrowserFolders." n, c)
+        root := A_Temp "\ALTRun-test-browser-folders"
+        try DirDelete(root, true)
+        portable := root "\Portable\Data\profile"                         ; a User Data folder: Default and Profile 1 inside
+        DirCreate(portable "\Default"), DirCreate(portable "\Profile 1"), DirCreate(portable "\Crashpad")
+        FileAppend("{}", portable "\Default\Bookmarks"), FileAppend("{}", portable "\Default\Preferences")
+        FileAppend("{}", portable "\Profile 1\Preferences"), FileAppend("", portable "\Profile 1\History")
+        single := root "\Single"                                            ; one profile folder
+        DirCreate(single), FileAppend("{}", single "\Bookmarks"), FileAppend("{}", single "\Preferences"), FileAppend("", single "\History")
+        DirCreate(root "\Local")                                            ; %LOCALAPPDATA% without any browser
+        options := AppSettings.Feature("Bookmarks"), saved := options["BrowserFolders"], savedLocal := EnvGet("LOCALAPPDATA")
+        try {
+            EnvSet("LOCALAPPDATA", root "\Local"), EnvSet("ALTRUN_TEST_BROWSERS", root)
+            options["BrowserFolders"] := []
+            eq("none", BookmarkProvider.Files().Length, 0)
+            options["BrowserFolders"] := ["%ALTRUN_TEST_BROWSERS%\Portable\Data\profile", single, "", root "\Missing", single "\"]
+            names := ""
+            for each in BookmarkProvider.Files()
+                names .= each[1] ":" SubStr(each[2], StrLen(root) + 1) "|"
+            eq("bookmarks: user data + profile folder, once each", names, "Other:\Portable\Data\profile\Default\Bookmarks|Other:\Single\Bookmarks|")
+            names := ""
+            for historyFile in BrowserHistoryProvider.Files()
+                names .= SubStr(historyFile, StrLen(root) + 1) "|"
+            eq("history: the same folders", names, "\Portable\Data\profile\Profile 1\History|\Single\History|")
+            eq("profiles in user data", BookmarkProvider.ProfileCount(portable), 2)
+            eq("profile folder", BookmarkProvider.ProfileCount(single), 1)
+            eq("missing folder", BookmarkProvider.ProfileCount(root "\Missing"), 0)
+            summary := PrefsPages.BrowserFolderSummary([portable, root "\Missing"])
+            ok("summary: profiles found / not found", InStr(summary, I18n.T("Prefs.BrowserFolders.Profiles", 2)) > 0 && InStr(summary, I18n.T("Prefs.BrowserFolders.NotFound")) > 0)
+            eq("empty lines skipped", BookmarkProvider.ExtraFolders().Length, 4)
+            options["BrowserFolders"] := ["..\x"]                           ; a portable browser next to ALTRun: relative to the program folder
+            eq("relative path", BookmarkProvider.ExtraFolders()[1], Path.Full(A_ScriptDir "\..\x"))
+            ; the standard Chrome folder listed again isn't read twice
+            DirCreate(root "\Local\Google\Chrome\User Data\Default"), FileAppend("{}", root "\Local\Google\Chrome\User Data\Default\Bookmarks")
+            options["BrowserFolders"] := ["%LOCALAPPDATA%\Google\Chrome\User Data"]
+            files := BookmarkProvider.Files()
+            eq("standard folder once", files.Length "|" files[1][1], "1|Chrome")
+        } finally {
+            options["BrowserFolders"] := saved
+            EnvSet("LOCALAPPDATA", savedLocal), EnvSet("ALTRUN_TEST_BROWSERS")
+            try DirDelete(root, true)
+        }
+    }
+
     ; Browser history: "h word" (keyword only), most recent first, every word in the title or URL; the History files read through winsqlite3.dll
     static BrowserHistory() {
         eq := (n, a, e) => TestRunner.Equal("BrowserHistory." n, a, e)
