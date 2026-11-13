@@ -16,7 +16,7 @@
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys. Action: a built-in command Id (Search, ToggleWindow,
-;                     a system command) or "custom:<Id>" = the user's custom command with that Id (SearchText, optional: what Search types into the search box)
+;                     a system command), "custom:<Id>" = the user's custom command with that Id or "script:<file name>" = a script (SearchText, optional: what Search types into the search box)
 ;   "CustomCommands": [ { "Id", "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
 ;   "SelectionTypes": [ { "Name", "Kind", "Pattern" } ],   the user's content types of a selection (Kind Text: regular expression / File: extensions), see SelectionActions
 ;   "Snippets"      : [ { "Id", "Name", "Keyword", "Text", "AutoExpand" } ],

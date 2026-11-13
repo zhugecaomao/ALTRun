@@ -5,6 +5,23 @@
 
 ## [未发布]
 
+## [2026.11.12.11]
+
+测试版。
+
+Test build.
+
+### 新增
+- 脚本可以按内容类型出现在选中内容的操作面板里: 脚本开头写 `@altrun.selection Text, PDF` (内置或自己的类型, 逗号分开), 选中这些类型的内容按 `Ctrl+Alt+\` 时脚本排在自定义命令后面, 选中的内容作为第一个参数传入 (多个文件每个一个参数); 和自定义命令同一套命令行检查, 按脚本实际的命令行判断 shell (`.bat` / `.cmd` 和 silent / output 模式经过 cmd, `.ps1` 经过 PowerShell), 不安全时不列出
+- 热键可以运行脚本: 热键编辑窗口的 "选择..." 里多了 "脚本" 一组 (存成 `script:<文件名>`); 写了 `@altrun.argument` 或 `@altrun.selection` 的脚本把选中的内容作为参数, 规则和自定义命令一样 (没选中时有关键字就打开搜索窗口填好关键字); 改了文件名的脚本在自定义热键列表里显示成红字 `(脚本不存在) script:<文件名>`, 按下时提示
+
+### 改进
+- 偏好设置 → 脚本: 列表加 "类型" 列 (选中内容类型); 页面下面的说明加上 `@altrun.selection`
+- 偏好设置 → 选中内容: "使用它的命令" 列和测试框也列出写了这个类型的脚本 (名称后面带 "(脚本)")
+
+### 修复
+- 选中内容的操作 / 热键取选中内容时, 如果热键是别的程序 (宏工具、远程桌面) 模拟按下的, 偶尔复制失败, 还会在原程序里打出一个 "c": 现在等 Ctrl 等键在逻辑上也松开后再复制
+
 ## [2026.11.12.10]
 
 测试版。
@@ -1439,7 +1456,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...HEAD
+[2026.11.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...2026.11.12.11
 [2026.11.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...2026.11.12.10
 [2026.11.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...2026.11.12.9
 [2026.11.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...2026.11.12.8

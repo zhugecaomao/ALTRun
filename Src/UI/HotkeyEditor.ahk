@@ -4,8 +4,8 @@
 ; Top to bottom in the order people decide things, each group with a gray line saying what it is for:
 ;   Hotkey      the recording box (HotkeyBox, mouse buttons too) and "Keep the key's original function" (a leading ~)
 ;   Action      the command's name in a read-only box and "Choose..." (CommandPicker: a searchable list of ALTRun's own two, the
-;               custom commands and the system commands); below it in gray what it is and how it gets the selection (in red when the
-;               custom command was deleted)
+;               custom commands, the scripts and the system commands); below it in gray what it is and how it gets the selection (in red
+;               when the custom command was deleted or the script is no longer in the Scripts folder)
 ;   Search text only for Search: what the search box starts with; {selection} = the text selected in the program in front.
 ;               "Insert" (a drop-down button) adds {selection} or a search scope (folder, doc, recent...), so nothing has to be remembered
 ;   Works in    all programs, or only in windows matching a WinTitle (ALTRun = only in the search window)
@@ -24,10 +24,11 @@
 ;   HotkeyEditor.Summary(item, commands)   -> "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
 ;   HotkeyEditor.Clash(item, inUse)        -> the first of inUse the same key press triggers in the same windows ({Key, Label...}), "" when none
 ;   HotkeyEditor.ClashText(item, inUse)    -> the red line under the hotkey box: "Already used by Hotkeys (Lock computer)", "" when none
-;   HotkeyEditor.ActionName(id, commands)  -> the name shown for an Action ("Notepad", "(deleted command) custom:k3x9a2mq")
+;   HotkeyEditor.ActionName(id, commands)  -> the name shown for an Action ("Notepad", "(deleted command) custom:k3x9a2mq",
+;                                             "(script not found) script:backup.ps1")
 ;   HotkeyEditor.ActionDetail(id, commands) -> {Text, Missing}: the gray line below it
 ;   HotkeyEditor.ListText(item, commands)  -> the Action column of Preferences → Hotkeys ("Search: folder {selection}", "Run: Notepad", "Lock computer")
-;   HotkeyEditor.IsMissing(item, commands) -> true when the hotkey runs a custom command that was deleted (its row is red)
+;   HotkeyEditor.IsMissing(item, commands) -> true when the hotkey runs a custom command that was deleted or a script that isn't there (its row is red)
 ;===============================================================================
 
 class HotkeyEditor {
@@ -215,8 +216,8 @@ class HotkeyEditor {
         return result
     }
 
-    ; The name shown for an Action: ALTRun's own two, a custom command's name, a system command's name; a deleted custom command
-    ; "(deleted command) custom:<Id>", an unknown Id (a newer version's) as it is
+    ; The name shown for an Action: ALTRun's own two, a custom command's name, a script's title, a system command's name; a deleted
+    ; custom command "(deleted command) custom:<Id>", a missing script "(script not found) script:<file name>", an unknown Id (a newer version's) as it is
     static ActionName(id, commands := "") {
         switch id {
             case "Search":       return I18n.T("HotkeyEditor.Action.Search")
@@ -225,6 +226,10 @@ class HotkeyEditor {
         if (SubStr(id, 1, 7) = "custom:") {
             command := AppSettings.ItemById(HotkeyEditor._Commands(commands), SubStr(id, 8))
             return IsObject(command) ? command["Title"] : I18n.T("HotkeyEditor.Deleted", id)
+        }
+        if (SubStr(id, 1, 7) = "script:") {
+            script := ScriptProvider.FindByName(SubStr(id, 8))
+            return IsObject(script) ? script.Title : I18n.T("HotkeyEditor.ScriptMissing", id)
         }
         command := HotkeyEditor._System(id)
         return IsObject(command) ? command["Title"] : id
@@ -248,6 +253,13 @@ class HotkeyEditor {
                 : SelectionActions.CommandTypes(command).Length ? "HotkeyEditor.Detail.Types" : "HotkeyEditor.Detail.Plain"
             return {Text: I18n.T("CommandPicker.Kind.Custom") " · " target " · " I18n.T(rule), Missing: false}
         }
+        if (SubStr(id, 1, 7) = "script:") {                                ; the rules of ScriptProvider.RunFromHotkey
+            script := ScriptProvider.FindByName(SubStr(id, 8))
+            if !IsObject(script)
+                return {Text: I18n.T("HotkeyEditor.Detail.ScriptMissing"), Missing: true}
+            rule := (script.Argument != "" || script.Selection.Length) ? "HotkeyEditor.Detail.ScriptArgument" : "HotkeyEditor.Detail.Plain"
+            return {Text: I18n.T("CommandPicker.Kind.Script") " · " script.Name " · " I18n.T(rule), Missing: false}
+        }
         command := HotkeyEditor._System(id)
         return {Text: IsObject(command) ? command["Subtitle"] : I18n.T("HotkeyEditor.Detail.Unknown"), Missing: false}
     }
@@ -261,13 +273,15 @@ class HotkeyEditor {
             text := Trim(normalized["SearchText"])
             return (text = "") ? I18n.T("HotkeyEditor.Action.Search") : I18n.T("Prefs.Hotkey.Search", text)
         }
-        if (SubStr(id, 1, 7) = "custom:" && !HotkeyEditor.IsMissing(normalized, commands))
+        if ((SubStr(id, 1, 7) = "custom:" || SubStr(id, 1, 7) = "script:") && !HotkeyEditor.IsMissing(normalized, commands))
             return I18n.T("Prefs.Hotkey.Run", HotkeyEditor.ActionName(id, commands))
         return HotkeyEditor.ActionName(id, commands)
     }
 
     static IsMissing(item, commands := "") {
         id := (item is Map && item.Has("Action")) ? item["Action"] "" : ""
+        if (SubStr(id, 1, 7) = "script:")
+            return !IsObject(ScriptProvider.FindByName(SubStr(id, 8)))
         return SubStr(id, 1, 7) = "custom:" && !IsObject(AppSettings.ItemById(HotkeyEditor._Commands(commands), SubStr(id, 8)))
     }
 

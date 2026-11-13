@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.12.10"
+    static Version := "2026.11.12.11"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -501,7 +501,8 @@ class App {
         if (clipboard["Enabled"] && clipboard["Hotkey"] != "")
             App._TryHotkey(clipboard["Hotkey"], (*) => SearchWindow.Show(AppSettings.Feature("Clipboard")["Keyword"] " "))
 
-        ; custom hotkeys: Key -> Action (a system command, Search typing its SearchText, or "custom:<Id>" = a custom command); with a WinTitle only in that window
+        ; custom hotkeys: Key -> Action (a system command, Search typing its SearchText, "custom:<Id>" = a custom command, "script:<file name>"
+        ; = a script); with a WinTitle only in that window
         for entry in AppSettings.Hotkeys {
             if !(entry is Map) || !entry.Has("Key") || !entry.Has("Action")
                 continue
@@ -625,10 +626,12 @@ class App {
     }
 
     ; Remember the window the hotkey was pressed in first: commands such as TerminalHere work on that window, and {hwnd} / {pid}
-    ; of a custom command become it. "custom:<Id>" runs the user's custom command with that Id
+    ; of a custom command become it. "custom:<Id>" runs the user's custom command with that Id, "script:<file name>" a script
     static _HotkeyAction(actionId, searchText := "") {
         if (SubStr(actionId, 1, 7) = "custom:")
             return (*) => (App.RememberActiveWindow(), CustomCommandProvider.RunFromHotkey(SubStr(actionId, 8)))
+        if (SubStr(actionId, 1, 7) = "script:")
+            return (*) => (App.RememberActiveWindow(), ScriptProvider.RunFromHotkey(SubStr(actionId, 8)))
         return (*) => (App.RememberActiveWindow(), SystemProvider.RunCommand(actionId, searchText))
     }
 

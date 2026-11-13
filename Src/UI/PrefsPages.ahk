@@ -599,8 +599,8 @@ class PrefsPages {
         PrefsForm.Field("Features.Scripts.Keyword", "Prefs.ScriptKeyword", "S")
         PrefsForm.Section("Prefs.Section.ScriptList")
         listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h170 -Multi NoSort Grid ReadOnly"
-            , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
-        for index, width in [145, 70, 95, 135, 100]
+            , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.ScriptTypes"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
+        for index, width in [105, 60, 80, 80, 130, 80]   ; the last one (File) fills the rest
             listView.ModifyCol(index, width)
         listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"') : "")
         PrefsPages._scriptList := listView
@@ -611,6 +611,13 @@ class PrefsPages {
 
     static _scriptList := ""
 
+    static JoinNames(names) {                                               ; ["Text", "PDF"] -> "Text, PDF"
+        text := ""
+        for name in names
+            text .= (text = "" ? "" : ", ") name
+        return text
+    }
+
     static _FillScripts() {
         static modes := Map("window", "Script.Mode.Window", "silent", "Script.Mode.Silent", "output", "Script.Mode.Output")
         listView := PrefsPages._scriptList
@@ -619,7 +626,7 @@ class PrefsPages {
         ScriptProvider.Load()
         listView.Delete()
         for script in ScriptProvider.Scripts
-            listView.Add(, script.Title, script.Keyword, script.Argument, I18n.T(modes[script.Mode]), script.Name)
+            listView.Add(, script.Title, script.Keyword, script.Argument, PrefsPages.JoinNames(script.Selection), I18n.T(modes[script.Mode]), script.Name)
         if !ScriptProvider.Scripts.Length
             listView.Add(, I18n.T("Prefs.NoScripts"))
         PrefsForm.FitColumns(listView)
@@ -669,7 +676,7 @@ class PrefsPages {
         try PreferencesWindow.PageList.Focus()
     }
 
-    ; A hotkey whose custom command was deleted is red (the color of the edit window's line, as a COLORREF); others normal
+    ; A hotkey whose custom command was deleted (or whose script isn't there) is red (the color of the edit window's line, as a COLORREF); others normal
     static HotkeyRowColor(item) {
         if !HotkeyEditor.IsMissing(item, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands"))
             return ""

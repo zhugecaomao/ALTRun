@@ -35,6 +35,7 @@ class Shots {
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
+                         , "hotkey-editor-script", "command-picker-scripts"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -92,7 +93,9 @@ class Shots {
             ["hotkey-editor-command", "Light", "-Preferences Hotkeys", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 1), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (running a custom command)
             ["hotkey-editor-clash", "Light", "-Preferences Hotkeys", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 5), () => Shots.CommandHotkey(true, true)],   ; a hotkey with the keys of another one: the red line below the summary
             ["command-picker",   "Light", "-Preferences Hotkeys", () => Shots.CommandPicker(), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (Choose Command)
-            ["prefs-hotkeys-commands", "Light", "-Preferences Hotkeys", () => Shots.Preferences(), () => Shots.CommandHotkey(true)],   ; the list with a custom command's hotkey and one whose command was deleted (red)
+            ["prefs-hotkeys-commands", "Light", "-Preferences Hotkeys", () => Shots.Preferences(), () => Shots.CommandHotkey(true, false, true)],   ; the list with a custom command's hotkey and one whose command was deleted (red), a script's and a missing script's (red)
+            ["hotkey-editor-script", "Light", "-Preferences Hotkeys", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 5), () => Shots.CommandHotkey(true, false, true)],   ; Wiki: scripts (a hotkey that runs a script)
+            ["command-picker-scripts", "Light", "-Preferences Hotkeys", () => Shots.CommandPicker(".ps1"), () => Shots.CommandHotkey()],   ; Choose Command filtered to the scripts
             ["prefs-quickswitch", "Light", "-Preferences QuickSwitch", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
             ["prefs-dialogpanel", "Light", "-Preferences QSPanel", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
             ["prefs-datestamp",  "Light", "-Preferences DateStamp", () => Shots.Preferences()],     ; Wiki: date stamp
@@ -204,6 +207,8 @@ class Shots {
         DirCreate(Shots.AppDir "\Scripts")
         FileAppend("; @altrun.title    Ping host`n; @altrun.keyword  ping`n; @altrun.argument host name`n; @altrun.mode     output`n"
             . "RunWait('ping ' A_Args[1])`n", Shots.AppDir "\Scripts\Ping.ahk", "UTF-8")
+        FileAppend("# @altrun.title     Merge PDFs`n# @altrun.selection PDF, Files`n# @altrun.mode      silent`n& 'C:\Tools\PdfTool\PdfTool.exe' merge $args`n"
+            , Shots.AppDir "\Scripts\Merge PDFs.ps1", "UTF-8")
         FileAppend("# @altrun.title    Today's date`n# @altrun.keyword  today`n# @altrun.mode     silent`nGet-Date -Format 'dddd, d MMMM yyyy'`n"
             , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
     }
@@ -871,7 +876,7 @@ class Shots {
     ; A custom command and a hotkey that runs it, for the hotkey edit window and Choose Command.
     ; withList: also a search, a system command and a hotkey whose command was deleted, for the Hotkeys page
     ; withClash: and a fifth one with the keys of the first (Ctrl+Alt+N)
-    static CommandHotkey(withList := false, withClash := false) {
+    static CommandHotkey(withList := false, withClash := false, withScripts := false) {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["CustomCommands"].Push(Map("Id", "np4k2x7q", "Title", "Edit in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "en", "Selection", "Text files"))
@@ -882,6 +887,9 @@ class Shots {
                 , Map("Key", "^!q", "Action", "custom:q7w2e9rt", "WinTitle", ""))   ; no such command: deleted
         if withClash
             settings["Hotkeys"].Push(Map("Key", "^!n", "Action", "Lock", "WinTitle", ""))
+        if withScripts
+            settings["Hotkeys"].Push(Map("Key", "^!m", "Action", "script:merge pdfs.ps1", "WinTitle", "")
+                , Map("Key", "^!b", "Action", "script:backup.ps1", "WinTitle", ""))   ; no such script: renamed or deleted
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
@@ -903,8 +911,8 @@ class Shots {
         return [editor, popup]
     }
 
-    ; "Choose..." in the edit window of the hotkey above: the list with that command selected
-    static CommandPicker() {
+    ; "Choose..." in the edit window of the hotkey above: the list with that command selected; filter: typed into its search box
+    static CommandPicker(filter := "") {
         editor := Shots.SyncWindow("Edit...", "Edit Hotkey", 1)
         button := 0
         for ctrl in WinGetControlsHwnd(editor)
@@ -917,6 +925,8 @@ class Shots {
         if !window
             throw Error("Choose...: window not shown")
         WinSetAlwaysOnTop(1, window)
+        if (filter != "")
+            ControlSetText(filter, "Edit1", window)                         ; WM_SETTEXT: the box's Change event filters the list
         Sleep(800)
         return window
     }
