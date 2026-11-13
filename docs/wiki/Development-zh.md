@@ -86,7 +86,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 - **剪贴板**: 借用剪贴板的代码 (`saved := ClipboardAll()`) 在 `finally` 里还原 (`ProjectTests.ClipboardRestore`)
 - **其他程序发来的消息**: WM_COPYDATA 只在发送方给出的长度内读取 (`Win.CopyDataText`、`Everything.ParseList`); 另一个实例转交过来、会改动程序的命令 (`-Update`) 先询问
 - **命令行**: 参数用 `Win.QuoteArg` 加引号; 用户输入的内容带双引号时不经过 `cmd.exe` (`ScriptProvider.ThroughCmd`)
-- **以管理员身份运行的东西**: 用到的文件不放在普通权限程序能在检查和使用之间改动的地方: 更新包暂存在程序旁边 (`UpdateChecker.TempDir`), 任务 XML 在 schtasks 读取期间被占住 (`AdminHelper.RegisterXml`); DLL 用完整路径加载。管理员窗口的小助手不写文件, 每个请求都自己检查, 因为任何程序都能给它发请求 (`AdminHelper.CheckJump`)
+- **以管理员身份运行的东西**: 用到的文件不放在普通权限程序能在检查和使用之间改动的地方: 更新包暂存在程序旁边 (`UpdateChecker.TempDir`), 任务 XML 在 schtasks 读取期间被占住 (`AdminHelper.RegisterXml`); DLL 用完整路径加载。管理员窗口的小助手不写文件, 每个请求都自己检查, 因为任何程序都能给它发请求 (`AdminHelper.CheckJump`); 反过来, ALTRun 收到小助手的热键消息只当作 "按了这个快捷键", 其余都自己判断 (`AdminHelper.HotkeyPressed`)
 - **网络**: 只有 [SECURITY.md](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#联网) 里列出的请求; 新增的先写进那里
 
 ### 线程、消息和重入

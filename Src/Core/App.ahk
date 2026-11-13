@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.13.6"
+    static Version := "2026.11.13.7"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -783,6 +783,10 @@ class App {
         }
         if (args.Length >= 2 && args[1] = "-CapsLockState") {               ; the helper in an administrator window toggled Caps Lock: show the notice here
             App.CapsLockNotice(args[2] = "1")
+            return
+        }
+        if (args.Length >= 2 && args[1] = AdminHelper.HotkeyArg) {           ; the helper caught a Quick Switch hotkey in an administrator dialog: only which one
+            AdminHelper.HotkeyPressed(args[2])
             return
         }
         if (args.Length >= 2 && args[1] = "-AdminHelperNote") {             ; a line for the log from the helper for administrator windows

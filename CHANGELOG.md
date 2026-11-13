@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.7]
+
+测试版。
+
+Test build.
+
+### 新增
+- Quick Switch 的快捷键 `Ctrl+G` / `Ctrl+Shift+G` 在以管理员身份运行的程序的对话框里也能用 (勾选 "以管理员身份运行的程序的对话框" 时): ALTRun 收不到那里的按键, 由管理员权限的小助手接住, 只告诉 ALTRun 按了哪个快捷键; 跳转仍由小助手检查后执行, 在别的窗口里不会触发两次 (AppInn 论坛)
+
 ## [2026.11.13.6]
 
 测试版。
@@ -1469,7 +1478,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...HEAD
+[2026.11.13.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...2026.11.13.7
 [2026.11.13.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...2026.11.13.6
 [2026.11.13.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...2026.11.13.5
 [2026.11.13.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...2026.11.13.4

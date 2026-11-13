@@ -13,6 +13,11 @@
 ;      check would prove nothing
 ;   2. with the helper: FileDialogs.SetDialogPath sees the dialog's program is elevated and hands the jump over: it must reach "Target";
 ;      the helper refuses a folder that doesn't exist and a window that isn't a dialog in front
+;   3. the hotkeys, pressed for real (SendEvent at send level 1, like a person's keys) with the dialog back at Start: ALTRun's keyboard
+;      hook gets no keys there, so the helper catches Ctrl+G and Ctrl+Shift+G and tells the client; Ctrl+G must jump the dialog to the file
+;      manager's folder ("Pressed": the client's FileManagerFolder is replaced, there is no file manager on the runner), each hotkey must
+;      reach the client once, and the client's own Ctrl+G (as ALTRun's) must not fire as well. Whether the client could bring its window
+;      to the front after Ctrl+Shift+G (where ALTRun's folder panel would take the caret) is printed as INFO
 ; Prints one line per check (PASS / FAIL / INFO); returns the number of failed checks.
 ;
 ;   RunTests.ahk AdminDialogCheck admin <appDir> <testsDir> <user> <password>     appDir: a copy of the repository the standard user can read
@@ -27,7 +32,7 @@ class AdminDialogCheck {
         demo := AdminDialogCheck.Root "\demo", io := AdminDialogCheck.Root "\io"
         dialogPid := 0, helperPid := 0, clientPid := 0
         try {
-            DirCreate(demo "\Start"), DirCreate(demo "\Target"), DirCreate(io)
+            DirCreate(demo "\Start"), DirCreate(demo "\Target"), DirCreate(demo "\Pressed"), DirCreate(io)
             RunWait(A_ComSpec ' /c icacls "' io '" /grant *S-1-1-0:(OI)(CI)M', , "Hide")   ; the client (another user) writes its answers here
             loop files io "\*"
                 FileDelete(A_LoopFileFullPath)
@@ -76,6 +81,29 @@ class AdminDialogCheck {
             AdminDialogCheck.Check("with the helper the dialog jumps", folder ~= "\\Target$", "the dialog shows [" folder "]; client: " answers)
             AdminDialogCheck.Check("refused: a folder that doesn't exist", InStr(answers, "missing refused: folder not found") > 0, answers)
             AdminDialogCheck.Check("refused: a window that isn't a dialog in front", InStr(answers, "own window refused: not in front") > 0, answers)
+
+            ; 3. the hotkeys
+            FileDialogs.Jump(demo "\Start\", dialog)                       ; this side runs as administrator: it can
+            deadline := A_TickCount + 5000
+            while (!(FileDialogs.DialogFolder(dialog) ~= "\\Start$") && A_TickCount < deadline)
+                Sleep(100)
+            AdminDialogCheck.Signal(io "\go3.txt")
+            if !AdminDialogCheck.WaitFor(io "\ready3.txt", 15)
+                throw Error("the client didn't get ready for the hotkeys")
+            AdminDialogCheck.Front(dialog), AdminDialogCheck.Press("^g")
+            deadline := A_TickCount + 5000
+            while (!((folder := FileDialogs.DialogFolder(dialog)) ~= "\\Pressed$") && A_TickCount < deadline)
+                Sleep(100)
+            AdminDialogCheck.Front(dialog), AdminDialogCheck.Press("^+g")
+            Sleep(2000)
+            AdminDialogCheck.Signal(io "\go4.txt")
+            AdminDialogCheck.WaitFor(io "\done3.txt", 15)
+            answers := FileExist(io "\done3.txt") ? FileRead(io "\done3.txt") : ""
+            AdminDialogCheck.Check("Ctrl+G: the dialog jumps to the file manager's folder", folder ~= "\\Pressed$", "the dialog shows [" folder "]; client: " answers)
+            AdminDialogCheck.Check("Ctrl+G: ALTRun is told once", InStr(answers, "jump 1`n") > 0, answers)
+            AdminDialogCheck.Check("Ctrl+Shift+G: ALTRun is told once", InStr(answers, "panel 1`n") > 0, answers)
+            AdminDialogCheck.Check("ALTRun's own hotkeys don't fire too", InStr(answers, "own 0`n") > 0, answers)
+            AdminDialogCheck.Log("INFO after Ctrl+Shift+G the client's window came to the front: " (RegExMatch(answers, "front (\w+)", &m) ? m[1] : "?"))
         } catch as e
             AdminDialogCheck.Check("no error", false, e.Message " (line " e.Line ")")
         try AdminHelper.Stop()
@@ -89,7 +117,10 @@ class AdminDialogCheck {
     static Client(appDir, dialog) {
         io := AdminDialogCheck.Root "\io", target := AdminDialogCheck.Root "\demo\Target\"
         DllCall("SetWindowTextW", "Ptr", A_ScriptHwnd, "Str", appDir "\ALTRun.ahk - AutoHotkey v2 (AdminDialogCheck)")   ; App._RunningInstance, for the helper
-        QuickSwitch.Options := Map("Enabled", 1, "AdminDialogs", 1, "BrowseDialogs", 1)
+        options := AppSettings.Defaults()["Extensions"]["QuickSwitch"]
+        options["AdminDialogs"] := 1
+        QuickSwitch.Options := options
+        QuickSwitch.AddGroups(options)
         AdminDialogCheck.Signal(io "\ready.txt", "user " A_UserName ", administrator " (A_IsAdmin ? "yes" : "no") ", dialog found " (WinExist("ahk_id " dialog) ? "yes" : "no"))
         if !AdminDialogCheck.WaitFor(io "\go1.txt", 30)
             return 1
@@ -111,8 +142,32 @@ class AdminDialogCheck {
         } else
             answers .= "no helper window`n"
         AdminDialogCheck.Signal(io "\done2.txt", answers)
+
+        ; 3. the hotkeys: the helper's message goes the way it does in ALTRun (App._OnCopyData -> App._HandleCommandLine ->
+        ; AdminHelper.HotkeyPressed); only the file manager's folder and the folder panel are replaced, to count them
+        if !AdminDialogCheck.WaitFor(io "\go3.txt", 30)
+            return 1
+        count := Map("jump", 0, "panel", 0, "own", 0), front := {Seen: "no"}
+        panel := Gui("+AlwaysOnTop", "AdminDialogCheck panel")
+        FileManagers.DefineProp("FileManagerFolder", {Call: (*) => (count["jump"]++, {Path: AdminDialogCheck.Root "\demo\Pressed", Tag: "check", Hwnd: 0})})
+        QuickSwitch.DefineProp("FocusPanel", {Call: (*) => (count["panel"]++, panel.Show("w200 h40"), front.Seen := WinWaitActive("ahk_id " panel.Hwnd, , 2) ? "yes" : "no")})
+        OnMessage(0x4A, (p*) => App._OnCopyData(p*))
+        HotIf((*) => FileDialogs.IsFileDialog())                            ; ALTRun's own hotkeys, as QuickSwitch.Init registers them
+        Hotkey(options["Hotkey"], (*) => count["own"]++)
+        Hotkey(options["MenuHotkey"], (*) => count["own"]++)
+        HotIf()
+        AdminDialogCheck.Signal(io "\ready3.txt")
+        AdminDialogCheck.WaitFor(io "\go4.txt", 30)
+        AdminDialogCheck.Signal(io "\done3.txt", "jump " count["jump"] "`npanel " count["panel"] "`nown " count["own"] "`nfront " front.Seen "`n")
         Sleep(30000)                                                        ; stays the "ALTRun" the helper looks for, until closed
         return 0
+    }
+
+    ; A hotkey as a person presses it: hook hotkeys ignore other scripts' keys sent at level 0
+    static Press(keys) {
+        SendLevel(1)
+        SendEvent(keys)
+        SendLevel(0)
     }
 
     static Front(dialog) {

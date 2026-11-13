@@ -82,6 +82,35 @@ class ExtensionTests {
         eq("helper: dialogs with Quick Switch off", AdminHelper.DialogsFromSettings(settingsFile) ? 1 : 0, 0)
         FileDelete(settingsFile)
         eq("helper: dialogs without a settings file", AdminHelper.DialogsFromSettings(settingsFile) ? 1 : 0, 0)
+        eq("helper: no settings file, no Quick Switch options", AdminHelper.QuickSwitchFromSettings(settingsFile).Count, 0)
+        ; the helper's hotkeys (Quick Switch's, from the settings file): missing keys from the defaults, as ALTRun loads them
+        FileAppend('{"Extensions": {"QuickSwitch": {"Enabled": 1, "AdminDialogs": 1, "Hotkey": "^!g", "ExcludeWindows": "x"}}}', settingsFile, "UTF-8")
+        options := AdminHelper.QuickSwitchFromSettings(settingsFile)
+        FileDelete(settingsFile)
+        eq("helper hotkeys: from the file, the rest from the defaults", options["Hotkey"] "|" options["MenuHotkey"] "|" options["StandardDialogs"] "|" options["BrowseDialogs"], "^!g|^+g|1|1")
+        eq("helper hotkeys: a wrong type gets the default", options["ExcludeWindows"] is Array && options["ExcludeWindows"].Length > 0 ? 1 : 0, 1)
+        eq("helper hotkeys: the two of Quick Switch", AdminHelper.HotkeyNames.Length = 2 ? AdminHelper.HotkeyNames[1] "|" AdminHelper.HotkeyNames[2] : "", "Hotkey|MenuHotkey")
+        ; ALTRun's side: only "this hotkey was pressed", handled as its own hotkey, only with an administrator dialog in front
+        calls := []
+        savedSync := QuickSwitch.GetOwnPropDesc("SyncFileManagerPath"), savedFocus := QuickSwitch.GetOwnPropDesc("FocusPanel"), savedOptions := QuickSwitch.Options
+        QuickSwitch.DefineProp("SyncFileManagerPath", {Call: (*) => calls.Push("jump")})
+        QuickSwitch.DefineProp("FocusPanel", {Call: (*) => calls.Push("panel")})
+        try {
+            QuickSwitch.Options := Map("Enabled", 1, "AdminDialogs", 1)
+            yes := () => true, no := () => false
+            handled := (AdminHelper.HotkeyPressed("Hotkey", yes, false) ? 1 : 0) . (AdminHelper.HotkeyPressed("MenuHotkey", yes, false) ? 1 : 0)
+                . (AdminHelper.HotkeyPressed("Hotkey", no, false) ? 1 : 0) . (AdminHelper.HotkeyPressed("C:\Windows", yes, false) ? 1 : 0)
+                . (AdminHelper.HotkeyPressed("Hotkey", yes, true) ? 1 : 0)
+            eq("hotkey from the helper: handled", handled, "11000")
+            eq("hotkey from the helper: as ALTRun's own", calls.Length = 2 ? calls[1] "|" calls[2] : calls.Length, "jump|panel")
+            calls := [], QuickSwitch.Options := Map("Enabled", 1, "AdminDialogs", 0)
+            eq("hotkey from the helper: option off", (AdminHelper.HotkeyPressed("Hotkey", yes, false) ? 1 : 0) . calls.Length, "00")
+            QuickSwitch.Options := Map("Enabled", 0, "AdminDialogs", 1)
+            eq("hotkey from the helper: Quick Switch off", (AdminHelper.HotkeyPressed("Hotkey", yes, false) ? 1 : 0) . calls.Length, "00")
+        } finally {
+            QuickSwitch.DefineProp("SyncFileManagerPath", savedSync), QuickSwitch.DefineProp("FocusPanel", savedFocus), QuickSwitch.Options := savedOptions
+        }
+        eq("hotkey from the helper: the message ALTRun takes", AdminHelper.HotkeyArg, "-AdminHelperHotkey")
         ; what the helper accepts: any program with normal rights can send it a jump
         paths := ""
         for folder in ["C:\", "E:\game", "E:\game\", "\\server\share\Docs", "game", "\\server", "C:\a*.txt", 'C:\a"b', "C:\a|b", "C:\a`nb", "C:\a:stream", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "C:\" StrReplace(Format("{:1100}", ""), " ", "a")]
