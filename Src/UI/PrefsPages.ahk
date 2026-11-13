@@ -627,15 +627,45 @@ class PrefsPages {
 
     static BuildHotkeys() {
         PrefsForm.BeginPage("Prefs.Page.Hotkeys", 100)                         ; narrow label column: the list starts at the left edge (Caps Lock is on the Keyboard page)
-        list := PrefsForm.List("Hotkeys", 500
+        list := PrefsForm.List("Hotkeys", 330
             , [["Prefs.Col.Key", "Key", 150], ["Prefs.Col.Action", "Action", 200], ["Prefs.Col.WinTitle", "WinTitle", 190]]
             , (owner, title, item, original) => HotkeyEditor.Edit(owner, item, original, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands")
                 , PreferencesWindow.AllHotkeys(PreferencesWindow.Working, (path) => PreferencesWindow.BoundValue(path)))   ; its own window: groups with descriptions, a summary line; the commands and hotkeys being edited (one just added can be chosen; a clash shows at once)
             , () => Map("Key", "", "Action", "Search", "SearchText", "", "WinTitle", ""), "", "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.HotkeyKeys(item)}, ""
             , {RowColor: (item) => PrefsPages.HotkeyRowColor(item)})
-        PrefsForm._current.OnShow := () => list.Redraw.Call()                ; command names may have changed on the Commands page meanwhile
         PrefsForm.Note("Prefs.HotkeysNote")
+        ; Other hotkeys: read-only, the hotkeys set on other pages (as their boxes are now); double-click goes to that page
+        PrefsForm.Section("Prefs.OtherHotkeys")
+        others := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h" (PrefsForm.ButtonY - 10 - PrefsForm._y) " -Multi NoSort ReadOnly Grid"
+            , [I18n.T("Prefs.Col.Key"), I18n.T("Prefs.Col.UsedFor"), I18n.T("Prefs.Col.Page")])
+        for index, width in [150, 200, 190]
+            others.ModifyCol(index, width)
+        others.OnEvent("DoubleClick", (ctrl, row) => PrefsPages.GoToOtherHotkey(row))
+        PrefsPages._others := {View: others, Items: []}
+        PrefsPages.FillOtherHotkeys()
+        PrefsForm._current.OnShow := () => (list.Redraw.Call(), PrefsPages.FillOtherHotkeys())   ; command names and the other pages' hotkeys may have changed meanwhile
+    }
+
+    static _others := ""                                                    ; the Hotkeys page's "Other hotkeys" list: {View, Items (PreferencesWindow.OtherHotkeys)}
+
+    ; Lists the hotkeys set on other pages, as Preferences shows them now (changed boxes not applied yet)
+    static FillOtherHotkeys() {
+        ui := PrefsPages._others
+        ui.Items := PreferencesWindow.OtherHotkeys(PreferencesWindow.Working, (path) => PreferencesWindow.BoundValue(path))
+        ui.View.Opt("-Redraw")
+        ui.View.Delete()
+        for each in ui.Items
+            ui.View.Add("", HotkeyBox.Label(each.Key), each.Purpose, I18n.T(each.Page))
+        ui.View.Opt("+Redraw")
+    }
+
+    ; Double-click in "Other hotkeys": shows the page the hotkey is set on (the focus goes to the page list; a hotkey box would start recording)
+    static GoToOtherHotkey(row) {
+        if !(IsObject(PrefsPages._others) && row >= 1 && row <= PrefsPages._others.Items.Length)
+            return
+        PreferencesWindow._SelectRow(PreferencesWindow._PageIndex(PrefsPages._others.Items[row].Page))
+        try PreferencesWindow.PageList.Focus()
     }
 
     ; A hotkey whose custom command was deleted is red (the color of the edit window's line, as a COLORREF); others normal
