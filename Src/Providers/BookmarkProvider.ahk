@@ -2,7 +2,7 @@
 ; BookmarkProvider.ahk - browser bookmarks (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Like Alfred's Web Bookmarks: typing a bookmark's name finds it (InDefaultResults, after applications and commands),
-; "bm word" (Keyword) searches bookmarks only. Enter opens in the default browser, Alt+Enter copies the URL.
+; "bm word" (Keyword) searches bookmarks only. Enter opens in the browser (ActionCatalog.OpenUrl), Alt+Enter copies the URL.
 ; Reads the Bookmarks file (JSON) of every profile (Default, Profile 1...) of Chromium browsers (Chrome, Edge, Brave, Vivaldi),
 ; and of the folders in BrowserFolders (portable or other Chromium browsers: their User Data folder, or one profile folder).
 ; Firefox keeps its bookmarks in an SQLite database, which can't be read.

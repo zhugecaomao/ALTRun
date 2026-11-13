@@ -2349,6 +2349,46 @@ Func | PTTools | PT Tools (AHK)=99
             try DirDelete(root, true)
         }
     }
+
+    ; The Browser setting: program with %variables% and parameters; the default browser when empty or missing. The command
+    ; line keeps the address one argument; "url:" icons show the browser's
+    static BrowserCommand() {
+        eq := (n, a, e) => TestRunner.Equal("BrowserCommand." n, a, e)
+        root := A_Temp "\ALTRun-browser-test"
+        try DirDelete(root, true)
+        DirCreate(root "\My Apps")
+        FileAppend("", root "\My Apps\vivaldi.exe")
+        EnvSet("ALTRUN_BR", root)
+        saved := AppSettings.General["Browser"]
+        try {
+            b := ActionCatalog.BrowserCommand('"%ALTRUN_BR%\My Apps\vivaldi.exe" --new-window')
+            eq("quoted with spaces", b.Exe "|" b.Args, root "\My Apps\vivaldi.exe|--new-window")
+            b := ActionCatalog.BrowserCommand(root "\My Apps\vivaldi.exe")
+            eq("no parameters", b.Exe "|" b.Args, root "\My Apps\vivaldi.exe|")
+            eq("empty: default browser", ActionCatalog.BrowserCommand("").Exe, "")
+            eq("missing: default browser", ActionCatalog.BrowserCommand("%ALTRUN_BR%\gone.exe --incognito").Exe, "")
+
+            b := {Exe: root "\My Apps\vivaldi.exe", Args: "--new-window"}
+            eq("command line", ActionCatalog.BrowserCommandLine(b, "https://example.com/a?q=1&b=2")
+                , '"' b.Exe '" --new-window "https://example.com/a?q=1&b=2"')
+            eq("quote encoded", ActionCatalog.BrowserCommandLine(b, 'https://example.com/?q="hi"'), '"' b.Exe '" --new-window "https://example.com/?q=%22hi%22"')
+            eq("trailing backslash", ActionCatalog.BrowserCommandLine(b, "https://example.com/a\"), '"' b.Exe '" --new-window "https://example.com/a\\"')
+            eq("no parameters: one space", ActionCatalog.BrowserCommandLine({Exe: b.Exe, Args: ""}, "https://example.com"), '"' b.Exe '" "https://example.com"')
+
+            AppSettings.General["Browser"] := '"%ALTRUN_BR%\My Apps\vivaldi.exe" --new-window'
+            eq("icon: the browser", IconCache.BrowserSpec("url:"), root "\My Apps\vivaldi.exe")
+            eq("icon: other specs kept", IconCache.BrowserSpec("ext:.pdf"), "ext:.pdf")
+            AppSettings.General["Browser"] := "%ALTRUN_BR%\gone.exe"
+            eq("icon: missing browser", IconCache.BrowserSpec("url:"), "url:")
+            AppSettings.General["Browser"] := ""
+            eq("icon: default browser", IconCache.BrowserSpec("url:"), "url:")
+        } finally {
+            AppSettings.General["Browser"] := saved
+            IconCache.BrowserSpec("url:")
+            EnvSet("ALTRUN_BR")
+            try DirDelete(root, true)
+        }
+    }
 }
 
 ThrowForTest() {                                                            ; for CoreTests.UncaughtErrors: an error nothing catches

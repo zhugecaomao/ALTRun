@@ -840,6 +840,8 @@ class I18n {
         s["Prefs.FileManager.Desc"]     := "Program that opens folders; parameters can follow, e.g. C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S (Total Commander: /O reuse window, /T new tab, /S active panel). Quote a path with spaces. Default: explorer.exe"
         s["Prefs.FolderNewTab"] := "Open folders in a new tab"
         s["Prefs.FolderNewTab.Desc"] := "File Explorer: a new tab of the window used last (Windows 11 22H2 or later). Total Commander: adds /O /T. Others: put their own parameters above."
+        s["Prefs.Browser"]             := "Browser"
+        s["Prefs.Browser.Desc"]        := "Program that opens web pages; parameters can follow, e.g. --new-window. Empty: the default browser"
         s["Prefs.HistorySize"]         := "Search history size"
         s["Prefs.HistorySize.Desc"]    := "Ctrl+↑ / Ctrl+↓ bring back recent searches."
         s["Prefs.RecentCount"]         := "Recent items to show"

@@ -453,7 +453,7 @@ Class PTToolsWindow {
     ; F1: the Wiki page of both tools (Chinese page for the Chinese UI), at this window's section; the headings are the same in both languages
     static HelpUrl(section) => HelpProvider.WikiPage("PT-Tools") "#" section
     static OpenHelp(section) {
-        try Run(PTToolsWindow.HelpUrl(section))
+        try ActionCatalog.OpenUrl(PTToolsWindow.HelpUrl(section))
     }
 
     static OnCloseSpf2m(GuiObj) {

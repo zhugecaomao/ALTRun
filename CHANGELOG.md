@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.5]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 通用 → "浏览器": 用指定的浏览器打开网页 (书签、浏览器历史记录、网页搜索、网址类的自定义命令、选中文字里的链接、帮助页面), 不用把它设为默认浏览器; 后面可以带参数 (例如 `"C:\Apps\Vivaldi\vivaldi.exe" --new-window`), 留空用默认浏览器; 网页结果显示这个浏览器的图标 (#505)
+
 ## [2026.11.13.4]
 
 测试版。
@@ -1447,7 +1456,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...HEAD
+[2026.11.13.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...2026.11.13.5
 [2026.11.13.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...2026.11.13.4
 [2026.11.13.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...2026.11.13.3
 [2026.11.13.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...2026.11.13.2

@@ -462,6 +462,8 @@
   "Prefs.FileManager.Desc": "打开文件夹用的程序, 后面可以带参数, 例如 C:\\Apps\\TotalCMD64\\TOTALCMD64.exe /O /T /S (Total Commander: /O 用已打开的窗口, /T 新标签页, /S 当前面板); 路径有空格时加引号。默认: explorer.exe",
   "Prefs.FolderNewTab": "在新标签页中打开文件夹",
   "Prefs.FolderNewTab.Desc": "资源管理器: 在最近用过的窗口里开新标签 (Windows 11 22H2 及以上)。Total Commander: 加 /O /T。其他: 在上面填它的参数。",
+  "Prefs.Browser": "浏览器",
+  "Prefs.Browser.Desc": "打开网页用的程序, 后面可以带参数 (例如 --new-window)。留空: 默认浏览器",
   "Prefs.FileMaxResults": "文件搜索结果数",
   "Prefs.FileMaxResults.Desc": "文件搜索 (先按空格或用关键字) 最多显示的结果数, 和普通结果里最多显示的文件数",
   "Prefs.FileMinLength": "最少字数",

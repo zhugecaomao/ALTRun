@@ -7,7 +7,7 @@ ALTRun collects and uploads nothing: no statistics, telemetry or ads. Searches, 
 ## When ALTRun goes online
 ALTRun itself only goes online to check for updates and install one you choose, to download exchange rates when currency conversion is turned on (off by default), and to download a web search's icon when you click "Download Site Icon". When each happens, where to, and how to turn it off: [Security policy → Network connections](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#network-connections) (the one list, kept with the privacy policy).
 
-Apart from that, web searches, bookmarks, web address commands and help links are handed to your default browser; ALTRun itself does not contact those sites. Talking to Everything and Total Commander happens locally (Windows messages), not over the network.
+Apart from that, web searches, bookmarks, web address commands and help links are handed to your browser (the default one, or the one in Preferences → General → Browser); ALTRun itself does not contact those sites. Talking to Everything and Total Commander happens locally (Windows messages), not over the network.
 
 ## What is stored on your PC
 Everything lives in the Data folder and a few local folders; what each file is, whether it can be deleted and how to back it up is in [Data files](Data-Files). Points related to privacy:

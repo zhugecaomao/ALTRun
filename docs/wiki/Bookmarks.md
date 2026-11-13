@@ -17,7 +17,7 @@ ALTRun reads bookmarks at startup, then checks their files in the background eve
 ## Browser history
 
 - Type `h keyword` to search the browser history: pages whose title or URL contains every word you type, most recently visited first. Chinese titles can also be found by their pinyin initials. `h ` alone (with the space) lists the most recently visited pages; `h` alone shows a hint.
-- Press `Enter` to open the page in your default browser; press `Alt+Enter` to copy its URL.
+- Press `Enter` to open the page in your browser (the default one, or Preferences → General → Browser); press `Alt+Enter` to copy its URL.
 - Only with the keyword: your history never shows up in normal search results.
 - Same browsers as bookmarks: Chrome, Edge, Brave and Vivaldi, all profiles (the most recent 10,000 pages of each); Firefox is not supported yet.
 - ALTRun reads each profile's `History` database only when you type `h `, and again when you come back to it more than a minute later; nothing is read at startup or in the background. It reads the file in place without locking it, through SQLite that comes with Windows 10 / 11 (`winsqlite3.dll`), so the browser can stay open. ALTRun keeps no copy of your history and sends nothing anywhere; a page you open from the results is remembered like any other result (learned ranking, recent items).

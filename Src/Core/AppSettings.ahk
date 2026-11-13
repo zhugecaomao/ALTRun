@@ -585,6 +585,7 @@ class AppSettings {
                 "ShowTrayIcon"        , 1,
                 "FileManager"         , "explorer.exe",
                 "FolderNewTab"        , 0,                                  ; open folders in a new tab: File Explorer (Windows 11 22H2+, a window already open) / Total Commander (/O /T)
+                "Browser"             , "",                                 ; program that opens web pages, parameters can follow; "" = the default browser
                 "SendToMenu"          , 1,
                 "StartMenuShortcut"   , 1,
                 "CheckForUpdates"     , 1,

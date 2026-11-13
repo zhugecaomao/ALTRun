@@ -226,31 +226,62 @@ class ActionCatalog {
         return args
     }
 
-    ; The FileManager setting -> {Exe, Args, Explorer}: the program ("quoted" when it has spaces, or up to .exe) with its
-    ; %environment variables% expanded (%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S; Run doesn't expand them, so such a
-    ; setting used to fail) and the parameters after it. Explorer when empty, explorer.exe, or a program that isn't there (logged)
+    ; The FileManager setting -> {Exe, Args, Explorer}: the program and its parameters (see SplitCommand / ProgramPath).
+    ; Explorer when empty, explorer.exe, or a program that isn't there (logged)
     static FileManagerCommand(setting) {
-        setting := Trim(setting)
-        if RegExMatch(setting, '^"([^"]+)"\s*(.*)$', &m) || RegExMatch(setting, "i)^(.+?\.exe)(?:\s+(.*))?$", &m)
-            program := m[1], args := m.Count >= 2 ? m[2] : ""
-        else
-            program := setting, args := ""
-        manager := {Exe: "", Args: Trim(args), Explorer: true}
-        if (program = "" || Path.Leaf(program) = "explorer.exe" || program = "explorer")
+        parts := ActionCatalog.SplitCommand(setting)
+        manager := {Exe: "", Args: parts.Args, Explorer: true}
+        if (parts.Program = "" || Path.Leaf(parts.Program) = "explorer.exe" || parts.Program = "explorer")
             return manager
-        exe := Path.Resolve(program)                                        ; %variables%, A_ variables, a program name found on PATH
-        if !FileExist(exe) {
-            Logger.Warn("ActionCatalog: file manager not found (" exe "), using File Explorer")
-            return manager
-        }
-        manager.Exe := exe, manager.Explorer := false
+        if ((exe := ActionCatalog.ProgramPath(parts.Program, "file manager", "using File Explorer")) != "")
+            manager.Exe := exe, manager.Explorer := false
         return manager
     }
 
+    ; The Browser setting -> {Exe, Args}: the program that opens web pages and its parameters (see SplitCommand / ProgramPath);
+    ; Exe = "" (the default browser) when empty or the program isn't there (logged)
+    static BrowserCommand(setting) {
+        parts := ActionCatalog.SplitCommand(setting)
+        exe := (parts.Program = "") ? "" : ActionCatalog.ProgramPath(parts.Program, "browser", "using the default browser")
+        return {Exe: exe, Args: parts.Args}
+    }
+
+    ; A program setting -> {Program, Args}: the program ("quoted" when it has spaces, or up to .exe) and the parameters
+    ; after it, e.g. %OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S or "C:\My Apps\Vivaldi\vivaldi.exe" --new-window
+    static SplitCommand(setting) {
+        setting := Trim(setting)
+        if RegExMatch(setting, '^"([^"]+)"\s*(.*)$', &m) || RegExMatch(setting, "i)^(.+?\.exe)(?:\s+(.*))?$", &m)
+            return {Program: m[1], Args: Trim(m.Count >= 2 ? m[2] : "")}
+        return {Program: setting, Args: ""}
+    }
+
+    ; The full path of the program in a setting: %environment variables% expanded (Run doesn't expand them, so such a
+    ; setting used to fail), A_ variables, a program name found on PATH; "" when it isn't there (logged)
+    static ProgramPath(program, what, instead) {
+        exe := Path.Resolve(program)
+        if FileExist(exe)
+            return exe
+        Logger.Warn("ActionCatalog: " what " not found (" exe "), " instead)
+        return ""
+    }
+
+    ; Web pages (http / https; an address without a scheme gets https://) open in General.Browser when it is set; other
+    ; links (mailto:, ms-settings:, search-ms: ...), and web pages when it isn't, in the program Windows registered for them
     static OpenUrl(address) {
         if !RegExMatch(address, "i)^[a-z][a-z0-9+.\-]*:")
             address := "https://" address
+        if (RegExMatch(address, "i)^https?://") && (browser := ActionCatalog.BrowserCommand(AppSettings.General["Browser"])).Exe != "")
+            return Run(ActionCatalog.BrowserCommandLine(browser, address))
         Run(address)
+    }
+
+    ; The command line that opens address in the browser: the address is one quoted argument (a double quote in it becomes
+    ; %22, and backslashes before the closing quote are doubled, so they don't escape it)
+    static BrowserCommandLine(browser, address) {
+        address := StrReplace(address, '"', "%22")
+        if RegExMatch(address, "\\+$", &tail)
+            address .= tail[0]
+        return Trim('"' browser.Exe '" ' browser.Args) ' "' address '"'
     }
 
     ; Like "right-click -> Properties" in Explorer. Run's properties verb fails for folders on network drives etc., so SHObjectProperties is used

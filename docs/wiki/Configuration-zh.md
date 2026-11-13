@@ -71,6 +71,7 @@
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号。可以用环境变量, 例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`; 找不到这个程序时用资源管理器打开文件夹 (记在日志里) |
 | FolderNewTab | `0` | 1 = 在新标签页中打开文件夹 (偏好设置 → 通用 → "在新标签页中打开文件夹")。资源管理器: 在最近用过的资源管理器窗口 (显示 ALTRun 之前在前台的那个, 没有就用当前虚拟桌面上最前面的那个) 里开新标签页, "在文件管理器中显示" 时选中那个文件; 要 Windows 11 22H2 及以上, 没有打开的资源管理器窗口、网络文件夹 0.5 秒内没有响应 (服务器离线) 或者不成功时, 和以前一样新开窗口。Total Commander: 参数里没有 `/O /T` 时自动加上。其他文件管理器: 在 FileManager 里填它自己的参数 |
+| Browser | 空 | 打开网页 (书签、浏览器历史记录、网页搜索、网址类的自定义命令、选中文字里的链接、帮助页面) 用的程序, 后面可以带参数, 例如 `"C:\Apps\Vivaldi\vivaldi.exe" --new-window`; 路径有空格时加引号。可以用环境变量。留空 = 默认浏览器; 找不到这个程序时用默认浏览器打开 (记在日志里)。只有 `http` / `https` 网址用它, 其他链接 (`mailto:`、`ms-settings:` 等) 交给 Windows 登记的程序。网页结果显示这个浏览器的图标 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
 | CheckForUpdates | 1 | 启动时和之后每 6 小时在后台检查一次 GitHub 上的新版本, 有新版本时显示在搜索窗口里, 见 [一键更新](Installation-zh#一键更新) |

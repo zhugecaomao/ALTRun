@@ -4,7 +4,7 @@
 ; "h word" searches the history of Chromium browsers (Chrome, Edge, Brave, Vivaldi; every profile): pages whose
 ; title or URL contains every word (Chinese titles also by their pinyin initials), most recently visited first.
 ; "h " alone lists the most recent pages. Only with the keyword: history is private, so it never mixes into normal results.
-; Enter opens the page in the default browser, Alt+Enter copies the URL.
+; Enter opens the page in the browser (ActionCatalog.OpenUrl), Alt+Enter copies the URL.
 ;
 ; Each profile's History is an SQLite database the browser keeps open, read through Windows' own winsqlite3.dll
 ; (Lib\Sqlite.ahk) without locking it (see ReadFile). Read only when the keyword is typed, never at start-up or in the

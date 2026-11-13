@@ -6,7 +6,7 @@
 ;   "shell:AppsFolder\<AppID>"   a shell path (Store apps etc.)
 ;   "res:imageres.dll,-102"      an icon resource in a dll / exe (negative = resource Id)
 ;   "ext:.pdf"                   the default icon of an extension
-;   "url:"                       the default browser (URL) icon
+;   "url:"                       the browser's icon: the program in General.Browser, else the default browser's (of .html)
 ;   "folder:"                    the generic folder icon
 ;   "thumb:C:\x.png"             a thumbnail of the image itself (images in the clipboard history)
 ; exe / lnk / ico etc. differ per file and are cached by full path; other files are cached by extension.
@@ -56,6 +56,7 @@ class IconCache {
     static Get(spec) {
         if (spec = "")
             return 0
+        spec := IconCache.BrowserSpec(spec)
         key := IconCache._CacheKey(spec)
         if IconCache._icons.Has(key) {
             IconCache._used[key] := ++IconCache._tick
@@ -78,6 +79,7 @@ class IconCache {
     static GetNow(spec) {
         if (spec = "")
             return 0
+        spec := IconCache.BrowserSpec(spec)
         key := IconCache._CacheKey(spec)
         if !IconCache._icons.Has(key) {
             hIcon := 0
@@ -100,7 +102,7 @@ class IconCache {
         for spec in specs {
             if (spec = "" || IconCache._prefetch.Length >= IconCache.PrefetchMax)
                 continue
-            key := IconCache._CacheKey(spec)
+            spec := IconCache.BrowserSpec(spec), key := IconCache._CacheKey(spec)
             if (seen.Has(key) || IconCache._icons.Has(key) || IconCache._disk.Has(key))
                 continue
             seen[key] := true
@@ -551,6 +553,20 @@ class IconCache {
             if IconCache._used.Has(key)
                 IconCache._used.Delete(key)
         }
+    }
+
+    ; "url:" -> the program in General.Browser when it is set (and there), so web pages show the browser that opens them;
+    ; cached by that path, so changing the setting changes the icon. The setting is read again only when it changed
+    static BrowserSpec(spec) {
+        static setting := "", exe := ""
+        if (spec != "url:")
+            return spec
+        try current := AppSettings.General["Browser"]
+        catch
+            current := ""
+        if (current != setting)
+            setting := current, exe := (current = "") ? "" : ActionCatalog.BrowserCommand(current).Exe
+        return (exe = "") ? spec : exe
     }
 
     static _CacheKey(spec) {
