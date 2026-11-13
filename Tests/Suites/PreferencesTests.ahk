@@ -367,7 +367,8 @@ class PreferencesTests {
             }
             eq("gaps only between the groups", wrong, "")
             first := rowRect(1)
-            eq("rows as wide as the list", (first[1] <= 2 && first[3] >= NumGet(listRect, 8, "Int") - 2) ? 1 : 0, 1)
+            width := NumGet(listRect, 8, "Int")                             ; tile view keeps 4 px right of the tiles (as below the last one): a wider tile scrolls
+            eq("rows as wide as the list", (first[1] <= 2 && first[3] >= width - 6) ? "yes" : first[1] "-" first[3] " in " width, "yes")
             eq("lines in the gaps", PreferencesWindow._gapLines.Length, PreferencesWindow.GroupStarts.Length)
             PreferencesWindow.PageList.Modify(0, "-Select"), PreferencesWindow.PageList.Modify(PreferencesWindow._PageIndex("Prefs.Page.Snippets"), "Select Focus")
             ControlSend("{Down}", PreferencesWindow.PageList)               ; ↓ across a gap goes to the next group's first page
