@@ -365,6 +365,15 @@ class I18n {
         s["Cmd.Selection.Unknown"] := "Not a content type: {1}. Add it in Preferences → Selection, or the command won't be shown for it."
         s["Cmd.Field.Selection.Button"] := "Types"
         s["Cmd.Field.Selection"] := "Optional. Content types from Preferences → Selection, e.g. IP, Text files: when you select such content and press Ctrl+Alt+\, this command comes first. {query} becomes the selected text or path; without {query} a program gets it as its last argument."
+        s["Cmd.Field.Triggers"] := "How this command is run besides finding it by name. Hotkeys set here are saved with the command when you click OK."
+        s["Cmd.SetHotkey"] := "Set Hotkey..."
+        s["Cmd.Hotkey.Edit"] := "Edit {1}..."
+        s["Cmd.Hotkey.Add"] := "Add Another Hotkey..."
+        s["Cmd.Hotkey.Delete"] := "Delete {1}"
+        s["Cmd.Triggers.Keyword"] := "Keyword {1}"
+        s["Cmd.Triggers.Selection"] := "Selection {1}"
+        s["Cmd.Triggers.Hotkey"] := "Hotkey {1}"
+        s["Cmd.Triggers.None"] := "Only found by its name in the search"
         s["Index.Done"]                := "Index rebuilt: {1} applications."
 
         ; --- System commands ---
@@ -961,6 +970,7 @@ class I18n {
         s["Prefs.Col.Arguments"]       := "Arguments"
         s["Prefs.Col.Keyword"]         := "Keyword"
         s["Prefs.Col.Selection"] := "Selection types"
+        s["Prefs.Col.Triggers"]  := "Triggers"
         s["Prefs.Col.Name"]            := "Name"
         s["Prefs.Col.Argument"]        := "Argument"
         s["Prefs.Col.Mode"]            := "Runs as"

@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "hotkey-editor-clash"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -77,7 +77,8 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
-            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query} and the type IP)
+            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query}, the type IP and a hotkey)
+            ["command-editor-hotkeys", "Light", "-Preferences 9", () => Shots.SetHotkeyMenu(), () => Shots.PingForIp()],   ; "Set Hotkey..." of a command with a hotkey: the menu
             ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
             ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],
@@ -852,7 +853,8 @@ class Shots {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["SelectionTypes"] := [Map("Name", "IP", "Kind", "Text", "Pattern", "^(\d{1,3}\.){3}\d{1,3}$")]   ; as in AppSettings._DefaultSelectionTypes
-        settings["CustomCommands"].Push(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP"))
+        settings["CustomCommands"].Push(Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP"))
+        settings["Hotkeys"] := [Map("Key", "^!p", "Action", "custom:pg7k2m4x", "WinTitle", "")]   ; "Hotkey Ctrl+Alt+P" on the Triggers line
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
@@ -873,6 +875,23 @@ class Shots {
             settings["Hotkeys"].Push(Map("Key", "^!n", "Action", "Lock", "WinTitle", ""))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; "Set Hotkey..." in the edit window of Ping (PingForIp): the menu of its hotkey below the button
+    static SetHotkeyMenu() {
+        editor := Shots.SyncWindow("Edit...", "Custom Commands", 7)
+        button := 0
+        for ctrl in WinGetControlsHwnd(editor)
+            if (!button && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = "Set Hotkey...")
+                button := ctrl
+        if !button
+            throw Error("command editor: Set Hotkey... button not found")
+        PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK, posted: the menu is modal
+        popup := WinWait("ahk_class #32768 ahk_pid " Shots.Pid, , 5)
+        if !popup
+            throw Error("Set Hotkey...: menu not shown")
+        Sleep(800)
+        return [editor, popup]
     }
 
     ; "Choose..." in the edit window of the hotkey above: the list with that command selected

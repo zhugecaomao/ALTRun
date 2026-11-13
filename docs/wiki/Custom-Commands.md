@@ -39,6 +39,7 @@ Each field in the edit dialog has a line of gray help text below it.
 | Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all` |
 | Keyword | Optional. Typing exactly this keyword puts the command first. Several keywords: separate with commas, for example `np, ㅜㅔ` (handy when you switch keyboard layouts: any of them works) |
 | Selection types (Selection) | Optional. Content types from Preferences → Selection (for example `IP, Text files`; pick them from the **Types** menu) the command comes first for when you select something and press `Ctrl+Alt+\`, see [Your own actions for a selection](Usage#your-own-actions-for-a-selection) |
+| Triggers | Not saved: one line saying how the command runs besides finding it by name, for example `Keyword ping · Selection IP · Hotkey Ctrl+Alt+P`. **Set Hotkey...** opens the [hotkey window](Hotkeys) for this command (a new command can have one before it is saved); with hotkeys already set it shows a menu to edit or delete each one or add another. The hotkeys are saved with the command when you click **OK** (Cancel drops them too). In Preferences they are saved on **Apply**; from the search window (`F3`) ALTRun restarts if a hotkey changed, so it works at once |
 
 Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `D:\Demo\Projects\P1001 - Riverside Park` and the title `Tower A, B, C`, typing `riverside` or `1001` finds it too. At the same match quality, a title match ranks first.
 

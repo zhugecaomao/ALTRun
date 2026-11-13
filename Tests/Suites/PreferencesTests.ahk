@@ -162,6 +162,104 @@ class PreferencesTests {
         }
     }
 
+    ; A command's "Triggers" line and its hotkeys (8.2): the text, writing the dialog's draft back, and the dialog itself
+    static CommandTriggers() {
+        eq := (n, a, e) => TestRunner.Equal("CommandTriggers." n, a, e)
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        hk(key, id := "pg7k2m4x", winTitle := "") => Map("Key", key, "Action", "custom:" id, "SearchText", "", "WinTitle", winTitle)
+        eq("all three", CustomCommandProvider.TriggerText(Map("Keyword", "ping, pg", "Selection", "IP,Text files"), [hk("^!p"), hk("~#p", , "ahk_exe x.exe")])
+            , "Keyword ping, pg · Selection IP, Text files · Hotkey Ctrl+Alt+P, Win+P")
+        eq("hotkey only", CustomCommandProvider.TriggerText(Map("Keyword", " "), [hk("^!p")]), "Hotkey Ctrl+Alt+P")
+        eq("none", CustomCommandProvider.TriggerText(Map("Title", "x"), [hk("")]), "Only found by its name in the search")
+
+        ; the draft written back: edited in place, deleted, added at the end; the other hotkeys untouched
+        other := Map("Key", "!q", "Action", "Lock", "WinTitle", "")
+        first := hk("^!p"), second := hk("^!o")
+        hotkeys := [first, other, second]
+        draft := [{Entry: hk("^!+p"), Original: first}, {Entry: hk("^!n"), Original: ""}]
+        eq("changed", CustomCommandProvider.MergeHotkeys(hotkeys, "custom:pg7k2m4x", draft), true)
+        keys := ""
+        for entry in hotkeys
+            keys .= entry["Key"] "|"
+        eq("merged", keys, "^!+p|!q|^!n|")
+        eq("edited in place (the list keeps the same Map)", ObjPtr(hotkeys[1]) = ObjPtr(first) && ObjPtr(hotkeys[2]) = ObjPtr(other), true)
+        eq("unchanged", CustomCommandProvider.MergeHotkeys(hotkeys, "custom:pg7k2m4x", [{Entry: hk("^!+p"), Original: hotkeys[1]}, {Entry: hk("^!n"), Original: hotkeys[3]}]), false)
+        eq("all deleted", CustomCommandProvider.MergeHotkeys(hotkeys, "custom:pg7k2m4x", []) "|" hotkeys.Length, "1|1")
+
+        ; the dialog: a new command gets its Id when it opens, the line shows its triggers and follows the keyword typed; Cancel changes nothing
+        settings := {Commands: [Map("Id", "taken001", "Title", "A")], Hotkeys: [other], Value: (path) => ""}
+        seen := {Text: "", Typed: "", Fits: false, Button: ""}
+        result := Dialog(CustomCommandProvider.NewCommand(), true)
+        eq("new: an Id", IsObject(result) && AppSettings.IsId(result.Command["Id"]) && result.Command["Id"] != "taken001", true)
+        eq("new: no Triggers key saved", IsObject(result) && !result.Command.Has("Triggers"), true)
+        eq("new: no hotkeys changed", IsObject(result) && !result.HotkeysChanged && settings.Hotkeys.Length = 1, true)
+        eq("line when opened", seen.Text, "Only found by its name in the search")
+        eq("line follows the keyword", seen.Typed, "Keyword np")
+        eq("button", seen.Button, "Set Hotkey...")
+        eq("fits", seen.Fits, true)
+        existing := Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP")
+        settings.Hotkeys.Push(hk("^!p"))
+        eq("cancelled", Dialog(existing, false), "")
+        eq("existing: its hotkey on the line", seen.Text, "Keyword ping · Selection IP · Hotkey Ctrl+Alt+P")
+        for language in I18n.Languages() {                                  ; the line and its button inside the window in every language
+            I18n.Init(language[1])
+            Dialog(existing, false)
+            eq(language[1] " fits", seen.Fits, true)
+        }
+        I18n.Init(savedLang)
+
+        ; Opens the dialog, notes the line (and after typing a keyword), whether everything is inside the window, then OK / Cancel
+        Dialog(item, ok) {
+            SetTimer(Look, -200)
+            SetTimer(GiveUp, -15000)                                        ; still open then: closed, so the test fails instead of hanging the run
+            result := CustomCommandProvider.EditDialog(ItemEditor.Owner(), "Triggers Test", item, settings)
+            SetTimer(GiveUp, 0)
+            return result
+            GiveUp() {
+                DetectHiddenWindows(true)
+                if (hwnd := WinExist("Triggers Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) {
+                    seen.Text := "(still open after 15 s)", seen.Fits := false
+                    GuiFromHwnd(hwnd).Destroy()
+                }
+            }
+            Look() {
+                DetectHiddenWindows(false)                                  ; only once shown: being built, it would only be hidden by WM_CLOSE (no Close handler yet) and shown again
+                if !(hwnd := WinExist("Triggers Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) || !DllCall("IsWindowVisible", "Ptr", hwnd) {
+                    SetTimer(Look, -100)
+                    return
+                }
+                g := GuiFromHwnd(hwnd)
+                box := "", fits := true
+                WinGetClientPos(, , &clientW, &clientH, hwnd)
+                for ctrl in g {
+                    ctrl.GetPos(&x, &y, &w, &h)
+                    fits := fits && x + w <= clientW && y + h <= clientH
+                    if (ctrl.Type = "Edit" && ControlGetStyle(ctrl) & 0x800)   ; ES_READONLY: the Triggers line
+                        box := ctrl
+                    if (ctrl.Type = "Button" && ctrl.Text = I18n.T("Cmd.SetHotkey")) {
+                        seen.Button := ctrl.Text
+                        box.GetPos(&boxX, &boxY, &boxW)
+                        fits := fits && x >= boxX + boxW && Abs(y - boxY) <= 4
+                    }
+                }
+                seen.Fits := fits
+                seen.Text := IsObject(box) ? box.Value : "(no line)"
+                if ok {
+                    ControlSetText("np", ControlGetHwnd("Edit4", hwnd))        ; Title, Target, Arguments, Keyword (Type is a drop-down list)
+                    Sleep(50)
+                    seen.Typed := box.Value
+                    ControlSetText("Notepad", ControlGetHwnd("Edit1", hwnd))
+                    ControlSetText("notepad.exe", ControlGetHwnd("Edit2", hwnd))
+                    for ctrl in g                                           ; the button (the line's description mentions "OK" too)
+                        if (ctrl.Type = "Button" && ctrl.Text = "OK")
+                            PostMessage(0xF5, 0, 0, ctrl)                   ; BM_CLICK
+                } else
+                    WinClose(hwnd)
+            }
+        }
+    }
+
     static ThemeGallery() {
         eq := (n, a, e) => TestRunner.Equal("ThemeGallery." n, a, e)
         pixel(hbm, x, y) {
