@@ -9,6 +9,8 @@
 ; the search box also searches folders (with PanelSearch = all, files too: choosing a file jumps to its folder). Hidden when the dialog isn't in front,
 ; refreshed when back in the dialog (a folder change in TC shows right away). The colors follow ALTRun's theme.
 ; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off.
+; In a dialog of a program running as administrator ALTRun's keyboard hook gets no keys (UIPI): the helper with administrator rights catches both
+; hotkeys there and tells ALTRun which was pressed (AdminHelper.HotkeyPressed).
 ; Favorite folders (Favorites): the ☆ button right of the panel's search box shows them in a menu, each with one level of its subfolders;
 ; the search box finds them too. Right-click a row to add it, or add the dialog's current folder (also Ctrl+D in the panel).
 ;
@@ -35,15 +37,7 @@ class QuickSwitch {
         QuickSwitch.Options := options
         if !options["Enabled"]
             return
-        if options["StandardDialogs"]
-            GroupAdd("ALTRunDialogs", "ahk_class #32770")
-        for window in options["DialogWindows"]
-            GroupAdd("ALTRunDialogs", window)
-        QuickSwitch._hasExclude := false
-        for window in options["ExcludeWindows"]
-            GroupAdd("ALTRunDialogExclude", window), QuickSwitch._hasExclude := true
-        for window in options["AutoSwitchExclude"]
-            GroupAdd("ALTRunAutoSwitchExclude", window)
+        QuickSwitch.AddGroups(options)
 
         HotIf((*) => FileDialogs.IsFileDialog())
         try {
@@ -58,6 +52,19 @@ class QuickSwitch {
         OnMessage(0x104, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_SYSKEYDOWN: Alt+↓ there
 
         QuickSwitch._StartWatching()
+    }
+
+    ; The window groups of the dialog lists (FileDialogs.IsFileDialog reads them); also used by the helper for administrator windows (AdminHelper)
+    static AddGroups(options) {
+        if options["StandardDialogs"]
+            GroupAdd("ALTRunDialogs", "ahk_class #32770")
+        for window in options["DialogWindows"]
+            GroupAdd("ALTRunDialogs", window)
+        QuickSwitch._hasExclude := false
+        for window in options["ExcludeWindows"]
+            GroupAdd("ALTRunDialogExclude", window), QuickSwitch._hasExclude := true
+        for window in options["AutoSwitchExclude"]
+            GroupAdd("ALTRunAutoSwitchExclude", window)
     }
 
     ;---------------------------------------------------------------------------
@@ -335,9 +342,18 @@ class QuickSwitch {
         if !IsObject(QuickSwitchPanel._panel)
             return
         try {
-            WinActivate("ahk_id " QuickSwitchPanel._panel.Hwnd)
+            QuickSwitch.ActivatePanel(QuickSwitchPanel._panel.Hwnd, dialog)
             ControlFocus(QuickSwitchPanel._panelSearch)
         }
+    }
+
+    ; The panel to the front. Over a dialog of a program running as administrator ALTRun can't (Windows' foreground rules, even with the
+    ; helper's AllowSetForegroundWindow; seen on Windows CI), so the helper does it there (AdminHelper.Front). true = it is in front
+    static ActivatePanel(panel, dialog) {
+        if (!A_IsAdmin && AdminHelper.DialogsWanted(QuickSwitch.Options) && FileDialogs.IsElevatedDialog(dialog) && AdminHelper.Front(panel))
+            return true
+        try WinActivate("ahk_id " panel)
+        return WinActive("ahk_id " panel) != 0
     }
 
     ; The jump hotkey: the folder of the file manager used last (TC, Opus or Explorer, see FileManagerFolder)

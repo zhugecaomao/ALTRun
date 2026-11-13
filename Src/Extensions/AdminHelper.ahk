@@ -18,13 +18,21 @@
 ;     so the helper checks it itself before doing anything (CheckJump): the window is the foreground window, a #32770 open / save or Browse for
 ;     Folder dialog (by its controls), of a program running as administrator, and the folder is a full path to a folder that exists. It then only
 ;     jumps the dialog there (the folder with a trailing backslash, so it can't be taken for a file to open or save) and presses nothing else
-;   - the helper only accepts "-Exit" and "-Jump" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
+;   - Quick Switch's hotkeys (Hotkey, MenuHotkey; read from the settings file like the rest): the helper registers them too, but only for
+;     such a dialog in front (HotkeyDialog), where ALTRun's keyboard hook gets no keys; any other window's keys go on to ALTRun's own hotkeys,
+;     so a key never does both. It sends ALTRun only which one was pressed ("-AdminHelperHotkey Hotkey / MenuHotkey"), no window or folder:
+;     ALTRun handles it as its own hotkey (HotkeyPressed), and a jump comes back as -Jump with the checks above.
+;     MenuHotkey puts the caret in ALTRun's folder panel, but ALTRun can't bring it to the front over the elevated dialog (Windows' foreground
+;     rules), so it hands "-Front <window>" to the helper (Front). The helper only activates a visible window of ALTRun's own process, and
+;     only while such a dialog is in front (CheckFront): nothing another program could misuse
+;   - the helper only accepts "-Exit", "-Jump" and "-Front" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
 ;   - older versions named the task "ALTRun CapsLock Helper" and started the helper with -AdminHelper. A helper started that way moves the task to
 ;     the new name itself (it has the rights, so no UAC prompt): it registers TaskName and deletes OldTaskName. Until then ALTRun runs the old one
 ;===============================================================================
 
 class AdminHelper {
     static Arg         := "-AdminHelper"
+    static HotkeyArg   := "-AdminHelperHotkey"                              ; helper -> ALTRun: a Quick Switch hotkey was pressed (HotkeyPressed)
     static TaskName    := "ALTRun Admin Helper"
     static Title       := "ALTRun Admin Helper"
     static OldArg      := "-CapsLockHelper"                                 ; versions up to 2026.11.13: the task and the helper had these names
@@ -49,7 +57,8 @@ class AdminHelper {
         DllCall("ChangeWindowMessageFilterEx", "Ptr", A_ScriptHwnd, "UInt", 0x4A, "UInt", 1, "Ptr", 0)   ; WM_COPYDATA, MSGFLT_ALLOW
         OnMessage(0x4A, (p*) => AdminHelper._OnCopyData(p*))
         mode := AdminHelper.ModeFromSettings(AppSettings.File)
-        AdminHelper._dialogs := AdminHelper.DialogsFromSettings(AppSettings.File)
+        options := AdminHelper.QuickSwitchFromSettings(AppSettings.File)
+        AdminHelper._dialogs := AdminHelper.DialogsWanted(options)
         if !(CapsLockSwitch.IsMode(mode) || AdminHelper._dialogs)
             ExitApp()
         if CapsLockSwitch.IsMode(mode) {
@@ -57,6 +66,8 @@ class AdminHelper {
             CapsLockSwitch.Notify := (on) => AdminHelper._TellMain("-CapsLockState", on ? "1" : "0")
             CapsLockSwitch.Register((key, fn) => Hotkey(key, fn))
         }
+        if AdminHelper._dialogs
+            AdminHelper._RegisterHotkeys(options)
         WinTimer.Set(() => App._RunningInstance() || ExitApp(), 3000)          ; ALTRun is gone (ended, crashed): exit too
     }
 
@@ -73,12 +84,57 @@ class AdminHelper {
     }
 
     ; Extensions.QuickSwitch: the jump for dialogs of administrator programs is on (and Quick Switch itself); read only, like ModeFromSettings
-    static DialogsFromSettings(file) {
+    static DialogsFromSettings(file) => AdminHelper.DialogsWanted(AdminHelper.QuickSwitchFromSettings(file))
+
+    ; Extensions.QuickSwitch from the settings file, missing keys from the defaults (as ALTRun loads it); read only. An empty Map if it can't be read
+    static QuickSwitchFromSettings(file) {
         try {
             options := JSON.Parse(FileRead(file, "UTF-8"))["Extensions"]["QuickSwitch"]
-            return AdminHelper.DialogsWanted(options)
+            if (options is Map) {
+                AppSettings._MergeDefaults(options, AppSettings.Defaults()["Extensions"]["QuickSwitch"])
+                return options
+            }
         }
-        return false
+        return Map()
+    }
+
+    ; Quick Switch's two hotkeys, only while HotkeyDialog finds such a dialog in front. Its window lists come from the settings too, so a
+    ; dialog left out there (ExcludeWindows...) keeps its keys
+    static HotkeyNames := ["Hotkey", "MenuHotkey"]
+
+    static _RegisterHotkeys(options) {
+        QuickSwitch.Options := options
+        QuickSwitch.AddGroups(options)
+        HotIf((*) => AdminHelper.HotkeyDialog() != 0)
+        for name in AdminHelper.HotkeyNames {
+            if (options[name] = "")
+                continue
+            try Hotkey(options[name], AdminHelper._HotkeyPressed.Bind(AdminHelper, name))   ; Bind: not the loop variable
+            catch as e
+                AdminHelper._TellMain("-AdminHelperNote", "cannot register " name " " options[name] " - " e.Message)
+        }
+        HotIf()
+    }
+
+    ; The window in front if the helper's hotkeys are for it, otherwise 0: a dialog Quick Switch works in (FileDialogs.IsFileDialog, with the
+    ; settings' window lists), a system one (#32770, the only kind the helper jumps, see CheckJump), of a program running as administrator.
+    ; For every other window ALTRun's own hotkeys get the keys
+    static HotkeyDialog() {
+        dialog := DllCall("GetForegroundWindow", "Ptr")
+        if !(dialog && QuickSwitch.ClassOf(dialog) = "#32770" && FileDialogs._IsFileDialogWindow(dialog))
+            return 0
+        pid := 0
+        try pid := WinGetPID("ahk_id " dialog)
+        return (pid && Win.IsElevated(pid)) ? dialog : 0
+    }
+
+    ; Only which hotkey: ALTRun finds the dialog and the folder itself. It may come to the front (MenuHotkey puts the caret in its folder panel)
+    static _HotkeyPressed(name, *) {
+        if !(main := App._RunningInstance())
+            return
+        if DllCall("GetWindowThreadProcessId", "Ptr", main, "UInt*", &pid := 0, "UInt")
+            DllCall("AllowSetForegroundWindow", "UInt", pid)
+        App.SendArgs(main, [AdminHelper.HotkeyArg, name])
     }
 
     static _dialogs := false
@@ -92,6 +148,52 @@ class AdminHelper {
             SetTimer(() => ExitApp(), -1)
         else if (lines[1] = "-Jump")
             return AdminHelper._JumpRequest(lines)
+        else if (lines[1] = "-Front")
+            return AdminHelper._FrontRequest(lines)
+        return 1
+    }
+
+    ; -Front <window>: checked in the message like -Jump, activated right after
+    static _FrontRequest(lines) {
+        if !AdminHelper._dialogs
+            return AdminHelper.Refused["option off"]
+        if (lines.Length != 2 || !RegExMatch(lines[2], "^\d{1,20}$"))
+            return AdminHelper.Refused["bad request"]
+        window := Integer(lines[2])
+        code := AdminHelper.CheckFront(AdminHelper.FrontFacts(window))
+        if (code = 1)
+            SetTimer(() => AdminHelper._Front(window), -1)
+        return code
+    }
+
+    static _Front(window) {
+        try WinActivate("ahk_id " window)
+        AdminHelper._TellMain("-AdminHelperNote", "to the front: " (WinActive("ahk_id " window) ? "done" : "failed"))
+    }
+
+    ; What the helper sees for -Front: a dialog its hotkeys are for is in front (HotkeyDialog), the window belongs to ALTRun's process, it is shown
+    static FrontFacts(window) {
+        facts := {Dialog: AdminHelper.HotkeyDialog() != 0, Own: false, Visible: false}
+        if !facts.Dialog
+            return facts
+        mainPid := 0, pid := 0
+        if (main := App._RunningInstance())
+            DllCall("GetWindowThreadProcessId", "Ptr", main, "UInt*", &mainPid)
+        DllCall("GetWindowThreadProcessId", "Ptr", window, "UInt*", &pid)
+        facts.Own := mainPid != 0 && pid = mainPid
+        facts.Visible := DllCall("IsWindowVisible", "Ptr", window) != 0
+        return facts
+    }
+
+    ; 1 if the helper may bring the window to the front, otherwise a code of Refused. Any program may have sent it, so only a window of
+    ; ALTRun itself, shown, over a dialog of a program running as administrator (where ALTRun can't do it)
+    static CheckFront(facts) {
+        if !facts.Dialog
+            return AdminHelper.Refused["not in front"]
+        if !facts.Own
+            return AdminHelper.Refused["not ALTRun's window"]
+        if !facts.Visible
+            return AdminHelper.Refused["hidden"]
         return 1
     }
 
@@ -114,12 +216,13 @@ class AdminHelper {
         AdminHelper._TellMain("-AdminHelperNote", "jump to [" folder "] " (ok = false ? "failed" : "done"))
     }
 
-    ; Reply codes of -Jump: 1 = jumping; the others say why not (ALTRun logs the name)
-    static Refused := Map("not in front", 2, "not a dialog", 3, "not elevated", 4, "not a folder path", 5, "folder not found", 6, "option off", 7, "bad request", 8)
+    ; Reply codes of -Jump and -Front: 1 = doing it; the others say why not (ALTRun logs the name)
+    static Refused := Map("not in front", 2, "not a dialog", 3, "not elevated", 4, "not a folder path", 5, "folder not found", 6, "option off", 7, "bad request", 8
+        , "not ALTRun's window", 9, "hidden", 10)
 
-    static ReplyText(code) {
+    static ReplyText(code, done := "jumping") {
         if (code = 1)
-            return "jumping"
+            return done
         for name, value in AdminHelper.Refused
             if (value = code)
                 return "refused: " name
@@ -239,6 +342,37 @@ class AdminHelper {
         if (reply = AdminHelper.Refused["not elevated"])
             return FileDialogs.Jump(folder, dialog)
         return reply = 1
+    }
+
+    ; ALTRun's side of the helper's hotkeys (-AdminHelperHotkey Hotkey / MenuHotkey). Any program with normal rights can send ALTRun that
+    ; message, so it is taken only as "this hotkey was pressed", with nothing from the message but its name: it is handled like ALTRun's own
+    ; hotkey, and only while the window in front is a dialog of a program running as administrator (in any other window ALTRun's own
+    ; hotkeys get the keys, so this would be a second time). The jump goes back to the helper (SetDialogPath -> Jump), which checks it again.
+    ; inFront, admin: the dialog check and A_IsAdmin (for the tests). true = handled
+    static HotkeyPressed(name, inFront := () => FileDialogs.IsFileDialog() && FileDialogs.IsElevatedDialog(WinExist("A")), admin := A_IsAdmin) {
+        if (admin || !AdminHelper.DialogsWanted(QuickSwitch.Options))
+            return false
+        if !(name = "Hotkey" || name = "MenuHotkey")
+            return (Logger.Debug("QuickSwitch: unknown hotkey from the helper - " SubStr(name, 1, 40)), false)
+        if !inFront()
+            return (Logger.Debug("QuickSwitch: " name " from the helper, but no dialog of a program running as administrator is in front"), false)
+        Logger.Debug("QuickSwitch: " name " pressed in a dialog of a program running as administrator (caught by the helper)")
+        if (name = "Hotkey")
+            QuickSwitch.SyncFileManagerPath()
+        else
+            QuickSwitch.FocusPanel()
+        return true
+    }
+
+    ; ALTRun's side of -Front: a window of ALTRun (MenuHotkey's folder panel) to the front over a dialog of a program running as administrator,
+    ; which ALTRun can't do itself. true = it is in front
+    static Front(window) {
+        if !(helper := AdminHelper.Window())
+            return false
+        reply := 0
+        App.SendArgs(helper, ["-Front", window], &reply)
+        Logger.Debug("QuickSwitch: bringing the panel to the front is handed to the helper - " AdminHelper.ReplyText(reply, "activating"))
+        return reply = 1 && WinWaitActive("ahk_id " window, , 1) != 0
     }
 
     ; When ALTRun exits / reloads, the helper exits too (restarted with the new settings after reloading)
