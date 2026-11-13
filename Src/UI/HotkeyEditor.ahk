@@ -10,14 +10,19 @@
 ;               "Insert" (a drop-down button) adds {selection} or a search scope (folder, doc, recent...), so nothing has to be remembered
 ;   Works in    all programs, or only in windows matching a WinTitle (ALTRun = only in the search window)
 ; A line at the bottom says in words what the hotkey does, updated while editing (Summary), so a wrong setting shows before saving.
+; When another hotkey already uses the same keys in the same windows, the gray line under the hotkey box says which one, in red (Clash;
+; at the box that causes it, in place of how to record a hotkey; OK still saves, as Apply only warns).
 ; "Show" (an empty search box) of older versions is shown as Search.
 ;
 ; Usage:
-;   edited := HotkeyEditor.Edit(ownerGui, item, original, commands)   -> the edited Map (keys not shown are kept), "" when cancelled
+;   edited := HotkeyEditor.Edit(ownerGui, item, original, commands, inUse)   -> the edited Map (keys not shown are kept), "" when cancelled
 ;       original: the hotkey being edited ("" = a new one: the window title says "Add")
 ;       commands: the custom commands to choose from and name ("" = AppSettings.CustomCommands; Preferences passes the ones being edited)
+;       inUse: the hotkeys to check for a clash, PreferencesWindow.AllHotkeys ("" = those of AppSettings.Data); original is left out
 ;   HotkeyEditor.Normalize(item)     -> a copy with Search / SearchText for the old forms and every key the window shows
 ;   HotkeyEditor.Summary(item, commands)   -> "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
+;   HotkeyEditor.Clash(item, inUse)        -> the first of inUse the same key press triggers in the same windows ({Key, Label...}), "" when none
+;   HotkeyEditor.ClashText(item, inUse)    -> the red line under the hotkey box: "Already used by Hotkeys (Lock computer)", "" when none
 ;   HotkeyEditor.ActionName(id, commands)  -> the name shown for an Action ("Notepad", "(deleted command) custom:k3x9a2mq")
 ;   HotkeyEditor.ActionDetail(id, commands) -> {Text, Missing}: the gray line below it
 ;   HotkeyEditor.ListText(item, commands)  -> the Action column of Preferences → Hotkeys ("Search: folder {selection}", "Run: Notepad", "Lock computer")
@@ -29,9 +34,9 @@ class HotkeyEditor {
     static MissingColor := "cC42B1C"                                        ; the line below a deleted custom command (the red of Windows error text)
     static Scopes := ["folder", "file", "doc", "pic", "recent", "g"]       ; the search scopes "Insert" offers (prefixes of the search box)
 
-    static Edit(owner, item, original := "", commands := "") {
+    static Edit(owner, item, original := "", commands := "", inUse := "") {
         state := {Result: ""}
-        ui := HotkeyEditor.Build(owner, item, original, OnOk, commands)
+        ui := HotkeyEditor.Build(owner, item, original, OnOk, commands, inUse)
         g := ui.Gui
         owner.Opt("+Disabled")
         g.Show()
@@ -59,14 +64,14 @@ class HotkeyEditor {
     }
 
     ; The window, not shown yet (the tests check its layout):
-    ; {Gui, Key, Pass, Action, ActionId, Choose, Detail, Commands, SearchText, Insert, All, Only, WinTitle, SummaryText, Item, SetAction}
-    static Build(owner, item, original := "", onOk := "", commands := "") {
+    ; {Gui, Key, Pass, Action, ActionId, Choose, Detail, Commands, InUse, SearchText, Insert, All, Only, WinTitle, SummaryText, KeyHint, Item, SetAction}
+    static Build(owner, item, original := "", onOk := "", commands := "", inUse := "") {
         item := HotkeyEditor.Normalize(item)
         w := HotkeyEditor.Width
         g := Gui("+Owner" owner.Hwnd " -MinimizeBox", I18n.T(IsObject(original) ? "HotkeyEditor.TitleEdit" : "HotkeyEditor.TitleAdd"))
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
-        ui := {Gui: g, Item: item, ActionId: item["Action"], Commands: HotkeyEditor._Commands(commands)}
+        ui := {Gui: g, Item: item, ActionId: item["Action"], Commands: HotkeyEditor._Commands(commands), InUse: HotkeyEditor._Others(inUse, original)}
 
         section(key, first := false) {
             g.SetFont("bold")
@@ -87,7 +92,7 @@ class HotkeyEditor {
         ui.Pass.Value := (SubStr(item["Key"], 1, 1) = "~") ? 1 : 0
         ui.Key.GetPos(, &keyY, , &keyH)
         g.SetFont("s8")
-        g.AddText("xm y" (keyY + keyH + 4) " w" w " cGray", I18n.T("Prefs.HotkeyHint"))   ; below the box (the check box beside it is shorter)
+        ui.KeyHint := g.AddText("xm y" (keyY + keyH + 4) " w" w " cGray +0x400C", I18n.T("Prefs.HotkeyHint"))   ; below the box (the check box beside it is shorter); one line, a long name ends in "..." (SS_LEFTNOWORDWRAP | SS_ENDELLIPSIS)
         g.SetFont("s9")
 
         section("HotkeyEditor.Section.Action")
@@ -151,7 +156,14 @@ class HotkeyEditor {
             search := ui.ActionId = "Search"
             ui.SearchText.Enabled := search, ui.Insert.Enabled := search    ; kept in place, grayed out: the window doesn't jump
             ui.WinTitle.Enabled := ui.Only.Value
-            ui.SummaryText.Value := HotkeyEditor.Summary(HotkeyEditor.Read(ui), ui.Commands)
+            edited := HotkeyEditor.Read(ui)
+            ui.SummaryText.Value := HotkeyEditor.Summary(edited, ui.Commands)
+            clash := HotkeyEditor.ClashText(edited, ui.InUse)
+            text := (clash = "") ? I18n.T("Prefs.HotkeyHint") : clash        ; the clash in red in place of how to record a hotkey
+            if (ui.KeyHint.Value != text) {
+                ui.KeyHint.SetFont((clash = "") ? "cGray" : HotkeyEditor.MissingColor)
+                ui.KeyHint.Value := text
+            }
         }
         InsertSelection() {                                                 ; {selection} at the cursor (replacing a selected part)
             ui.SearchText.Focus()
@@ -264,6 +276,34 @@ class HotkeyEditor {
     }
 
     static _Commands(commands) => (commands is Array) ? commands : AppSettings.CustomCommands
+
+    ; The hotkeys in use but the one being edited (inUse "" = those of the saved settings)
+    static _Others(inUse, original) {
+        others := []
+        for each in (inUse is Array) ? inUse : PreferencesWindow.AllHotkeys(AppSettings.Data)
+            if !(IsObject(original) && IsObject(each.Entry) && ObjPtr(each.Entry) = ObjPtr(original))
+                others.Push(each)
+        return others
+    }
+
+    ; The first hotkey of inUse that the same key press triggers in the same windows (all programs, or the same WinTitle), "" when none.
+    ; A hotkey limited to some windows over one that works everywhere is fine: there the limited one wins
+    static Clash(item, inUse) {
+        key := item.Has("Key") ? Trim(item["Key"]) : ""
+        if (LTrim(key, "~") = "")
+            return ""
+        parts := PreferencesWindow.HotkeyParts(key)
+        winTitle := item.Has("WinTitle") ? Trim(item["WinTitle"]) : ""
+        for each in inUse
+            if (Trim(each.WinTitle) = winTitle && PreferencesWindow.SameKeyPress(PreferencesWindow.HotkeyParts(each.Key), parts))
+                return each
+        return ""
+    }
+
+    static ClashText(item, inUse) {
+        clash := HotkeyEditor.Clash(item, inUse)
+        return IsObject(clash) ? I18n.T("HotkeyEditor.Clash", clash.Label) : ""
+    }
 
     static ScopeText(scope) {
         switch scope {

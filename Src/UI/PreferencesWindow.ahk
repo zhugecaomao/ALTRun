@@ -476,23 +476,43 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Data helpers (pure functions, with unit tests)
     ;---------------------------------------------------------------------------
-    ; Global hotkeys (not tied to a window) -> [{Key, Label}...]: the show hotkey, the second show hotkey, clipboard history, custom hotkeys without a window.
-    ; Quick switch and date stamp only work in particular windows (two Ctrl+D are fine), so they aren't included
-    static _GlobalHotkeys(data) {
+    ; Every hotkey -> [{Key, Label, WinTitle, Entry}...]: the show hotkey, the second show hotkey, the selection hotkey, clipboard history
+    ; (when on), and each custom hotkey (Entry = its Map, named as in the Hotkeys list; WinTitle = the windows it works in, "" = all).
+    ; Quick switch and date stamp only work in particular windows (two Ctrl+D are fine), so they aren't included.
+    ; value(path): reads a setting; Preferences passes one reading its boxes (BoundValue), which may not be applied yet
+    static AllHotkeys(data, value := "") {
+        if !HasMethod(value)
+            value := (path) => PreferencesWindow.GetPath(data, path)
         list := []
-        add(key, label) => (Trim(key) != "") ? list.Push({Key: key, Label: label}) : ""
-        general := data["General"]
-        add(general["Hotkey"], I18n.T("Prefs.Hotkey"))
-        add(general["SecondaryHotkey"], I18n.T("Prefs.SecondaryHotkey"))
-        add(general.Has("SelectionHotkey") ? general["SelectionHotkey"] : "", I18n.T("Prefs.SelectionHotkey"))
-        clipboard := PreferencesWindow.GetPath(data, "Features.Clipboard")
-        if (clipboard is Map && clipboard.Has("Enabled") && clipboard["Enabled"] && clipboard.Has("Hotkey"))
-            add(clipboard["Hotkey"], I18n.T("Prefs.Page.Clipboard"))
+        add(key, label, winTitle := "", entry := "") => (Trim(key) != "") ? list.Push({Key: key, Label: label, WinTitle: winTitle, Entry: entry}) : ""
+        add(value("General.Hotkey"), I18n.T("Prefs.Hotkey"))
+        add(value("General.SecondaryHotkey"), I18n.T("Prefs.SecondaryHotkey"))
+        add(value("General.SelectionHotkey"), I18n.T("Prefs.SelectionHotkey"))
+        if value("Features.Clipboard.Enabled")
+            add(value("Features.Clipboard.Hotkey"), I18n.T("Prefs.Page.Clipboard"))
+        commands := (data.Has("CustomCommands") && data["CustomCommands"] is Array) ? data["CustomCommands"] : []
         if (data.Has("Hotkeys") && data["Hotkeys"] is Array)
             for entry in data["Hotkeys"]
-                if (entry is Map && entry.Has("Key") && (!entry.Has("WinTitle") || Trim(entry["WinTitle"]) = ""))
-                    add(entry["Key"], I18n.T("Prefs.Page.Hotkeys") " (" (entry.Has("Action") ? entry["Action"] : "") ")")
+                if (entry is Map && entry.Has("Key"))
+                    add(entry["Key"], I18n.T("Prefs.Page.Hotkeys") " (" HotkeyEditor.ListText(entry, commands) ")", entry.Has("WinTitle") ? Trim(entry["WinTitle"]) : "", entry)
         return list
+    }
+
+    ; Global hotkeys (not tied to a window) -> [{Key, Label, WinTitle, Entry}...] (see AllHotkeys)
+    static _GlobalHotkeys(data) {
+        list := []
+        for each in PreferencesWindow.AllHotkeys(data)
+            if (each.WinTitle = "")
+                list.Push(each)
+        return list
+    }
+
+    ; A setting as Preferences shows it now: the box bound to it (changed but not applied yet), otherwise Working
+    static BoundValue(path) {
+        for bind in PreferencesWindow.Binds
+            if (bind.Path = path)
+                return bind.Read.Call()
+        return PreferencesWindow.GetPath(PreferencesWindow.Working, path)
     }
 
     ; The first duplicate hotkey -> {Key, First, Second} (the names of both); "" without duplicates. ~ * $ don't change whether it is the same key.
@@ -503,7 +523,7 @@ class PreferencesWindow {
         for entry in list {
             parts := PreferencesWindow.HotkeyParts(entry.Key)
             for before in seen
-                if PreferencesWindow._SameKeyPress(before.Parts, parts)
+                if PreferencesWindow.SameKeyPress(before.Parts, parts)
                     return {Key: entry.Key, First: before.Label, Second: entry.Label}
             seen.Push({Parts: parts, Label: entry.Label})
         }
@@ -523,7 +543,8 @@ class PreferencesWindow {
         return {Key: SubStr(hk, i), Mods: mods}
     }
 
-    static _SameKeyPress(a, b) {
+    ; Whether two HotkeyParts are one key press (a modifier without a side matches either side)
+    static SameKeyPress(a, b) {
         if (a.Key != b.Key || a.Mods.Count != b.Mods.Count)
             return false
         for m, side in a.Mods
