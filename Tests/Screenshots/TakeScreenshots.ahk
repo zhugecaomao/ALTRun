@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
@@ -83,6 +83,7 @@ class Shots {
             ["prefs-appearance", "Light", "-Preferences Appearance", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences Commands", () => Shots.Preferences()],
             ["prefs-commands-placeholders", "Light", "-Preferences Commands", () => Shots.Preferences(), () => Shots.PlaceholderCommands()],   ; Wiki: custom commands (the Status column's placeholder hints)
+            ["command-editor-placeholders", "Light", "-Preferences Commands", () => Shots.PlaceholderQuestion(), () => Shots.PlaceholderCommands()],   ; OK in the edit window of "Translate" ({query} without a keyword, type or hotkey): the question
             ["command-editor",   "Light", "-Preferences Commands", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query}, the type IP and a hotkey)
             ["command-editor-hotkeys", "Light", "-Preferences Commands", () => Shots.SetHotkeyMenu(), () => Shots.PingForIp()],   ; "Set Hotkey..." of a command with a hotkey: the menu
             ["prefs-selection",  "Light", "-Preferences Selection", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
@@ -956,6 +957,23 @@ class Shots {
     }
 
     ; "Set Hotkey..." in the edit window of Ping (PingForIp): the menu of its hotkey below the button
+    ; The edit window of "Translate" (PlaceholderCommands: {query} gets no text), OK clicked: the question whether to save anyway
+    static PlaceholderQuestion() {
+        editor := Shots.SyncWindow("Edit...", "Custom Commands", 7)
+        button := 0
+        for ctrl in WinGetControlsHwnd(editor)
+            if (!button && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = "OK")
+                button := ctrl
+        if !button
+            throw Error("command editor: OK button not found")
+        PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK, posted: the question is modal
+        question := WinWait("ahk_class #32770 ahk_pid " Shots.Pid, , 5)
+        if !question
+            throw Error("command editor: no question about the placeholders")
+        Sleep(800)
+        return [editor, question]
+    }
+
     static SetHotkeyMenu() {
         editor := Shots.SyncWindow("Edit...", "Custom Commands", 7)
         button := 0

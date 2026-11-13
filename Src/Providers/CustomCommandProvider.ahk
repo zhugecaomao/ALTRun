@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; CustomCommandProvider.ahk - the user's custom commands (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; ALTRun.json -> CustomCommands, each entry:
@@ -282,7 +282,8 @@ class CustomCommandProvider {
         return (found != "") ? "OK" : "Missing"
     }
 
-    ; Placeholders in the target / arguments that won't work (a read-only check: the Commands page's Status column), in this order:
+    ; Placeholders in the target / arguments that won't work (a read-only check: the Commands page's Status column and the edit
+    ; dialog's question on OK), in this order:
     ;   {Kind: "Selection"}        {selection} is written: a command gets the selected text through {query}
     ;   {Kind: "Query"}            {query} gets no text: no keyword, no content type and no hotkey runs the command
     ;   {Kind: "Unknown", Name}    any other {word}, which stays as written; only {query} {hwnd} {pid} are replaced (any case).
@@ -321,6 +322,23 @@ class CustomCommandProvider {
             if (entry.Has("Key") && LTrim(entry["Key"], "~") != "")
                 return true
         return false
+    }
+
+    ; The edit dialog's question on OK: each problem of PlaceholderProblems explained ("" = none); the unknown ones together
+    static PlaceholderWarning(command, hotkeys) {
+        lines := [], unknown := ""
+        for each in CustomCommandProvider.PlaceholderProblems(command, hotkeys) {
+            if (each.Kind = "Unknown")
+                unknown .= (unknown = "" ? "" : ", ") each.Name
+            else
+                lines.Push(I18n.T((each.Kind = "Selection") ? "Cmd.Placeholder.Selection" : "Cmd.Placeholder.Query"))   ; keys written out (I18nUnused)
+        }
+        if (unknown != "")
+            lines.Push(I18n.T("Cmd.Placeholder.Unknown", unknown))
+        text := ""
+        for line in lines
+            text .= (text = "" ? "" : "`n`n") line
+        return text
     }
 
     ; The Status column's short text for the first problem of PlaceholderProblems ("" = none)
@@ -398,6 +416,7 @@ class CustomCommandProvider {
             draft.Push({Entry: entry.Clone(), Original: entry})
 
         fields := CustomCommandProvider.EditorFields()
+        fields[3].Check := (value, edited) => CustomCommandProvider.PlaceholderWarning(edited, Entries())   ; Target: placeholders that won't work, with the hotkeys as edited
         triggers := ItemEditor.Field("Triggers", "Prefs.Col.Triggers", "info", false, "", I18n.T("Cmd.Field.Triggers"))
         triggers.Text := (edited) => CustomCommandProvider.TriggerText(edited, Entries())
         triggers.Button := {Label: I18n.T("Cmd.SetHotkey"), OnClick: SetHotkey}

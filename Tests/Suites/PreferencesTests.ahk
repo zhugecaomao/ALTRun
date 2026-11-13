@@ -264,6 +264,75 @@ class PreferencesTests {
         }
     }
 
+    ; The command edit dialog asks before saving placeholders that won't work: Yes saves, No goes back to the dialog
+    static CommandPlaceholderQuestion() {
+        eq := (n, a, e) => TestRunner.Equal("CommandPlaceholderQuestion." n, a, e)
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        settings := {Commands: [], Hotkeys: [], Value: (path) => ""}
+        command := Map("Id", "pe7k2m4x", "Title", "Echo", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k echo {selection} {date}", "Keyword", "e")
+        seen := {Question: "", Answer: ""}
+        try {
+            result := OpenAndAnswer("Yes")
+            eq("asked: {selection}", InStr(seen.Question, "{selection} isn't replaced in commands") > 0, true)
+            eq("asked: {date}", InStr(seen.Question, "Not a placeholder in commands: {date}.") > 0, true)
+            eq("asked: save anyway", InStr(seen.Question, I18n.T("Editor.SaveAnyway")) > 0, true)
+            eq("Yes: saved", IsObject(result) ? result.Command["Arguments"] : "no result", "/k echo {selection} {date}")
+            result := OpenAndAnswer("No")
+            eq("No: back in the dialog", seen.Answer, "still open")
+            eq("No: then closed, nothing saved", result, "")
+        } finally I18n.Init(savedLang)
+
+        ; Opens the dialog, clicks OK, answers the question, then (after No) closes the dialog; the dialog's result
+        OpenAndAnswer(answer) {
+            seen.Question := "", seen.Answer := ""
+            SetTimer(PressOk, -200)
+            SetTimer(GiveUp, -15000)                                        ; still open then: closed, so the test fails instead of hanging the run
+            result := CustomCommandProvider.EditDialog(ItemEditor.Owner(), "Placeholder Test", command, settings)
+            SetTimer(GiveUp, 0)
+            return result
+            Shown(class) {
+                DetectHiddenWindows(false)
+                hwnd := WinExist("Placeholder Test ahk_class " class " ahk_pid " ProcessExist())
+                return (hwnd && DllCall("IsWindowVisible", "Ptr", hwnd)) ? hwnd : 0
+            }
+            PressOk() {
+                if !(hwnd := Shown("AutoHotkeyGUI"))
+                    return SetTimer(PressOk, -100)
+                for ctrl in GuiFromHwnd(hwnd)
+                    if (ctrl.Type = "Button" && ctrl.Text = "OK")
+                        PostMessage(0xF5, 0, 0, ctrl)                       ; BM_CLICK
+                SetTimer(AnswerQuestion, -200)
+            }
+            AnswerQuestion() {
+                if !(box := Shown("#32770"))
+                    return SetTimer(AnswerQuestion, -100)
+                seen.Question := WinGetText(box)
+                PostMessage(0x111, (answer = "Yes") ? 6 : 7, 0, box)       ; WM_COMMAND IDYES / IDNO
+                if (answer = "No")
+                    SetTimer(CloseAfterNo, -100)
+            }
+            CloseAfterNo() {                                                ; only once the question has returned: the Target box got the focus back
+                if !(hwnd := Shown("AutoHotkeyGUI"))
+                    return
+                try focused := ControlGetClassNN(ControlGetFocus(hwnd))
+                catch
+                    focused := ""
+                if (focused != "Edit2")                                     ; Title, Target, ... (closing the window under the open question would break it)
+                    return SetTimer(CloseAfterNo, -100)
+                seen.Answer := "still open"
+                WinClose(hwnd)
+            }
+            GiveUp() {
+                DetectHiddenWindows(true)
+                if (box := WinExist("Placeholder Test ahk_class #32770 ahk_pid " ProcessExist()))
+                    WinClose(box)
+                if (hwnd := WinExist("Placeholder Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist()))
+                    GuiFromHwnd(hwnd).Destroy()
+            }
+        }
+    }
+
     static ThemeGallery() {
         eq := (n, a, e) => TestRunner.Equal("ThemeGallery." n, a, e)
         pixel(hbm, x, y) {

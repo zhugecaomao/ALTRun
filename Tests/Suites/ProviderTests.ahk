@@ -897,6 +897,11 @@ class ProviderTests {
             eq("status: query", status(cmd("cmd.exe", "{query}")), "{query} empty")
             eq("status: selection first", status(cmd("cmd.exe", "{query} {selection}")), "Use {query}")
             eq("status: unknown", status(cmd("cmd.exe", "{date}", "d")), "Unknown {date}")
+            warning := (command) => CustomCommandProvider.PlaceholderWarning(command, [])
+            eq("warning: none", warning(cmd("notepad.exe")), "")
+            eq("warning: each problem, the unknown ones together", warning(cmd("cmd.exe", "{query} {selection} {date} {Enter}"))
+                , I18n.T("Cmd.Placeholder.Selection") "`n`n" I18n.T("Cmd.Placeholder.Query") "`n`n"
+                . "Not a placeholder in commands: {date}, {Enter}. Only {query}, {hwnd} and {pid} are replaced; others are passed to the program as written.")
         } finally I18n.Init(savedLang)
     }
 
