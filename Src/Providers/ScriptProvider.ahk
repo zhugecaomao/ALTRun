@@ -12,6 +12,7 @@
 ;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done;
 ;                     filter gives live results: typing "keyword text" runs it with the text while typing and shows what it prints as
 ;                     results (needs a keyword; .ahk .py .ps1; see ScriptFilter.ahk)
+;   @altrun.filter    altrun            a filter script runs once on entering the keyword; ALTRun then filters what it printed while typing
 ;   @altrun.selection Text, PDF         content type names (built-in or Preferences → Selection): the script is offered in the actions
 ;                     panel of such a selection (Ctrl+Alt+\, after the custom commands), which is passed to it as its first argument
 ;                     (several files: one argument each), with the panel's command-line checks (SelectionActions.SafeArgument)
@@ -302,10 +303,10 @@ class ScriptProvider {
         ScriptProvider._checked := A_TickCount
     }
 
-    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Selection: [type names], Keys}; reads @altrun.xxx in the first 30 lines
+    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Selection: [type names], FilterBy: script / altrun, Keys}; reads @altrun.xxx in the first 30 lines
     static ReadScript(path) {
         SplitPath(path, &name, , &ext, &baseName)
-        meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window", "selection", "")
+        meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window", "selection", "", "filter", "")
         try {
             Loop Read, path {
                 if (A_Index > 30)
@@ -325,6 +326,7 @@ class ScriptProvider {
                 types.Push(each)
         pinyinText := Pinyin.Initials(title)
         return {Path: path, Name: name, Ext: StrLower(ext), Title: title, Keyword: keyword, Argument: Trim(meta["argument"]), Mode: mode, Selection: types
+              , FilterBy: (StrLower(Trim(meta["filter"])) = "altrun") ? "altrun" : "script"
               , Keys: [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]}
     }
 

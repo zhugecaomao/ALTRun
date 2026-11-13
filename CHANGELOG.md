@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.16]
+
+测试版。
+
+Test build.
+
+### 新增
+- 实时结果脚本可以加 `@altrun.filter altrun`: 输入关键字时只运行一次脚本, 之后边输入边由 ALTRun 过滤它的输出 (模糊匹配, 也认拼音首字母; JSON 里可以用 `match` 指定匹配的文字), 输入时不再运行脚本。适合和输入无关的列表, 以及 PowerShell 这种启动慢的脚本 (Windows CI 上 `.ps1` 每次运行约 2.3 秒)
+
 ## [2026.11.12.15]
 
 测试版。
@@ -1493,7 +1502,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.16...HEAD
+[2026.11.12.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.15...2026.11.12.16
 [2026.11.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.14...2026.11.12.15
 [2026.11.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.13...2026.11.12.14
 [2026.11.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...2026.11.12.13

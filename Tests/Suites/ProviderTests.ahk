@@ -2307,7 +2307,7 @@ class ProviderTests {
     ; A filter script as ScriptProvider.ReadScript makes it, in C:\s (ScriptFilter tests)
     static _FilterScript(name, keyword) {
         SplitPath(name, , , &ext, &baseName)
-        return {Path: "C:\s\" name, Name: name, Ext: ext, Title: StrTitle(baseName), Keyword: keyword, Argument: "", Mode: "filter", Selection: [], Keys: []}
+        return {Path: "C:\s\" name, Name: name, Ext: ext, Title: StrTitle(baseName), Keyword: keyword, Argument: "", Mode: "filter", Selection: [], FilterBy: "script", Keys: []}
     }
 
     ; Live results of a filter script (ScriptFilter): what it prints -> results (JSON or one per line), the type guessed from the
@@ -2438,6 +2438,46 @@ class ProviderTests {
         }
     }
 
+    ; "@altrun.filter altrun" (fake runs): one run with an empty text on entering the keyword, none while typing; ALTRun filters the
+    ; items on "match" or the title, best first; nothing matching: "No results"; hidden: forgotten
+    static ScriptFilterLocal() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterLocal." n, a, e)
+        saved := [ScriptFilter.StartFn, ScriptFilter.KillFn, ScriptFilter.OnResults]
+        starts := []
+        ScriptFilter.StartFn := (line, done, options) => (starts.Push({Done: done, Options: options}), {Id: starts.Length})
+        ScriptFilter.KillFn := (child) => 0
+        ScriptFilter.OnResults := () => 0
+        ScriptFilter.Stop()
+        script := ProviderTests._FilterScript("hosts.ps1", "host"), script.FilterBy := "altrun"
+        titles(rows) {
+            list := ""
+            for row in ProviderRegistry.SortByScore(rows)
+                list .= row.Title "|"
+            return RTrim(list, "|")
+        }
+        try {
+            ScriptFilter.Results(script, "al")
+            Sleep(40)
+            eq("runs at once, with an empty text", starts.Length "|" starts[1].Options.Env["ALTRUN_QUERY"], "1|")
+            ScriptFilter.Results(script, "alt"), Sleep(250)
+            eq("no run while typing", starts.Length, 1)
+            starts[1].Done.Call({Stdout: '{"items": [{"title": "Coral Bay"}, {"title": "Altair Tower"}, {"title": "Zed", "match": "alder"}, {"title": "Harbor"}]}'
+                , Stderr: "", ExitCode: 0, TimedOut: false, Error: "", Ms: 5})
+            eq("filtered, best first (a shorter match ranks higher)", titles(ScriptFilter.Results(script, "al")), "Zed|Altair Tower|Coral Bay")
+            eq("match instead of the title", titles(ScriptFilter.Results(script, "alder")), "Zed")
+            eq("empty: all, in the script's order", titles(ScriptFilter.Results(script, "")), "Coral Bay|Altair Tower|Zed|Harbor")
+            eq("nothing matching", titles(ScriptFilter.Results(script, "qqq")), I18n.T("ScriptFilter.NoResults"))
+            Sleep(250)
+            eq("still one run", starts.Length, 1)
+            ScriptFilter.Stop()
+            ScriptFilter.Results(script, "al"), Sleep(40)
+            eq("hidden: runs again", starts.Length, 2)
+        } finally {
+            ScriptFilter.Stop()
+            ScriptFilter.StartFn := saved[1], ScriptFilter.KillFn := saved[2], ScriptFilter.OnResults := saved[3]
+        }
+    }
+
     ; A real filter script found by the search: "keyword text" runs it (an .ahk; .ps1 and .py on Windows when there, with their
     ; times in the log), "keyword" alone completes "keyword ", a batch file and a script without keyword don't run, not in the
     ; selection panel, a hotkey opens the search window with "keyword " and the selected line
@@ -2449,6 +2489,8 @@ class ProviderTests {
         root := TestRunner.LongPath(root)
         FileAppend("; @altrun.keyword fd`n; @altrun.mode filter`n#NoTrayIcon`n"
             . 'FileAppend("got " A_Args[1] "``t" EnvGet("ALTRUN_KEYWORD") "``t" A_Args[1] " 中文``ttext``n", "*", "UTF-8-RAW")`n', root "\find.ahk", "UTF-8")
+        FileAppend("# @altrun.keyword fl`n# @altrun.mode filter`n# @altrun.filter  ALTRun`n"
+            . "Write-Output ('Alpha host [' + $env:ALTRUN_QUERY + ']')`nWrite-Output 'Beta host'`n", root "\list.ps1", "UTF-8")
         FileAppend("# @altrun.keyword fs`n# @altrun.mode filter`n"
             . "Write-Output ('{`"items`": [{`"title`": `"ps ' + $env:ALTRUN_QUERY + '`"}]}')`n", root "\ps.ps1", "UTF-8")
         FileAppend("# @altrun.keyword fp`n# @altrun.mode filter`nimport sys`nprint('py ' + sys.argv[1])`n", root "\py.py", "UTF-8")
@@ -2464,7 +2506,7 @@ class ProviderTests {
             byName := Map()
             for script in ScriptProvider.Scripts
                 byName[script.Name] := script
-            eq("mode read", byName["find.ahk"].Mode "|" byName["bad.bat"].Mode, "filter|filter")
+            eq("mode read", byName["find.ahk"].Mode "|" byName["bad.bat"].Mode "|" byName["find.ahk"].FilterBy "|" byName["list.ps1"].FilterBy, "filter|filter|script|altrun")
             hint := ScriptProvider.Search(SearchQuery("fd"))
             found := ""
             for item in hint
@@ -2486,6 +2528,9 @@ class ProviderTests {
             onWine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
             if !onWine {
                 timed("fs", "x; y", "ps x; y")
+                timed("fl", "beta", "Beta host")                            ; @altrun.filter altrun: one run, ALTRun filters
+                rows := ScriptProvider.Search(SearchQuery("fl "))
+                eq("fl: run once with an empty text", rows.Length ? rows[1].Title : "", "Alpha host []")
                 if FileExist(A_WinDir "\py.exe")
                     timed("fp", "q", "py q")
                 else

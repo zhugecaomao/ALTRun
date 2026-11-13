@@ -15,6 +15,9 @@
 ;     Alfred's, names the same) or one result per line: title<Tab>subtitle<Tab>arg<Tab>type<Tab>icon (all but the title optional).
 ;     type: file / folder / url / text, guessed from arg without touching the disk when missing. icon: a local file or an IconCache
 ;     form, never a web address. uid: the item takes part in learned ranking; without it the script's order is kept
+;   - "@altrun.filter altrun": run once on entering the keyword (with an empty text), then ALTRun filters what it printed while
+;     typing (fuzzy, on "match" or the title, pinyin initials too) without running it again: for lists that don't depend on the
+;     text (projects, hosts...) and for slow starters such as PowerShell
 ;   - Nothing usable printed: one error row (the first line of standard error, the exit code, the JSON problem, the time-out);
 ;     Enter edits the script, Ctrl+L shows all of standard error. Exit code 0 and no items: a "No results" row
 ;   - The log gets the script's file name, time, item count and exit code, never the text typed or the output
@@ -52,6 +55,9 @@ class ScriptFilter {
     }
 
     static Results(script, text) {
+        filterText := text
+        if (script.FilterBy = "altrun")                                    ; one run for every text: ALTRun filters its items
+            text := ""
         key := ScriptFilter._Key(script, text)
         if (ScriptFilter._session != script.Name) {                        ; just entered this keyword: the first run starts at once
             ScriptFilter.Leave()
@@ -63,11 +69,11 @@ class ScriptFilter {
             ScriptFilter._CancelWanted()
             if (ScriptFilter._runningKey != "" && ScriptFilter._runningKey != key)
                 ScriptFilter._EndRun()
-            return ScriptFilter.Rows(script, ScriptFilter._cache[key])
+            return ScriptFilter.Rows(script, ScriptFilter._cache[key], filterText)
         }
         ScriptFilter._Want(script, text, key, first)
         if ScriptFilter._last.Has(script.Name)
-            return ScriptFilter.Rows(script, ScriptFilter._last[script.Name])
+            return ScriptFilter.Rows(script, ScriptFilter._last[script.Name], filterText)
         if (A_TickCount - ScriptFilter._wantedAt >= ScriptFilter.WaitRowMs - 20)   ; (its timer may come a tick early)
             return [ScriptFilter._Row(script, I18n.T("ScriptFilter.Running", script.Title), "", {Valid: false})]
         return [ScriptFilter._Row(script, script.Title, ScriptProvider.HintText(script), {Valid: false})]
@@ -188,16 +194,20 @@ class ScriptFilter {
 
     static _LocalIcon(icon) => RegExMatch(Trim(icon), "i)^[a-z][a-z0-9+.\-]*://") ? "" : Trim(icon)   ; no web addresses: nothing is downloaded for an icon
 
-    ; The rows for an entry (Read): the items, the error row or "No results"; new ResultItems each time (the search changes their scores)
-    static Rows(script, entry) {
+    ; The rows for an entry (Read): the items, the error row or "No results"; new ResultItems each time (the search changes their scores).
+    ; filterText: for a script ALTRun filters (@altrun.filter altrun), only the items matching it, best first
+    static Rows(script, entry, filterText := "") {
         if (entry.Error != "")
             return [ScriptFilter._Row(script, I18n.T("ScriptFilter.Error", script.Title), entry.Error
                 , {LargeText: (entry.Detail != "") ? entry.Detail : entry.Error, RunTitle: I18n.T("ScriptFilter.EditScript"), OnRun: (*) => ScriptProvider.EditScript(script)})]
-        if !entry.Items.Length
+        items := entry.Items, scores := ""
+        if (script.FilterBy = "altrun" && filterText != "")
+            items := ScriptFilter.Matching(items, filterText, &scores)
+        if !items.Length
             return [ScriptFilter._Row(script, I18n.T("ScriptFilter.NoResults"), script.Title, {Valid: false})]
         rows := []
-        for index, each in entry.Items {
-            props := {Kind: each.Type, Arg: each.Arg, Valid: each.Valid, Score: 1000 - index, Exclusive: true, Source: script
+        for index, each in items {
+            props := {Kind: each.Type, Arg: each.Arg, Valid: each.Valid, Score: IsObject(scores) ? 1000 + scores[index] : 1000 - index, Exclusive: true, Source: script
                 , Icon: (each.Icon != "") ? each.Icon : ScriptFilter._KindIcon(script, each)
                 , Uid: (each.Uid != "") ? ScriptProvider.Uid(script) ":" each.Uid : "", LargeText: each.LargeText}
             if (each.AutoComplete != "")
@@ -205,6 +215,20 @@ class ScriptFilter {
             rows.Push(ResultItem(each.Title, each.Subtitle, props))
         }
         return rows
+    }
+
+    ; The items matching text (FuzzyMatcher on "match", else the title, and its pinyin initials), in their order; scores: each one's score
+    static Matching(items, text, &scores) {
+        needle := StrLower(text), found := [], scores := []
+        for each in items {
+            if !each.HasOwnProp("Keys") {
+                name := (each.Match != "") ? each.Match : each.Title, initials := Pinyin.Initials(name)
+                each.Keys := [FuzzyMatcher.Key(name), (initials != name) ? FuzzyMatcher.Key(initials) : ""]
+            }
+            if ((score := FuzzyMatcher.BestKey(needle, each.Keys)) > 0)
+                found.Push(each), scores.Push(score)
+        }
+        return found
     }
 
     static _KindIcon(script, each) {
