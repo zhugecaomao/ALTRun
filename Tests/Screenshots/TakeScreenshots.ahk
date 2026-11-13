@@ -68,6 +68,7 @@ class Shots {
             ["script-filter", "Light", "", () => Shots.LiveResults("proj al")],          ; Wiki: scripts (live results of a filter script, made-up projects)
             ["script-filter-error", "Light", "", () => Shots.LiveResults("dict hello")],   ; a filter script that failed: the error row
             ["system",      "Light", "", () => Shots.Search("lock")],
+            ["snippets",    "Light", "", () => Shots.Search("snip ")],           ; Wiki: snippets, each with what expands it (;today...)
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
             ["quickswitch-favorites", "Light", "", () => Shots.QuickSwitchFavorites(), () => Shots.WriteRecentFolders()],   ; Wiki: the panel's star menu

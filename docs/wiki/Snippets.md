@@ -30,6 +30,10 @@ Replaced when pasting:
 ## Snippet expansion
 Type `;keyword` (for example `;sig`) in any program and what you typed is deleted and replaced by the snippet text, like Alfred's snippets. The `;` prefix keeps normal typing from triggering it by accident; change it in `Features.Snippets.ExpandPrefix`. To stop a single snippet from expanding, untick "Expand automatically when typed" in its edit window (`"AutoExpand": 0`); it can still be searched. Snippets don't expand in ALTRun's own search window, in Windows password boxes, or in the windows listed under [Don't expand in](#dont-expand-in).
 
+To see what expands what, type `snip` in the search window: each snippet's second line starts with what you type to expand it (`;sig, ;signature · Paste snippet · ...`); Preferences → Snippets lists them too.
+
+![Typing snip lists the snippets, each with what expands it](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/snippets.png)
+
 ![Snippet expansion: typing ;thx in Notepad expands the email reply, with the caret after "Hi"](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-snippets.png)
 
 ## Don't expand in

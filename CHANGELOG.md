@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.4]
+
+测试版。
+
+Test build.
+
+### 改进
+- 片段在搜索结果里的第二行开头显示展开它要输入的文字 (例如 `;sig, ;signature · 粘贴片段 · ...`), 输入 `snip` 就能看到全部片段的触发词 (AutoHotkey 论坛); 关掉自动展开或单个片段不展开时不显示
+
 ## [2026.11.13.3]
 
 测试版。
@@ -1438,7 +1447,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...HEAD
+[2026.11.13.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...2026.11.13.4
 [2026.11.13.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...2026.11.13.3
 [2026.11.13.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...2026.11.13.2
 [2026.11.13.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...2026.11.13.1

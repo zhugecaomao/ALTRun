@@ -2675,7 +2675,8 @@ class ProviderTests {
         eq := (n, a, e) => TestRunner.Equal("SnippetText." n, a, e)
         ok := (n, c) => TestRunner.True("SnippetText." n, c)
         options := AppSettings.Feature("Snippets")
-        savedSnippets := AppSettings.Snippets, savedSearch := options["SearchText"]
+        savedSnippets := AppSettings.Snippets, savedSearch := options["SearchText"], savedExpand := [options["AutoExpand"], options["ExpandPrefix"]]
+        options["AutoExpand"] := 0                                          ; the subtitles below without the abbreviations (SnippetTriggers)
         long := "Dear Sir, " StrRepeat("please see the attached drawings. ", 4) "We offer a goodwill discount on the revised quotation."
         AppSettings.Data["Snippets"] := [Map("Name", "Quote reply", "Keyword", "qr", "Text", long)
                                , Map("Name", "Signature", "Keyword", "sig", "Text", "Best regards")
@@ -2709,10 +2710,31 @@ class ProviderTests {
         ok("snip keyword boosts", InStr(titles("snip goodwill"), "Quote reply=" (SnippetProvider.TextScore + 30) "|"))
         options["SearchText"] := 0
         eq("switched off", titles("goodwill"), "")
-        options["SearchText"] := savedSearch
+        options["SearchText"] := savedSearch, options["AutoExpand"] := savedExpand[1], options["ExpandPrefix"] := savedExpand[2]
         AppSettings.Data["Snippets"] := savedSnippets
         eq("match position", SnippetProvider.TextMatch("abc def", ["DEF", "abc"]), 5)
         eq("no match", SnippetProvider.TextMatch("abc def", ["abc", "xyz"]), 0)
+    }
+
+    ; A snippet's subtitle starts with what expands it while typing (AHK forum: "a view of all the hotstrings"): ";sig, ;signature · ..."
+    static SnippetTriggers() {
+        eq := (n, a, e) => TestRunner.Equal("SnippetTriggers." n, a, e)
+        options := AppSettings.Feature("Snippets")
+        saved := [options["Enabled"], options["AutoExpand"], options["ExpandPrefix"]]
+        paste := I18n.T("Snippet.Subtitle", "Best regards")
+        try {
+            options["Enabled"] := 1, options["AutoExpand"] := 1, options["ExpandPrefix"] := ";"
+            eq("one keyword", SnippetProvider.Subtitle(Map("Keyword", "sig", "Text", "x"), "Best regards", options), ";sig · " paste)
+            eq("two keywords", SnippetProvider.Subtitle(Map("Keyword", "sig, signature", "Text", "x"), "Best regards", options), ";sig, `;signature · " paste)
+            eq("its own expansion off", SnippetProvider.Subtitle(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), "Best regards", options), paste)
+            eq("no keyword", SnippetProvider.Subtitle(Map("Keyword", "", "Text", "x"), "Best regards", options), paste)
+            options["ExpandPrefix"] := "//"
+            eq("other prefix", SnippetProvider.Subtitle(Map("Keyword", "sig", "Text", "x"), "Best regards", options), "//sig · " paste)
+            options["AutoExpand"] := 0
+            eq("auto expansion off", SnippetProvider.Subtitle(Map("Keyword", "sig", "Text", "x"), "Best regards", options), paste)
+        } finally {
+            options["Enabled"] := saved[1], options["AutoExpand"] := saved[2], options["ExpandPrefix"] := saved[3]
+        }
     }
 
     ; Browser bookmarks
