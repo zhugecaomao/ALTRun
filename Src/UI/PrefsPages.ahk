@@ -270,7 +270,7 @@ class PrefsPages {
         }
         PrefsForm._y -= 3
         PrefsForm.Desc("Prefs.FeatureKeyword", PrefsForm.InputX())
-        PrefsForm.LinesButton("Features.Bookmarks.BrowserFolders", "Prefs.BrowserFolders", {Summary: (lines) => PrefsPages.BrowserFolderSummary(lines)})
+        PrefsForm.LinesButton("Features.Bookmarks.BrowserFolders", "Prefs.BrowserFolders", {Summary: (lines) => PrefsPages.BrowserFolderSummary(lines)})   ; no description: this page is full (it is in the Edit... window)
     }
 
     ; Other browsers on the Features page: each folder with the number of profiles found in it on this computer

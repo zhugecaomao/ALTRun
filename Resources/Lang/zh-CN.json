@@ -874,7 +874,6 @@
   "Prefs.SettingsPages": "Windows 设置页面",
   "Prefs.ShowInNormal": "普通搜索里也显示",
   "Prefs.BrowserFolders": "其他浏览器",
-  "Prefs.BrowserFolders.Desc": "便携版或其他 Chromium 浏览器的 User Data 文件夹, 也搜索它们的书签和历史记录",
   "Prefs.BrowserFolders.Help": "每行一个文件夹: 便携版或其他基于 Chromium 的浏览器的 User Data 文件夹 (里面有 Default、Profile 1 等; PortableApps.com 的 Google Chrome Portable 是 Data\\profile), 也可以是单个用户配置文件夹。书签和浏览器历史记录会包括它的各个配置。用通常方式安装的 Chrome、Edge、Brave、Vivaldi 不用在这里加。\n\n可以用变量: %OneDrive% 等环境变量和 A_ 变量。相对路径从 ALTRun 所在的文件夹算起, 浏览器和 ALTRun 在同一个 U 盘上时, 换了盘符也能找到 (例如 ..\\GoogleChromePortable\\Data\\profile)。不支持 Firefox。",
   "Prefs.BrowserFolders.Profiles": "{1} 个配置",
   "Prefs.BrowserFolders.NotFound": "没找到配置",

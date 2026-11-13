@@ -875,7 +875,6 @@
   "Prefs.SettingsPages": "Windows 設定頁面",
   "Prefs.ShowInNormal": "一般搜尋裡也顯示",
   "Prefs.BrowserFolders": "其他瀏覽器",
-  "Prefs.BrowserFolders.Desc": "可攜版或其他 Chromium 瀏覽器的 User Data 資料夾, 也搜尋它們的書籤和歷史記錄",
   "Prefs.BrowserFolders.Help": "每行一個資料夾: 可攜版或其他以 Chromium 為基礎的瀏覽器的 User Data 資料夾 (裡面有 Default、Profile 1 等; PortableApps.com 的 Google Chrome Portable 是 Data\\profile), 也可以是單一使用者設定檔資料夾。書籤和瀏覽器歷史記錄會包括它的各個設定檔。用一般方式安裝的 Chrome、Edge、Brave、Vivaldi 不用在這裡加。\n\n可以用變數: %OneDrive% 等環境變數和 A_ 變數。相對路徑從 ALTRun 所在的資料夾算起, 瀏覽器和 ALTRun 在同一個隨身碟上時, 換了磁碟機代號也能找到 (例如 ..\\GoogleChromePortable\\Data\\profile)。不支援 Firefox。",
   "Prefs.BrowserFolders.Profiles": "{1} 個設定檔",
   "Prefs.BrowserFolders.NotFound": "找不到設定檔",

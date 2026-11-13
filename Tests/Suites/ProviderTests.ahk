@@ -2783,13 +2783,14 @@ class ProviderTests {
             options["BrowserFolders"] := []
             eq("none", BookmarkProvider.Files().Length, 0)
             options["BrowserFolders"] := ["%ALTRUN_TEST_BROWSERS%\Portable\Data\profile", single, "", root "\Missing", single "\"]
+            short := (path) => RegExReplace(path, "i)^.*\\ALTRun-test-browser-folders")   ; A_Temp may be an 8.3 short path, expanded or not
             names := ""
             for each in BookmarkProvider.Files()
-                names .= each[1] ":" SubStr(each[2], StrLen(root) + 1) "|"
+                names .= each[1] ":" short(each[2]) "|"
             eq("bookmarks: user data + profile folder, once each", names, "Other:\Portable\Data\profile\Default\Bookmarks|Other:\Single\Bookmarks|")
             names := ""
             for historyFile in BrowserHistoryProvider.Files()
-                names .= SubStr(historyFile, StrLen(root) + 1) "|"
+                names .= short(historyFile) "|"
             eq("history: the same folders", names, "\Portable\Data\profile\Profile 1\History|\Single\History|")
             eq("profiles in user data", BookmarkProvider.ProfileCount(portable), 2)
             eq("profile folder", BookmarkProvider.ProfileCount(single), 1)
