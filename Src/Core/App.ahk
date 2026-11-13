@@ -189,7 +189,8 @@ class App {
     }
 
     ; The arguments are sent one per line; only a reply of 1 counts as received (false when it hangs for 3 s or an old version doesn't know it)
-    static SendArgs(hwnd, args) {
+    ; reply: what it replied (the helper for administrator windows answers -Jump with a code, see AdminHelper.Refused)
+    static SendArgs(hwnd, args, &reply := 0) {
         text := ""
         for arg in args
             text .= arg "`n"
@@ -491,8 +492,8 @@ class App {
         if CapsLockSwitch.IsMode(capsLock) {                                ; CapsLock switches the input language; Caps Lock only when held
             CapsLockSwitch.Mode := capsLock
             CapsLockSwitch.Register((key, fn) => App._TryHotkey(key, fn))
-            AdminHelper.Start()                                          ; also in administrator windows (when that option is on)
         }
+        AdminHelper.Start()                                                 ; Caps Lock and Quick Switch in administrator windows, when those options are on
 
         if (AppSettings.General["SelectionHotkey"] != "")                  ; actions for the selection
             App._TryHotkey(AppSettings.General["SelectionHotkey"], (*) => SelectionActions.Run())

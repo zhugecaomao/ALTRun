@@ -67,6 +67,55 @@ class ExtensionTests {
             . (InStr(AdminHelper.DeleteCommand(), '/tn "ALTRun CapsLock Helper" /f') > 0 ? 1 : 0), "11")
         eq("task: own command is the helper", InStr(AdminHelper.OwnTaskXml(), "<Arguments>" (A_IsCompiled ? "" : "&quot;")) > 0
             && InStr(AdminHelper.OwnTaskXml(), "-AdminHelper</Arguments>") > 0 ? 1 : 0, 1)
+        ; jumps in dialogs of administrator programs (Extensions.QuickSwitch.AdminDialogs) use the same helper and task
+        eq("dialogs option off by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["AdminDialogs"], 0)
+        caps := Map("CapsLock", "Layout", "CapsLockElevated", 1), noCaps := Map("CapsLock", "", "CapsLockElevated", 0)
+        dialogsOn := Map("Enabled", 1, "AdminDialogs", 1), quickSwitchOff := Map("Enabled", 0, "AdminDialogs", 1), dialogsOff := Map("Enabled", 1, "AdminDialogs", 0)
+        eq("helper wanted: Caps Lock or dialogs", (AdminHelper.Wanted(noCaps, dialogsOn) ? 1 : 0) . (AdminHelper.Wanted(noCaps, quickSwitchOff) ? 1 : 0)
+            . (AdminHelper.Wanted(noCaps, dialogsOff) ? 1 : 0) . (AdminHelper.Wanted(caps, dialogsOff) ? 1 : 0), "1001")
+        eq("task kept while an option is on", (AdminHelper.TaskWanted(noCaps, quickSwitchOff) ? 1 : 0) . (AdminHelper.TaskWanted(noCaps, dialogsOff) ? 1 : 0)
+            . (AdminHelper.TaskWanted(caps, dialogsOff) ? 1 : 0), "101")
+        FileAppend('{"Extensions": {"QuickSwitch": {"Enabled": 1, "AdminDialogs": 1}}}', settingsFile, "UTF-8")
+        eq("helper reads the dialogs option", AdminHelper.DialogsFromSettings(settingsFile) ? 1 : 0, 1)
+        FileDelete(settingsFile)
+        FileAppend('{"Extensions": {"QuickSwitch": {"Enabled": 0, "AdminDialogs": 1}}}', settingsFile, "UTF-8")
+        eq("helper: dialogs with Quick Switch off", AdminHelper.DialogsFromSettings(settingsFile) ? 1 : 0, 0)
+        FileDelete(settingsFile)
+        eq("helper: dialogs without a settings file", AdminHelper.DialogsFromSettings(settingsFile) ? 1 : 0, 0)
+        ; what the helper accepts: any program with normal rights can send it a jump
+        paths := ""
+        for folder in ["C:\", "E:\game", "E:\game\", "\\server\share\Docs", "game", "\\server", "C:\a*.txt", 'C:\a"b', "C:\a|b", "C:\a`nb", "C:\a:stream", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "C:\" StrReplace(Format("{:1100}", ""), " ", "a")]
+            paths .= AdminHelper.IsFolderPath(folder) ? 1 : 0
+        eq("folder paths the helper takes", paths, "1111000000000")
+        good := {Front: true, Class: "#32770", Kind: "file", Elevated: true, Exists: true}
+        with(change) {
+            facts := {Front: good.Front, Class: good.Class, Kind: good.Kind, Elevated: good.Elevated, Exists: good.Exists}
+            for name, value in change.OwnProps()
+                facts.%name% := value
+            return AdminHelper.ReplyText(AdminHelper.CheckJump("E:\game\", facts))
+        }
+        eq("jump: all checks pass", with({}), "jumping")
+        eq("jump: Browse for Folder too", with({Kind: "browse"}), "jumping")
+        eq("jump: not the window in front", with({Front: false}), "refused: not in front")
+        eq("jump: another window class", with({Class: "Notepad"}), "refused: not a dialog")
+        eq("jump: a #32770 that isn't a file dialog", with({Kind: ""}), "refused: not a dialog")
+        eq("jump: program not elevated", with({Elevated: false}), "refused: not elevated")
+        eq("jump: folder missing", with({Exists: false}), "refused: folder not found")
+        eq("jump: not a folder path", AdminHelper.ReplyText(AdminHelper.CheckJump("C:\a*.txt", good)), "refused: not a folder path")
+        eq("jump: no answer", AdminHelper.ReplyText(0), "no answer")
+        ; with the option off, the hint says where to turn it on, once per dialog
+        notes := []
+        savedNotify := App.GetOwnPropDesc("Notify"), savedOptions := QuickSwitch.Options
+        App.DefineProp("Notify", {Call: (this, text, *) => notes.Push(text)})
+        try {
+            QuickSwitch.Options := Map("Enabled", 1, "AdminDialogs", 0)
+            FileDialogs._hinted := Map()
+            first := AdminHelper.Jump("C:\", 0x123456), second := AdminHelper.Jump("C:\", 0x123456)
+            eq("option off: hint once, no jump", (first ? 1 : 0) . (second ? 1 : 0) . notes.Length, "001")
+            eq("option off: the hint names the option", InStr(notes.Length ? notes[1] : "", I18n.T("Prefs.QSAdmin")) > 0 ? 1 : 0, 1)
+        } finally {
+            App.DefineProp("Notify", savedNotify), QuickSwitch.Options := savedOptions, FileDialogs._hinted := Map()
+        }
         ; the task runs ALTRun with administrator rights: a folder of it that normal programs can change is pointed out before turning it on
         eq("writable folder: found", AdminHelper.WritableFolder((dir) => true, false), A_ScriptDir)
         checked := []

@@ -67,7 +67,7 @@ class FileDialogs {
     ; Select a folder in a "Browse for Folder" dialog's tree, like Listary: BFFM_SETSELECTIONW expands the tree to it.
     ; The message carries a pointer, so the path is first written into the dialog's own process. Doesn't press OK.
     ; A dialog of a program running as administrator can't be reached from ALTRun without administrator rights (its process can't
-    ; be opened, and Windows blocks the message, UIPI): logged, and a hint says so instead of nothing happening
+    ; be opened, and Windows blocks the message, UIPI): SetDialogPath hands those to AdminHelper; one that gets here anyway is logged, with a hint
     static SelectInBrowseDialog(folder, dialog) {
         folder := RTrim(folder, "\")
         if RegExMatch(folder, "^[A-Za-z]:$")
@@ -75,10 +75,10 @@ class FileDialogs {
         pid := 0
         try pid := WinGetPID("ahk_id " dialog)
         if !pid
-            return FileDialogs._BrowseFailed(folder, 0, "its process isn't known")
+            return FileDialogs._BrowseFailed(folder, dialog, 0, "its process isn't known")
         if !(process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr")) {   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
             err := A_LastError
-            return FileDialogs._BrowseFailed(folder, pid, "cannot open its process, error " err, err = 5)   ; ERROR_ACCESS_DENIED
+            return FileDialogs._BrowseFailed(folder, dialog, pid, "cannot open its process, error " err, err = 5)   ; ERROR_ACCESS_DENIED
         }
         size := (StrLen(folder) + 1) * 2, ok := false, sent := true, reason := "cannot reserve memory in its process"
         remote := DllCall("VirtualAllocEx", "Ptr", process, "Ptr", 0, "UPtr", size, "UInt", 0x3000, "UInt", 0x04, "Ptr")   ; MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
@@ -101,17 +101,43 @@ class FileDialogs {
         }
         DllCall("CloseHandle", "Ptr", process)
         if !ok
-            return FileDialogs._BrowseFailed(folder, pid, reason)
+            return FileDialogs._BrowseFailed(folder, dialog, pid, reason)
         Logger.Debug("QuickSwitch: selected [" folder "] in the Browse for Folder dialog")
         return true
     }
 
     ; Logs why the folder couldn't be selected; when the dialog's program runs as administrator and ALTRun doesn't, also tells the user.
     ; denied: opening the process was refused (a normal process can't always ask an elevated one whether it is elevated)
-    static _BrowseFailed(folder, pid, reason, denied := false) {
+    static _BrowseFailed(folder, dialog, pid, reason, denied := false) {
         Logger.Error("QuickSwitch: cannot select " folder " in the Browse for Folder dialog - " reason)
         if (!A_IsAdmin && pid && (denied || Win.IsElevated(pid)))
-            App.Notify(I18n.T("QuickSwitch.ElevatedDialog"), 4000)
+            FileDialogs.ElevatedHint(dialog)
+        return false
+    }
+
+    ; The dialog's program runs as administrator (and ALTRun doesn't, see SetDialogPath): Windows blocks ALTRun's messages and keys to it.
+    ; A normal process can't always ask an elevated one whether it is elevated, so being refused the access a jump needs counts too (ERROR_ACCESS_DENIED)
+    static IsElevatedDialog(dialog) {
+        pid := 0
+        try pid := WinGetPID("ahk_id " dialog)
+        if !pid
+            return false
+        if Win.IsElevated(pid)
+            return true
+        if (process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr"))   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
+            return (DllCall("CloseHandle", "Ptr", process), false)
+        return A_LastError = 5
+    }
+
+    ; "This dialog's program runs as administrator" and where to turn on the jump for it; once per dialog (AutoSwitch would repeat it at every switch)
+    static _hinted := Map()
+    static ElevatedHint(dialog) {
+        if FileDialogs._hinted.Has(dialog)
+            return false
+        if (FileDialogs._hinted.Count > 50)                                 ; window handles of closed dialogs
+            FileDialogs._hinted := Map()
+        FileDialogs._hinted[dialog] := true
+        App.Notify(I18n.T("QuickSwitch.ElevatedDialog"), 6000)
         return false
     }
 
@@ -136,8 +162,8 @@ class FileDialogs {
         return saved != "" && !RegExMatch(saved, "[\\/:*?]")
     }
 
-    ; dialog: the dialog to jump in (the current window by default). Before simulating keyboard input, make sure it is the foreground window,
-    ; otherwise the text would go to another window (e.g. switching back to the dialog failed and the panel is still in front)
+    ; dialog: the dialog to jump in (the current window by default). A dialog of a program running as administrator, with ALTRun not
+    ; running as one, is jumped by the helper with administrator rights (AdminHelper.Jump): Windows blocks ALTRun's messages and keys there
     static SetDialogPath(folder, dialog := 0) {
         if (folder = "" || !FileExist(folder))
             return
@@ -146,6 +172,15 @@ class FileDialogs {
         if !(dialog && WinExist("ahk_id " dialog))
             return
         Usage.Count("QuickSwitch")
+        if (!A_IsAdmin && FileDialogs.IsElevatedDialog(dialog))
+            return AdminHelper.Jump(folder, dialog)
+        return FileDialogs.Jump(folder, dialog)
+    }
+
+    ; The jump itself, with the method that suits the dialog (DialogJumpMethod); also run by the helper for administrator windows.
+    ; Before simulating keyboard input, make sure it is the foreground window, otherwise the text would go to another window (e.g.
+    ; switching back to the dialog failed and the panel is still in front). false when it surely didn't go there
+    static Jump(folder, dialog) {
         method := FileDialogs.DialogJumpMethod(dialog)
         if (method = "browse")                                              ; folder tree only: select it there, pressing Enter would mean OK
             return FileDialogs.SelectInBrowseDialog(folder, dialog)
@@ -174,7 +209,7 @@ class FileDialogs {
             method := (className = "#32770") ? "address" : "type"           ; the box refused: as if there were none
         }
         if !WinActive("ahk_id " dialog)                                     ; typing goes to the foreground window: only into the dialog
-            return
+            return false
         if (method = "address") {                                           ; a system dialog without the box: its address bar
             SendInput("!d")
             Sleep(60)
