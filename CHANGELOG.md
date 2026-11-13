@@ -5,180 +5,89 @@
 
 ## [未发布]
 
-## [2026.11.12.16]
+## [2026.11.13]
 
-测试版。
+### Summary
 
-Test build.
+**Hotkeys can run your custom commands and scripts**: pick the command from a searchable list in the hotkey window, or set a hotkey right from the command's edit window or from its actions panel (`→`); a command that uses `{query}` or a content type gets the selected text or files. **Scripts can show live results while you type** (`@altrun.mode filter`, like Alfred's Script Filter): type the script's keyword and some text, and what the script prints becomes the results, opening files, folders and web addresses or copying text. Scripts can also appear in the actions panel for selected content (`@altrun.selection`). From the selection panel you can **add a command for this kind of content, or create a new content type**, in a couple of clicks. Custom commands now say at once when a placeholder won't work. Learned ranking now stays with a custom command when you rename it or change its target. Preferences groups its pages, the Hotkeys page lists the hotkeys set on other pages, and the data folder can be placed in OneDrive or Dropbox with one folder per computer.
 
-### 新增
-- 实时结果脚本可以加 `@altrun.filter altrun`: 输入关键字时只运行一次脚本, 之后边输入边由 ALTRun 过滤它的输出 (模糊匹配, 也认拼音首字母; JSON 里可以用 `match` 指定匹配的文字), 输入时不再运行脚本。适合和输入无关的列表, 以及 PowerShell 这种启动慢的脚本 (Windows CI 上 `.ps1` 每次运行约 2.3 秒)
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file is upgraded to version 7 the first time this version starts: the old file is backed up as `ALTRun.v6.backup.json` (and the learned ranking as `Knowledge.v1.backup.json`) and a message says so once. To go back to an older version, see the FAQ: [How do I go back to an older version?](https://github.com/zhugecaomao/ALTRun/wiki/FAQ)
 
-## [2026.11.12.15]
+### New
+- **Hotkeys that run custom commands and scripts**:
+  - In the hotkey window, **Choose...** opens a searchable list of commands (ALTRun's own, custom commands, scripts, system commands): type to filter (name, keyword, pinyin initials), `↑` `↓` and `Enter` to pick. A grey line below tells what the command is, and for a custom command its target and how it gets the selected content
+  - A custom command's edit window has a **Triggers** line at the bottom (`Keyword ping · Selection IP · Hotkey Ctrl+Alt+P`) and **Set Hotkey...**: add, change or delete its hotkeys there; they are saved with the command (Cancel drops them too). The actions panel (`→`) of a custom command in the results has **Set Hotkey...** / **Change Hotkey Ctrl+Alt+N...** too
+  - A command with `{query}` or a content type, and a script with `@altrun.argument` or `@altrun.selection`, gets the selected content (with the same shell character checks as the actions for selected content); with nothing selected, one with a keyword opens the search window with the keyword filled in. Other commands just run
+  - When the hotkeys change, ALTRun restarts so they work at once
+- **Live results from scripts** (`@altrun.mode filter`): typing "keyword text" runs the script in the background with the text and shows what it prints (one result per line, Tab-separated, or JSON) as results, which open files, folders and web addresses or copy text. The first run starts at once, later ones when typing pauses for 0.15 seconds; a new run ends the previous one (with everything it started), and a run takes at most 10 seconds; when something goes wrong, one row says why. `.ahk`, `.py` and `.ps1`, started directly, not through cmd. With `@altrun.filter altrun` the script runs only once when you enter its keyword and ALTRun filters what it printed while you type (fuzzy, pinyin initials too): for lists that don't depend on the text and for slow starters such as PowerShell. A new example script "Environment Variables" (keyword `envvar`). See the Wiki: [Scripts](https://github.com/zhugecaomao/ALTRun/wiki/Scripts)
+- **Scripts for selected content**: a script with `@altrun.selection Text, PDF` (built-in or your own content types) appears in the actions panel for selected content (`Ctrl+Alt+\`) after the custom commands, with the selection as its argument (one argument per selected file); it isn't offered when the selection isn't safe for the script's command line
+- **Add a command or a content type from the selection**: when nothing is set up yet for the selected content's type, the actions panel ends with **Add a Command for This Content...** (the command window opens with the content type filled in) and, when the content matches none of your types, **Make a Content Type from It...**: ALTRun guesses a rule from the selection (numbers, letters and numbers, e-mail, web address by site, other text as it is; files by extension), and the type window shows whether the selection matches while you edit; after OK the command window for the new type opens
+- **Placeholders that won't work are pointed out**: Preferences → Custom Commands has a Status column (`{query} empty`, `Use {query}`, `Unknown {date}`), and OK in the command window explains the problem and asks whether to save anyway
+- Preferences → Hotkeys lists **Other hotkeys**, read-only: the hotkeys set on other pages (show ALTRun, the second hotkey, actions for selected content, clipboard history, Quick Switch, the dialog panel's search box, Date Stamp) and their page, as the boxes on those pages are now; double-click one to go to its page
+- **Data folder location** (Preferences → Advanced → Data → Change Location...): a small window lists the usual places on this computer (`%OneDrive%\ALTRun\Data`, one folder per computer `%OneDrive%\ALTRun\Data-%COMPUTERNAME%`, work or school OneDrive, Dropbox, Documents, the default), or type or browse; it says what the location means (shared / one per computer / one per user) and which folder it is on this computer. Environment variables are saved as written, so computers sharing one OneDrive can each use their own folder
 
-测试版。
+### Improvements
+- **Learned ranking stays with a custom command, snippet or sync task when you rename it or change its target** (they now have a fixed `Id`); a script's is kept by its file name, also after moving between the portable and installed versions or changing the data folder
+- Preferences: the page list is grouped (General / Search / Commands & Triggers / Window Tools / Automation / Usage, Advanced) with the pages reordered to match; after **Apply** Preferences reopens on the same page by its name
+- The hotkey window warns at once when another hotkey already uses the same keys in the same windows (only one of them would work), naming it; before, only **Apply** did
+- Preferences → Hotkeys: the Action column shows names (`Run: Notepad`, the system command's name, `Search: folder {selection}`) instead of Ids; hotkeys whose command or script is gone are shown in red
+- Deleting a custom command (in Preferences, or `Ctrl+Del` in the results) deletes the hotkeys that run it too, after saying which; with `Ctrl+Del` they stop at once
+- Preferences → Scripts: the "Runs as" column shows "Live results" (or in red why a script can't give them), and a new "Type" column shows its content types; Preferences → Selection lists the scripts for each type too
+- In `ALTRun.json`, the 15 settings of the Search Window and Keyboard pages move to new `Window` and `Keyboard` groups that match the pages
+- Browser history search (`h`): the page list read in is let go 1 minute after the window hides in history search too (common with "Keep last query"), instead of keeping a few MB
+- The FAQ explains how to go back to an older version with the backups
 
-Test build.
+### Fixes
+- Actions for selected content and hotkeys that take the selection: when the hotkey was pressed by another program (a macro tool, remote desktop), copying the selection sometimes failed and typed a "c" into the program; ALTRun now waits until Ctrl and the other keys are released
+- Two custom commands with the same type, target and arguments (different name or keyword) were listed only once; now both are
+- An environment variable in the data folder location that doesn't exist on this computer (e.g. no OneDrive) no longer creates a folder named `%OneDrive%` in the program folder; the default location is used and Preferences says why
+- When the Caps Lock helper for administrator windows can't start, the message points to Preferences → Keyboard (it named the Hotkeys page)
 
-### 新增
-- 脚本实时结果 (`@altrun.mode filter`, 类似 Alfred 的 Script Filter): 输入 "关键字 文字" 时一边输入一边运行脚本, 把它输出的列表 (每行一个, Tab 分隔; 或 JSON) 显示成结果, 能打开文件 / 文件夹 / 网址或复制文字。第一次马上运行, 之后停下输入 0.15 秒再运行, 新的一次开始时结束上一次 (连同它启动的程序), 最多 10 秒; 出错显示一行原因。支持 `.ahk` `.py` `.ps1`; 脚本直接启动, 不经过 cmd。新增示例脚本 "Environment Variables" (关键字 `envvar`)
-- 偏好设置 → 脚本 的运行方式列显示 "实时结果"; 没有关键字或类型不支持时显示原因 (红字)
+---
 
-## [2026.11.12.14]
+### 中文说明
 
-测试版。
+**热键可以运行自定义命令和脚本**: 在热键窗口里从可搜索的列表选命令, 或者直接在命令编辑窗口、命令的动作面板 (`→`) 里设热键; 用了 `{query}` 或设了内容类型的命令会拿到选中的文字或文件。**脚本可以边输入边显示结果** (`@altrun.mode filter`, 类似 Alfred 的 Script Filter): 输入脚本的关键字和文字, 脚本输出的列表就是搜索结果, 可以打开文件、文件夹、网址或复制文字。脚本也能出现在选中内容的操作面板里 (`@altrun.selection`)。在选中内容的面板里, 点两下就能 **为这种内容添加命令, 或者新建一个内容类型**。自定义命令的占位符用不上时马上提示。自定义命令改名、改目标后, 学到的排序不再丢失。偏好设置的页面分了组, 热键页列出其他页面设置的热键, 数据文件夹可以放在 OneDrive 或 Dropbox 里并且每台电脑一个文件夹。
 
-Test build.
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 第一次启动这个版本时设置文件升级到版本 7: 原来的文件备份为 `ALTRun.v6.backup.json` (学习排序备份为 `Knowledge.v1.backup.json`), 并提示一次。退回旧版本的做法见常见问题: [怎样退回旧版本?](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh)
 
-### 新增
-- 命令编辑窗口点确定时, 占位符用不上 (写了 `{selection}`; `{query}` 没有关键字、内容类型或热键; 不认识的 `{xxx}`) 就说明原因并问是否仍然保存; 选 "否" 回到编辑窗口
+#### 新增
+- **热键运行自定义命令和脚本**:
+  - 热键窗口里点 **选择...** 打开可搜索的命令列表 (ALTRun 自己的、自定义命令、脚本、系统命令), 输入筛选 (名称、关键字、拼音首字母), `↑` `↓` 和 `Enter` 选定。下面一行灰字说明这是什么命令, 自定义命令还写出目标和怎样拿到选中的内容
+  - 自定义命令的编辑窗口最下面有一行 **触发方式** (`关键字 ping · 选中内容 IP · 热键 Ctrl+Alt+P`) 和 **设热键...**: 在这里添加、修改、删除它的热键, 和命令一起保存 (取消就一起不要)。搜索结果里自定义命令的动作面板 (`→`) 也有 **设热键...** / **更改热键 Ctrl+Alt+N...**
+  - 带 `{query}` 或设了内容类型的命令, 以及写了 `@altrun.argument` 或 `@altrun.selection` 的脚本, 拿到选中的内容 (和选中内容的操作一样检查 shell 特殊字符); 没有选中时, 有关键字的打开搜索窗口并填好关键字; 其他命令直接运行
+  - 热键有变化时 ALTRun 重新启动, 马上生效
+- **脚本实时结果** (`@altrun.mode filter`): 输入 "关键字 文字" 时在后台用这段文字运行脚本, 把它输出的列表 (每行一个, Tab 分隔; 或 JSON) 显示成结果, 能打开文件、文件夹、网址或复制文字。第一次马上运行, 之后停下输入 0.15 秒再运行; 新的一次开始时结束上一次 (连同它启动的程序), 每次最多 10 秒; 出错时显示一行原因。支持 `.ahk` `.py` `.ps1`, 直接启动, 不经过 cmd。加上 `@altrun.filter altrun` 时, 进入关键字只运行一次脚本, 之后边输入边由 ALTRun 过滤它的输出 (模糊匹配, 也认拼音首字母): 适合和输入无关的列表, 以及 PowerShell 这种启动慢的脚本。新增示例脚本 "Environment Variables" (关键字 `envvar`)。见 Wiki [脚本](https://github.com/zhugecaomao/ALTRun/wiki/Scripts-zh)
+- **脚本处理选中内容**: 脚本开头写 `@altrun.selection Text, PDF` (内置或自己的内容类型), 选中这些类型的内容按 `Ctrl+Alt+\` 时脚本排在自定义命令后面, 选中的内容作为参数传入 (多个文件每个一个参数); 选中的内容对脚本的命令行不安全时不列出
+- **从选中的内容添加命令或内容类型**: 选中内容的类型还没有设任何命令时, 操作面板最后有 **为这种内容添加命令...** (打开命令编辑窗口, 内容类型已填好); 不符合你的任何类型时还有 **用它新建内容类型...**: 按选中的内容猜规则 (纯数字、字母加数字、邮箱、网址按网站、其他文字原样; 文件按扩展名), 编辑类型时一行显示选中的内容是否符合; 确定后接着打开这个类型的命令编辑窗口
+- **用不上的占位符直接提示**: 偏好设置 → 自定义命令 加了 "状态" 列 (`{query} 收不到`、`改用 {query}`、`不认识 {date}`); 命令编辑窗口点确定时说明原因并问是否仍然保存
+- 偏好设置 → 自定义热键 下面列出只读的 **其他热键**: 在其他页面设置的热键 (呼出 ALTRun、第二个呼出热键、选中内容的操作、剪贴板历史、对话框跳转、对话框面板的搜索框、一键加日期) 和它们在哪一页, 按各页热键框现在的内容显示; 双击一行跳到那一页
+- **数据文件夹位置** (偏好设置 → 高级 → 数据 → 更改位置...): 小窗口列出这台电脑上常用的位置 (`%OneDrive%\ALTRun\Data`、每台电脑一个文件夹的 `%OneDrive%\ALTRun\Data-%COMPUTERNAME%`、工作或学校 OneDrive、Dropbox、文档、默认位置), 也可以输入或浏览; 下面说明这个位置的意思 (共用 / 每台电脑一个 / 每个用户一个) 和在这台电脑上是哪个文件夹。环境变量按写的样子保存, 共用一个 OneDrive 的几台电脑可以各用各的文件夹
 
-## [2026.11.12.13]
+#### 改进
+- **自定义命令、文字片段、同步任务改名或改目标后, 学到的排序还在** (它们有了固定的 `Id`); 脚本的按文件名记, 在便携版和安装版之间切换、换数据文件夹后也保留
+- 偏好设置左边的页面列表分组 (常规 / 搜索 / 命令和触发 / 窗口工具 / 自动化 / 统计、高级), 页面顺序跟着调整; 点 **应用** 后按页名回到原来那一页
+- 热键窗口当场提示重复: 别的热键在同样的窗口里已经用了这组键时 (只有一个会起作用), 写出是哪一个; 以前要到点 **应用** 时才提示
+- 偏好设置 → 自定义热键 的 "动作" 列显示名称 (`运行: Notepad`、系统命令的名称、`搜索: folder {selection}`), 不再是 Id; 命令或脚本已经不在的热键显示成红字
+- 删除自定义命令时 (偏好设置里, 或搜索结果里 `Ctrl+Del`), 运行它的热键一起删除, 删除前写出是哪些; `Ctrl+Del` 删掉的热键马上停用
+- 偏好设置 → 脚本: "运行方式" 列显示 "实时结果" (不能实时显示时用红字写出原因), 新加的 "类型" 列显示脚本的内容类型; 偏好设置 → 选中内容 也列出每个类型的脚本
+- `ALTRun.json` 里搜索窗口页和键盘页的 15 个设置挪到新的 `Window` 和 `Keyboard` 两组, 和页面对应
+- 浏览器历史搜索 (`h`): 在历史搜索里直接隐藏窗口时 (开着 "保留上次搜索" 时常见), 读入的网页列表 1 分钟后也会释放, 不再一直占着几 MB 内存
+- 常见问题里写了怎样用备份退回旧版本
 
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 自定义命令的 "状态" 列直接提示用不上的占位符 (不用先检查路径): `{query} 收不到` (有 `{query}` 但没有关键字、内容类型或热键)、`改用 {query}` (命令里写了 `{selection}`)、`不认识 {date}` (命令只替换 `{query}` `{hwnd}` `{pid}`, 其他原样传给程序)
-
-## [2026.11.12.12]
-
-测试版。
-
-Test build.
-
-### 新增
-- 选中内容的操作面板: 选中内容的类型还没有设任何命令或脚本时, 最后加 **为这种内容添加命令...** (打开命令编辑窗口, "选中内容类型" 预填: 符合你自己的类型就填它, 否则填内置类型); 不符合你的任何类型时还有 **用它新建内容类型...**: 按选中的内容猜规则 (纯数字、字母加数字、邮箱、网址按网站、其他文字原样; 文件按扩展名), 打开类型编辑窗口, 编辑时一行显示选中的内容是否符合; 确定后接着打开这个类型的命令编辑窗口 (取消就只保存类型)。偏好设置开着时加到偏好设置的列表里
-
-## [2026.11.12.11]
-
-测试版。
-
-Test build.
-
-### 新增
-- 脚本可以按内容类型出现在选中内容的操作面板里: 脚本开头写 `@altrun.selection Text, PDF` (内置或自己的类型, 逗号分开), 选中这些类型的内容按 `Ctrl+Alt+\` 时脚本排在自定义命令后面, 选中的内容作为第一个参数传入 (多个文件每个一个参数); 和自定义命令同一套命令行检查, 按脚本实际的命令行判断 shell (`.bat` / `.cmd` 和 silent / output 模式经过 cmd, `.ps1` 经过 PowerShell), 不安全时不列出
-- 热键可以运行脚本: 热键编辑窗口的 "选择..." 里多了 "脚本" 一组 (存成 `script:<文件名>`); 写了 `@altrun.argument` 或 `@altrun.selection` 的脚本把选中的内容作为参数, 规则和自定义命令一样 (没选中时有关键字就打开搜索窗口填好关键字); 改了文件名的脚本在自定义热键列表里显示成红字 `(脚本不存在) script:<文件名>`, 按下时提示
-
-### 改进
-- 偏好设置 → 脚本: 列表加 "类型" 列 (选中内容类型); 页面下面的说明加上 `@altrun.selection`
-- 偏好设置 → 选中内容: "使用它的命令" 列和测试框也列出写了这个类型的脚本 (名称后面带 "(脚本)")
-
-### 修复
-- 选中内容的操作 / 热键取选中内容时, 如果热键是别的程序 (宏工具、远程桌面) 模拟按下的, 偶尔复制失败, 还会在原程序里打出一个 "c": 现在等 Ctrl 等键在逻辑上也松开后再复制
-
-## [2026.11.12.10]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 自定义热键: 列表下面加只读的 **其他热键**, 列出在其他页面设置的热键 (呼出 ALTRun、第二个呼出热键、选中内容的操作、剪贴板历史、对话框跳转、对话框面板的搜索框、一键加日期) 和它们在哪一页设置, 按各页热键框现在的内容显示 (还没应用的也算), 关着的功能不列; 双击一行跳到那一页。主列表相应变矮一些
-
-## [2026.11.12.9]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置左边的页面列表分成几组, 组和组之间留一点空隙并画一条细线: 常规 (General、Search Window、Keyboard、Appearance、Features) / 搜索 (Applications、File Search、Search Sources、Web Search、Calculator、Clipboard、Snippets) / 命令和触发 (Custom Commands、Scripts、Selection、Hotkeys) / 窗口工具 (Quick Switch、Dialog Panel、Date Stamp) / 自动化 (Delayed Start、Folder Sync) / Usage、Advanced。页面顺序跟着分组调整 (Web Search、Calculator、Clipboard、Snippets 都放进搜索组, Scripts 和 Selection 挪到 Custom Commands 后面); 窗口大小不变, 每行稍微矮一点
-- 点 **应用** 后重新打开偏好设置时按页名找回原来那一页 (命令行 `-Preferences Hotkeys`, 以前是页码), 以后调整页面顺序也不会打开错页; 写页码还能用
-
-## [2026.11.12.8]
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义命令搜索结果的动作面板 (`→`) 加 **设热键...** (已有热键时每个一项 **更改热键 Ctrl+Alt+N...**), 直接打开这个命令的热键窗口; 按 确定 后保存, 热键有变化时 ALTRun 重新启动, 马上生效 
-
-## [2026.11.12.7]
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义命令的编辑窗口最下面加一行 **触发方式**: 只读, 写出除了按名称搜索之外还能怎样运行这个命令 (`关键字 ping · 选中内容 IP · 热键 Ctrl+Alt+P`), 改关键字或选中内容类型时马上更新
-- **设热键...**: 没有热键时直接打开热键窗口 (动作固定为这个命令); 已有热键时弹出菜单, 修改或删除每一个, 或再加一个。新命令在保存前也能设热键 (打开窗口时就有了 Id)
-- 热键在命令窗口按 确定 时和命令一起保存, 按 取消 一起不要; 在偏好设置里跟其他改动一样按 应用 保存, 从搜索窗口 (`F3`) 打开时热键有变化会重新启动 ALTRun 让热键马上生效 (只改命令不重启) 
-
-## [2026.11.12.6]
-
-测试版。
-
-Test build.
-
-### 改进
-- 热键编辑窗口当场检查重复: 别的热键在同样的窗口里已经用了这组键 (ALTRun 热键、第二热键、选中内容热键、剪贴板历史、其他自定义热键, 只有一个会起作用) 时, 热键框下面的灰色说明变成红字, 写出是哪一个; 不拦 确定。以前只在偏好设置按 应用 时才提示
-- 按 应用 时的重复提示里, 自定义热键写名称 (`自定义热键 (运行: Notepad)`), 不再是 `custom:<Id>`
-
-## [2026.11.12.5]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 自定义热键 的 "动作" 列显示名称: 运行自定义命令的显示 `运行: Notepad`, 系统命令显示名称 (以前是 `PastePlain` 这样的 Id), 搜索显示 `搜索: folder {selection}`
-- 删除自定义命令时 (自定义命令页的 删除, 或搜索结果里 `Ctrl+Del`), 运行它的热键一起删除, 删除前的确认里写出是哪些热键; `Ctrl+Del` 删掉的热键马上停用, 不用重启
-- 命令已经不在的热键 (手改设置文件、从别的电脑同步过来) 在列表里显示为红字 `(命令已删除) custom:<Id>`
-
-## [2026.11.12.4]
-
-测试版。
-
-Test build.
-
-### 新增
-- 热键编辑窗口里选择要运行的命令: "动作" 改成命令名称 + **选择...**, 打开一个可搜索的列表 (ALTRun 自己的两个、自定义命令、系统命令), 输入筛选 (名称、关键字、拼音首字母), `↑` `↓` 和 `Enter` 选定。不用再在 `ALTRun.json` 里写 `custom:<Id>`; 偏好设置里刚加、还没按 应用 的命令也能选
-- 命令名称下面一行灰字说明这是什么命令, 自定义命令还写出目标和怎样拿到选中的内容 (`{query}` 换成选中内容 / 作为最后一个参数 / 不使用); 命令已删除时显示红字
-
-## [2026.11.12.3]
-
-测试版。
-
-Test build.
-
-### 新增
-- 热键可以运行自定义命令: 热键的 `Action` 写 `custom:<Id>` (命令的 `Id` 见 `ALTRun.json`; 目前只能在设置文件里写, 热键编辑窗口里选命令在下一个测试版)。带 `{query}` 或设了内容类型的命令拿到选中的内容 (和选中内容的操作一样, 同样检查 shell 特殊字符); 没有选中时, 带 `{query}` 和关键字的命令打开搜索窗口并填好关键字; 其他命令直接运行, 不复制选中的内容
-
-### 改进
-- 设置版本升级到 7 (自动升级, 升级前备份为 `ALTRun.v6.backup.json`, 提示一次):
-  - 自定义命令、文字片段、同步任务有了固定的 `Id`: 改名、改目标后学到的排序和最近使用都还在 (以前改了目标就要重新学); 学习排序 (`Knowledge.json`) 自动转换, 转换前备份为 `Knowledge.v1.backup.json`
-  - 脚本学到的排序按文件名记, 便携版和安装版、换数据文件夹以后都保留
-  - 搜索窗口页和键盘页的 15 个设置在 `ALTRun.json` 里挪到新的 `Window` 和 `Keyboard` 两组, 和偏好设置的页面对应
-  - 类型、目标、参数完全一样的两条自定义命令 (名字或关键字不同) 以前只列出一条, 现在都列出
-- 退回旧版本的做法写进常见问题: 用 `ALTRun.v6.backup.json` (和 `Knowledge.v1.backup.json`) 换回
-
-### 修复
+#### 修复
+- 选中内容的操作和取选中内容的热键: 热键由别的程序 (宏工具、远程桌面) 模拟按下时, 偶尔复制失败, 还会在原程序里打出一个 "c"; 现在等 Ctrl 等键松开后再复制
+- 类型、目标、参数完全一样的两条自定义命令 (名称或关键字不同) 以前只列出一条, 现在都列出
+- 数据文件夹位置里的环境变量在这台电脑上不存在时 (例如没装 OneDrive), 不再在程序文件夹里建一个名叫 `%OneDrive%` 的文件夹, 而是用默认位置并在偏好设置里说明
 - 管理员窗口里的 CapsLock 小助手启动失败时, 提示指向 偏好设置 → 键盘 (以前写的是自定义热键页)
-
-## [2026.11.12.2]
-
-测试版。
-
-Test build.
-
-### 改进
-- 浏览器历史搜索 (`h`): 在历史搜索里直接隐藏搜索窗口时 (开着 "保留上次搜索" 时常见), 读入的网页列表 1 分钟后也会释放, 不再一直占着几 MB 内存; 再打开时按需重新读取
-
-## [2026.11.12.1]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 高级 → 数据 → "更改位置..." 改成一个小对话框: 可编辑的下拉列表列出这台电脑上有的常用位置 (`%OneDrive%\ALTRun\Data`、每台电脑一个文件夹的 `%OneDrive%\ALTRun\Data-%COMPUTERNAME%`、工作或学校 OneDrive、Dropbox、文档、默认位置), 也可以直接输入或点 "浏览..."; 下面显示这个位置的意思 (共用 / 每台电脑一个 / 每个用户一个) 和在这台电脑上是哪个文件夹。环境变量按写的样子保存, 公司和家里的电脑共用一个 OneDrive 时可以各用各的文件夹
-- 数据页显示保存的位置 (带环境变量时) 和这台电脑上的实际文件夹, 下面加了使用环境变量的说明
-
-### 修复
-- 数据文件夹位置里的环境变量在这台电脑上不存在时 (例如没装 OneDrive), 不再在程序文件夹里建一个名叫 `%OneDrive%` 的文件夹, 而是用默认位置并在偏好设置里说明; 对话框里不能选这样的位置
 
 ## [2026.11.12]
 
@@ -1502,23 +1411,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.16...HEAD
-[2026.11.12.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.15...2026.11.12.16
-[2026.11.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.14...2026.11.12.15
-[2026.11.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.13...2026.11.12.14
-[2026.11.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...2026.11.12.13
-[2026.11.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...2026.11.12.12
-[2026.11.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...2026.11.12.11
-[2026.11.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...2026.11.12.10
-[2026.11.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...2026.11.12.9
-[2026.11.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...2026.11.12.8
-[2026.11.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...2026.11.12.7
-[2026.11.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...2026.11.12.6
-[2026.11.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...2026.11.12.5
-[2026.11.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...2026.11.12.4
-[2026.11.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...2026.11.12.3
-[2026.11.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...2026.11.12.2
-[2026.11.12.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...2026.11.12.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...HEAD
+[2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
