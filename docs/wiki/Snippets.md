@@ -32,6 +32,8 @@ Type `;keyword` (for example `;sig`) in any program and what you typed is delete
 
 To see what expands what, type `snip` in the search window: each snippet's second line starts with what you type to expand it (`;sig, ;signature · Paste snippet · ...`); Preferences → Snippets lists them too.
 
+![Typing snip lists the snippets, each with what expands it](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/snippets.png)
+
 ![Snippet expansion: typing ;thx in Notepad expands the email reply, with the caret after "Hi"](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-snippets.png)
 
 ## Don't expand in

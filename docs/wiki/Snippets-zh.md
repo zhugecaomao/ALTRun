@@ -32,6 +32,8 @@
 
 想看哪个触发词展开哪个片段: 在搜索窗口输入 `snip`, 每个片段的第二行开头就是展开它要输入的文字 (`;sig, ;signature · 粘贴片段 · ...`); 偏好设置 → 片段 里也列着。
 
+![输入 snip 列出全部片段, 每个都写着展开它的触发词](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/snippets.png)
+
 ![自动展开: 在记事本里输入 ;thx 展开成回复邮件, 光标停在 "Hi" 后面](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-snippets.png)
 
 ## 不展开的窗口
