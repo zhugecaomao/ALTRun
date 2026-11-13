@@ -178,6 +178,8 @@ class I18n {
         s["Action.ShellMenu.None"]     := "No Windows context menu for this item"
         s["Action.AddCommand"]         := "Add to Custom Commands..."
         s["Action.Edit"]               := "Edit..."
+        s["Action.SetHotkey"]          := "Set Hotkey..."
+        s["Action.ChangeHotkey"]       := "Change Hotkey {1}..."
         s["Action.Delete"]             := "Delete"
         s["Action.CloseWindow"]        := "Close Window"
         s["Action.OpenAll"]            := "Open All {1} Items"

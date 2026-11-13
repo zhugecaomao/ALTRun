@@ -22,6 +22,8 @@
   "Action.CutFiles": "{1} 項目を切り取り",
   "Action.Delete": "削除",
   "Action.Edit": "編集...",
+  "Action.SetHotkey": "ホットキーを設定...",
+  "Action.ChangeHotkey": "ホットキー {1} を変更...",
   "Action.FileCopied": "{1} をコピーしました。フォルダーに貼り付けできます",
   "Action.FileCut": "{1} を切り取りました。フォルダーに貼り付けると移動します",
   "Action.LargeType": "拡大表示",

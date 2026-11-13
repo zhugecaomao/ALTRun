@@ -52,6 +52,7 @@ class Shots {
             ["search",      "Light", "", () => Shots.Search("re")],
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
+            ["actions-command", "Light", "", () => Shots.Actions("ping"), () => Shots.PingForIp()],   ; a custom command's actions panel: "Change Hotkey Ctrl+Alt+P..."
             ["shellmenu",   "Light", "", () => Shots.ShellMenu(), () => Shots.EnableContextMenu()],   ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)

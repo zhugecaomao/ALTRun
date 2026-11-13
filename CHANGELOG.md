@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.8]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义命令搜索结果的动作面板 (`→`) 加 **设热键...** (已有热键时每个一项 **更改热键 Ctrl+Alt+N...**), 直接打开这个命令的热键窗口; 按 确定 后保存, 热键有变化时 ALTRun 重新启动, 马上生效 
+
 ## [2026.11.12.7]
 
 测试版。
@@ -1411,7 +1420,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...HEAD
+[2026.11.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...2026.11.12.8
 [2026.11.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...2026.11.12.7
 [2026.11.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...2026.11.12.6
 [2026.11.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...2026.11.12.5

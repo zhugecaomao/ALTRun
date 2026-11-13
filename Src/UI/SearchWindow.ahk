@@ -984,6 +984,14 @@ class SearchWindow {
         SearchWindow._Reopen(query)
     }
 
+    ; The actions panel's "Set Hotkey..." / "Change Hotkey ...": the hotkey window, then back to the same search (ALTRun restarts instead when a hotkey changed)
+    static SetHotkey(item, entry := "") {
+        query := SearchWindow._CurrentQuery()
+        SearchWindow.Hide()
+        SearchWindow._SafeRun(() => CustomCommandProvider.SetHotkey(item.Source, entry))
+        SearchWindow._Reopen(query)
+    }
+
     static NewCommand(title) {
         SearchWindow.Hide()
         SearchWindow._SafeRun(() => CustomCommandProvider.Edit("", Map("Title", title)))

@@ -22,6 +22,8 @@
   "Action.CutFiles": "剪切 {1} 项",
   "Action.Delete": "删除",
   "Action.Edit": "编辑...",
+  "Action.SetHotkey": "设热键...",
+  "Action.ChangeHotkey": "更改热键 {1}...",
   "Action.FileCopied": "已复制 {1}, 可以粘贴到文件夹里",
   "Action.FileCut": "已剪切 {1}, 粘贴到文件夹里就会移动过去",
   "Action.LargeType": "大字显示",

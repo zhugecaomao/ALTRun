@@ -14,7 +14,7 @@ Add the files, folders, programs or web addresses you use often to ALTRun and op
 
 ![Explorer: right-click → Send to → ALTRun](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sendto.png)
 
-Existing commands: find one and press `F3` to edit it or `Ctrl+Del` to delete it, or double-click it in Preferences. With many commands, type a word from the name, path or keyword into the **Filter** box at the bottom right of the list to show only matching commands (the snippet, web search and custom hotkey lists have one too).
+Existing commands: find one and press `F3` to edit it or `Ctrl+Del` to delete it, or double-click it in Preferences. Its actions panel (`→`) also has **Set Hotkey...**, or **Change Hotkey Ctrl+Alt+N...** for each hotkey it has: the [hotkey window](Hotkeys) for this command; on OK ALTRun saves it and restarts if the hotkey changed, so it works at once (a second hotkey: **Set Hotkey...** in the edit window). With many commands, type a word from the name, path or keyword into the **Filter** box at the bottom right of the list to show only matching commands (the snippet, web search and custom hotkey lists have one too).
 
 ## Checking paths
 When a folder is renamed or a file is moved, the commands pointing to it stop working. Preferences → Custom Commands → **More ▾ → Check Paths** checks whether every command's target still exists, shows the result in the "Status" column and selects the first command with a problem; double-click it to fix the path:

@@ -83,6 +83,9 @@ class ResultActions {
 
         if ResultActions._ProviderCan(item, "EditItem")
             add("Action.Edit", "res:imageres.dll,-5306", (*) => SearchWindow.EditItem(item), "F3")
+        if (item.Provider = CustomCommandProvider.Id && item.Source is Map)  ; a custom command: "Set Hotkey..." or "Change Hotkey Ctrl+Alt+N..." for each of its hotkeys
+            for action in CustomCommandProvider.HotkeyActions(item.Source)
+                list.Push(ResultItem(action.Title, "", {Icon: "res:imageres.dll,-5306", OnRun: ((entry, *) => SearchWindow.SetHotkey(item, entry)).Bind(action.Entry)}))
         else if ResultActions.CanEdit(item)
             add("Action.AddCommand", "res:imageres.dll,-2", (*) => SearchWindow.EditItem(item), "F3")
         if ResultActions.CanDelete(item)
