@@ -605,6 +605,7 @@ class PrefsPages {
         for index, width in [105, 60, 80, 80, 130, 80]   ; the last one (File) fills the rest
             listView.ModifyCol(index, width)
         listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"') : "")
+        listView.OnNotify(-12, (ctrl, lParam) => PrefsPages._ScriptRowDraw(lParam))   ; NM_CUSTOMDRAW: a filter script that can't run is red
         PrefsPages._scriptList := listView
         PrefsPages._FillScripts()
         PrefsForm.Below(6, listView)
@@ -621,17 +622,34 @@ class PrefsPages {
     }
 
     static _FillScripts() {
-        static modes := Map("window", "Script.Mode.Window", "silent", "Script.Mode.Silent", "output", "Script.Mode.Output")
+        static modes := Map("window", "Script.Mode.Window", "silent", "Script.Mode.Silent", "output", "Script.Mode.Output", "filter", "Script.Mode.Filter")
         listView := PrefsPages._scriptList
         if !IsObject(listView)
             return
         ScriptProvider.Load()
         listView.Delete()
-        for script in ScriptProvider.Scripts
-            listView.Add(, script.Title, script.Keyword, script.Argument, PrefsPages.JoinNames(script.Selection), I18n.T(modes[script.Mode]), script.Name)
+        for script in ScriptProvider.Scripts {
+            problem := ScriptFilter.Problem(script)                         ; a filter script without a keyword, or of a type that can't give live results
+            listView.Add(, script.Title, script.Keyword, script.Argument, PrefsPages.JoinNames(script.Selection)
+                , I18n.T(problem != "" ? "Script.Mode." problem : modes[script.Mode]), script.Name)
+        }
         if !ScriptProvider.Scripts.Length
             listView.Add(, I18n.T("Prefs.NoScripts"))
         PrefsForm.FitColumns(listView)
+    }
+
+    ; The Scripts list: rows of filter scripts with a problem (ScriptFilter.Problem) in the red of a broken hotkey
+    static _ScriptRowDraw(lParam) {
+        static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001, CDRF_NEWFONT := 0x2, CDRF_NOTIFYITEMDRAW := 0x20
+        stage := NumGet(lParam, A_PtrSize * 3, "UInt")
+        if (stage = CDDS_PREPAINT)
+            return CDRF_NOTIFYITEMDRAW
+        row := NumGet(lParam, (A_PtrSize = 8) ? 56 : 36, "UPtr") + 1        ; NMCUSTOMDRAW.dwItemSpec: the 0-based row
+        if (stage != CDDS_ITEMPREPAINT || row > ScriptProvider.Scripts.Length || ScriptFilter.Problem(ScriptProvider.Scripts[row]) = "")
+            return 0
+        rgb := Integer("0x" SubStr(HotkeyEditor.MissingColor, 2))
+        NumPut("UInt", ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF), lParam, (A_PtrSize = 8) ? 80 : 48)   ; NMLVCUSTOMDRAW.clrText
+        return CDRF_NEWFONT
     }
 
     static BuildHotkeys() {

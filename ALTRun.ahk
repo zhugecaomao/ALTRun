@@ -111,6 +111,7 @@
 #Include Src\Providers\WindowProvider.ahk
 #Include Src\Providers\RecentProvider.ahk
 #Include Src\Providers\ScriptProvider.ahk
+#Include Src\Providers\ScriptFilter.ahk
 #Include Src\Providers\HelpProvider.ahk
 #Include Src\Providers\SyncProvider.ahk
 

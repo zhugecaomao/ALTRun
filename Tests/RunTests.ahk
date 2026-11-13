@@ -84,6 +84,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\WindowProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\RecentProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ScriptProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\ScriptFilter.ahk
 #Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\SyncProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
