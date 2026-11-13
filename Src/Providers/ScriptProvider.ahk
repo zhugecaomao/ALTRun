@@ -225,7 +225,7 @@ class ScriptProvider {
     static Run(script, argument := "") {
         if (script.Mode = "filter") {                                      ; runs only from the search box: open it in the keyword mode
             if ((problem := ScriptFilter.Problem(script)) != "")
-                return App.Notify(I18n.T("Script.Filter." problem, script.Title), 4000)
+                return App.Notify(I18n.T((problem = "NeedsKeyword") ? "Script.Filter.NeedsKeyword" : "Script.Filter.NotForType", script.Title), 4000)
             return SearchWindow.Show(script.Keyword " " (argument is Array ? "" : argument))
         }
         for each in ScriptProvider._Arguments(argument)

@@ -631,7 +631,7 @@ class PrefsPages {
         for script in ScriptProvider.Scripts {
             problem := ScriptFilter.Problem(script)                         ; a filter script without a keyword, or of a type that can't give live results
             listView.Add(, script.Title, script.Keyword, script.Argument, PrefsPages.JoinNames(script.Selection)
-                , I18n.T(problem != "" ? "Script.Mode." problem : modes[script.Mode]), script.Name)
+                , I18n.T((problem = "NeedsKeyword") ? "Script.Mode.NeedsKeyword" : (problem != "") ? "Script.Mode.NotForType" : modes[script.Mode]), script.Name)
         }
         if !ScriptProvider.Scripts.Length
             listView.Add(, I18n.T("Prefs.NoScripts"))
