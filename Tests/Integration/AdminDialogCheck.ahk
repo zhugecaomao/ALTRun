@@ -150,7 +150,7 @@ class AdminDialogCheck {
         count := Map("jump", 0, "panel", 0, "own", 0), front := {Seen: "no"}
         panel := Gui("+AlwaysOnTop", "AdminDialogCheck panel")
         FileManagers.DefineProp("FileManagerFolder", {Call: (*) => (count["jump"]++, {Path: AdminDialogCheck.Root "\demo\Pressed", Tag: "check", Hwnd: 0})})
-        QuickSwitch.DefineProp("FocusPanel", {Call: (*) => (count["panel"]++, panel.Show("w200 h40"), front.Seen := WinWaitActive("ahk_id " panel.Hwnd, , 2) ? "yes" : "no")})
+        QuickSwitch.DefineProp("FocusPanel", {Call: (*) => (count["panel"]++, panel.Show("NA w200 h40"), AdminDialogCheck.Activate(panel.Hwnd, front))})   ; shown, then activated as FocusPanel does
         OnMessage(0x4A, (p*) => App._OnCopyData(p*))
         HotIf((*) => FileDialogs.IsFileDialog())                            ; ALTRun's own hotkeys, as QuickSwitch.Init registers them
         Hotkey(options["Hotkey"], (*) => count["own"]++)
@@ -161,6 +161,12 @@ class AdminDialogCheck {
         AdminDialogCheck.Signal(io "\done3.txt", "jump " count["jump"] "`npanel " count["panel"] "`nown " count["own"] "`nfront " front.Seen "`n")
         Sleep(30000)                                                        ; stays the "ALTRun" the helper looks for, until closed
         return 0
+    }
+
+    ; As QuickSwitch.FocusPanel brings the panel to the front (WinActivate)
+    static Activate(hwnd, front) {
+        try WinActivate("ahk_id " hwnd)
+        front.Seen := WinWaitActive("ahk_id " hwnd, , 2) ? "yes" : "no"
     }
 
     ; A hotkey as a person presses it: hook hotkeys ignore other scripts' keys sent at level 0
