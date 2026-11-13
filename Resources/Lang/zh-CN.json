@@ -347,6 +347,7 @@
   "Prefs.Col.Key": "热键",
   "Prefs.Col.Keyword": "关键字",
   "Prefs.Col.Selection": "选中内容类型",
+  "Prefs.Col.ScriptTypes": "类型",
   "Prefs.Col.Triggers": "触发方式",
   "Prefs.Col.Mode": "运行方式",
   "Prefs.Col.Name": "名称",

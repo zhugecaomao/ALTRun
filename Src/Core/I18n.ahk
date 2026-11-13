@@ -978,6 +978,7 @@ class I18n {
         s["Prefs.Col.Arguments"]       := "Arguments"
         s["Prefs.Col.Keyword"]         := "Keyword"
         s["Prefs.Col.Selection"] := "Selection types"
+        s["Prefs.Col.ScriptTypes"] := "Types"                      ; the content types column of the script list (short: six columns)
         s["Prefs.Col.Triggers"]  := "Triggers"
         s["Prefs.Col.Name"]            := "Name"
         s["Prefs.Col.Argument"]        := "Argument"

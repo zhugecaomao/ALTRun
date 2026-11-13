@@ -599,8 +599,8 @@ class PrefsPages {
         PrefsForm.Field("Features.Scripts.Keyword", "Prefs.ScriptKeyword", "S")
         PrefsForm.Section("Prefs.Section.ScriptList")
         listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h170 -Multi NoSort Grid ReadOnly"
-            , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.Selection"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
-        for index, width in [100, 60, 65, 100, 130, 80]
+            , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.ScriptTypes"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
+        for index, width in [105, 60, 80, 80, 130, 80]   ; the last one (File) fills the rest
             listView.ModifyCol(index, width)
         listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"') : "")
         PrefsPages._scriptList := listView

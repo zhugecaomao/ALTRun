@@ -347,6 +347,7 @@
   "Prefs.Col.Key": "ホットキー",
   "Prefs.Col.Keyword": "キーワード",
   "Prefs.Col.Selection": "選択範囲の種類",
+  "Prefs.Col.ScriptTypes": "種類",
   "Prefs.Col.Triggers": "トリガー",
   "Prefs.Col.Mode": "実行方法",
   "Prefs.Col.Name": "名前",

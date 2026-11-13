@@ -348,6 +348,7 @@
   "Prefs.Col.Key": "熱鍵",
   "Prefs.Col.Keyword": "關鍵字",
   "Prefs.Col.Selection": "選取內容類型",
+  "Prefs.Col.ScriptTypes": "類型",
   "Prefs.Col.Triggers": "觸發方式",
   "Prefs.Col.Mode": "執行方式",
   "Prefs.Col.Name": "名稱",
