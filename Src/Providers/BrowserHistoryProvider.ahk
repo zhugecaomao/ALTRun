@@ -89,17 +89,11 @@ class BrowserHistoryProvider {
         return found
     }
 
-    ; The History files of every profile of every browser (the same browsers as the bookmarks)
+    ; The History files of every profile of every browser (the same browsers and BrowserFolders as the bookmarks)
     static Files() {
         files := []
-        for browser in BookmarkProvider.Browsers {
-            root := EnvGet("LOCALAPPDATA") "\" browser[2]
-            if !DirExist(root)
-                continue
-            Loop Files, root "\*", "D"
-                if FileExist(A_LoopFileFullPath "\History")
-                    files.Push(A_LoopFileFullPath "\History")
-        }
+        for each in BookmarkProvider.ProfileFiles("History")
+            files.Push(each[2])
         return files
     }
 

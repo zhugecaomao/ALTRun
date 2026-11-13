@@ -709,7 +709,8 @@ class AppSettings {
                 "Bookmarks", Map(
                     "Enabled"         , 1,
                     "Keyword"         , "bm",                               ; "bm word" searches bookmarks only
-                    "InDefaultResults", 1                                   ; also show matching bookmarks when typing a name (after applications and commands)
+                    "InDefaultResults", 1,                                  ; also show matching bookmarks when typing a name (after applications and commands)
+                    "BrowserFolders"  , []                                  ; User Data (or profile) folders of portable / other Chromium browsers: bookmarks and history (#492)
                 ),
                 "BrowserHistory", Map(
                     "Enabled", 1,

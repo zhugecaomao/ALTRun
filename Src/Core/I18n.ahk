@@ -922,6 +922,10 @@ class I18n {
         s["Prefs.KeywordOnly"]          := "Only with the keyword"
         s["Prefs.FeatureKeyword"]       := "Keyword"
         s["Prefs.FeatureKeyword.Desc"]  := "Bookmarks come after apps and commands, windows only when the title matches well. bm / w / h <words> search only bookmarks / windows / browser history."
+        s["Prefs.BrowserFolders"]       := "Other browsers"
+        s["Prefs.BrowserFolders.Help"]  := "One folder per line: the User Data folder of a portable or other Chromium-based browser (the folder with Default, Profile 1... in it; for Google Chrome Portable from PortableApps.com it is Data\profile), or a single profile folder. Bookmarks and browser history then include its profiles. Chrome, Edge, Brave and Vivaldi installed the usual way are found without this.`n`nVariables work: environment variables such as %OneDrive%, and A_ variables. A relative path starts from ALTRun's folder, so a browser on the same USB drive is still found when the drive letter changes (e.g. ..\GoogleChromePortable\Data\profile). Firefox isn't supported."
+        s["Prefs.BrowserFolders.Profiles"] := "profiles: {1}"
+        s["Prefs.BrowserFolders.NotFound"] := "no profile found"
         s["Prefs.TerminalShell"]        := "Shell"
         s["Prefs.Section.Calculator"]   := "Calculator"
         s["Prefs.Section.Calculator.Desc"] := 'Type a calculation such as "12*(3+4)" or "=2^10", Enter copies the result. Also units ("10 km in mi"), number bases ("255 in hex") and dates ("today + 30 days").'

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- 便携版和其他基于 Chromium 的浏览器的书签和历史记录也能搜 (#492): 偏好设置 → 功能 → 功能选项 → **其他浏览器** 里每行加一个文件夹 (浏览器的 User Data 文件夹, 例如 Google Chrome Portable 的 `Data\profile`; 或单个用户配置文件夹), 书签 (`bm`) 和浏览器历史 (`h`) 都会包括它的各个配置。页面上的框显示每个文件夹找到几个配置 ("没找到配置" 说明文件夹不对)。可以用环境变量和 `A_` 变量; 相对路径从 ALTRun 所在的文件夹算起, 浏览器和 ALTRun 在同一个 U 盘上时换了盘符也能找到。设置键 `Features.Bookmarks.BrowserFolders`
+
 ## [2026.11.13]
 
 ### Summary
@@ -1411,7 +1420,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...HEAD
+[2026.11.13.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...2026.11.13.1
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
