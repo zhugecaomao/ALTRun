@@ -4,7 +4,7 @@
 
 Preferences → Hotkeys: assign a [system command](System-Commands#system-commands) to any hotkey, optionally only inside a certain window, or open ALTRun with a search already typed, for example the selected text in one scope.
 
-**Add...** / **Edit...** open the hotkey window. From top to bottom, each part with a gray line saying what it is for; the line at the bottom says in words what the hotkey will do (for example `Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs.`). When another hotkey already uses the same keys in the same windows, a red line below it says which one (only one of them will work); **OK** still saves it:
+**Add...** / **Edit...** open the hotkey window. From top to bottom, each part with a gray line saying what it is for; the line at the bottom says in words what the hotkey will do (for example `Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs.`). When another hotkey already uses the same keys in the same windows (only one of them will work), the gray line under the hotkey box turns red and says which one; **OK** still saves it:
 
 | Part | In the settings file | Description |
 |---|---|---|

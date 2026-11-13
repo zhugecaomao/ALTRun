@@ -584,7 +584,7 @@ class I18n {
         s["HotkeyEditor.Summary.InALTRun"] := "only in the ALTRun search window."
         s["HotkeyEditor.Choose"] := "Choose..."
         s["HotkeyEditor.Deleted"] := "(deleted command) {1}"
-        s["HotkeyEditor.Clash"] := "Already used by {1}. Only one of them will work."
+        s["HotkeyEditor.Clash"] := "Already used by {1}"
         s["HotkeyEditor.Detail.Search"] := "ALTRun · opens the search window with the search text below"
         s["HotkeyEditor.Detail.Toggle"] := "ALTRun · shows the search window, or hides it when it is in front"
         s["HotkeyEditor.Detail.Query"] := "{query} becomes the selected text or path"

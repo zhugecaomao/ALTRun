@@ -226,7 +226,7 @@
   "HotkeyEditor.Summary.InALTRun": "(只在 ALTRun 的搜索窗口里)。",
   "HotkeyEditor.Choose": "选择...",
   "HotkeyEditor.Deleted": "(命令已删除) {1}",
-  "HotkeyEditor.Clash": "已经用在 {1}, 只有一个会起作用。",
+  "HotkeyEditor.Clash": "已被 {1} 使用",
   "HotkeyEditor.Detail.Search": "ALTRun · 打开搜索窗口并填入下面的搜索内容",
   "HotkeyEditor.Detail.Toggle": "ALTRun · 显示搜索窗口, 已在最前面时隐藏",
   "HotkeyEditor.Detail.Query": "{query} 换成选中的文字或路径",

@@ -1661,24 +1661,22 @@ class ProviderTests {
             ui.SetAction.Call("ToggleWindow")                               ; Show / hide: no search text
             eq(language[1] " read without search", HotkeyEditor.Read(ui)["Action"] "|" HotkeyEditor.Read(ui)["SearchText"] "|" ui.SearchText.Enabled, "ToggleWindow||0")
             eq(language[1] " detail", ui.Detail.Value, I18n.T("HotkeyEditor.Detail.Toggle"))
-            eq(language[1] " no clash, no red line", ui.ClashText.Value, "")
+            eq(language[1] " no clash: how to record a hotkey", ui.KeyHint.Value, I18n.T("Prefs.HotkeyHint"))
+            eq(language[1] " the line under the box: one line, ends in ...", ControlGetStyle(ui.KeyHint) & 0x400F, 0x400C)   ; SS_ENDELLIPSIS | SS_LEFTNOWORDWRAP
             g.Destroy()
-            ; a clash: the red line below the summary, in two lines at most, inside the window; the hotkey being edited isn't a clash with itself
+            ; a clash: said on the line under the hotkey box, in place of how to record one; the hotkey being edited isn't a clash with itself
             editing := Map("Key", "^!f", "Action", "Lock", "WinTitle", "")
             inUse := [{Key: "!Space", Label: I18n.T("Prefs.Hotkey"), WinTitle: "", Entry: ""}, {Key: "^!f", Label: "x", WinTitle: "", Entry: editing}
                 , {Key: "~^!F", Label: I18n.T("Prefs.Page.Hotkeys") " (" I18n.T("Prefs.Hotkey.Search", "folder {selection} with a rather long search text") ")", WinTitle: "", Entry: ""}]
             ui := HotkeyEditor.Build(owner, editing, editing, "", [], inUse)
             g := ui.Gui
             g.Show("Hide")
-            WinGetClientPos(, , &clientW, &clientH, g.Hwnd)
-            eq(language[1] " clash shown", ui.ClashText.Value, I18n.T("HotkeyEditor.Clash", inUse[3].Label))
-            ui.ClashText.GetPos(&clashX, &clashY, &clashW, &clashH), ui.SummaryText.GetPos(, &summaryY, , &summaryH)
-            TestRunner.True("HotkeyEditorWindow." language[1] " clash below the summary, inside the window", clashY >= summaryY + summaryH && clashY + clashH <= clientH && clashX + clashW <= clientW)
-            TestRunner.True("HotkeyEditorWindow." language[1] " clash in two lines (" Win.TextExtent(ui.ClashText.Hwnd, ui.ClashText.Text) " <= 2 x " clashW ")"
-                , Win.TextExtent(ui.ClashText.Hwnd, ui.ClashText.Text) <= 2 * clashW - 40)   ; a little room for where the words wrap
+            eq(language[1] " clash shown", ui.KeyHint.Value, I18n.T("HotkeyEditor.Clash", inUse[3].Label))
+            ui.Key.GetPos(, &keyY, , &keyH), ui.KeyHint.GetPos(, &hintY)
+            TestRunner.True("HotkeyEditorWindow." language[1] " clash right under the hotkey box", hintY >= keyY + keyH && hintY <= keyY + keyH + 10)
             ui.Only.Value := 1, ui.WinTitle.Value := "ahk_exe notepad.exe"
             ui.SetAction.Call("Lock")                                       ; the window checks again (as on any change)
-            eq(language[1] " only in a window: no clash with global ones", ui.ClashText.Value, "")
+            eq(language[1] " only in a window: no clash with global ones", ui.KeyHint.Value, I18n.T("Prefs.HotkeyHint"))
             g.Destroy()
         }
         owner.Destroy()
