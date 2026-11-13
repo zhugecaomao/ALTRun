@@ -212,9 +212,20 @@ class PreferencesTests {
         ; Opens the dialog, notes the line (and after typing a keyword), whether everything is inside the window, then OK / Cancel
         Dialog(item, ok) {
             SetTimer(Look, -200)
-            return CustomCommandProvider.EditDialog(ItemEditor.Owner(), "Triggers Test", item, settings)
+            SetTimer(GiveUp, -15000)                                        ; still open then: closed, so the test fails instead of hanging the run
+            result := CustomCommandProvider.EditDialog(ItemEditor.Owner(), "Triggers Test", item, settings)
+            SetTimer(GiveUp, 0)
+            return result
+            GiveUp() {
+                DetectHiddenWindows(true)
+                if (hwnd := WinExist("Triggers Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) {
+                    seen.Text := "(still open after 15 s)", seen.Fits := false
+                    GuiFromHwnd(hwnd).Destroy()
+                }
+            }
             Look() {
-                if !(hwnd := WinExist("Triggers Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) {
+                DetectHiddenWindows(false)                                  ; only once shown: being built, it would only be hidden by WM_CLOSE (no Close handler yet) and shown again
+                if !(hwnd := WinExist("Triggers Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) || !DllCall("IsWindowVisible", "Ptr", hwnd) {
                     SetTimer(Look, -100)
                     return
                 }
