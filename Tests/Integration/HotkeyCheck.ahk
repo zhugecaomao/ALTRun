@@ -108,6 +108,7 @@ Plain(n) {
 Selection(n) {
     try FileDelete(QueryMarker)
     A_Clipboard := "clipboard before " n
+    SourceEdit.Value := "hello123"                                          ; a failed round may have typed into it
     FrontSource()
     SendMessage(0xB1, 0, -1, SourceEdit)                                    ; EM_SETSEL: all of it selected
     SendInput("^!{F10}")
@@ -136,6 +137,7 @@ Deleted(n) {
 ScriptSelection(n) {
     try FileDelete(ScriptMarker)
     A_Clipboard := "clipboard before script " n
+    SourceEdit.Value := "hello123"
     FrontSource()
     SendMessage(0xB1, 0, -1, SourceEdit)                                    ; EM_SETSEL: all of it selected
     SendInput("^!{F12}")

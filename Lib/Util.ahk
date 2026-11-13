@@ -508,10 +508,14 @@ class Win {
         return (data && size >= 2) ? StrGet(data, Min(size // 2, maxChars), "UTF-16") : ""
     }
 
-    ; Waits until all modifier keys are up, so Ctrl / Alt don't leak into the next Send
+    ; Waits until all modifier keys are up, so Ctrl / Alt don't leak into the next Send. Both states: the physical one (the user still
+    ; holding the hotkey) and the logical one (keys sent by another program, e.g. a macro tool or remote desktop, never count as
+    ; physically down: while such a Ctrl is still logically down, Send("^c") wouldn't press Ctrl, and its key-up would turn it into "c")
     static WaitModifiersUp(timeout := 0.5) {
-        for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
+        for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"] {
             KeyWait(key, "T" timeout)
+            KeyWait(key, "L T" timeout)
+        }
     }
 
     ; Gray system cue text while the box is empty (it stays while the box has focus and is never taken for real input);
