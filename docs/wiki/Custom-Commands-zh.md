@@ -28,6 +28,16 @@
 
 `Command` 类型只写程序名 (例如 `cmd.exe`) 时, 在 PATH 和系统登记的程序 (App Paths) 里查找。检查结果只显示在偏好设置里, 不会修改或删除任何命令。
 
+"状态" 列还会直接提示用不上的占位符, 不用先检查路径 (检查路径发现找不到或无法访问时, 显示路径的结果):
+
+| 状态 | 含义 |
+|---|---|
+| `{query} 收不到` | 命令里有 `{query}`, 但没有关键字、内容类型或热键, 没有东西填进来 (换成空)。加上其中一个 |
+| `改用 {query}` | `{selection}` 是热键搜索内容里用的; 命令里选中的内容通过 `{query}` 传入 (内容类型或热键), `{selection}` 会原样留下 |
+| `不认识 {date}` | 命令只替换 `{query}`、`{hwnd}`、`{pid}`, 其他 `{单词}` 原样传给程序。程序本来就要这样的文字时不用管 (例如给脚本传 `{Enter}`) |
+
+!["状态" 列的占位符提示](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-commands-placeholders.png)
+
 ## 字段
 编辑对话框里每个字段下面都有一行灰色的说明。
 
@@ -55,7 +65,7 @@
 | 项目文件夹 | 文件夹 | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
 | Google Maps | 网址 | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
 
-新安装时默认命令里已经有 Ping、Google Maps、Send Email (`mailto:{query}`; 地址里的 `@` 不编码) 和 Documents subfolder (`docs 文件夹名` 打开 "文档" 里的子文件夹) 四个例子。只输入名称搜到这条命令时, 下面一行会说明接着输入什么 (例如 "在 'ping ' 后面输入内容, 再按 Enter"), 按 `Enter` 补全成 "关键字 ", 接着输入参数。没有关键字时 `{query}` 换成空。"检查路径" 不检查带 `{query}` 的路径。
+新安装时默认命令里已经有 Ping、Google Maps、Send Email (`mailto:{query}`; 地址里的 `@` 不编码) 和 Documents subfolder (`docs 文件夹名` 打开 "文档" 里的子文件夹) 四个例子。只输入名称搜到这条命令时, 下面一行会说明接着输入什么 (例如 "在 'ping ' 后面输入内容, 再按 Enter"), 按 `Enter` 补全成 "关键字 ", 接着输入参数。没有关键字时 `{query}` 换成空, 除非内容类型或热键把选中的内容传进来 (都没有时 "状态" 列显示 `{query} 收不到`)。"检查路径" 不检查带 `{query}` 的路径。
 
 ## 呼出 ALTRun 之前的窗口 ({hwnd}, {pid})
 目标或参数里的 `{hwnd}` 和 `{pid}` 会换成呼出 ALTRun 之前前台窗口的句柄和进程 ID (十进制), 脚本可以拿它对这个窗口做后续操作, 例如取它打开的文件:

@@ -28,6 +28,16 @@ When a folder is renamed or a file is moved, the commands pointing to it stop wo
 
 For the `Command` type with only a program name (for example `cmd.exe`), the program is looked up in PATH and the programs registered with Windows (App Paths). The results only appear in Preferences; no command is changed or deleted.
 
+The Status column also points out placeholders that won't work, without checking (a path that Check Paths found missing or offline is shown instead):
+
+| Status | Meaning |
+|---|---|
+| `{query} empty` | The command has `{query}`, but no keyword, content type or hotkey, so nothing fills it in (it's replaced by nothing). Give it one of them |
+| `Use {query}` | `{selection}` is for the search text of hotkeys; in a command, the selected text comes in through `{query}` (from a content type or a hotkey), and `{selection}` stays as written |
+| `Unknown {date}` | Commands only replace `{query}`, `{hwnd}` and `{pid}`; any other `{word}` is passed as written. That's fine when the program expects it (for example `{Enter}` for a script) |
+
+![Placeholder hints in the Status column](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-commands-placeholders.png)
+
 ## Fields
 Each field in the edit dialog has a line of gray help text below it.
 
@@ -55,7 +65,7 @@ Put `{query}` in the target or arguments and give the command a keyword; typing 
 | Project folder | Folder | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
 | Google Maps | Link | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
 
-A new installation already has four examples among the default commands: Ping, Google Maps, Send Email (`mailto:{query}`; the address keeps its `@`) and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, the line below it says what to type (for example "Type after 'ping ', then press Enter"), and `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing. "Check Paths" skips paths containing `{query}`.
+A new installation already has four examples among the default commands: Ping, Google Maps, Send Email (`mailto:{query}`; the address keeps its `@`) and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, the line below it says what to type (for example "Type after 'ping ', then press Enter"), and `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing, unless content types or a hotkey give it the selected text (with none of them, the Status column shows `{query} empty`). "Check Paths" skips paths containing `{query}`.
 
 ## The window you came from ({hwnd}, {pid})
 `{hwnd}` and `{pid}` in the target or arguments become the handle and the process ID (in decimal) of the window that was in front before you opened ALTRun, so a script can work on that window, for example find the file it has open:

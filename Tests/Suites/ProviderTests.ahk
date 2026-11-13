@@ -857,6 +857,49 @@ class ProviderTests {
         eq("local load spec", IconCache._LoadSpec("C:\Tools\app.exe", "c:\tools\app.exe"), "C:\Tools\app.exe")
     }
 
+    ; Placeholders that won't work (the Commands page's Status column): {selection}, {query} that gets no text, other {word}s
+    static PlaceholderProblems() {
+        eq := (n, a, e) => TestRunner.Equal("PlaceholderProblems." n, a, e)
+        kinds(command, hotkeys := "") {
+            text := ""
+            for each in CustomCommandProvider.PlaceholderProblems(command, IsObject(hotkeys) ? hotkeys : [])
+                text .= each.Kind (each.HasOwnProp("Name") ? " " each.Name : "") "|"
+            return text
+        }
+        cmd(target, arguments := "", keyword := "", extra*) {
+            command := Map("Id", "pq7k2m4x", "Title", "t", "Type", "Command", "Target", target, "Arguments", arguments, "Keyword", keyword)
+            Loop extra.Length // 2
+                command[extra[A_Index * 2 - 1]] := extra[A_Index * 2]
+            return command
+        }
+        hk(key) => Map("Key", key, "Action", "custom:pq7k2m4x", "SearchText", "", "WinTitle", "")
+        eq("plain command", kinds(cmd("notepad.exe")), "")
+        eq("query with a keyword", kinds(cmd("cmd.exe", "/k ping {query}", "ping")), "")
+        eq("query with a content type", kinds(cmd("cmd.exe", "/k ping {query}", "", "Selection", "IP")), "")
+        eq("query with a hotkey", kinds(cmd("cmd.exe", "/k ping {query}"), [hk("^!p")]), "")
+        eq("query with nothing", kinds(cmd("cmd.exe", "/k ping {query}")), "Query|")
+        eq("query: any case, in the target", kinds(cmd("https://x.example.com/{Query}")), "Query|")
+        eq("query: blank keyword", kinds(cmd("cmd.exe", "{query}", " , ")), "Query|")
+        eq("query: hotkey without keys", kinds(cmd("cmd.exe", "{query}"), [hk(""), hk("~")]), "Query|")
+        other := hk("^!o"), other["Action"] := "custom:zz9k2m4x"
+        eq("query: another command's hotkey", kinds(cmd("cmd.exe", "{query}"), [other]), "Query|")
+        eq("window placeholders", kinds(cmd("cmd.exe", "/c echo {hwnd} {PID}")), "")
+        eq("selection", kinds(cmd("cmd.exe", "/c echo {selection}", "e")), "Selection|")
+        eq("selection first", kinds(cmd("cmd.exe", "{date} {query} {Selection}")), "Selection|Query|Unknown {date}|")
+        eq("unknown, each once", kinds(cmd("x.ahk", "{clipboard} {Enter} {clipboard}")), "Unknown {clipboard}|Unknown {Enter}|")
+        eq("GUIDs and code aren't placeholders", kinds(cmd("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "-Command & { $_ } {} {1x}")), "")
+
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        try {
+            status := (command, hotkeys := "") => CustomCommandProvider.PlaceholderStatus(command, IsObject(hotkeys) ? hotkeys : [])
+            eq("status: none", status(cmd("notepad.exe")), "")
+            eq("status: query", status(cmd("cmd.exe", "{query}")), "{query} empty")
+            eq("status: selection first", status(cmd("cmd.exe", "{query} {selection}")), "Use {query}")
+            eq("status: unknown", status(cmd("cmd.exe", "{date}", "d")), "Unknown {date}")
+        } finally I18n.Init(savedLang)
+    }
+
     static CheckTargets() {
         eq := (n, a, e) => TestRunner.Equal("CheckTargets." n, a, e)
         dir := A_Temp "\ALTRunTest_CheckTargets"

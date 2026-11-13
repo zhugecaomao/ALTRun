@@ -325,13 +325,15 @@ class PrefsPages {
 
     static BuildCommands() {
         PrefsForm.BeginPage("Prefs.Page.Commands")
-        PrefsForm.List("CustomCommands", 540
-            , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 190], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]
+        list := PrefsForm.List("CustomCommands", 540
+            , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 150], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]   ; Status takes the rest (about 125 px): "Unknown {date}"
             , (owner, title, item, original) => PrefsPages.EditCommand(owner, title, item), () => CustomCommandProvider.NewCommand()   ; the edit dialog with "Set Hotkey..." (the Hotkeys list being edited)
             , (item, roots) => CustomCommandProvider.CheckTarget(item, roots), "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)}, ""
             , {DeletePrompt: (item) => CustomCommandProvider.DeleteQuestion(item, PrefsPages._WorkingHotkeys())   ; the hotkeys that run it go too
-             , AfterDelete: (item) => CustomCommandProvider.RemoveHotkeys(item, PrefsPages._WorkingHotkeys())})  ; (the Hotkeys page redraws when shown)
+             , AfterDelete: (item) => CustomCommandProvider.RemoveHotkeys(item, PrefsPages._WorkingHotkeys())   ; (the Hotkeys page redraws when shown)
+             , Hint: (item) => CustomCommandProvider.PlaceholderStatus(item, PrefsPages._WorkingHotkeys())})   ; e.g. "{query} empty"
+        PrefsForm._current.OnShow := () => list.Redraw.Call()               ; a hotkey set on the Hotkeys page meanwhile can give a {query} command its text
         PrefsForm.Note("Prefs.CommandsNote")
     }
 

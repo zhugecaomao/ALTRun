@@ -282,6 +282,59 @@ class CustomCommandProvider {
         return (found != "") ? "OK" : "Missing"
     }
 
+    ; Placeholders in the target / arguments that won't work (a read-only check: the Commands page's Status column), in this order:
+    ;   {Kind: "Selection"}        {selection} is written: a command gets the selected text through {query}
+    ;   {Kind: "Query"}            {query} gets no text: no keyword, no content type and no hotkey runs the command
+    ;   {Kind: "Unknown", Name}    any other {word}, which stays as written; only {query} {hwnd} {pid} are replaced (any case).
+    ;                              GUIDs ("shell:::{20D04FE0-...}") have hyphens, so they aren't taken for placeholders
+    ; hotkeys: the custom hotkeys (the ones with Action "custom:<the command's Id>" count). Returns [] when all is well
+    static PlaceholderProblems(command, hotkeys) {
+        problems := [], unknown := [], seen := Map(), selection := false
+        seen.CaseSense := false
+        text := (command.Has("Target") ? command["Target"] : "") " " (command.Has("Arguments") ? command["Arguments"] : "")
+        pos := 1
+        while (pos := RegExMatch(text, "\{([A-Za-z_]\w*)\}", &m, pos)) {
+            pos += m.Len
+            name := m[1]
+            if seen.Has(name)
+                continue
+            seen[name] := true
+            if (name = "selection")
+                selection := true
+            else if !(name = "query" || name = "hwnd" || name = "pid")
+                unknown.Push({Kind: "Unknown", Name: m[0]})
+        }
+        if selection
+            problems.Push({Kind: "Selection"})
+        if (CustomCommandProvider.TakesQuery(command) && !CustomCommandProvider._CanTakeQuery(command, hotkeys))
+            problems.Push({Kind: "Query"})
+        for each in unknown
+            problems.Push(each)
+        return problems
+    }
+
+    ; A keyword ("ping 10.0.0.1"), content types (the selection panel) or a hotkey (the selection) fills in {query}
+    static _CanTakeQuery(command, hotkeys) {
+        if (SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "").Length || SelectionActions.CommandTypes(command).Length)
+            return true
+        for entry in CustomCommandProvider.HotkeysFor(command, hotkeys)
+            if (entry.Has("Key") && LTrim(entry["Key"], "~") != "")
+                return true
+        return false
+    }
+
+    ; The Status column's short text for the first problem of PlaceholderProblems ("" = none)
+    static PlaceholderStatus(command, hotkeys) {
+        problems := CustomCommandProvider.PlaceholderProblems(command, hotkeys)
+        if !problems.Length
+            return ""
+        switch problems[1].Kind {
+            case "Selection": return I18n.T("Prefs.Status.UseQuery")
+            case "Query"    : return I18n.T("Prefs.Status.QueryEmpty")
+            default         : return I18n.T("Prefs.Status.Unknown", problems[1].Name)
+        }
+    }
+
     ; programs registered under "App Paths" (winword, chrome...), which Run can open directly too
     static _InAppPaths(name) {
         SplitPath(name, , , &ext)
