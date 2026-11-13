@@ -33,6 +33,7 @@ class AdminHelper {
     ;---------------------------------------------------------------------------
     static Run(arg := AdminHelper.Arg) {
         A_IconHidden := true
+        Logger.Enabled := false                                             ; a log file written as administrator: lines go to ALTRun instead (_TellMain)
         if AdminHelper.Window(A_ScriptHwnd)                                 ; one is already running
             ExitApp()
         DllCall("SetWindowTextW", "Ptr", A_ScriptHwnd, "Str", AdminHelper.Title)
