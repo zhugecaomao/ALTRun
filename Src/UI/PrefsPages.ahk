@@ -658,6 +658,7 @@ class PrefsPages {
         for each in ui.Items
             ui.View.Add("", HotkeyBox.Label(each.Key), each.Purpose, I18n.T(each.Page))
         ui.View.Opt("+Redraw")
+        PrefsForm.FitColumns(ui.View)                                       ; the last column fills the width (with or without a scroll bar)
     }
 
     ; Double-click in "Other hotkeys": shows the page the hotkey is set on (the focus goes to the page list; a hotkey box would start recording)
