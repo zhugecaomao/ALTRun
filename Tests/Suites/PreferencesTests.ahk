@@ -885,6 +885,34 @@ class PreferencesTests {
         }
     }
 
+    ; Preferences → Hotkeys: "Other hotkeys" lists the hotkeys set on other pages, fits above the bottom buttons; double-click goes to that page
+    static PreferencesOtherHotkeys() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesOtherHotkeys." n, a, e)
+        PreferencesWindow.Show("Prefs.Page.Hotkeys", -3000, -3000)
+        try {
+            ui := PrefsPages._others
+            expected := PreferencesWindow.OtherHotkeys(PreferencesWindow.Working)
+            eq("a row for each", ui.View.GetCount(), expected.Length)
+            eq("first row: keys, use, page", ui.View.GetText(1, 1) "|" ui.View.GetText(1, 2) "|" ui.View.GetText(1, 3)
+                , HotkeyBox.Label(expected[1].Key) "|" expected[1].Purpose "|" I18n.T("Prefs.Page.General"))
+            ui.View.GetPos(, &y, , &h)
+            eq("above the bottom buttons", y + h <= PrefsForm.ButtonY - 10, true)
+            eq("room for all seven without scrolling", SendMessage(0x1028, 0, 0, ui.View) >= 7, true)   ; LVM_GETCOUNTPERPAGE
+            selection := 0
+            for index, each in ui.Items
+                if (each.Page = "Prefs.Page.Selection")
+                    selection := index
+            eq("the selection hotkey is listed", selection > 0, true)
+            PrefsPages.GoToOtherHotkey(selection)
+            eq("double-click goes to its page", PreferencesWindow.Pages[PreferencesWindow._page].Key, "Prefs.Page.Selection")
+            eq("page list follows", PreferencesWindow.PageList.GetNext(), PreferencesWindow._page)
+            PrefsPages.GoToOtherHotkey(99)                                  ; no such row: nothing happens
+            eq("a row that isn't there", PreferencesWindow.Pages[PreferencesWindow._page].Key, "Prefs.Page.Selection")
+        } finally {
+            PreferencesWindow.Close()
+        }
+    }
+
     static PreferencesLazyPages() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesLazyPages." n, a, e)
         PreferencesWindow.Show("Prefs.Page.Appearance", -3000, -3000)

@@ -29,6 +29,8 @@ New installs come with six examples:
 
 Delete or change them as you like; existing settings keep their own list. **Add Examples** below the list adds the ones you don't have (a hotkey with the same key and window counts as already there) and tells you how many were added and skipped; they are saved when you press OK / Apply. To go straight to another scope, add a Search hotkey of your own, for example `pic {selection}` for pictures or `g {selection}` to search Google for the selected text. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
 
+**Other hotkeys** below the list shows the hotkeys set on other pages, as their boxes are now (before OK / Apply too): showing ALTRun and the second hotkey (General), actions on the selection (Selection), clipboard history (Clipboard), Quick Switch and the dialog panel's search box (Quick Switch, Dialog Panel; only in dialogs) and the date stamp (Date Stamp; only in its windows). A feature that is off has none listed. Double-click one to go to the page where it is set.
+
 ![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 
 ### Caps Lock switches the input method

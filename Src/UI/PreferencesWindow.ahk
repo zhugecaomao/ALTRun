@@ -583,25 +583,49 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Data helpers (pure functions, with unit tests)
     ;---------------------------------------------------------------------------
-    ; Every hotkey -> [{Key, Label, WinTitle, Entry}...]: the show hotkey, the second show hotkey, the selection hotkey, clipboard history
-    ; (when on), and each custom hotkey (Entry = its Map, named as in the Hotkeys list; WinTitle = the windows it works in, "" = all).
-    ; Quick switch and date stamp only work in particular windows (two Ctrl+D are fine), so they aren't included.
+    ; Every hotkey -> [{Key, Label, WinTitle, Entry}...]: the hotkeys set on other pages that work in every window (OtherHotkeys: the show hotkey,
+    ; the second show hotkey, the selection hotkey, clipboard history when on), and each custom hotkey (Entry = its Map, named as in the Hotkeys
+    ; list; WinTitle = the windows it works in, "" = all). Quick switch and date stamp only work in particular windows (two Ctrl+D are fine), so they aren't included.
     ; value(path): reads a setting; Preferences passes one reading its boxes (BoundValue), which may not be applied yet
     static AllHotkeys(data, value := "") {
         if !HasMethod(value)
             value := (path) => PreferencesWindow.GetPath(data, path)
         list := []
         add(key, label, winTitle := "", entry := "") => (Trim(key) != "") ? list.Push({Key: key, Label: label, WinTitle: winTitle, Entry: entry}) : ""
-        add(value("General.Hotkey"), I18n.T("Prefs.Hotkey"))
-        add(value("General.SecondaryHotkey"), I18n.T("Prefs.SecondaryHotkey"))
-        add(value("General.SelectionHotkey"), I18n.T("Prefs.SelectionHotkey"))
-        if value("Features.Clipboard.Enabled")
-            add(value("Features.Clipboard.Hotkey"), I18n.T("Prefs.Page.Clipboard"))
+        for each in PreferencesWindow.OtherHotkeys(data, value)
+            if each.Global
+                add(each.Key, each.Name)
         commands := (data.Has("CustomCommands") && data["CustomCommands"] is Array) ? data["CustomCommands"] : []
         if (data.Has("Hotkeys") && data["Hotkeys"] is Array)
             for entry in data["Hotkeys"]
                 if (entry is Map && entry.Has("Key"))
                     add(entry["Key"], I18n.T("Prefs.Page.Hotkeys") " (" HotkeyEditor.ListText(entry, commands) ")", entry.Has("WinTitle") ? Trim(entry["WinTitle"]) : "", entry)
+        return list
+    }
+
+    ; The hotkeys set on other pages, those in effect (a feature that is off has none) -> [{Key, Path, Name, Purpose, Page, Global}...]
+    ; Name: as a clash names it; Purpose: what it does (the Hotkeys page lists them under "Other hotkeys"); Page: the key of the page it is set on;
+    ; Global: works in every window (quick switch and date stamp only in dialogs / file managers). value(path) as in AllHotkeys
+    static OtherHotkeys(data, value := "") {
+        if !HasMethod(value)
+            value := (path) => PreferencesWindow.GetPath(data, path)
+        list := []
+        add(path, name, purpose, page, everywhere := true) {
+            key := value(path)
+            if (Trim(key) != "")
+                list.Push({Key: key, Path: path, Name: name, Purpose: I18n.T(purpose), Page: page, Global: everywhere})
+        }
+        add("General.Hotkey", I18n.T("Prefs.Hotkey"), "Prefs.Other.Show", "Prefs.Page.General")
+        add("General.SecondaryHotkey", I18n.T("Prefs.SecondaryHotkey"), "Prefs.Other.Show2", "Prefs.Page.General")
+        add("General.SelectionHotkey", I18n.T("Prefs.SelectionHotkey"), "Prefs.Other.Selection", "Prefs.Page.Selection")
+        if value("Features.Clipboard.Enabled")
+            add("Features.Clipboard.Hotkey", I18n.T("Prefs.Page.Clipboard"), "Prefs.Other.Clipboard", "Prefs.Page.Clipboard")
+        if value("Extensions.QuickSwitch.Enabled") {
+            add("Extensions.QuickSwitch.Hotkey", I18n.T("Prefs.Page.QuickSwitch"), "Prefs.Other.QuickSwitch", "Prefs.Page.QuickSwitch", false)
+            add("Extensions.QuickSwitch.MenuHotkey", I18n.T("Prefs.Page.QSPanel"), "Prefs.Other.QSMenu", "Prefs.Page.QSPanel", false)
+        }
+        if value("Extensions.AutoDate.Enabled")
+            add("Extensions.AutoDate.Hotkey", I18n.T("Prefs.Page.DateStamp"), "Prefs.Other.DateStamp", "Prefs.Page.DateStamp", false)
         return list
     }
 

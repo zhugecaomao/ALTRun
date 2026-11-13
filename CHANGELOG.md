@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.10]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 自定义热键: 列表下面加只读的 **其他热键**, 列出在其他页面设置的热键 (呼出 ALTRun、第二个呼出热键、选中内容的操作、剪贴板历史、对话框跳转、对话框面板的搜索框、一键加日期) 和它们在哪一页设置, 按各页热键框现在的内容显示 (还没应用的也算), 关着的功能不列; 双击一行跳到那一页。主列表相应变矮一些
+
 ## [2026.11.12.9]
 
 测试版。
@@ -1430,7 +1439,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...HEAD
+[2026.11.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...2026.11.12.10
 [2026.11.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...2026.11.12.9
 [2026.11.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...2026.11.12.8
 [2026.11.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...2026.11.12.7

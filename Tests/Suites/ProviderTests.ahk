@@ -1723,6 +1723,27 @@ class ProviderTests {
         for each in PreferencesWindow._GlobalHotkeys(data)
             keys .= each.Key "|"
         eq("global ones; clipboard history off", keys, "!Space|!r|^!\|^!n|")
+
+        ; the hotkeys set on other pages (the Hotkeys page's "Other hotkeys"): only those in effect, with the page they are set on
+        list := ""
+        row := (each) => each.Key "/" StrReplace(each.Page, "Prefs.Page.") "/" (each.Global ? "all" : "some") "|"
+        data["Features"]["Clipboard"]["Enabled"] := true
+        data["Extensions"]["QuickSwitch"]["Enabled"] := true, data["Extensions"]["QuickSwitch"]["Hotkey"] := "^g", data["Extensions"]["QuickSwitch"]["MenuHotkey"] := "^+g"
+        data["Extensions"]["AutoDate"]["Enabled"] := true, data["Extensions"]["AutoDate"]["Hotkey"] := "^d"
+        for each in PreferencesWindow.OtherHotkeys(data)
+            list .= row(each)
+        eq("other hotkeys, all on", list, "!Space/General/all|!r/General/all|^!\/Selection/all|^!c/Clipboard/all|^g/QuickSwitch/some|^+g/QSPanel/some|^d/DateStamp/some|")
+        eq("other hotkeys: what each is for", PreferencesWindow.OtherHotkeys(data)[4].Purpose "|" PreferencesWindow.OtherHotkeys(data)[7].Purpose, "Clipboard history|Add the date")
+        data["Features"]["Clipboard"]["Enabled"] := false, data["Extensions"]["QuickSwitch"]["Enabled"] := false, data["Extensions"]["AutoDate"]["Enabled"] := false
+        data["General"]["SecondaryHotkey"] := ""
+        list := ""
+        for each in PreferencesWindow.OtherHotkeys(data)
+            list .= row(each)
+        eq("other hotkeys: features off and an empty box not listed", list, "!Space/General/all|^!\/Selection/all|")
+        list := ""
+        for each in PreferencesWindow.OtherHotkeys(data, (path) => (path = "Extensions.AutoDate.Enabled") ? true : PreferencesWindow.GetPath(data, path))
+            list .= row(each)
+        eq("other hotkeys: as the boxes are now (not applied yet)", list, "!Space/General/all|^!\/Selection/all|^d/DateStamp/some|")
         I18n.Init(savedLang)
     }
 
