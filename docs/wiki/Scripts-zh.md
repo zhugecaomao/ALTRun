@@ -39,6 +39,8 @@ Get-FileHash -Algorithm SHA256 $args[0] | Format-List
 
 写了 `@altrun.mode filter` 的脚本自己就是一个搜索来源, 类似 Alfred 的 Script Filter。输入它的关键字和空格: ALTRun 把后面输入的文字交给脚本运行, 把脚本的输出显示成结果, 结果和其他结果一样能打开、复制、`→` 打开操作面板、`F3` 编辑脚本。
 
+![脚本的实时结果](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/script-filter.png)
+
 ```autohotkey
 ; @altrun.title    找项目
 ; @altrun.keyword  proj

@@ -192,7 +192,7 @@ class ScriptFilter {
     static Rows(script, entry) {
         if (entry.Error != "")
             return [ScriptFilter._Row(script, I18n.T("ScriptFilter.Error", script.Title), entry.Error
-                , {LargeText: (entry.Detail != "") ? entry.Detail : entry.Error, OnRun: (*) => ScriptProvider.EditScript(script)})]
+                , {LargeText: (entry.Detail != "") ? entry.Detail : entry.Error, RunTitle: I18n.T("ScriptFilter.EditScript"), OnRun: (*) => ScriptProvider.EditScript(script)})]
         if !entry.Items.Length
             return [ScriptFilter._Row(script, I18n.T("ScriptFilter.NoResults"), script.Title, {Valid: false})]
         rows := []

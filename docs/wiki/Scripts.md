@@ -39,6 +39,8 @@ In `.ahk` scripts, write output with `FileAppend("text", "*")`. Adding, removing
 
 With `@altrun.mode filter`, a script becomes a search source of its own, like Alfred's Script Filter. Type its keyword and a space: ALTRun runs the script with what you type after it and shows what it prints as results, which open, copy, show the actions panel (`→`) and edit the script (`F3`) like any other result.
 
+![Live results of a script](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/script-filter.png)
+
 ```autohotkey
 ; @altrun.title    Find Project
 ; @altrun.keyword  proj
