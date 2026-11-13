@@ -842,6 +842,40 @@ class SearchWindowTests {
         }
     }
 
+    ; AltGr reaches Windows as Ctrl+Alt: AltGr+3 (# on French AZERTY) and AltGr+8 (\) are typed, not run as Ctrl+3 / Ctrl+8 (AHK forum);
+    ; Ctrl alone still runs row N, AltGr+E (€) doesn't edit the file
+    static AltGrKeys() {
+        eq := (n, a, e) => TestRunner.Equal("AltGrKeys." n, a, e)
+        eq("ctrl alone", SearchKeys.CtrlShortcut(true, false), true)
+        eq("ctrl + alt (AltGr)", SearchKeys.CtrlShortcut(true, true), false)
+        eq("no ctrl", SearchKeys.CtrlShortcut(false, false), false)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedState := SearchKeys.KeyState
+        savedRow := SearchWindow.GetOwnPropDesc("_RunVisibleRow"), savedEdit := SearchWindow.GetOwnPropDesc("_EditFileSelected")
+        ran := []
+        SearchWindow.DefineProp("_RunVisibleRow", {Call: (this, n) => ran.Push("row " n)})
+        SearchWindow.DefineProp("_EditFileSelected", {Call: (*) => ran.Push("edit")})
+        down := Map()
+        SearchKeys.KeyState := (name) => down.Has(name)
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        hwnd := SearchWindow.Input.Hwnd
+        key := (vk) => SearchKeys.OnKeyDown(vk, 0, 0x100, hwnd)
+        try {
+            down := Map("Ctrl", 1), SearchKeys.KeyState := (name) => down.Has(name)
+            eq("Ctrl+3 runs row 3", key(0x33) "|" TextTools.JoinList(ran, ","), "0|row 3")
+            ran.Length := 0
+            down := Map("Ctrl", 1, "Alt", 1), SearchKeys.KeyState := (name) => down.Has(name)
+            eq("AltGr+3 is typed", key(0x33) "|" ran.Length, "|0")
+            eq("AltGr+8 is typed", key(0x38) "|" ran.Length, "|0")
+            eq("AltGr+E is typed", key(0x45) "|" ran.Length, "|0")
+        } finally {
+            SearchKeys.KeyState := savedState
+            SearchWindow.DefineProp("_RunVisibleRow", savedRow), SearchWindow.DefineProp("_EditFileSelected", savedEdit)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
     ; Tab: completes by default; with TabKey = "Next" it moves to the next result (wrapping), Shift+Tab to the previous
     static TabKey() {
         eq := (n, a, e) => TestRunner.Equal("TabKey." n, a, e)

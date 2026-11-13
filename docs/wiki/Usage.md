@@ -98,7 +98,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Ctrl+Enter` | Files / folders: reveal in the file manager; text: paste into the front window |
 | `Alt+Enter` | Copy the path / URL / text |
 | `Ctrl+Shift+Enter` | Run the selected program, shortcut or script as administrator (as in Start and Explorer; also Store desktop apps such as Windows Terminal); for other results, the same as `Enter` |
-| `Ctrl+1` – `Ctrl+9` | Run the Nth visible row |
+| `Ctrl+1` – `Ctrl+9` | Run the Nth visible row. The Ctrl shortcuts don't fire while AltGr is held (AltGr is Ctrl+Alt to Windows), so AltGr characters such as `#` and `\` on a French keyboard are typed |
 | `↑` `↓` / `Ctrl+P` `Ctrl+N` | Select the previous / next row (`Ctrl+P` `Ctrl+N` work like in terminals and Emacs, so your hands stay on the letter keys) |
 | `PgUp` `PgDn` | Previous / next page (as many rows as the window shows) |
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history (like Alfred); going past the newest restores what you had typed |
