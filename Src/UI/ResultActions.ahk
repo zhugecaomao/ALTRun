@@ -96,6 +96,8 @@ class ResultActions {
             add("Action.Pin", IconCache.Own("Pinned", "res:imageres.dll,-5303"), (*) => RecentProvider.Pin(item))
         if LargeType.Enabled()
             add("Action.LargeType", "res:imageres.dll,-183", (*) => LargeType.Show(item.DisplayText()), "Ctrl+L")
+        for extra in item.TrailActions                                      ; last: a selection without commands of its own (SelectionActions.TrailActions)
+            list.Push(extra)
         return list
     }
 

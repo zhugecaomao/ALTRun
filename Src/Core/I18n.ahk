@@ -218,6 +218,9 @@ class I18n {
         s["Selection.Text"]            := "Selected text · {1} characters"
         s["Selection.Link"]            := "Selected link"
         s["Selection.Files"]           := "{1} files"
+        s["Selection.AddCommand"] := "Add a Command for This Content..."
+        s["Selection.AddCommand.Sub"] := "Selection types: {1}"
+        s["Selection.NewType"] := "Make a Content Type from It..."
 
         ; --- Providers ---
         s["App.Subtitle.Store"]        := "Microsoft Store app"
@@ -680,6 +683,10 @@ class I18n {
         s["SelType.Field.Pattern"]      := "Text: a regular expression, for example ^PO\d{8}$ (start with i) to ignore case). File: extensions, for example pdf, docx"
         s["SelType.BuiltInName"]        := "{1} is the name of a built-in type: this type would be ignored."
         s["SelType.BadPattern"]         := "Not a valid regular expression: {1}"
+        s["SelType.Sample"] := "Selection"
+        s["SelType.Sample.Match"] := "{1} matches"
+        s["SelType.Sample.NoMatch"] := "{1} doesn't match"
+        s["SelType.Added"] := "Added the content type '{1}'."
         s["Prefs.Page.Snippets"]       := "Snippets"
         s["Prefs.Page.Clipboard"]      := "Clipboard"
         s["Prefs.Page.WebSearch"]      := "Web Search"

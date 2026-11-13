@@ -15,6 +15,7 @@
 ;   RunTitle     OnRun's name in the actions panel (e.g. "Paste image"); when set it is the first row of the panel
 ;   Actions      extra actions [{Title, Subtitle, Icon, Run: fn(item)}], shown in the actions panel
 ;   LeadActions  actions shown first in the actions panel, before the built-in ones (the custom commands for a selection, see SelectionActions)
+;   TrailActions actions shown last in the actions panel (a selection without commands: "Add a Command for This Content...")
 ;   Valid        false = can't run (e.g. a hint row); Enter autocompletes instead
 ;   AutoComplete the text Tab completes to
 ;   LargeText    the text for Ctrl+L Large Type, Title if empty; or a function that returns it (worked out only when shown)
@@ -53,6 +54,7 @@ class ResultItem {
         this.RunTitle     := ""
         this.Actions      := []
         this.LeadActions  := []
+        this.TrailActions := []
         this.Valid        := true
         this.AutoComplete := ""
         this.LargeText    := ""

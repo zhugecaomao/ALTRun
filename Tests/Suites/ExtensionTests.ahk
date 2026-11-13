@@ -2198,6 +2198,74 @@ class ExtensionTests {
         }
     }
 
+    ; A selection without commands of its own: "Add a Command for This Content..." and "Make a Content Type from It..." at the end of
+    ; the panel, the guessed type, and the sample line of the type edit dialog
+    static SelectionTrailActions() {
+        eq := (n, a, e) => TestRunner.Equal("SelectionTrailActions." n, a, e)
+        text(term) => {Kind: "text", Types: ["Text"], Term: term, Quoted: SelectionActions.Quote(term), Text: term}
+        guessed(info, userTypes := "") {
+            guess := SelectionActions.GuessType(info, IsObject(userTypes) ? userTypes : [])
+            return IsObject(guess) ? guess["Name"] "|" guess["Kind"] "|" guess["Pattern"] : ""
+        }
+        eq("digits", guessed(text("12345678")), "|Text|^\d{8}$")
+        eq("letters then digits", guessed(text("PO12345678")), "PO|Text|^PO\d+$")
+        eq("letters, dash, digits", guessed(text("ABC-123")), "ABC|Text|^ABC-\d+$")
+        eq("email", guessed(text("me@example.com")), "|Text|^[\w.+-]+@[\w-]+(\.[\w-]+)+$")
+        eq("anything else: escaped", guessed(text("a.b (c)? $5")), "|Text|^a\.b \(c\)\? \$5$")
+        eq("several lines: none", guessed(text("one`ntwo")), "")
+        long := ""
+        Loop 101
+            long .= "x"
+        eq("too long: none", guessed(text(long)), "")
+        eq("url: its host", guessed({Kind: "url", Types: ["Url"], Term: "https://www.GitHub.com/a/b?c=1"}), "github.com|Text|^https?://(www\.)?github\.com(/|$)")
+        eq("one file", guessed({Kind: "file", Types: ["File"], Path: "C:\Missing\Plan.PDF"}), "PDF|File|pdf")
+        eq("files with one extension", guessed({Kind: "files", Types: ["Files"], Files: ["C:\x\a.pdf", "C:\x\b.PDF"]}), "PDF|File|pdf")
+        eq("files with different extensions: none", guessed({Kind: "files", Types: ["Files"], Files: ["C:\x\a.pdf", "C:\x\b.docx"]}), "")
+        eq("no extension: none", guessed({Kind: "file", Types: ["File"], Path: "C:\x\README"}), "")
+        eq("folder: none", guessed({Kind: "folder", Types: ["Folder"], Path: "C:\x\"}), "")
+        eq("name taken: left out", guessed(text("PO12345678"), [{Name: "po", Kind: "Text", Pattern: "x"}]), "|Text|^PO\d+$")
+        allMatch := true
+        for sample in ["12345678", "PO12345678", "ABC-123", "me@example.com", "a.b (c)? $5", "C++ [draft] {1}|^"]
+            allMatch := allMatch && RegExMatch(sample, SelectionActions.GuessType(text(sample), [])["Pattern"]) > 0
+        eq("each guess matches its sample", allMatch, true)
+
+        typeItem := Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")
+        eq("sample: matches", SelectionActions.SampleText("PO12345678", typeItem), I18n.T("SelType.Sample.Match", "PO12345678"))
+        eq("sample: no name yet still tried", SelectionActions.SampleText("PO12345678", Map("Name", "", "Kind", "Text", "Pattern", "^PO\d+$")), I18n.T("SelType.Sample.Match", "PO12345678"))
+        eq("sample: doesn't match", SelectionActions.SampleText("XY1", typeItem), I18n.T("SelType.Sample.NoMatch", "XY1"))
+        eq("sample: a file type", SelectionActions.SampleText("C:\x\a.pdf", Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")), I18n.T("SelType.Sample.Match", "C:\x\a.pdf"))
+        fields := SelectionActions.TypeEditorFields("PO12345678")
+        eq("editor: the sample line only from a selection", fields.Length "|" fields[4].Key "|" fields[4].Type "|" SelectionActions.TypeEditorFields().Length, "4|Sample|info|3")
+        eq("editor: the sample line follows the fields", fields[4].Text.Call(typeItem), I18n.T("SelType.Sample.Match", "PO12345678"))
+        eq("sample of several files: the first", SelectionActions.SampleOf({Kind: "files", Files: ["C:\a.pdf", "C:\b.pdf"]}), "C:\a.pdf")
+
+        savedCommands := AppSettings.Data["CustomCommands"], custom := AppSettings.Feature("CustomCommands"), savedEnabled := custom["Enabled"]
+        scripts := AppSettings.Feature("Scripts"), savedScripts := scripts["Enabled"]
+        try {
+            custom["Enabled"] := 1, scripts["Enabled"] := 0                  ; no scripts from the test PC's Scripts folder
+            AppSettings.Data["CustomCommands"] := [Map("Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Selection", "PO")]
+            titles(info) {
+                list := ""
+                for row in SelectionActions.TrailActions(info)
+                    list .= row.Title "|"
+                return RTrim(list, "|")
+            }
+            eq("no type of the user's: both", titles(text("XY12")), I18n.T("Selection.AddCommand") "|" I18n.T("Selection.NewType"))
+            rows := SelectionActions.TrailActions({Kind: "text", Types: ["Text", "Ticket"], Term: "AB-1"})
+            eq("a type without commands: add a command for it", rows.Length "|" rows[1].Subtitle, "1|" I18n.T("Selection.AddCommand.Sub", "Ticket"))
+            eq("a type with a command: nothing", titles({Kind: "text", Types: ["Text", "PO"], Term: "PO1"}), "")
+            eq("a command left out for shell characters still counts", SelectionActions.HasCommands({Kind: "text", Types: ["Text", "po"], Term: "a&b"}), true)
+            eq("built-in type only, no guess: add a command", titles({Kind: "folder", Types: ["Folder"], Path: "C:\x\"}), I18n.T("Selection.AddCommand"))
+            custom["Enabled"] := 0
+            eq("custom commands off: nothing", titles(text("XY12")), "")
+        } finally {
+            AppSettings.Data["CustomCommands"] := savedCommands, custom["Enabled"] := savedEnabled, scripts["Enabled"] := savedScripts
+        }
+        item := ResultItem("x", "", {Kind: "text", Arg: "x"})
+        item.TrailActions := [ResultItem("Trail", "")]
+        eq("panel: the trail rows come last", ResultActions.ListFor(item)[-1].Title, "Trail")
+    }
+
     static SelectionCommands() {
         eq := (n, a, e) => TestRunner.Equal("SelectionCommands." n, a, e)
         ok := (n, c) => TestRunner.True("SelectionCommands." n, c)
