@@ -65,6 +65,8 @@ class Shots {
             ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
             ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\Annual Report 2026\")],
             ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
+            ["script-filter", "Light", "", () => Shots.LiveResults("proj al")],          ; Wiki: scripts (live results of a filter script, made-up projects)
+            ["script-filter-error", "Light", "", () => Shots.LiveResults("dict hello")],   ; a filter script that failed: the error row
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
@@ -216,6 +218,16 @@ class Shots {
             , Shots.AppDir "\Scripts\Merge PDFs.ps1", "UTF-8")
         FileAppend("# @altrun.title    Today's date`n# @altrun.keyword  today`n# @altrun.mode     silent`nGet-Date -Format 'dddd, d MMMM yyyy'`n"
             , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
+        ; live results (@altrun.mode filter): made-up project folders, one that fails, and a batch file (red in Preferences: not for .bat)
+        FileAppend("; @altrun.title    Find Project`n; @altrun.keyword  proj`n; @altrun.mode     filter`n; @altrun.argument part of a project name`n"
+            . 'out := ""`nfor name in ["Alder Bridge", "Altair Tower", "Coral Bay Pier", "Harbor Lights", "Royal Park Hotel", "Westfield Mall"]`n'
+            . '    if (A_Args[1] = "" || InStr(name, A_Args[1]))`n        out .= name "``t" "C:\Projects\" name "``t" "C:\Projects\" name "``tfolder``n"`n'
+            . 'FileAppend(out, "*", "UTF-8-RAW")`n', Shots.AppDir "\Scripts\Find Project.ahk", "UTF-8")
+        for name in ["Alder Bridge", "Altair Tower", "Coral Bay Pier", "Harbor Lights", "Royal Park Hotel", "Westfield Mall"]
+            DirCreate("C:\Projects\" name)
+        FileAppend("; @altrun.title    Dictionary`n; @altrun.keyword  dict`n; @altrun.mode     filter`n"
+            . 'FileAppend("Can`'t reach dictionary.example.test (timed out after 5 s)``n", "**")`nExitApp(1)`n', Shots.AppDir "\Scripts\Dictionary.ahk", "UTF-8")
+        FileAppend("@echo off`nrem @altrun.title    Clean Temp`nrem @altrun.keyword  clean`nrem @altrun.mode     filter`ndir /b %TEMP%`n", Shots.AppDir "\Scripts\Clean Temp.bat", "UTF-8")
     }
 
     ; Builds the app index once (Data\AppIndex.json, the demo apps folder) with ALTRun started in the background, and keeps a copy
@@ -447,6 +459,13 @@ class Shots {
     static Search(text) {
         hwnd := Shots.SearchWindow()
         Shots.SetQuery(hwnd, text)
+        return hwnd
+    }
+
+    ; A filter script's live results: typed at once, then the script runs in the background (see ScriptFilter)
+    static LiveResults(text) {
+        hwnd := Shots.Search(text)
+        Sleep(3000)
         return hwnd
     }
 
