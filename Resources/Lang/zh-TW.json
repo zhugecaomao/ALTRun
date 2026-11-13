@@ -227,7 +227,7 @@
   "HotkeyEditor.Summary.InALTRun": "(只在 ALTRun 的搜尋視窗裡)。",
   "HotkeyEditor.Choose": "選擇...",
   "HotkeyEditor.Deleted": "(指令已刪除) {1}",
-  "HotkeyEditor.Clash": "已被 {1} 使用",
+  "HotkeyEditor.Clash": "已被使用: {1}",
   "HotkeyEditor.Detail.Search": "ALTRun · 開啟搜尋視窗並填入下面的搜尋內容",
   "HotkeyEditor.Detail.Toggle": "ALTRun · 顯示搜尋視窗, 已在最前面時隱藏",
   "HotkeyEditor.Detail.Query": "{query} 換成選取的文字或路徑",
