@@ -9,7 +9,7 @@ on:
       - Lib/TaskScheduler.ahk
       - Src/Extensions/DelayedStart.ahk
       - Tests/Integration/DelayedStartCheck.ahk
-      - Src/Extensions/CapsLockHelper.ahk
+      - Src/Extensions/AdminHelper.ahk
       - .github/workflows/delayed-start.yml
       - .github/actions/setup-ahk/**
   push:
@@ -18,7 +18,7 @@ on:
       - Lib/TaskScheduler.ahk
       - Src/Extensions/DelayedStart.ahk
       - Tests/Integration/DelayedStartCheck.ahk
-      - Src/Extensions/CapsLockHelper.ahk
+      - Src/Extensions/AdminHelper.ahk
       - .github/workflows/delayed-start.yml
       - .github/actions/setup-ahk/**
   workflow_dispatch:

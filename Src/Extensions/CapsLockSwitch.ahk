@@ -103,7 +103,7 @@ class CapsLockSwitch {
     }
 
     static NotifyMs := 1000
-    static Notify := (on) => App.CapsLockNotice(on)                        ; in the helper for administrator windows ALTRun shows it instead (CapsLockHelper)
+    static Notify := (on) => App.CapsLockNotice(on)                        ; in the helper for administrator windows ALTRun shows it instead (AdminHelper)
     static ShiftDown() => GetKeyState("Shift")
     static StateText(on) => I18n.T(on ? "Caps.On" : "Caps.Off")
 
