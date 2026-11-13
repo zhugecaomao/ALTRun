@@ -35,7 +35,7 @@ class Shots {
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
-                         , "hotkey-editor-script", "command-picker-scripts"
+                         , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -54,6 +54,9 @@ class Shots {
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["actions-command", "Light", "", () => Shots.ActionsFiltered("en", "hotkey"), () => Shots.CommandHotkey()],   ; a custom command's actions panel filtered to "Change Hotkey Ctrl+Alt+N..." (below the first 8 rows; a command without {query}: that one opens the panel only with text typed)
+            ["selection-new-type", "Light", "", () => Shots.SelectionPanel("PO12345678", "content")],   ; text of none of the user's types: "Add a Command..." and "Make a Content Type..." (filtered to them)
+            ["selection-add-command", "Light", "", () => Shots.SelectionPanel("INV-2026-0042", "content"), () => Shots.TypeWithoutCommand()],   ; a type of the user's without commands: only "Add a Command..."
+            ["selection-type-editor", "Light", "", () => Shots.SelectionTypeEditor("PO12345678")],   ; "Make a Content Type from It...": the guess and the sample line
             ["shellmenu",   "Light", "", () => Shots.ShellMenu(), () => Shots.EnableContextMenu()],   ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
@@ -458,6 +461,52 @@ class Shots {
         ControlSend("{Text}" filter, "Edit1", hwnd)
         Sleep(800)
         return hwnd
+    }
+
+    ; Text typed in Notepad, selected, then the selection hotkey (Ctrl+Alt+\): the actions panel, filtered by typing filter. Notepad is
+    ; moved out of the way first (still in front, so Ctrl+C goes to it)
+    static SelectionPanel(text, filter := "") {
+        hwnd := Shots.SearchWindow()
+        search := Shots.SearchRegion(hwnd)
+        ControlSend("{Esc}", "Edit1", hwnd), Sleep(500)
+        note := Shots.OpenNotepad(search)
+        Send("{Text}" text), Sleep(300)
+        Send("^a"), Sleep(300)
+        WinSetAlwaysOnTop(0, note)
+        WinMove(A_ScreenWidth - 200, A_ScreenHeight - 150, , , note)
+        Sleep(300)
+        SendLevel(1)                                                        ; the hotkeys of another script (ALTRun) see these keys
+        Send("^!\")
+        SendLevel(0)
+        Sleep(2000)
+        if (filter != "") {
+            ControlSend("{Text}" filter, "Edit1", hwnd)
+            Sleep(800)
+        }
+        return hwnd
+    }
+
+    ; "Make a Content Type from It..." chosen in the panel of text: the type edit window with the guess
+    static SelectionTypeEditor(text) {
+        hwnd := Shots.SelectionPanel(text, "content type")
+        ControlSend("{Enter}", "Edit1", hwnd)
+        window := WinWait("Selection ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
+        if !window
+            throw Error("content type edit window not shown")
+        WinSetAlwaysOnTop(1, window)
+        Sleep(800)
+        return window
+    }
+
+    ; A content type of the user's that no command is set for (made up)
+    static TypeWithoutCommand() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        if !settings.Has("SelectionTypes")
+            settings["SelectionTypes"] := []
+        settings["SelectionTypes"].Push(Map("Name", "Invoice", "Kind", "Text", "Pattern", "^INV-\d{4}-\d{4}$"))
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
     ; A file's actions panel filtered to "Windows Context Menu", then Enter: the search window and the Explorer menu over it

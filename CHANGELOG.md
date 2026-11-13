@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.12]
+
+测试版。
+
+Test build.
+
+### 新增
+- 选中内容的操作面板: 选中内容的类型还没有设任何命令或脚本时, 最后加 **为这种内容添加命令...** (打开命令编辑窗口, "选中内容类型" 预填: 符合你自己的类型就填它, 否则填内置类型); 不符合你的任何类型时还有 **用它新建内容类型...**: 按选中的内容猜规则 (纯数字、字母加数字、邮箱、网址按网站、其他文字原样; 文件按扩展名), 打开类型编辑窗口, 编辑时一行显示选中的内容是否符合; 确定后接着打开这个类型的命令编辑窗口 (取消就只保存类型)。偏好设置开着时加到偏好设置的列表里
+
 ## [2026.11.12.11]
 
 测试版。
@@ -1456,7 +1465,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...HEAD
+[2026.11.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...2026.11.12.12
 [2026.11.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...2026.11.12.11
 [2026.11.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...2026.11.12.10
 [2026.11.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.8...2026.11.12.9

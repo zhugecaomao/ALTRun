@@ -23,13 +23,18 @@
 ;   Selected text can't break out of the command line: a command isn't shown when the text has a line break or a double quote
 ;   (except URLs, which are encoded), nor when it runs a shell (cmd, PowerShell, a batch file...) and the text has that shell's special characters.
 ;   Scripts with "@altrun.selection PO, PDF" in their header come after the custom commands, with the same checks (ScriptProvider.ActionsFor).
+;   When no command or script is set for the selection's types, the panel ends with "Add a Command for This Content..." (the command
+;   edit dialog with "Selection types" filled in) and, when none of the user's types matched, "Make a Content Type from It..." (the type
+;   edit dialog with a pattern guessed from the selection, GuessType; then the command dialog for the new type). With Preferences open
+;   both go to its pages, so the next Apply doesn't overwrite them.
 ;
 ; Usage:
 ;   SelectionActions.Run()                    called by the hotkey
 ;   SelectionActions.ItemFor({Text: "..."})   -> ResultItem (the source of the actions panel); can also be {Files: [...]}
 ;   SelectionActions.Classify(selection)      -> {Kind, Types, Term, ...}: what the selection is and which content types it has
 ;   SelectionActions.SampleTypes(text, list)  the types of a sample text or path (the test box in Preferences → Selection), list = SelectionTypes being edited
-;   SelectionActions.TypeEditorFields()       the fields of a content type in the edit dialog
+;   SelectionActions.GuessType(info)          -> {Name, Kind, Pattern} Map for "Make a Content Type from It...", "" when there is no good one
+;   SelectionActions.TypeEditorFields([sample]) the fields of a content type in the edit dialog (sample: a line saying whether it matches)
 ;===============================================================================
 
 class SelectionActions {
@@ -78,7 +83,138 @@ class SelectionActions {
             default             : item := SelectionActions._TextItem(info.Text)
         }
         item.LeadActions := SelectionActions.CommandActions(info)
+        item.TrailActions := SelectionActions.TrailActions(info)
         return item
+    }
+
+    ; The rows at the end of the panel when no command or script is set for any of the selection's types: "Add a Command for This
+    ; Content..." for its most specific type (the first of the user's that matched, else the built-in one), and with none of the
+    ; user's types matching, "Make a Content Type from It..." when a pattern can be guessed. None with custom commands turned off
+    static TrailActions(info) {
+        rows := []
+        if (!ProviderRegistry.IsEnabled(CustomCommandProvider) || SelectionActions.HasCommands(info))
+            return rows
+        typeName := (info.Types.Length > 1) ? info.Types[2] : info.Types[1]
+        rows.Push(ResultItem(I18n.T("Selection.AddCommand"), I18n.T("Selection.AddCommand.Sub", typeName)
+            , {Icon: "res:imageres.dll,-2", OnRun: (*) => SelectionActions.AddCommandFor(typeName)}))
+        if (info.Types.Length = 1 && IsObject(guess := SelectionActions.GuessType(info)))
+            rows.Push(ResultItem(I18n.T("Selection.NewType"), SelectionActions.KindText(guess["Kind"]) " · " guess["Pattern"]
+                , {Icon: "res:imageres.dll,-2", OnRun: (*) => SelectionActions.NewTypeFrom(info, guess)}))
+        return rows
+    }
+
+    ; Whether a custom command (with custom commands on) or a script (with scripts on) is set for one of the selection's types,
+    ; shown or not (a command left out for the text's shell characters still counts: adding another wouldn't help)
+    static HasCommands(info) {
+        if ProviderRegistry.IsEnabled(CustomCommandProvider)
+            for command in AppSettings.CustomCommands
+                if SelectionActions.CommandFor(command, info.Types)
+                    return true
+        if ProviderRegistry.IsEnabled(ScriptProvider)
+            for script in ScriptProvider.Current()
+                if ScriptProvider.ForTypes(script, info.Types)
+                    return true
+        return false
+    }
+
+    ; A content type guessed from a selection (Classify's result) -> Map {Name, Kind, Pattern}, "" when there is none:
+    ;   text on one line, at most 100 characters: digits only ^\d{N}$; letters, then digits (an optional - _ or space between)
+    ;   ^PO\d+$ named after the letters; an email address (a general pattern); anything else the text itself, escaped
+    ;   a URL: its host, ^https?://(www\.)?github\.com(/|$), named after the host
+    ;   one file or several: their extension when they all have the same one, named after it in capitals; a folder: none
+    ; A suggested name already taken by one of the user's types is left out (the user names it)
+    static GuessType(info, userTypes := "") {
+        guess := ""
+        switch info.Kind {
+            case "url":
+                if RegExMatch(info.Term, "i)^https?://(?:www\.)?([^/?#:]+)", &m)
+                    guess := Map("Name", StrLower(m[1]), "Kind", "Text", "Pattern", "^https?://(www\.)?" SelectionActions.RegexEscape(StrLower(m[1])) "(/|$)")
+            case "text":
+                text := info.Term
+                if (text = "" || InStr(text, "`n") || StrLen(text) > 100)
+                    return ""
+                if RegExMatch(text, "^\d+$")
+                    guess := Map("Name", "", "Kind", "Text", "Pattern", "^\d{" StrLen(text) "}$")
+                else if RegExMatch(text, "^([A-Za-z]+)([-_ ]?)\d+$", &m)
+                    guess := Map("Name", m[1], "Kind", "Text", "Pattern", "^" SelectionActions.RegexEscape(m[1] m[2]) "\d+$")
+                else if RegExMatch(text, "^[^@\s]+@[^@\s]+\.[^@\s]+$")
+                    guess := Map("Name", "", "Kind", "Text", "Pattern", "^[\w.+-]+@[\w-]+(\.[\w-]+)+$")
+                else
+                    guess := Map("Name", "", "Kind", "Text", "Pattern", "^" SelectionActions.RegexEscape(text) "$")
+            case "file", "files":
+                ext := ""
+                for filePath in ((info.Kind = "file") ? [info.Path] : info.Files) {
+                    SplitPath(filePath, , , &each)
+                    if (each = "" || InStr(FileExist(filePath), "D") || (ext != "" && each != ext))
+                        return ""
+                    ext := each
+                }
+                guess := Map("Name", StrUpper(ext), "Kind", "File", "Pattern", StrLower(ext))
+        }
+        if !IsObject(guess)
+            return ""
+        if (guess["Name"] != "")
+            for each in (IsObject(userTypes) ? userTypes : SelectionActions.UserTypes())
+                if (each.Name = guess["Name"])
+                    guess["Name"] := ""
+        return guess
+    }
+
+    ; Text matched literally by a regular expression
+    static RegexEscape(text) => RegExReplace(text, "[\\.*?+\[\]{}()|^$]", "\$0")
+
+    ; "Add a Command for This Content...": the command edit dialog with "Selection types" set to typeName (in Preferences when it is open)
+    static AddCommandFor(typeName) {
+        prefill := Map("Selection", typeName)
+        if IsObject(PreferencesWindow.Gui) {
+            PreferencesWindow.Show("Prefs.Page.Commands")
+            command := CustomCommandProvider.NewCommand()
+            command["Selection"] := typeName
+            return PreferencesWindow._lists["CustomCommands"].Insert.Call(command)
+        }
+        if CustomCommandProvider.Edit("", prefill)
+            App.Toast(I18n.T("Custom.Added", AppSettings.CustomCommands[-1]["Title"]), 2500)
+    }
+
+    ; "Make a Content Type from It...": the type edit dialog with the guess and a line saying whether the selection matches; on OK the
+    ; type is saved, then the command dialog for it opens (cancelling that keeps the type). In Preferences when it is open
+    static NewTypeFrom(info, guess) {
+        if IsObject(PreferencesWindow.Gui) {
+            PreferencesWindow.Show("Prefs.Page.Selection")
+            list := PreferencesWindow._lists["SelectionTypes"], before := list.Items.Length
+            list.Insert.Call(guess.Clone())
+            if (list.Items.Length > before)
+                SelectionActions.AddCommandFor(list.Items[-1]["Name"])
+            return
+        }
+        edited := ItemEditor.Edit(ItemEditor.Owner(), I18n.T("Prefs.Page.Selection"), SelectionActions.TypeEditorFields(SelectionActions.SampleOf(info)), guess.Clone())
+        if !IsObject(edited)
+            return
+        if !(AppSettings.Data.Has("SelectionTypes") && AppSettings.Data["SelectionTypes"] is Array)
+            AppSettings.Data["SelectionTypes"] := []
+        AppSettings.Data["SelectionTypes"].Push(edited)
+        if !AppSettings.Save()
+            return
+        App.Toast(I18n.T("SelType.Added", edited["Name"]), 2500)
+        SelectionActions.AddCommandFor(edited["Name"])
+    }
+
+    ; The text or path a type is tested with in its edit dialog: the selected text, the path, or the first of several files
+    static SampleOf(info) {
+        switch info.Kind {
+            case "files":          return info.Files[1]
+            case "file", "folder": return info.Path
+        }
+        return info.Term
+    }
+
+    ; The edit dialog's line about the sample: "PO12345678 matches" / "... doesn't match" (a type without a name is tried as one)
+    static SampleText(sample, edited) {
+        entry := edited.Clone()
+        if (Trim(entry.Has("Name") ? entry["Name"] : "") = "")
+            entry["Name"] := "?"
+        shown := (StrLen(sample) > 60) ? SubStr(sample, 1, 59) "…" : sample
+        return I18n.T((SelectionActions.SampleTypes(sample, [entry]).Length > 1) ? "SelType.Sample.Match" : "SelType.Sample.NoMatch", shown)
     }
 
     ;---------------------------------------------------------------------------
@@ -316,13 +452,19 @@ class SelectionActions {
         return Map("Name", "", "Kind", "Text", "Pattern", "")
     }
 
-    static TypeEditorFields() {
+    static TypeEditorFields(sample := "") {
         kinds := [["Text", I18n.T("Prefs.SelKind.Text")], ["File", I18n.T("Prefs.SelKind.File")]]
         name := ItemEditor.Field("Name", "Prefs.Col.Name", "text", true, "", I18n.T("SelType.Field.Name"))
         name.Check := (value, *) => SelectionActions.IsBuiltInType(Trim(value)) ? I18n.T("SelType.BuiltInName", Trim(value)) : ""
         pattern := ItemEditor.Field("Pattern", "Prefs.Col.Pattern", "text", true, "", I18n.T("SelType.Field.Pattern"))
         pattern.Check := (value, edited) => SelectionActions.PatternProblem(edited.Has("Kind") ? edited["Kind"] : "Text", value)
-        return [name, ItemEditor.Field("Kind", "Prefs.Col.Kind", "choice", false, kinds, I18n.T("SelType.Field.Kind")), pattern]
+        fields := [name, ItemEditor.Field("Kind", "Prefs.Col.Kind", "choice", false, kinds, I18n.T("SelType.Field.Kind")), pattern]
+        if (sample != "") {                                                 ; opened from the selection: whether it matches, while editing
+            line := ItemEditor.Field("Sample", "SelType.Sample", "info", false, "", "")
+            line.Text := (edited) => SelectionActions.SampleText(sample, edited)
+            fields.Push(line)
+        }
+        return fields
     }
 
     ; "" when the pattern can be used, else the warning: a Text type's pattern must be a valid regular expression
