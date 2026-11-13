@@ -98,7 +98,7 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
 | `Ctrl+Enter` | 文件 / 文件夹: 在文件管理器中显示; 文字: 粘贴到前台窗口 |
 | `Alt+Enter` | 复制路径 / 网址 / 文字 |
 | `Ctrl+Shift+Enter` | 以管理员身份运行选中的程序、快捷方式或脚本 (和开始菜单、资源管理器一样; Windows Terminal 这类商店里的桌面应用也可以); 其它结果和 `Enter` 一样 |
-| `Ctrl+1` ~ `Ctrl+9` | 直接执行可见的第 N 行 |
+| `Ctrl+1` ~ `Ctrl+9` | 直接执行可见的第 N 行。按着 AltGr 时 Ctrl 快捷键都不起作用 (Windows 把 AltGr 当成 Ctrl+Alt), 法语等键盘上用 AltGr 打的 `#`、`\` 等字符照常输入 |
 | `↑` `↓` / `Ctrl+P` `Ctrl+N` | 选择上一行 / 下一行 (`Ctrl+P` `Ctrl+N` 和终端、Emacs 一样, 手不用离开字母区) |
 | `PgUp` `PgDn` | 上翻 / 下翻一页 (按窗口显示的行数) |
 | `Ctrl+↑` / `Ctrl+↓` | 上一条 / 下一条搜索记录 (和 Alfred 一样); 翻回最新之后恢复原来输入的文字 |

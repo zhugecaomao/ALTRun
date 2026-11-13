@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.2]
+
+测试版。
+
+Test build.
+
+### 修复
+- 搜索框里按 AltGr 打字符被当成 Ctrl 快捷键 (AutoHotkey 论坛, 法语 AZERTY 键盘): AltGr+3 (`#`) 运行了第 3 行, AltGr+8 (`\`) 打不出来; 德语、法语的 AltGr+E (`€`) 打开了编辑文件, 波兰语的 AltGr+C / N / L 变成复制、下移、大字显示。Windows 把 AltGr 当成 Ctrl+Alt, 现在 Ctrl 和 Alt 同时按着时搜索框的 Ctrl 快捷键 (`Ctrl+1` ~ `Ctrl+9`、`Ctrl+N` / `P` / `C` / `L` / `E` / `,`) 不起作用, 字符照常输入
+
 ## [2026.11.13.1]
 
 测试版。
@@ -1420,7 +1429,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...HEAD
+[2026.11.13.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...2026.11.13.2
 [2026.11.13.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...2026.11.13.1
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12

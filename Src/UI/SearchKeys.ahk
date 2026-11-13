@@ -5,6 +5,8 @@
 ; OnMessage, or the subclassed window procedure while a system dialog's modal loop runs); the keys are listed at
 ; the top of SearchWindow.ahk. Also the caret helpers of the search box. Part of SearchWindow, whose state and
 ; actions it uses.
+; AltGr (French, German, Polish... layouts: AltGr+3 types #, AltGr+8 \, AltGr+E €) reaches Windows as Ctrl+Alt, so the Ctrl
+; shortcuts (Ctrl+1..9, Ctrl+N / P / C / L / E / ,) only count without Alt (CtrlShortcut): the character is typed instead.
 ;
 ; Usage:
 ;   OnMessage(0x100, (p*) => SearchKeys.OnKeyMessage(p*))   in SearchWindow.Create
@@ -12,6 +14,11 @@
 ;===============================================================================
 
 class SearchKeys {
+    static KeyState := (name) => GetKeyState(name)                          ; whether a key is down (replaced in tests)
+
+    ; Whether the held modifiers make a key a Ctrl shortcut of the search window: Ctrl without Alt (Ctrl+Alt is AltGr, which types a character)
+    static CtrlShortcut(ctrl, alt) => ctrl && !alt
+
     static IsOwnWindow(hwnd) {
         return IsObject(SearchWindow.Gui) && (hwnd = SearchWindow.Gui.Hwnd || hwnd = SearchWindow.Input.Hwnd || hwnd = SearchWindow.List.Hwnd)
     }
@@ -112,9 +119,9 @@ class SearchKeys {
         if !SearchKeys.IsOwnWindow(hwnd)
             return
         vk := wParam
-        ctrl  := GetKeyState("Ctrl")
-        shift := GetKeyState("Shift")
-        alt   := (msg = 0x104) || GetKeyState("Alt")
+        ctrl  := SearchKeys.KeyState.Call("Ctrl")
+        shift := SearchKeys.KeyState.Call("Shift")
+        alt   := (msg = 0x104) || SearchKeys.KeyState.Call("Alt")
         actions := SearchWindow.Session.Mode = "actions"
         if (SearchWindow.Session.RestoredSelection && !SearchKeys.AllTextSelected())   ; the caret moved off the restored search: editing it keeps file search mode
             SearchWindow.Session.RestoredSelection := false
@@ -256,7 +263,7 @@ class SearchKeys {
                 return
         }
 
-        if !ctrl
+        if !SearchKeys.CtrlShortcut(ctrl, alt)                             ; AltGr+3 types "#", it doesn't run row 3
             return
         switch vk {
             case 0x4E:                                                      ; Ctrl+N
