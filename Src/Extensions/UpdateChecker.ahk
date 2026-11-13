@@ -117,16 +117,16 @@ class UpdateChecker {
                 if (choice = "Install")
                     UpdateChecker.Install(release)
                 else if (choice = "Notes")
-                    Run(release.Page)
+                    ActionCatalog.OpenUrl(release.Page)
             case "source":
                 if (MsgBox(I18n.T("Update.AvailableSource", release.Version), App.Name, "YesNo Iconi") = "Yes")
-                    Run(release.Page)
+                    ActionCatalog.OpenUrl(release.Page)
             case "page":
                 if (MsgBox(I18n.T("Update.Available", release.Version), App.Name, "YesNo Iconi") = "Yes")
-                    Run(release.Page)
+                    ActionCatalog.OpenUrl(release.Page)
             default:
                 if (MsgBox(I18n.T("Update.AvailableVia", release.Version, UpdateChecker.UpgradeCommands[release.Mode]), App.Name, "YesNo Iconi") = "Yes")
-                    Run(release.Page)
+                    ActionCatalog.OpenUrl(release.Page)
         }
     }
 
@@ -198,7 +198,7 @@ class UpdateChecker {
             case "page"   : subtitle := I18n.T("Update.ItemPage", App.Version)
             default       : subtitle := I18n.T("Update.ItemVia", UpdateChecker.UpgradeCommands[release.Mode])
         }
-        actions := [ResultItem(I18n.T("Update.ReleaseNotes"), "", {Icon: "url:", OnRun: (*) => Run(release.Page)})
+        actions := [ResultItem(I18n.T("Update.ReleaseNotes"), "", {Icon: "url:", OnRun: (*) => ActionCatalog.OpenUrl(release.Page)})
                   , ResultItem(I18n.T("Update.Skip"), I18n.T("Update.SkipHint"), {Icon: "res:imageres.dll,-5338", OnRun: (*) => UpdateChecker.SkipVersion(release.Version)})]
         icon := FileExist(App.IconFile) ? App.IconFile : A_ScriptFullPath
         return ResultItem(I18n.T("Update.ItemTitle", release.Version), subtitle
@@ -212,7 +212,7 @@ class UpdateChecker {
             return
         switch release.Mode {
             case "install"       : UpdateChecker.Install(release)
-            case "source", "page": Run(release.Page)
+            case "source", "page": ActionCatalog.OpenUrl(release.Page)
             default:
                 command := UpdateChecker.UpgradeCommands[release.Mode]
                 A_Clipboard := command

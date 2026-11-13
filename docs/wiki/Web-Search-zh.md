@@ -2,7 +2,7 @@
 
 # 网页搜索
 
-输入 "关键字 搜索词" 用对应的网站搜索, 例如 `g autohotkey hotkeys` 用 Google 搜索, `Enter` 在默认浏览器里打开。
+输入 "关键字 搜索词" 用对应的网站搜索, 例如 `g autohotkey hotkeys` 用 Google 搜索, `Enter` 在浏览器里打开 (默认浏览器, 或偏好设置 → 通用 → 浏览器)。
 
 ![网页搜索: g autohotkey v2 hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
 
