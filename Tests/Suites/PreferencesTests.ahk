@@ -906,6 +906,11 @@ class PreferencesTests {
                 return text
             }
             eq("shown without checking", statuses(), "|{query} empty|Use {query}|Unknown {date}|")
+            fits := true                                                    ; the Status column is wide enough for its texts (LVM_GETSTRINGWIDTHW, plus the cell's margins)
+            columnW := SendMessage(0x101D, 4, 0, list.View.Hwnd)            ; LVM_GETCOLUMNWIDTH
+            for text in [I18n.T("Prefs.Status.QueryEmpty"), I18n.T("Prefs.Status.UseQuery"), I18n.T("Prefs.Status.Unknown", "{date}"), I18n.T("Prefs.Status.Missing")]
+                fits := fits && SendMessage(0x1057, 0, StrPtr(text), list.View.Hwnd) + 12 <= columnW
+            eq("status texts fit", fits, true)
             PreferencesWindow.GetPath(PreferencesWindow.Working, "Hotkeys").Push(Map("Key", "^!p", "Action", "custom:pb7k2m4x", "SearchText", "", "WinTitle", ""))
             PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Commands")].OnShow.Call()
             eq("a hotkey gives {query} its text", statuses(), "||Use {query}|Unknown {date}|")

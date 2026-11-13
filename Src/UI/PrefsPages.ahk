@@ -326,7 +326,7 @@ class PrefsPages {
     static BuildCommands() {
         PrefsForm.BeginPage("Prefs.Page.Commands")
         list := PrefsForm.List("CustomCommands", 540
-            , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 190], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]
+            , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 150], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]   ; Status takes the rest (about 125 px): "Unknown {date}"
             , (owner, title, item, original) => PrefsPages.EditCommand(owner, title, item), () => CustomCommandProvider.NewCommand()   ; the edit dialog with "Set Hotkey..." (the Hotkeys list being edited)
             , (item, roots) => CustomCommandProvider.CheckTarget(item, roots), "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)}, ""
