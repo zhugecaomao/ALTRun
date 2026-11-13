@@ -20,6 +20,7 @@
 ;   CustomCommandProvider.Edit(command [, prefill])      opens the edit dialog; command = "" creates a new one
 ;   CustomCommandProvider.EditDialog(owner, title, item, settings)   the edit dialog with its "Triggers" line and "Set Hotkey..."
 ;       (Preferences and Edit use it; the hotkeys set there are saved with the command on OK)
+;   CustomCommandProvider.HotkeyActions(command) / SetHotkey(command, entry)   the actions panel's "Set Hotkey..." / "Change Hotkey ..."
 ;   CustomCommandProvider.RunFromHotkey(id)              a custom hotkey with Action "custom:<Id>" (see App._HotkeyAction)
 ;   F3 / right-click "Edit" in the results calls EditItem(), Ctrl+Del calls DeleteItem()
 ;===============================================================================
@@ -394,6 +395,46 @@ class CustomCommandProvider {
             else
                 draft.Push({Entry: result, Original: ""})
         }
+    }
+
+    ; The actions panel's hotkey items of a command -> [{Title, Entry}]: "Set Hotkey..." (Entry "") without one, otherwise
+    ; "Change Hotkey Ctrl+Alt+N..." for each (another one is added in the edit window, F3)
+    static HotkeyActions(command, hotkeys := "") {
+        actions := []
+        for entry in CustomCommandProvider.HotkeysFor(command, (hotkeys is Array) ? hotkeys : CustomCommandProvider._SavedHotkeys())
+            if (entry.Has("Key") && LTrim(entry["Key"], "~") != "")
+                actions.Push({Title: I18n.T("Action.ChangeHotkey", HotkeyBox.Label(LTrim(entry["Key"], "~"))), Entry: entry})
+        if !actions.Length
+            actions.Push({Title: I18n.T("Action.SetHotkey"), Entry: ""})
+        return actions
+    }
+
+    static _SavedHotkeys() => (AppSettings.Data.Has("Hotkeys") && AppSettings.Hotkeys is Array) ? AppSettings.Hotkeys : []
+
+    ; The hotkey window for a saved command (entry: one of its hotkeys, "" = a new one); on OK saved, and ALTRun restarts when it
+    ; changed, so the hotkey works (as Edit does)
+    static SetHotkey(command, entry := "") {
+        if !(AppSettings.Data.Has("Hotkeys") && AppSettings.Hotkeys is Array)
+            AppSettings.Data["Hotkeys"] := []
+        if !(command.Has("Id") && AppSettings.IsId(command["Id"]))       ; saved commands have one (EnsureIds at loading)
+            AppSettings.EnsureIds(AppSettings.Data)
+        action := "custom:" command["Id"]
+        item := IsObject(entry) ? entry : Map("Key", "", "Action", action, "SearchText", "", "WinTitle", "")
+        result := HotkeyEditor.Edit(ItemEditor.Owner(), item, entry, AppSettings.CustomCommands, "", true)
+        if !IsObject(result)
+            return false
+        draft := []                                                         ; the command's hotkeys with this one changed or added
+        for each in CustomCommandProvider.HotkeysFor(command, AppSettings.Hotkeys)
+            draft.Push({Entry: (IsObject(entry) && ObjPtr(each) = ObjPtr(entry)) ? result : each.Clone(), Original: each})
+        if !IsObject(entry)
+            draft.Push({Entry: result, Original: ""})
+        changed := CustomCommandProvider.MergeHotkeys(AppSettings.Hotkeys, action, draft)
+        if !changed
+            return true
+        if !AppSettings.Save()
+            return false
+        App.Restart("-Reloaded")                                            ; hotkeys are registered at start-up
+        return true
     }
 
     ; The "Triggers" line: "Keyword ping · Selection IP · Hotkey Ctrl+Alt+P"; "Only found by name in the search" without any

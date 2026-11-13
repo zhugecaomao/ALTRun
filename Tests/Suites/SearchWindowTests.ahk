@@ -110,7 +110,29 @@ class SearchWindowTests {
         for action in ResultActions.ListFor(custom)
             titles .= action.Title "|"
         TestRunner.True("EditActions.list has edit", InStr(titles, I18n.T("Action.Edit")) && InStr(titles, I18n.T("Action.Delete")))
+        eq("custom command: set a hotkey (it has none)", InStr(titles, I18n.T("Action.SetHotkey")) > 0, true)
+        titles := ""
+        for action in ResultActions.ListFor(found)
+            titles .= action.Title "|"
+        eq("file: no hotkey item", InStr(titles, I18n.T("Action.SetHotkey")), 0)
         ProviderRegistry.Providers := saved
+
+        ; the hotkey items: "Set Hotkey..." without one, otherwise "Change Hotkey ..." for each (empty keys left out), another command's not
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        command["Id"] := "nt5k8m2q"
+        hotkeys := [Map("Key", "^!n", "Action", "custom:nt5k8m2q", "WinTitle", ""), Map("Key", "!q", "Action", "custom:other001", "WinTitle", "")
+            , Map("Key", "~#n", "Action", "custom:nt5k8m2q", "WinTitle", "ahk_exe x.exe"), Map("Key", "", "Action", "custom:nt5k8m2q", "WinTitle", "")]
+        text(actions) {
+            out := ""
+            for action in actions
+                out .= action.Title (IsObject(action.Entry) ? "=" action.Entry["Key"] : "") "|"
+            return out
+        }
+        eq("change each", text(CustomCommandProvider.HotkeyActions(command, hotkeys)), "Change Hotkey Ctrl+Alt+N...=^!n|Change Hotkey Win+N...=~#n|")
+        eq("none: set", text(CustomCommandProvider.HotkeyActions(command, [hotkeys[2]])), "Set Hotkey...|")
+        eq("no Id yet: set", text(CustomCommandProvider.HotkeyActions(Map("Title", "x"), hotkeys)), "Set Hotkey...|")
+        I18n.Init(savedLang)
     }
 
     ; Matching characters highlighted in result titles

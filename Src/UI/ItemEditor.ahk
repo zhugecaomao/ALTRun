@@ -125,9 +125,10 @@ class ItemEditor {
         g.OnEvent("Escape", (*) => g.Destroy())
         g.OnEvent("Close", (*) => g.Destroy())
 
+        hwnd := g.Hwnd                                                      ; kept: closed while being shown (a timer), g has no window any more
         owner.Opt("+Disabled")
         g.Show()
-        WinWaitClose(g.Hwnd)
+        WinWaitClose("ahk_id " hwnd)
         HotkeyBox.CancelActive()                                            ; the dialog was closed while a hotkey was being recorded
         owner.Opt("-Disabled")
         try WinActivate("ahk_id " owner.Hwnd)
