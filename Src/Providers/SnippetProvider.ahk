@@ -24,6 +24,13 @@ class SnippetProvider {
 
     static Icon => IconCache.Own("Snippet", "res:imageres.dll,-102")
 
+    ; "Paste snippet · preview", after what expands it while typing in any program (";sig, ;signature · Paste snippet · ..."), so the
+    ; hotstrings can be looked up in the search window too: the same abbreviations SnippetExpander registers
+    static Subtitle(snippet, preview, options) {
+        triggers := (options["Enabled"] && options["AutoExpand"]) ? SnippetExpander.Abbreviations(snippet, options["ExpandPrefix"]) : []
+        return (triggers.Length ? TextTools.JoinList(triggers) " · " : "") I18n.T("Snippet.Subtitle", preview)
+    }
+
     static Search(query) {
         options := AppSettings.Feature("Snippets")
         results := []
@@ -47,7 +54,7 @@ class SnippetProvider {
             if (score <= 0)
                 continue
             preview := SnippetProvider._Preview(snippet["Text"], found)
-            item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
+            item := ResultItem((name != "") ? name : preview, SnippetProvider.Subtitle(snippet, preview, options), {
                 Kind: "text", Arg: snippet["Text"], Icon: SnippetProvider.Icon,
                 Uid: SnippetProvider.Uid(snippet), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
                 Exclusive: onlySnippets && query.HasRest,

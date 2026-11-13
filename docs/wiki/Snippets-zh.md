@@ -30,6 +30,8 @@
 ## 自动展开
 在任何程序里输入 `;关键字` (例如 `;sig`), 输入的文字自动删掉并换成片段正文, 和 Alfred 的 Snippet 一样。前缀 `;` 是为了避免平时打字误触发, 可以在 `Features.Snippets.ExpandPrefix` 修改。单个片段不想自动展开时, 在编辑窗口里取消 "自动展开" (`"AutoExpand": 0`), 仍然可以搜索。在 ALTRun 自己的搜索窗口、Windows 的密码输入框和 [不展开的窗口](#不展开的窗口) 里不会展开。
 
+想看哪个触发词展开哪个片段: 在搜索窗口输入 `snip`, 每个片段的第二行开头就是展开它要输入的文字 (`;sig, ;signature · 粘贴片段 · ...`); 偏好设置 → 片段 里也列着。
+
 ![自动展开: 在记事本里输入 ;thx 展开成回复邮件, 光标停在 "Hi" 后面](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-snippets.png)
 
 ## 不展开的窗口
