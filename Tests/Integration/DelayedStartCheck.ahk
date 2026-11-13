@@ -111,12 +111,12 @@ class DelayedStartCheck {
     ; A helper started by the task of a version up to 2026.11.13 ("ALTRun CapsLock Helper") moves it to the new name, starting the same
     ; program as the helper; the old one is deleted. (Deleting a task doesn't end the process it started: probed on Windows CI, run 43443029900)
     static MoveOldTask() {
-        if (AdminHelper.Window() || TaskScheduler.ByName(TaskScheduler.Tasks("\")).Has(AdminHelper.TaskName))   ; not on a computer that uses them
+        if (AdminHelper.Window() || DelayedStartCheck.ByName(TaskScheduler.Tasks("\")).Has(AdminHelper.TaskName))   ; not on a computer that uses them
             return DelayedStartCheck.Check("old task moved: skipped, the helper's task is in use here", true)
         try {
             code := AdminHelper.RegisterXml(AdminHelper.OldTaskName, AdminHelper.TaskXml(EnvGet("SystemRoot") "\System32\notepad.exe", "-CapsLockHelper", A_Temp, TaskScheduler.UserId()))
             AdminHelper.MoveTask()
-            tasks := TaskScheduler.ByName(TaskScheduler.Tasks("\"))
+            tasks := DelayedStartCheck.ByName(TaskScheduler.Tasks("\"))
             DelayedStartCheck.Check("old task moved to the new name", code = 0 && tasks.Has(AdminHelper.TaskName) && !tasks.Has(AdminHelper.OldTaskName)
                 && RegExMatch(tasks[AdminHelper.TaskName].Arguments, " -AdminHelper$") > 0, "create " code ", " DelayedStartCheck.Names(tasks))
         } catch as e
