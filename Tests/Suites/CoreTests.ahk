@@ -1053,7 +1053,7 @@ class CoreTests {
     static SingleInstance() {
         eq := (n, a, e) => TestRunner.Equal("SingleInstance." n, a, e)
         eq("restart (compiled)", App.IsRestart('"C:\ALTRun\ALTRun.exe" /restart -Reloaded'), true)
-        eq("restart (script)", App.IsRestart('"C:\AHK\AutoHotkey64.exe" /restart "C:\ALTRun\ALTRun.ahk" -Preferences 3'), true)
+        eq("restart (script)", App.IsRestart('"C:\AHK\AutoHotkey64.exe" /restart "C:\ALTRun\ALTRun.ahk" -Preferences Appearance'), true)
         eq("restart (no quotes)", App.IsRestart('ALTRun.exe /RESTART'), true)
         eq("double-click", App.IsRestart('"C:\ALTRun\ALTRun.exe"'), false)
         eq("send to", App.IsRestart('"C:\ALTRun\ALTRun.exe" -SendTo "D:\a /restart b"'), false)

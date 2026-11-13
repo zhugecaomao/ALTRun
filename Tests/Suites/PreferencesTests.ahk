@@ -322,7 +322,7 @@ class PreferencesTests {
         eq("page list follows", PreferencesWindow.PageList.GetNext(), PreferencesWindow._page)
         eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
         appearancePage := PreferencesWindow._PageIndex("Prefs.Page.Appearance")
-        PreferencesWindow.Show(appearancePage)                              ; opening by number while already open ("-Preferences 4" handed over)
+        PreferencesWindow.Show(appearancePage)                              ; opening by number while already open
         eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), appearancePage "|" appearancePage)
         gallery := ""                                                       ; the theme list on the Appearance page: exactly 4 thumbnails per row, no wide gap on the right
         for ctrl in PreferencesWindow.Pages[appearancePage].Controls
@@ -343,14 +343,42 @@ class PreferencesTests {
         eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), appearancePage)
         draw := Buffer(6 * A_PtrSize + 40, 0)                               ; NMCUSTOMDRAW: no dotted focus rectangle on the selected row
         NumPut("UInt", 0x1, draw, 3 * A_PtrSize)
-        eq("custom draw asks for each row", PreferencesWindow._OnPageListDraw(draw.Ptr), 0x20)
+        eq("custom draw asks for each row and after painting", PreferencesWindow._OnPageListDraw(draw.Ptr), 0x30)
         NumPut("UInt", 0x10001, draw, 3 * A_PtrSize), NumPut("UInt", 0x11, draw, 6 * A_PtrSize + 16)   ; CDIS_SELECTED | CDIS_FOCUS
         PreferencesWindow._OnPageListDraw(draw.Ptr)
         eq("row drawn without the focus rectangle", NumGet(draw, 6 * A_PtrSize + 16, "UInt"), 0x1)
-        eq("every page fits in the list, no scroll bar", SendMessage(0x1028, 0, 0, PreferencesWindow.PageList) >= PreferencesWindow.PageKeys.Length, true)   ; LVM_GETCOUNTPERPAGE
-        listRect := Buffer(16)                                              ; the only column fills the list width (no column separator left)
+        listRect := Buffer(16)
         DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
-        eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH
+        rowRect := (row) => (rect := Buffer(16, 0), SendMessage(0x100E, row - 1, rect, PreferencesWindow.PageList), [NumGet(rect, 0, "Int"), NumGet(rect, 4, "Int"), NumGet(rect, 8, "Int"), NumGet(rect, 12, "Int")])   ; LVM_GETITEMRECT, LVIR_BOUNDS
+        last := rowRect(PreferencesWindow.PageKeys.Length)
+        style := DllCall("GetWindowLong", "Ptr", PreferencesWindow.PageList.Hwnd, "Int", -16)
+        eq("every page fits in the list, no scroll bar", "bottom " (last[4] <= NumGet(listRect, 12, "Int") ? "fits" : last[4] " > " NumGet(listRect, 12, "Int"))
+            . ", scroll bars " ((style & 0x300000) ? Format("{:#x}", style & 0x300000) : "none"), "bottom fits, scroll bars none")   ; WS_VSCROLL | WS_HSCROLL
+        if (SendMessage(0x108F, 0, 0, PreferencesWindow.PageList) = 4) {   ; LVM_GETVIEW: tiles (Windows; Wine has no tile view and shows a plain list)
+            wrong := ""                                                     ; a gap before each group's first page, none inside a group
+            Loop PreferencesWindow.PageKeys.Length - 1 {
+                row := A_Index                                              ; (A_Index inside the for loop below is the for loop's)
+                gap := rowRect(row + 1)[2] - rowRect(row)[4]
+                starts := false
+                for key in PreferencesWindow.GroupStarts
+                    starts := starts || PreferencesWindow.PageKeys[row + 1] = key
+                if (starts ? gap < 9 : gap > 4)
+                    wrong .= PreferencesWindow.PageKeys[row + 1] " (" gap ") "
+            }
+            eq("gaps only between the groups", wrong, "")
+            first := rowRect(1)
+            width := NumGet(listRect, 8, "Int")                             ; tile view keeps 4 px right of the tiles (as below the last one): a wider tile scrolls
+            eq("rows as wide as the list", (first[1] <= 2 && first[3] >= width - 6) ? "yes" : first[1] "-" first[3] " in " width, "yes")
+            eq("lines in the gaps", PreferencesWindow._gapLines.Length, PreferencesWindow.GroupStarts.Length)
+            PreferencesWindow.PageList.Modify(0, "-Select"), PreferencesWindow.PageList.Modify(PreferencesWindow._PageIndex("Prefs.Page.Snippets"), "Select Focus")
+            ControlSend("{Down}", PreferencesWindow.PageList)               ; ↓ across a gap goes to the next group's first page
+            Sleep(50)
+            eq("down across a gap", PreferencesWindow.PageList.GetNext(), PreferencesWindow._PageIndex("Prefs.Page.Commands"))
+        } else {
+            listRect := Buffer(16)                                          ; the only column fills the list width (no column separator left)
+            DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
+            eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH
+        }
         PreferencesWindow.PageList.Modify(5, "Select Focus")                ; the user selected a page in the list (click or ↑ ↓)
         Sleep(50)
         eq("selecting a row shows the page", PreferencesWindow._page, 5)
@@ -396,14 +424,37 @@ class PreferencesTests {
     ; Preferences: after Apply it reopens with "-Preferences page x y"; Help opens each page's Wiki page
     static PreferencesButtons() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesButtons." n, a, e)
-        args := PreferencesWindow.ParseArgs(["-Preferences", "5", "120", "-8"])
-        eq("page", args.Page, 5)
+        args := PreferencesWindow.ParseArgs(["-Preferences", "Hotkeys", "120", "-8"])
+        eq("page", args.Page, "Prefs.Page.Hotkeys")
         eq("x", args.X, 120)
         eq("y (negative, second monitor)", args.Y, -8)
-        args := PreferencesWindow.ParseArgs(["-Preferences", "3"])
-        eq("page only", args.Page "|" args.X "|" args.Y, "3||")
+        args := PreferencesWindow.ParseArgs(["-Preferences", "qspanel"])
+        eq("page only (any case)", args.Page "|" args.X "|" args.Y, "Prefs.Page.QSPanel||")
+        eq("page by number (current order)", PreferencesWindow.ParseArgs(["-Preferences", "3"]).Page, PreferencesWindow.PageKeys[3])
+        eq("unknown page", PreferencesWindow.ParseArgs(["-Preferences", "Nope"]).Page, 1)
+        eq("number out of range", PreferencesWindow.ParseArgs(["-Preferences", "99"]).Page, 1)
         args := PreferencesWindow.ParseArgs(["-Preferences"])
         eq("default page", args.Page, 1)
+        eq("page name", PreferencesWindow.PageName("Prefs.Page.DelayedStart"), "DelayedStart")
+        layout := PreferencesWindow.PageLayout(591, 23, [6, 13, 17, 20, 22])   ; the page list at 96 DPI: 23 rows, 5 gaps
+        eq("layout: row height", layout.RowH, 23)
+        eq("layout: gap (the rest of the height spread over the gaps)", layout.Gap, 12)
+        eq("layout: tops", layout.Tops[5] "|" layout.Tops[6] "|" layout.Tops[7] "|" layout.Tops[23], "92|127|150|566")
+        eq("layout: lines in the middle of the gaps", layout.Lines[1] "|" layout.Lines.Length, "121|5")
+        eq("layout: fits", layout.Tops[23] + layout.RowH <= 591, true)
+        layout := PreferencesWindow.PageLayout(2000, 23, [6])
+        eq("layout: tall list, rows at most 28 and the gap at most 12", layout.RowH "|" layout.Gap, "28|12")
+        layout := PreferencesWindow.PageLayout(740, 23, [6, 13, 17, 20, 22], 1.25)
+        eq("layout: 125%", layout.RowH "|" layout.Gap "|" (layout.Tops[23] + layout.RowH <= 740), "29|14|1")
+        names := ""                                                         ; every page opens by its name, and every page has a builder
+        for key in PreferencesWindow.PageKeys
+            names .= (PreferencesWindow.ParseArgs(["-Preferences", PreferencesWindow.PageName(key)]).Page = key && PreferencesWindow.PageBuilders.Has(key)) ? "" : key " "
+        eq("each page by name, with a builder", names, "")
+        eq("builders: one per page", PreferencesWindow.PageBuilders.Count, PreferencesWindow.PageKeys.Length)
+        missing := ""
+        for key in PreferencesWindow.GroupStarts
+            missing .= PreferencesWindow._PageIndex(key) > 1 && PreferencesWindow.PageKeys[PreferencesWindow._PageIndex(key)] = key ? "" : key " "
+        eq("group starts are pages", missing, "")
         eq("wiki general", PreferencesWindow.WikiPage("Prefs.Page.General"), "Configuration")
         eq("wiki window", PreferencesWindow.WikiPage("Prefs.Page.Window"), "Usage")
         eq("wiki keyboard", PreferencesWindow.WikiPage("Prefs.Page.Keyboard"), "Hotkeys")
@@ -768,7 +819,7 @@ class PreferencesTests {
         PreferencesWindow.Show("Prefs.Page.Selection", -3000, -3000)
         try {
             index := PreferencesWindow._PageIndex("Prefs.Page.Selection")
-            eq("page after Commands", index, PreferencesWindow._PageIndex("Prefs.Page.Commands") + 1)
+            eq("page in the commands and triggers group (Commands, Scripts, Selection)", index, PreferencesWindow._PageIndex("Prefs.Page.Commands") + 2)
             ui := PrefsPages._selection
             eq("types listed", ui.List.View.GetCount(), 2)
             eq("kind shown", ui.List.View.GetText(2, 2), "File (extensions)")

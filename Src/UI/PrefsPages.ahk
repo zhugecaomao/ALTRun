@@ -1,7 +1,7 @@
 ;===============================================================================
 ; PrefsPages.ahk - the pages of the Preferences window (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; One BuildXxx method per page, in the order of PreferencesWindow.PageKeys, built with the helpers in PrefsForm,
+; One BuildXxx method per page (PreferencesWindow.PageBuilders: page key -> method; the order of the list is PreferencesWindow.PageKeys), built with the helpers in PrefsForm,
 ; plus the actions of their buttons (import / export snippets, change the data folder, usage statistics...).
 ; PreferencesWindow builds a page the first time it is shown (see PreferencesWindow._BuildPage).
 ;===============================================================================

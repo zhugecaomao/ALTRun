@@ -75,41 +75,41 @@ class Shots {
             ["demo-snippets",    "Light", "", () => Shots.DemoSnippets()],
             ["demo-browse",      "Light", "", () => Shots.DemoBrowse()],
             ["demo-calculator",  "Light", "", () => Shots.DemoCalculator(), () => Shots.PrepareDemo()],
-            ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
-            ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
-            ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
-            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query}, the type IP and a hotkey)
-            ["command-editor-hotkeys", "Light", "-Preferences 9", () => Shots.SetHotkeyMenu(), () => Shots.PingForIp()],   ; "Set Hotkey..." of a command with a hotkey: the menu
-            ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
-            ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
-            ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],
-            ["prefs-scripts",    "Light", "-Preferences 15", () => Shots.Preferences()],
-            ["prefs-filesearch", "Light", "-Preferences 7", () => Shots.Preferences(), () => Shots.FilesInNormalResults()],   ; Wiki: file search (files in normal results)
-            ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: file search
-            ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
-            ["prefs-hotkeys",    "Light", "-Preferences 16", () => Shots.Preferences()],     ; Wiki: custom hotkeys
-            ["hotkey-editor",    "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
-            ["hotkey-editor-command", "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 1), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (running a custom command)
-            ["hotkey-editor-clash", "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 5), () => Shots.CommandHotkey(true, true)],   ; a hotkey with the keys of another one: the red line below the summary
-            ["command-picker",   "Light", "-Preferences 16", () => Shots.CommandPicker(), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (Choose Command)
-            ["prefs-hotkeys-commands", "Light", "-Preferences 16", () => Shots.Preferences(), () => Shots.CommandHotkey(true)],   ; the list with a custom command's hotkey and one whose command was deleted (red)
-            ["prefs-quickswitch", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
-            ["prefs-dialogpanel", "Light", "-Preferences 18", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
-            ["prefs-datestamp",  "Light", "-Preferences 19", () => Shots.Preferences()],     ; Wiki: date stamp
-            ["prefs-window",     "Light", "-Preferences 2", () => Shots.Preferences()],      ; Wiki: search and shortcuts
-            ["prefs-features",   "Light", "-Preferences 5", () => Shots.Preferences()],      ; Wiki: settings reference (features)
-            ["prefs-applications", "Light", "-Preferences 6", () => Shots.Preferences()],    ; Wiki: automatic app index updates
-            ["prefs-clipboard",  "Light", "-Preferences 12", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
-            ["prefs-websearch",  "Light", "-Preferences 13", () => Shots.Preferences()],     ; Wiki: web search
-            ["prefs-delayedstart", "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
-            ["prefs-startupapps", "Light", "-Preferences 20", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
-            ["prefs-sync",       "Light", "-Preferences 21", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
-            ["sync-editor",      "Light", "-Preferences 21", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
-            ["sync-preview",     "Light", "-Preferences 21", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
-            ["prefs-usage",      "Light", "-Preferences 22", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
-            ["prefs-advanced",   "Light", "-Preferences 23", () => Shots.Preferences()],     ; Wiki: data files
-            ["data-location",    "Light", "-Preferences 23", () => Shots.DataLocation(), () => Shots.DemoOneDrive()],   ; Wiki: FAQ, several PCs (Change Location...)
-            ["data-location-list", "Light", "-Preferences 23", () => Shots.DataLocation(true), () => Shots.DemoOneDrive()],   ; the same with its list of places open
+            ["prefs-general",    "Light", "-Preferences General", () => Shots.Preferences()],
+            ["prefs-appearance", "Light", "-Preferences Appearance", () => Shots.Preferences()],
+            ["prefs-commands",   "Light", "-Preferences Commands", () => Shots.Preferences()],
+            ["command-editor",   "Light", "-Preferences Commands", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query}, the type IP and a hotkey)
+            ["command-editor-hotkeys", "Light", "-Preferences Commands", () => Shots.SetHotkeyMenu(), () => Shots.PingForIp()],   ; "Set Hotkey..." of a command with a hotkey: the menu
+            ["prefs-selection",  "Light", "-Preferences Selection", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
+            ["prefs-snippets",   "Light", "-Preferences Snippets", () => Shots.Preferences()],
+            ["prefs-calculator", "Light", "-Preferences Calculator", () => Shots.Preferences()],
+            ["prefs-scripts",    "Light", "-Preferences Scripts", () => Shots.Preferences()],
+            ["prefs-filesearch", "Light", "-Preferences FileSearch", () => Shots.Preferences(), () => Shots.FilesInNormalResults()],   ; Wiki: file search (files in normal results)
+            ["prefs-searchsources", "Light", "-Preferences FileIndex", () => Shots.Preferences()],   ; Wiki: file search
+            ["prefs-keyboard",   "Light", "-Preferences Keyboard", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
+            ["prefs-hotkeys",    "Light", "-Preferences Hotkeys", () => Shots.Preferences()],     ; Wiki: custom hotkeys
+            ["hotkey-editor",    "Light", "-Preferences Hotkeys", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
+            ["hotkey-editor-command", "Light", "-Preferences Hotkeys", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 1), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (running a custom command)
+            ["hotkey-editor-clash", "Light", "-Preferences Hotkeys", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 5), () => Shots.CommandHotkey(true, true)],   ; a hotkey with the keys of another one: the red line below the summary
+            ["command-picker",   "Light", "-Preferences Hotkeys", () => Shots.CommandPicker(), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (Choose Command)
+            ["prefs-hotkeys-commands", "Light", "-Preferences Hotkeys", () => Shots.Preferences(), () => Shots.CommandHotkey(true)],   ; the list with a custom command's hotkey and one whose command was deleted (red)
+            ["prefs-quickswitch", "Light", "-Preferences QuickSwitch", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
+            ["prefs-dialogpanel", "Light", "-Preferences QSPanel", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
+            ["prefs-datestamp",  "Light", "-Preferences DateStamp", () => Shots.Preferences()],     ; Wiki: date stamp
+            ["prefs-window",     "Light", "-Preferences Window", () => Shots.Preferences()],      ; Wiki: search and shortcuts
+            ["prefs-features",   "Light", "-Preferences Features", () => Shots.Preferences()],      ; Wiki: settings reference (features)
+            ["prefs-applications", "Light", "-Preferences Applications", () => Shots.Preferences()],    ; Wiki: automatic app index updates
+            ["prefs-clipboard",  "Light", "-Preferences Clipboard", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
+            ["prefs-websearch",  "Light", "-Preferences WebSearch", () => Shots.Preferences()],     ; Wiki: web search
+            ["prefs-delayedstart", "Light", "-Preferences DelayedStart", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
+            ["prefs-startupapps", "Light", "-Preferences DelayedStart", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
+            ["prefs-sync",       "Light", "-Preferences Sync", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
+            ["sync-editor",      "Light", "-Preferences Sync", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
+            ["sync-preview",     "Light", "-Preferences Sync", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
+            ["prefs-usage",      "Light", "-Preferences Usage", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
+            ["prefs-advanced",   "Light", "-Preferences Advanced", () => Shots.Preferences()],     ; Wiki: data files
+            ["data-location",    "Light", "-Preferences Advanced", () => Shots.DataLocation(), () => Shots.DemoOneDrive()],   ; Wiki: FAQ, several PCs (Change Location...)
+            ["data-location-list", "Light", "-Preferences Advanced", () => Shots.DataLocation(true), () => Shots.DemoOneDrive()],   ; the same with its list of places open
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
