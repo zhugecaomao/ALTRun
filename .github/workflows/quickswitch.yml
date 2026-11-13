@@ -13,6 +13,8 @@ on:
       - Src/Extensions/FileDialogs.ahk
       - Src/Extensions/FileManagers.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
+      - Src/Extensions/AdminHelper.ahk
+      - Tests/Integration/AdminDialogCheck.ahk
       - .github/workflows/quickswitch.yml
       - .github/actions/setup-ahk/**
   push:
@@ -24,6 +26,8 @@ on:
       - Src/Extensions/FileDialogs.ahk
       - Src/Extensions/FileManagers.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
+      - Src/Extensions/AdminHelper.ahk
+      - Tests/Integration/AdminDialogCheck.ahk
       - .github/workflows/quickswitch.yml
       - .github/actions/setup-ahk/**
   schedule:
@@ -68,3 +72,22 @@ jobs:
           if (-not $proc.WaitForExit(600000)) { $proc.Kill(); Get-Content check.log, check.err -ErrorAction SilentlyContinue; throw "The check didn't finish in 10 minutes" }
           Get-Content check.log, check.err -ErrorAction SilentlyContinue
           if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) round(s) failed" }
+
+      - name: A dialog of a program running as administrator                # the ALTRun side as a standard user (medium integrity), the dialog and the helper as administrator
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          # A copy the test user can read, outside the runner's work folder
+          $root = "C:\Users\Public\altrun-admin-check"
+          New-Item -ItemType Directory $root -Force | Out-Null
+          Copy-Item ALTRun.ahk, Lib, Src, Resources, Tests, tools -Destination $root -Recurse -Force
+          $name = "altrunqs"
+          $password = "Aa1!" + [guid]::NewGuid().ToString("N").Substring(0, 10)   # a throwaway account on a throwaway runner; at most 14 characters
+          net user $name $password /add
+          if ($LASTEXITCODE -ne 0) { throw "could not create the test user" }
+          $proc = Start-Process "$root\tools\ahk\AutoHotkey64.exe" -WorkingDirectory "$root\Tests" `
+                  -ArgumentList '/ErrorStdOut', 'RunTests.ahk', 'AdminDialogCheck', 'admin', "`"$root`"", "`"$root\Tests`"", $name, $password `
+                  -PassThru -NoNewWindow -RedirectStandardOutput admin-check.log -RedirectStandardError admin-check.err
+          if (-not $proc.WaitForExit(300000)) { $proc.Kill(); Get-Content admin-check.log, admin-check.err -ErrorAction SilentlyContinue; throw "The check didn't finish in 5 minutes" }
+          Get-Content admin-check.log, admin-check.err -ErrorAction SilentlyContinue
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }

@@ -110,6 +110,7 @@
 #Include %A_ScriptDir%\FakeEverything.ahk
 #Include %A_ScriptDir%\Bench\FileIndexBench.ahk
 #Include %A_ScriptDir%\Integration\DelayedStartCheck.ahk
+#Include %A_ScriptDir%\Integration\AdminDialogCheck.ahk
 #Include %A_ScriptDir%\Suites\CoreTests.ahk
 #Include %A_ScriptDir%\Suites\EverythingTests.ahk
 #Include %A_ScriptDir%\Suites\ProviderTests.ahk
@@ -135,6 +136,8 @@ if (A_Args.Length && A_Args[1] = "FileIndexBench")                      ; RunTes
     FileIndexBench.Run(), ExitApp(0)
 if (A_Args.Length && A_Args[1] = "DelayedStartCheck")                  ; RunTests.ahk DelayedStartCheck: delayed start with the real Task Scheduler (see the file)
     ExitApp(DelayedStartCheck.Run())
+if (A_Args.Length && A_Args[1] = "AdminDialogCheck")                   ; RunTests.ahk AdminDialogCheck: Quick Switch in an administrator dialog through the helper (see the file)
+    ExitApp(AdminDialogCheck.Run(A_Args))
 TestRunner.Run()
 
 class TestRunner {

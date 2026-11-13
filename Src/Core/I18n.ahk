@@ -783,11 +783,11 @@ class I18n {
         s["Prefs.CapsLock.Mode"]       := "Press to switch Chinese / English mode"
         s["Prefs.CapsLockNotify"]      := "Show a notice when caps lock turns on or off"
         s["Prefs.CapsLockElevated"]    := "Also in windows running as administrator"
-        s["Prefs.CapsLockElevated.Desc"] := "Runs a small helper with administrator rights that only handles Caps Lock (confirm once when turning it on). ALTRun itself keeps normal rights."
+        s["Prefs.CapsLockElevated.Desc"] := "Runs a small helper with administrator rights (confirm once when turning it on; shared with Quick Switch). ALTRun itself keeps normal rights."
         s["Prefs.CapsLockElevated.NeedsMode"] := "Choose how Caps Lock switches above first."
         s["Prefs.CapsLockElevatedWritable"] := "Programs without administrator rights can change the files in ALTRun's folder:`n{1}`n`nOne of them could replace ALTRun there and then start this helper, which runs with administrator rights without asking. Move ALTRun to a folder only administrators can change (for example C:\Program Files) first.`n`nTurn it on anyway?"
-        s["Prefs.CapsLockElevatedFailed"] := "Caps Lock for administrator windows could not be set up (the confirmation may have been cancelled). The option stays off."
-        s["Caps.HelperFailed"]         := "Caps Lock in administrator windows could not start. Turn the option off and on again in Preferences → Keyboard."
+        s["Prefs.AdminHelperFailed"]   := "The helper for windows running as administrator could not be set up (the confirmation may have been cancelled). The option stays off."
+        s["AdminHelper.Failed"]        := "The helper for windows running as administrator could not start. Turn its option off and on again in Preferences (Keyboard or Quick Switch)."
         s["Prefs.SelectionHotkey"]     := "Selection hotkey"
         s["Prefs.SelectionHotkey.Desc"] := 'Select text, files or a link in any program and press this to show its actions: search the web, change case, save as a snippet; for files, copy the path or open a terminal there. <a href="{1}">All actions</a>'
         s["Prefs.HotkeySides"]         := "Tell left and right Ctrl / Alt / Shift / Win apart"
@@ -1299,6 +1299,8 @@ class I18n {
         s["Prefs.Group.DialogWindows"]  := "Works in"
         s["Prefs.QSStandard"]           := "Standard Open / Save dialogs (ahk_class #32770)"
         s["Prefs.QSBrowse"]             := "Browse for Folder dialogs (folder tree only)"
+        s["Prefs.QSAdmin"]              := "Dialogs of programs running as administrator"
+        s["Prefs.QSAdmin.Desc"]         := "A small helper with administrator rights does the jump (confirm once; shared with Caps Lock). ALTRun itself keeps normal rights."
         s["Prefs.QSOtherDialogs"]       := "Other dialogs"
         s["Prefs.QSOtherDialogs.Desc"]  := "Open / Save dialogs that programs draw themselves, e.g. WPS Office."
         s["Prefs.QSOtherDialogs.Help"]  := "Open / Save dialogs that programs draw themselves (Qt, GTK, Java...), one per line, for example ahk_class Qt5QWindowIcon for WPS Office. Write ahk_class ClassName, ahk_exe program.exe or part of the title.`n`nALTRun types the folder path into the file name box and presses Enter, which works in most such dialogs. Standard Windows dialogs and Browse for Folder have their own checkboxes on the page."
@@ -1455,7 +1457,7 @@ class I18n {
         s["QuickSwitch.EditFavorites"] := "Edit Favorites..."
         s["QuickSwitch.MoreFolders"] := "{1} more folders"
         s["QuickSwitch.NoDialogFolder"] := "Can't read the dialog's current folder."
-        s["QuickSwitch.ElevatedDialog"] := "This dialog's program runs as administrator. Run ALTRun as administrator to jump here."
+        s["QuickSwitch.ElevatedDialog"] := "This dialog's program runs as administrator. To jump here, turn on Preferences → Quick Switch → Dialogs of programs running as administrator."
         s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus or File Explorer window is open."
         return s
     }

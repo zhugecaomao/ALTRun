@@ -4,7 +4,8 @@
 ; Windows doesn't let programs with normal rights control windows with administrator rights (UIPI): with an administrator window in front, ALTRun's keyboard hook gets no keys,
 ; and switch messages sent to it are blocked (#158). Running all of ALTRun as administrator would make every program it opens elevated too
 ; (mapped network drives invisible, drag and drop refused). So a separate small helper runs as administrator and does only what needs those rights:
-;   - when an option that needs it is on (Keyboard.CapsLockElevated, Preferences → Keyboard), a scheduled task with "highest privileges" is created
+;   - when an option that needs it is on (Keyboard.CapsLockElevated, Preferences → Keyboard; Extensions.QuickSwitch.AdminDialogs, Preferences → Quick Switch),
+;     a scheduled task with "highest privileges" is created
 ;     (UAC is confirmed once, only then); ALTRun runs this task at every start-up (schtasks /run, no UAC prompt) to start the helper, and makes it exit on exit.
 ;     One task and one helper for every such option; the task is deleted when the last of them is turned off
 ;   - the helper is ALTRun itself started with -AdminHelper: it creates no windows, writes no settings and runs no programs. Its main window's
@@ -12,7 +13,12 @@
 ;   - Caps Lock: ALTRun and the helper both register the CapsLock hotkey (CapsLockSwitch): keyboard hooks are called in the order they were installed,
 ;     and the first to get the key catches it so the other doesn't, so a normal window switches only once; in an administrator window only the helper gets it.
 ;     ALTRun shows the Caps Lock on / off notice (the helper sends "-CapsLockState 1/0" to it; an elevated program may send messages to a normal one freely)
-;   - the helper only accepts "-Exit" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
+;   - Quick Switch: ALTRun can't jump a dialog of a program running as administrator (the messages and keys are blocked, its process can't be
+;     opened), so it hands "-Jump <dialog> <folder>" to the helper (Jump). Any program with normal rights can send the helper that message,
+;     so the helper checks it itself before doing anything (CheckJump): the window is the foreground window, a #32770 open / save or Browse for
+;     Folder dialog (by its controls), of a program running as administrator, and the folder is a full path to a folder that exists. It then only
+;     jumps the dialog there (the folder with a trailing backslash, so it can't be taken for a file to open or save) and presses nothing else
+;   - the helper only accepts "-Exit" and "-Jump" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
 ;   - older versions named the task "ALTRun CapsLock Helper" and started the helper with -AdminHelper. A helper started that way moves the task to
 ;     the new name itself (it has the rights, so no UAC prompt): it registers TaskName and deletes OldTaskName. Until then ALTRun runs the old one
 ;===============================================================================
@@ -37,16 +43,20 @@ class AdminHelper {
         if AdminHelper.Window(A_ScriptHwnd)                                 ; one is already running
             ExitApp()
         DllCall("SetWindowTextW", "Ptr", A_ScriptHwnd, "Str", AdminHelper.Title)
+        Persistent(true)                                                    ; keeps running without a hotkey too (only dialog jumps)
         if (arg = AdminHelper.OldArg)                                       ; started by the task of an older version: move it to the new name
             SetTimer(() => AdminHelper.MoveTask(), -2000)                    ; after the hotkey is set up, which matters more
         DllCall("ChangeWindowMessageFilterEx", "Ptr", A_ScriptHwnd, "UInt", 0x4A, "UInt", 1, "Ptr", 0)   ; WM_COPYDATA, MSGFLT_ALLOW
         OnMessage(0x4A, (p*) => AdminHelper._OnCopyData(p*))
         mode := AdminHelper.ModeFromSettings(AppSettings.File)
-        if !CapsLockSwitch.IsMode(mode)
+        AdminHelper._dialogs := AdminHelper.DialogsFromSettings(AppSettings.File)
+        if !(CapsLockSwitch.IsMode(mode) || AdminHelper._dialogs)
             ExitApp()
-        CapsLockSwitch.Mode := mode
-        CapsLockSwitch.Notify := (on) => AdminHelper._TellMain("-CapsLockState", on ? "1" : "0")
-        CapsLockSwitch.Register((key, fn) => Hotkey(key, fn))
+        if CapsLockSwitch.IsMode(mode) {
+            CapsLockSwitch.Mode := mode
+            CapsLockSwitch.Notify := (on) => AdminHelper._TellMain("-CapsLockState", on ? "1" : "0")
+            CapsLockSwitch.Register((key, fn) => Hotkey(key, fn))
+        }
         WinTimer.Set(() => App._RunningInstance() || ExitApp(), 3000)          ; ALTRun is gone (ended, crashed): exit too
     }
 
@@ -62,12 +72,100 @@ class AdminHelper {
         return ""
     }
 
+    ; Extensions.QuickSwitch: the jump for dialogs of administrator programs is on (and Quick Switch itself); read only, like ModeFromSettings
+    static DialogsFromSettings(file) {
+        try {
+            options := JSON.Parse(FileRead(file, "UTF-8"))["Extensions"]["QuickSwitch"]
+            return AdminHelper.DialogsWanted(options)
+        }
+        return false
+    }
+
+    static _dialogs := false
+
+    ; -Exit, or -Jump <dialog> <folder> (see CheckJump; the reply is its code). Read within the length the sender gave, at most 1100 characters
     static _OnCopyData(wParam, lParam, msg, hwnd) {
         if (NumGet(lParam, 0, "UPtr") != App.CopyDataId)
             return
-        if (Trim(Win.CopyDataText(lParam, 64), "`n") = "-Exit")
+        lines := StrSplit(Trim(Win.CopyDataText(lParam, 1100), "`n"), "`n")
+        if (lines[1] = "-Exit")
             SetTimer(() => ExitApp(), -1)
+        else if (lines[1] = "-Jump")
+            return AdminHelper._JumpRequest(lines)
         return 1
+    }
+
+    ; Checked here, in the message, so ALTRun hears why it was refused; the jump itself runs right after, outside the message
+    static _JumpRequest(lines) {
+        if !AdminHelper._dialogs
+            return AdminHelper.Refused["option off"]
+        if (lines.Length != 3 || !RegExMatch(lines[2], "^\d{1,20}$"))
+            return AdminHelper.Refused["bad request"]
+        dialog := Integer(lines[2]), folder := lines[3]
+        code := AdminHelper.CheckJump(folder, AdminHelper.JumpFacts(dialog, folder))
+        if (code = 1)
+            SetTimer(() => AdminHelper._Jump(dialog, folder), -1)
+        return code
+    }
+
+    static _Jump(dialog, folder) {
+        folder := RTrim(folder, "\") "\"
+        ok := FileDialogs.Jump(folder, dialog)
+        AdminHelper._TellMain("-AdminHelperNote", "jump to [" folder "] " (ok = false ? "failed" : "done"))
+    }
+
+    ; Reply codes of -Jump: 1 = jumping; the others say why not (ALTRun logs the name)
+    static Refused := Map("not in front", 2, "not a dialog", 3, "not elevated", 4, "not a folder path", 5, "folder not found", 6, "option off", 7, "bad request", 8)
+
+    static ReplyText(code) {
+        if (code = 1)
+            return "jumping"
+        for name, value in AdminHelper.Refused
+            if (value = code)
+                return "refused: " name
+        return "no answer"
+    }
+
+    ; What the helper sees of the window and the folder (facts: see CheckJump). Nothing more is read once one of them fails
+    static JumpFacts(dialog, folder) {
+        facts := {Front: DllCall("GetForegroundWindow", "Ptr") = dialog, Class: "", Kind: "", Elevated: false, Exists: false}
+        if !facts.Front
+            return facts
+        target := "ahk_id " dialog, controls := []
+        try facts.Class := WinGetClass(target)
+        try controls := WinGetControls(target)
+        if FileDialogs.LooksLikeBrowseDialog(facts.Class, controls, FileDialogs._TreeId(controls, target))
+            facts.Kind := "browse"
+        else if (facts.Class = "#32770" && controls.Length && FileDialogs.LooksLikeFileDialog(facts.Class, controls))
+            facts.Kind := "file"
+        try facts.Elevated := Win.IsElevated(WinGetPID(target))
+        if (facts.Kind != "" && facts.Elevated && AdminHelper.IsFolderPath(folder))
+            facts.Exists := DirExist(folder) != ""                          ; seen as administrator: no mapped network drives (the program wouldn't see them either)
+        return facts
+    }
+
+    ; 1 if the helper may jump the dialog to the folder, otherwise a code of Refused. A program with normal rights may have sent the request,
+    ; so it only goes through for the dialog in front, a system Open / Save or Browse for Folder dialog, of a program running as administrator
+    ; (the case ALTRun can't handle itself), and for a folder that exists
+    static CheckJump(folder, facts) {
+        if !AdminHelper.IsFolderPath(folder)
+            return AdminHelper.Refused["not a folder path"]
+        if !facts.Front
+            return AdminHelper.Refused["not in front"]
+        if (facts.Class != "#32770" || facts.Kind = "")
+            return AdminHelper.Refused["not a dialog"]
+        if !facts.Elevated
+            return AdminHelper.Refused["not elevated"]
+        if !facts.Exists
+            return AdminHelper.Refused["folder not found"]
+        return 1
+    }
+
+    ; A full path: a drive (C:\...) or a network share (\\server\share\...); no wildcards, quotes, <>|, control characters or a second colon
+    ; (a stream), nothing a dialog would take as a filter or a command
+    static IsFolderPath(folder) {
+        return StrLen(folder) <= 1024 && RegExMatch(folder, "^(?:[A-Za-z]:\\|\\\\[^\\/]+\\[^\\/]+)") > 0
+            && !RegExMatch(folder, '[\x00-\x1F*?"<>|]') && !InStr(SubStr(folder, 3), ":")
     }
 
     ; To ALTRun: the Caps Lock on / off notice for it to show (-CapsLockState), a line for its log (-AdminHelperNote; the helper writes no files)
@@ -79,28 +177,68 @@ class AdminHelper {
     ;---------------------------------------------------------------------------
     ; ALTRun's side (normal rights)
     ;---------------------------------------------------------------------------
-    ; With the option on, CapsLock set to switch the input language and ALTRun itself not elevated, run the scheduled task in the background to start the helper
-    static Wanted(keyboard) {
+    ; The helper has something to do: Caps Lock in administrator windows (the option on, CapsLock set to switch the input language), or
+    ; jumps in dialogs of administrator programs (the option on, Quick Switch on)
+    static Wanted(keyboard, options := Map()) => AdminHelper.CapsLockWanted(keyboard) || AdminHelper.DialogsWanted(options)
+
+    static CapsLockWanted(keyboard) {
         return keyboard.Has("CapsLockElevated") && keyboard["CapsLockElevated"] && keyboard.Has("CapsLock")
             && CapsLockSwitch.IsMode(keyboard["CapsLock"])
     }
 
+    static DialogsWanted(options) {
+        return options is Map && options.Has("AdminDialogs") && options["AdminDialogs"] && options.Has("Enabled") && options["Enabled"]
+    }
+
+    ; The scheduled task is kept while one of the options is on, even with its feature off for now (no UAC prompt each time it is turned back on)
+    static TaskWanted(keyboard, options) {
+        return AdminHelper.CapsLockWanted(keyboard) || (options is Map && options.Has("AdminDialogs") && options["AdminDialogs"])
+    }
+
+    ; With ALTRun itself not elevated, run the scheduled task in the background to start the helper
     static Start() {
-        if (A_IsAdmin || !AdminHelper.Wanted(AppSettings.Keyboard) || AdminHelper.Window())
+        if (A_IsAdmin || !AdminHelper.Wanted(AppSettings.Keyboard, AppSettings.Extension("QuickSwitch")) || AdminHelper.Window())
             return
         SetTimer(() => AdminHelper._RunTask(), -500)                        ; don't slow down start-up
     }
 
-    ; The task under its new name; the old one if that isn't there yet (the helper it starts moves it, see MoveTask)
+    ; The task under its new name; the old one if that isn't there yet (the helper it starts moves it, see MoveTask). true = started
     static _RunTask() {
         for name in [AdminHelper.TaskName, AdminHelper.OldTaskName] {
             code := -1
             try code := RunWait('schtasks.exe /run /tn "' name '"', , "Hide")
             Logger.Debug("AdminHelper: schtasks /run " name " -> " code)
             if (code = 0)
-                return
+                return true
         }
-        App.Toast(I18n.T("Caps.HelperFailed"), 8000)
+        App.Toast(I18n.T("AdminHelper.Failed"), 8000)
+        return false
+    }
+
+    ; ALTRun's side of a jump in a dialog of a program running as administrator (FileDialogs.SetDialogPath): the helper does it. With the
+    ; option off, a hint says where to turn it on (once per dialog). A helper that isn't running (ended, or never started) is started first.
+    ; If the helper finds the program isn't elevated after all (ALTRun was only refused access to it), ALTRun jumps itself
+    static Jump(folder, dialog) {
+        if !AdminHelper.DialogsWanted(QuickSwitch.Options) {
+            Logger.Debug("QuickSwitch: the dialog's program runs as administrator, and jumping there is off")
+            return FileDialogs.ElevatedHint(dialog)
+        }
+        if !(helper := AdminHelper.Window()) {
+            if !AdminHelper._RunTask()
+                return false
+            deadline := A_TickCount + 3000
+            while (!(helper := AdminHelper.Window()) && A_TickCount < deadline)
+                Sleep(100)
+            if !helper
+                return (Logger.Error("QuickSwitch: the helper for administrator windows didn't start"), false)
+        }
+        try WinWaitActive("ahk_id " dialog, , 0.5)                         ; the helper only jumps the dialog in front
+        reply := 0
+        App.SendArgs(helper, ["-Jump", dialog, folder], &reply)
+        Logger.Debug("QuickSwitch: the jump to [" folder "] is handed to the helper for administrator windows - " AdminHelper.ReplyText(reply))
+        if (reply = AdminHelper.Refused["not elevated"])
+            return FileDialogs.Jump(folder, dialog)
+        return reply = 1
     }
 
     ; When ALTRun exits / reloads, the helper exits too (restarted with the new settings after reloading)
@@ -208,7 +346,7 @@ class AdminHelper {
         esc(s) => StrReplace(StrReplace(StrReplace(StrReplace(s, "&", "&amp;"), "<", "&lt;"), ">", "&gt;"), '"', "&quot;")
         return '<?xml version="1.0" encoding="UTF-16"?>`n'
             . '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">`n'
-            . '  <RegistrationInfo><Description>ALTRun: a small helper for windows running as administrator (Caps Lock switching)</Description></RegistrationInfo>`n'
+            . '  <RegistrationInfo><Description>ALTRun: a small helper for windows running as administrator (Caps Lock switching, folder jumps in dialogs)</Description></RegistrationInfo>`n'
             . '  <Principals><Principal id="Author"><UserId>' esc(userId) '</UserId><LogonType>InteractiveToken</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals>`n'
             . '  <Settings>`n'
             . '    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>`n'

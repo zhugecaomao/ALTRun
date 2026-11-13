@@ -23,7 +23,13 @@ Enable **Auto switch** in Preferences → Quick Switch to jump automatically whe
 
 ## Browse for Folder dialogs
 
-Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel and `Ctrl+G` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). Like other dialogs, it doesn't work in programs running as administrator (a jump there shows a hint; run ALTRun as administrator to use it).
+Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel and `Ctrl+G` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). In programs running as administrator, see below.
+
+## Programs running as administrator
+
+Windows doesn't let programs with normal rights control windows running as administrator, so by default ALTRun can't jump the dialogs of such programs (installers, tools started with "Run as administrator"); a jump there shows a hint once per dialog. Tick **Dialogs of programs running as administrator** under **Works in** (`AdminDialogs`) and ALTRun creates a scheduled task (confirm UAC once); from then on every start uses it to run a **small helper with administrator rights** (no more UAC prompts), and the helper exits with ALTRun. The jumps there then work like anywhere else: the folder panel, auto switch, Open / Save and Browse for Folder dialogs. ALTRun itself keeps normal rights, so programs opened from it, drag and drop and network drives are not affected. The helper is the same one as for [Caps Lock in administrator windows](Hotkeys#caps-lock-switches-the-input-method), one task for both; unticking the last of the two options deletes the task (confirm once more).
+
+The helper only jumps: it takes a request only for the dialog in front, a standard Open / Save or Browse for Folder dialog of a program running as administrator, and a full path to a folder that exists, and it doesn't press Open or Save. Keep ALTRun in a folder only administrators can change (for example `C:\Program Files`) when you use this option: the task runs ALTRun with administrator rights without asking. ALTRun warns when its folder can be changed without administrator rights. The hotkeys (`Ctrl+G`, `Ctrl+Shift+G`) don't reach a window running as administrator; use the folder panel or auto switch there.
 
 ## Where the folders come from
 
@@ -46,6 +52,7 @@ Preferences → Quick Switch controls the hotkeys, eligible windows and automati
 | `StandardDialogs` | `1` = in the standard Open / Save dialogs (`ahk_class #32770`) |
 | `DialogWindows` | Other dialogs where Quick Switch works (dialogs programs draw themselves), a list of window conditions, default `[]` |
 | `BrowseDialogs` | `1` = also in "Browse for Folder" dialogs (folder tree only) |
+| `AdminDialogs` | `1` = also in dialogs of programs running as administrator, through a small helper with administrator rights (see above); default `0` |
 | `ExcludeWindows` | Windows where Quick Switch is fully disabled (a list) |
 | `AutoSwitchExclude` | Windows where automatic switching is disabled but manual hotkeys still work (a list) |
 

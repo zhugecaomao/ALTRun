@@ -97,7 +97,7 @@
 |---|---|---|
 | CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
 | CapsLockNotify | 1 | 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示; 0 = 不显示 |
-| CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手, ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
+| CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个小助手 (和 Quick Switch 的 `AdminDialogs` 共用), ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
 | SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文: 0 = 不切换, 1 = 英语 (美国) 键盘 (只在已经装好的输入法之间切换, 不会添加新的键盘布局), 2 = 当前输入法的英文模式 (输入法不变, 关掉它的中文) |
 | RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法或中 / 英模式 (1 时: Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
