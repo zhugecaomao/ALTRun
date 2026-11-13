@@ -26,7 +26,8 @@ class PrefsPages {
         PrefsForm.Gap()
         PrefsForm.Field("General.FileManager", "Prefs.FileManager", "L", "file")
         PrefsForm.Check("General.FolderNewTab", "Prefs.FolderNewTab")
-        PrefsForm.Field("General.Browser", "Prefs.Browser", "L", "file")
+        browser := PrefsForm.Field("General.Browser", "Prefs.Browser", "L", "file")
+        Win.SetCueBanner(browser.Hwnd, I18n.T("Prefs.Browser.Empty"))          ; empty = the default browser (the parameters are explained in the wiki)
     }
 
     ; Search window behavior (the Window group of the settings)

@@ -256,6 +256,7 @@ class PrefsForm {
         else
             PrefsForm.Bind(path, () => ctrl.Value)
         PrefsForm.BelowInput(labelKey, label, ctrl)
+        return ctrl
     }
 
     ; After a label + input box row: a description goes right below the box
