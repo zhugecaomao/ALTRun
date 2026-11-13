@@ -86,10 +86,15 @@ class PreferencesWindow {
         if IsObject(tiles := PreferencesWindow._TileView(pageList)) {
             for index, name in names
                 pageList.Add("Icon" index, name)
-            layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height)
-            view := Buffer(16, 0)                                           ; the list keeps some room below the last tile: if it doesn't fit
-            if (SendMessage(0x1022, 0, view, pageList) && (over := NumGet(view, 12, "Int") - tiles.Height) > 0)   ; (LVM_GETVIEWRECT), lay out in less height
-                layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height - over)
+            ; the list's content (LVM_GETVIEWRECT) ends 4 px below the last tile (Windows 11), and when it is taller than the list both scroll bars appear:
+            ; lay out in less height until it fits (the gaps take the rounding, so it can take a second try)
+            height := tiles.Height, view := Buffer(16, 0)
+            Loop 5 {
+                layout := PreferencesWindow._PlaceTiles(pageList, tiles, height)
+                if (!SendMessage(0x1022, 0, view, pageList) || (over := NumGet(view, 12, "Int") - tiles.Height) <= 0)
+                    break
+                height -= over
+            }
             if (NavIcons.FontName() != "")
                 pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, Round(layout.RowH * 96 / A_ScreenDPI) - 2), 0)   ; tiles use the normal image list
             PreferencesWindow._gapLines := layout.Lines
