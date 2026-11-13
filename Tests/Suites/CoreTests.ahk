@@ -1111,6 +1111,131 @@ class CoreTests {
     }
 
     ; an icon being read: when the UI asks again it isn't queued twice (slow icons used to be read twice)
+    ; Running a program without a shell (Lib\ChildProcess.ahk), with small AutoHotkey scripts as the programs: the argument and
+    ; a variable arrive as typed (& " % ^ \ are not taken as commands), output in UTF-8, standard error and the exit code
+    static ChildProcessOutput() {
+        eq := (n, a, e) => TestRunner.Equal("ChildProcessOutput." n, a, e)
+        script := CoreTests._ChildScript("echo.ahk"
+            , 'FileAppend(A_Args[1] "|" EnvGet("ALTRUN_CP_TEST") "|中文", "*", "UTF-8-RAW")`n'
+            . 'FileAppend("bad thing", "**", "UTF-8-RAW")`n'
+            . 'ExitApp(3)`n')
+        typed := 'a & b "q" %PATH% ^ <x> \'
+        result := CoreTests._RunChild(CoreTests._AhkLine(script, typed), {Env: Map("ALTRUN_CP_TEST", "v & %OS%")})
+        eq("stdout", result.Stdout, typed "|v & %OS%|中文")
+        eq("stderr", result.Stderr, "bad thing")
+        eq("exit code", result.ExitCode, 3)
+        eq("ran", result.Error "|" result.TimedOut "|" result.Truncated, "|0|0")
+        eq("the variable is only the program's", EnvGet("ALTRUN_CP_TEST"), "")
+        eq("nothing left running", ChildProcess.Pending, 0)
+
+        ; standard input is NUL: reading it ends at once; the working folder is passed
+        script := CoreTests._ChildScript("stdin.ahk", 'FileAppend("[" FileOpen("*", "r").Read() "]" A_InitialWorkingDir, "*", "UTF-8-RAW")`n')
+        result := CoreTests._RunChild(CoreTests._AhkLine(script), {Dir: A_WinDir, TimeoutMs: 15000})
+        eq("stdin is empty, working folder", result.Stdout, "[]" A_WinDir)
+        eq("stdin doesn't wait", result.TimedOut, false)
+
+        ; more than the maximum: the rest is read and thrown away, so the program doesn't stop on a full pipe
+        script := CoreTests._ChildScript("big.ahk", 'line := Format("{:1000}", "") "``n"`nLoop 300`n    FileAppend(line, "*")`n')
+        result := CoreTests._RunChild(CoreTests._AhkLine(script), {MaxStdout: 65536})
+        eq("cut at the maximum", StrLen(result.Stdout) " " result.Truncated " " result.TimedOut " " result.Stderr, "65536 1 0 ")
+
+        ; a program that can't start: done is called with the reason
+        result := CoreTests._RunChild('"' A_Temp '\ALTRun-no-such-program.exe"')
+        TestRunner.True("ChildProcessOutput.can't start: " result.Error, result.Error != "" && result.ExitCode = "")
+    }
+
+    ; Kill and a timeout end the program and what it started (the job object); done isn't called after Kill. A program that
+    ; ends and leaves something running: that ends too (the job is closed)
+    static ChildProcessKill() {
+        eq := (n, a, e) => TestRunner.Equal("ChildProcessKill." n, a, e)
+        dir := CoreTests._ChildDir()
+        grand := CoreTests._ChildScript("grand.ahk", 'FileAppend(ProcessExist(), A_Args[1])`nSleep(60000)`n')
+        parent := CoreTests._ChildScript("parent.ahk"
+            , 'q := Chr(34)`nRun(q A_AhkPath q " " q A_Args[1] q " " q A_Args[2] q)`n'
+            . 'while (!FileExist(A_Args[2]) && A_Index < 400)`n    Sleep(50)`n'   ; "end": end only once the other one runs
+            . 'FileAppend(ProcessExist(), A_Args[3])`n'
+            . 'if (A_Args[4] = "stay")`n    Sleep(60000)`n')
+        for how in ["kill", "timeout", "ends"] {
+            pidFiles := [dir "\grand-" how ".pid", dir "\parent-" how ".pid"]
+            for each in pidFiles
+                try FileDelete(each)
+            called := []
+            child := ChildProcess.Start(CoreTests._AhkLine(parent, grand, pidFiles[1], pidFiles[2], how = "ends" ? "end" : "stay")
+                , (result) => called.Push(result), {TimeoutMs: (how = "timeout") ? 8000 : 30000})
+            TestRunner.True("ChildProcessKill." how ": both started", TestUtil.WaitFor(() => FileExist(pidFiles[1]) && FileExist(pidFiles[2]), 20000))
+            pids := []
+            for each in pidFiles
+                try pids.Push(Integer(FileRead(each)))
+            if (how = "kill") {
+                eq("kill: was running", ChildProcess.Kill(child), true)
+                eq("kill: again", ChildProcess.Kill(child), false)
+            } else
+                TestUtil.WaitFor(() => called.Length, 20000)
+            gone := TestUtil.WaitFor(() => !CoreTests._AnyRunning(pids), 5000)
+            TestRunner.True("ChildProcessKill." how ": all ended (" CoreTests._AnyRunning(pids) ")", gone && pids.Length = 2)
+            Sleep(50)
+            switch how {
+                case "kill":    eq("kill: done not called", called.Length, 0)
+                case "timeout": eq("timeout: reported", called.Length ? called[1].TimedOut : "none", true)
+                case "ends":    eq("ends: exit code", called.Length ? called[1].ExitCode : "none", 0)
+            }
+        }
+        eq("nothing left running", ChildProcess.Pending, 0)
+    }
+
+    ; Bytes -> text: UTF-8 (BOM removed), the OEM code page when they aren't UTF-8, a character cut at the end dropped
+    static ChildProcessDecode() {
+        eq := (n, a, e) => TestRunner.Equal("ChildProcessDecode." n, a, e)
+        bytes := (list*) => (buf := Buffer(list.Length), CoreTests._Fill(buf, list), buf)
+        eq("UTF-8", ChildProcess.Decode(bytes(0x41, 0xE4, 0xB8, 0xAD), 4), "A中")
+        eq("BOM", ChildProcess.Decode(bytes(0xEF, 0xBB, 0xBF, 0x41), 4), "A")
+        eq("empty", ChildProcess.Decode(bytes(0xEF, 0xBB, 0xBF), 3) ChildProcess.Decode(Buffer(1), 0), "")
+        gbk := bytes(0xC4, 0xE3, 0xBA, 0xC3)                                ; "你好" in GBK: not UTF-8
+        eq("OEM code page", ChildProcess.Decode(gbk, 4), StrGet(gbk, 4, "CP" DllCall("GetOEMCP", "UInt")))
+        eq("cut character dropped", ChildProcess.Decode(bytes(0x41, 0xE4, 0xB8), 3, true), "A")
+    }
+
+    static _ChildDir() {
+        dir := A_Temp "\ALTRun-ChildProcess-test"
+        DirCreate(dir)
+        return dir
+    }
+
+    static _ChildScript(name, code) {
+        scriptFile := CoreTests._ChildDir() "\" name
+        try FileDelete(scriptFile)
+        FileAppend("#NoTrayIcon`n" code, scriptFile, "UTF-8")
+        return scriptFile
+    }
+
+    static _AhkLine(script, args*) {
+        line := '"' A_AhkPath '" /ErrorStdOut "' script '"'
+        for each in args
+            line .= " " Win.QuoteArg(each)
+        return line
+    }
+
+    ; Runs the command line and waits for its result (up to 20 s: a program starts slowly under Wine)
+    static _RunChild(line, options := "") {
+        got := []
+        ChildProcess.Start(line, (result) => got.Push(result), options)
+        TestUtil.WaitFor(() => got.Length, 20000)
+        return got.Length ? got[1] : {Stdout: "(no result)", Stderr: "", ExitCode: "", Error: "", TimedOut: "", Truncated: ""}
+    }
+
+    static _AnyRunning(pids) {
+        running := ""
+        for pid in pids
+            if ProcessExist(pid)
+                running .= " " pid
+        return Trim(running)
+    }
+
+    static _Fill(buf, list) {
+        for index, value in list
+            NumPut("UChar", value, buf, index - 1)
+    }
+
     ; Background downloads: asynchronous requests; on completion / error / timeout the callback runs in its own thread (fake requests, no network)
     static HttpGet() {
         eq := (n, a, e) => TestRunner.Equal("HttpGet." n, a, e)
