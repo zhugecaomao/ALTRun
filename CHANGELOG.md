@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.11.13.6]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框快速跳转可以用在以管理员身份运行的程序里 (AppInn 论坛): 偏好设置 → Quick Switch → 生效的窗口 勾选 **以管理员身份运行的程序的对话框** (确认一次 UAC)。由一个管理员权限的小助手跳转 (和 CapsLock 的 "在管理员窗口里也生效" 共用一个计划任务), ALTRun 本身还是普通权限; 文件夹面板、自动跳转、打开 / 保存对话框和浏览文件夹对话框都可以。小助手只接受前台的、管理员程序的标准对话框和存在的文件夹, 不替你点打开或保存。快捷键 `Ctrl+G` 在管理员窗口里仍然收不到
+
+### 改进
+- 没开这个选项时, 在管理员程序的打开 / 保存对话框里跳转也会提示 (以前只有浏览文件夹对话框提示), 提示里写明在哪里打开; 每个对话框只提示一次
+- 管理员窗口小助手的计划任务改名为 `ALTRun Admin Helper`: 已有的 `ALTRun CapsLock Helper` 在第一次启动时由小助手自己迁移, 不弹 UAC
+
 ## [2026.11.13.5]
 
 测试版。
@@ -1456,7 +1469,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...HEAD
+[2026.11.13.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...2026.11.13.6
 [2026.11.13.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...2026.11.13.5
 [2026.11.13.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...2026.11.13.4
 [2026.11.13.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...2026.11.13.3
