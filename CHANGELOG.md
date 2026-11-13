@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.12.15]
+
+测试版。
+
+Test build.
+
+### 新增
+- 脚本实时结果 (`@altrun.mode filter`, 类似 Alfred 的 Script Filter): 输入 "关键字 文字" 时一边输入一边运行脚本, 把它输出的列表 (每行一个, Tab 分隔; 或 JSON) 显示成结果, 能打开文件 / 文件夹 / 网址或复制文字。第一次马上运行, 之后停下输入 0.15 秒再运行, 新的一次开始时结束上一次 (连同它启动的程序), 最多 10 秒; 出错显示一行原因。支持 `.ahk` `.py` `.ps1`; 脚本直接启动, 不经过 cmd。新增示例脚本 "Environment Variables" (关键字 `envvar`)
+- 偏好设置 → 脚本 的运行方式列显示 "实时结果"; 没有关键字或类型不支持时显示原因 (红字)
+
 ## [2026.11.12.14]
 
 测试版。
@@ -1483,7 +1493,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.15...HEAD
+[2026.11.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.14...2026.11.12.15
 [2026.11.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.13...2026.11.12.14
 [2026.11.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...2026.11.12.13
 [2026.11.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...2026.11.12.12

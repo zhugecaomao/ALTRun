@@ -2276,7 +2276,8 @@ class ProviderTests {
             found := Map()
             for script in ScriptProvider.Scripts
                 found[script.Name] := script.Title "|" script.Mode "|" script.Keyword "|" script.Argument
-            eq("examples: count", found.Count, 3)
+            eq("examples: count", found.Count, 4)
+            eq("example filter", found.Get("Environment Variables.ahk", ""), "Example: Environment Variables|filter|envvar|part of a name")
             eq("example ahk", found.Get("Today.ahk", ""), "Example: Today's Date|silent||")
             eq("example bat", found.Get("Port.bat", ""), "Example: Who Uses a Port|window|port|a port number")
             eq("example ps1", found.Get("IP Addresses.ps1", ""), "Example: IP Addresses|output||")
@@ -2301,6 +2302,219 @@ class ProviderTests {
             try DirDelete(examples, true)
         }
         DirDelete(root, true)
+    }
+
+    ; A filter script as ScriptProvider.ReadScript makes it, in C:\s (ScriptFilter tests)
+    static _FilterScript(name, keyword) {
+        SplitPath(name, , , &ext, &baseName)
+        return {Path: "C:\s\" name, Name: name, Ext: ext, Title: StrTitle(baseName), Keyword: keyword, Argument: "", Mode: "filter", Selection: [], Keys: []}
+    }
+
+    ; Live results of a filter script (ScriptFilter): what it prints -> results (JSON or one per line), the type guessed from the
+    ; target, web icons dropped, at most MaxItems; a run's result -> items, the error row or "No results"
+    static ScriptFilterParse() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterParse." n, a, e)
+        show(items) {
+            list := ""
+            for each in items
+                list .= each.Title "|" each.Type "|" each.Arg "|" each.Icon "|" each.Uid "|" each.Valid "|" each.AutoComplete "|" each.LargeText "/"
+            return list
+        }
+        items := ScriptFilter.Parse('`n {"items": [{"title": "A", "subtitle": "s", "arg": "C:\\x\\", "uid": "a", "icon": {"path": "C:\\i.ico"}, "text": {"largetype": "L"}},'
+            . ' {"title": ""}, {"title": "Web", "arg": "https://e.test", "icon": "https://e.test/i.png", "valid": false, "autocomplete": "web"}, {"title": "T", "type": "default"}, 5, {"title": 7, "extra": [1]}]}')
+        eq("JSON", show(items), "A|folder|C:\x\|C:\i.ico|a|1||L/Web|url|https://e.test||" "|0|web|/T|text|T|||1||/7|text|7|||1||/")
+        eq("subtitle", items[1].Subtitle, "s")
+        items := ScriptFilter.Parse("One`tsub`tC:\f.txt`r`n`r`nTwo`t`t`tfolder`t res:imageres.dll,-3 `nmailto:x@example.test`n`tno title")
+        eq("lines", show(items), "One|file|C:\f.txt||" "|1||/Two|folder|Two|res:imageres.dll,-3||1||/mailto:x@example.test|url|mailto:x@example.test|||1||/")
+        eq("type guessed from the form only", ScriptFilter.KindOf("", "\\server\share\a") ScriptFilter.KindOf("", "C:\") ScriptFilter.KindOf("", "obsidian://open")
+            . ScriptFilter.KindOf("FILE", "x") ScriptFilter.KindOf("", "hello") ScriptFilter.KindOf("", "\\"), "filefolderurlfiletexttext")
+        many := ""
+        Loop 250
+            many .= "item " A_Index "`n"
+        eq("at most MaxItems", ScriptFilter.Parse(many).Length, ScriptFilter.MaxItems)
+        problem := ""
+        try ScriptFilter.Parse('{"items": [')
+        catch as e
+            problem := e.Message
+        TestRunner.True("ScriptFilterParse.bad JSON throws: " problem, problem != "")
+        problem := ""
+        try ScriptFilter.Parse('{"x": 1}')
+        catch as e
+            problem := e.Message
+        eq("no items list", problem, I18n.T("ScriptFilter.NoItems"))
+
+        readRun := (out, err := "", code := 0, timedOut := false, failed := "") => ScriptFilter.Read({Stdout: out, Stderr: err, ExitCode: code, TimedOut: timedOut, Error: failed})
+        entry := readRun("A`nB", "a warning", 1)
+        eq("items win over the exit code", entry.Items.Length "|" entry.Error, "2|")
+        entry := readRun("", "`n boom `nmore", 2)
+        eq("stderr's first line", entry.Error "|" entry.Detail, "boom|boom `nmore")
+        eq("no items, exit 0", readRun("").Error "|" readRun("").Items.Length, "|0")
+        eq("exit code", readRun("", "", 3).Error, I18n.T("ScriptFilter.ExitCode", 3))
+        TestRunner.True("ScriptFilterParse.bad JSON row", InStr(readRun('{"items": [').Error, I18n.T("ScriptFilter.BadJson", "")) = 1)
+        eq("timed out", readRun("", "", "", true).Error, I18n.T("ScriptFilter.TimedOut", 10))
+        eq("can't start", readRun("", "", "", false, "(2) not found").Error, I18n.T("ScriptFilter.CantStart", "(2) not found"))
+
+        script := ProviderTests._FilterScript("find.ahk", "fd")
+        rows := ScriptFilter.Rows(script, readRun('{"items": [{"title": "F", "arg": "C:\\f.txt", "uid": "f"}, {"title": "U", "arg": "https://e.test", "autocomplete": "u"}, {"title": "T"}]}'))
+        list := ""
+        for row in rows
+            list .= row.Title "|" row.Kind "|" row.Icon "|" row.Uid "|" row.Exclusive "|" row.Score "|" row.AutoComplete "|" (row.Source == script) "/"
+        eq("rows", list, "F|file|C:\f.txt|script:find.ahk:f|1|999||1/U|url|url:||1|998|fd u|1/T|text|" ScriptProvider.IconOf(script) "||1|997||1/")
+        rows := ScriptFilter.Rows(script, readRun("", "bad thing", 1))
+        eq("error row", rows.Length "|" rows[1].Title "|" rows[1].Subtitle "|" rows[1].Valid "|" rows[1].LargeText "|" rows[1].Exclusive, "1|" I18n.T("ScriptFilter.Error", "Find") "|bad thing|1|bad thing|1")
+        rows := ScriptFilter.Rows(script, readRun(""))
+        eq("no results row", rows.Length "|" rows[1].Title "|" rows[1].Valid, "1|" I18n.T("ScriptFilter.NoResults") "|0")
+
+        eq("ahk command", ScriptFilter.CommandLine(script, 'a "b"'), '"' A_AhkPath '" /ErrorStdOut "C:\s\find.ahk" "a \"b\""')
+        eq("py command", ScriptFilter.CommandLine(ProviderTests._FilterScript("f.py", "fp"), ""), 'py "C:\s\f.py" ""')
+        ps := ProviderTests._FilterScript("it's.ps1", "fs")
+        eq("ps1: the text only from the variable", ScriptFilter.CommandLine(ps, "x; calc")
+            , '"' A_WinDir "\System32\WindowsPowerShell\v1.0\powershell.exe" '" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "'
+            . "[Console]::OutputEncoding=[Text.Encoding]::UTF8; & 'C:\s\it''s.ps1' $env:ALTRUN_QUERY; exit $LASTEXITCODE" '"')
+        eq("problems", ScriptFilter.Problem(script) "|" ScriptFilter.Problem(ProviderTests._FilterScript("b.bat", "fb")) "|" ScriptFilter.Problem(ProviderTests._FilterScript("n.ahk", ""))
+            . "|" ScriptFilter.Problem({Mode: "window", Keyword: "", Ext: "bat"}), "|NotForType|NeedsKeyword|")
+    }
+
+    ; When a filter script runs (fake runs): at once on entering the keyword, then once typing paused; a new run ends the one before;
+    ; the last results stay while the next one runs; "Running..." only after WaitRowMs; results kept per text; late results of an
+    ; ended run dropped; leaving the keyword / hiding ends it
+    static ScriptFilterRules() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterRules." n, a, e)
+        saved := [ScriptFilter.StartFn, ScriptFilter.KillFn, ScriptFilter.OnResults]
+        starts := [], kills := [], refreshed := {Count: 0}
+        ScriptFilter.StartFn := (line, done, options) => (starts.Push({Line: line, Done: done, Options: options}), {Id: starts.Length})
+        ScriptFilter.KillFn := (child) => kills.Push(child.Id)
+        ScriptFilter.OnResults := () => refreshed.Count++
+        ScriptFilter.Stop()
+        script := ProviderTests._FilterScript("find.ahk", "fd")
+        result := (out, code := 0) => {Stdout: out, Stderr: "", ExitCode: code, TimedOut: false, Error: "", Ms: 5}
+        titles(rows) {
+            list := ""
+            for row in rows
+                list .= row.Title "|"
+            return RTrim(list, "|")
+        }
+        try {
+            rows := ScriptFilter.Results(script, "")
+            eq("first: the script's own row", rows[1].Title "|" rows[1].Valid "|" rows[1].Exclusive "|" rows[1].Subtitle, "Find|0|1|" I18n.T("Script.FilterHint"))
+            Sleep(40)
+            eq("first: starts at once", starts.Length, 1)
+            eq("first: text, variables, folder, time limit", starts[1].Options.Env["ALTRUN_QUERY"] "|" starts[1].Options.Env["ALTRUN_KEYWORD"] "|"
+                . starts[1].Options.Dir "|" starts[1].Options.TimeoutMs "|" starts[1].Line, "|fd|C:\s|10000|" ScriptFilter.CommandLine(script, ""))
+            ScriptFilter.Results(script, "a"), Sleep(40), ScriptFilter.Results(script, "ab"), Sleep(40), ScriptFilter.Results(script, "abc"), Sleep(40)
+            eq("typing: waits for a pause", starts.Length, 1)
+            Sleep(250)
+            eq("typing: one run for the last text", starts.Length "|" starts[2].Options.Env["ALTRUN_QUERY"], "2|abc")
+            eq("the run before was ended", kills.Length ? kills[1] : 0, 1)
+            eq("nothing yet after WaitRowMs: Running...", titles(ScriptFilter.Results(script, "abc")), I18n.T("ScriptFilter.Running", "Find"))
+            TestRunner.True("ScriptFilterRules.the window searched again for the Running row", refreshed.Count >= 1)
+            before := refreshed.Count
+            starts[2].Done.Call(result("Hit`tsub"))
+            eq("results arrived: searched again", refreshed.Count, before + 1)
+            eq("results shown", titles(ScriptFilter.Results(script, "abc")), "Hit")
+            ScriptFilter.Results(script, "abcd")
+            eq("while the next runs: the last results stay", titles(ScriptFilter.Results(script, "abcd")), "Hit")
+            Sleep(250)
+            eq("next run", starts.Length, 3)
+            eq("back to a text with results: no run, the running one ended", titles(ScriptFilter.Results(script, "abc")) "|" starts.Length "|" kills[kills.Length], "Hit|3|3")
+            before := refreshed.Count
+            starts[3].Done.Call(result("Late"))
+            eq("late results of an ended run dropped", refreshed.Count, before)
+            ScriptFilter.Results(script, "x")
+            ScriptFilter.Leave()
+            Sleep(250)
+            eq("left the keyword: no run", starts.Length, 3)
+            ScriptFilter.Results(script, "abc")
+            eq("kept until hidden", starts.Length, 3)
+            ScriptFilter.Stop()
+            eq("hidden: forgotten", titles(ScriptFilter.Results(script, "abc")), "Find")
+            Sleep(40)
+            eq("hidden: runs again at once", starts.Length, 4)
+            starts[4].Done.Call(result("", 1))
+            eq("error", titles(ScriptFilter.Results(script, "abc")), I18n.T("ScriptFilter.Error", "Find"))
+        } finally {
+            ScriptFilter.Stop()
+            ScriptFilter.StartFn := saved[1], ScriptFilter.KillFn := saved[2], ScriptFilter.OnResults := saved[3]
+        }
+    }
+
+    ; A real filter script found by the search: "keyword text" runs it (an .ahk; .ps1 and .py on Windows when there, with their
+    ; times in the log), "keyword" alone completes "keyword ", a batch file and a script without keyword don't run, not in the
+    ; selection panel, a hotkey opens the search window with "keyword " and the selected line
+    static ScriptFilterSearch() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterSearch." n, a, e)
+        root := A_Temp "\ALTRun-script-filter-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        root := TestRunner.LongPath(root)
+        FileAppend("; @altrun.keyword fd`n; @altrun.mode filter`n#NoTrayIcon`n"
+            . 'FileAppend("got " A_Args[1] "``t" EnvGet("ALTRUN_KEYWORD") "``t" A_Args[1] " 中文``ttext``n", "*", "UTF-8-RAW")`n', root "\find.ahk", "UTF-8")
+        FileAppend("# @altrun.keyword fs`n# @altrun.mode filter`n"
+            . "Write-Output ('{`"items`": [{`"title`": `"ps ' + $env:ALTRUN_QUERY + '`"}]}')`n", root "\ps.ps1", "UTF-8")
+        FileAppend("# @altrun.keyword fp`n# @altrun.mode filter`nimport sys`nprint('py ' + sys.argv[1])`n", root "\py.py", "UTF-8")
+        FileAppend("rem @altrun.keyword bt`nrem @altrun.mode filter`necho x`n", root "\bad.bat", "UTF-8")
+        FileAppend("; @altrun.mode filter`n; @altrun.selection Text`n", root "\nokw.ahk", "UTF-8")
+        saved := [ScriptProvider.Folder, ScriptProvider.Scripts, ScriptProvider._checked, ScriptFilter.OnResults]
+        savedShow := SearchWindow.GetOwnPropDesc("Show"), savedNotify := App.GetOwnPropDesc("Notify")
+        arrived := {Count: 0}, shown := [], notices := []
+        ScriptFilter.OnResults := () => arrived.Count++
+        try {
+            ScriptProvider.Folder := root
+            ScriptProvider.Load()
+            byName := Map()
+            for script in ScriptProvider.Scripts
+                byName[script.Name] := script
+            eq("mode read", byName["find.ahk"].Mode "|" byName["bad.bat"].Mode, "filter|filter")
+            hint := ScriptProvider.Search(SearchQuery("fd"))
+            found := ""
+            for item in hint
+                if (item.Source == byName["find.ahk"])
+                    found := item.Valid "|" item.AutoComplete "|" item.Subtitle
+            eq("keyword alone: completes", found, "0|fd |" I18n.T("Search.TypeArgAfter", "fd", I18n.T("Script.FilterHint")) " · " I18n.T("Script.Subtitle", "find.ahk"))
+
+            timed(keyword, text, expected) {
+                started := A_TickCount, arrived.Count := 0
+                ScriptProvider.Search(SearchQuery(keyword " " text))
+                TestUtil.WaitFor(() => arrived.Count && !ScriptFilter.Running && !IsObject(ScriptFilter._wanted), 20000)
+                rows := ScriptProvider.Search(SearchQuery(keyword " " text))
+                eq(keyword ": results", rows.Length ? rows[1].Title "|" rows[1].Exclusive : "none", expected "|1")
+                FileAppend("NOTE ScriptFilter: " keyword " " (A_TickCount - started) " ms from typing to results`n", "*")
+                return rows
+            }
+            rows := timed("fd", 'a & "b"', 'got a & "b"')
+            eq("fd: the rest of the line", rows.Length ? rows[1].Subtitle "|" rows[1].Arg "|" rows[1].Kind : "", 'fd|a & "b" 中文|text')
+            onWine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+            if !onWine {
+                timed("fs", "x; y", "ps x; y")
+                if FileExist(A_WinDir "\py.exe")
+                    timed("fp", "q", "py q")
+                else
+                    FileAppend("NOTE ScriptFilter: no py.exe, the .py script wasn't run`n", "*")
+            }
+            plain := ScriptProvider.Search(SearchQuery("bt x"))
+            exclusive := false
+            for item in plain
+                exclusive := exclusive || item.Exclusive
+            eq("batch file: not run", exclusive "|" ScriptFilter.Running, "0|0")
+
+            SearchWindow.DefineProp("Show", {Call: (this, text := "", *) => shown.Push(text)})
+            App.DefineProp("Notify", {Call: (this, text, *) => notices.Push(text)})
+            ScriptProvider.RunFromHotkey("find.ahk", () => {Text: "hello there"})
+            ScriptProvider.RunFromHotkey("find.ahk", () => {Text: "two`nlines"})
+            ScriptProvider.RunFromHotkey("find.ahk", () => "")
+            eq("hotkey: search window with the keyword and the selected line", shown.Length "|" shown[1] "|" shown[2] "|" shown[3], "3|fd hello there|fd |fd ")
+            ScriptProvider.RunFromHotkey("nokw.ahk", () => {Text: "hello"})
+            eq("hotkey: no keyword", notices.Length ? notices[1] : "", I18n.T("Script.Filter.NeedsKeyword", "nokw"))
+            panel := ScriptProvider.ActionsFor({Kind: "text", Types: ["Text"], Term: "hello", Quoted: '"hello"', Text: "hello"})
+            eq("not in the selection panel", panel.Length, 0)
+            ScriptProvider.Hidden()
+            eq("hidden: nothing running", ScriptFilter.Running "|" ChildProcess.Pending, "0|0")
+        } finally {
+            ScriptFilter.Stop()
+            SearchWindow.DefineProp("Show", savedShow), App.DefineProp("Notify", savedNotify)
+            ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2], ScriptProvider._checked := saved[3], ScriptFilter.OnResults := saved[4]
+            try DirDelete(root, true)
+        }
     }
 
     ; Scripts for a selection ("@altrun.selection") and hotkeys that run a script ("script:<file name>"): the panel rows with the

@@ -7,14 +7,17 @@
 ;   @altrun.title     name              (the file name by default)
 ;   @altrun.keyword   keyword           comes first when typed exactly
 ;   @altrun.argument  hint text         takes an argument: type "keyword text", and the text is passed to the script as its first argument
-;   @altrun.mode      window | silent | output
+;   @altrun.mode      window | silent | output | filter
 ;                     window (default) runs normally with a window; silent runs in the background and shows the last line of output as a notification when done;
-;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done
+;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done;
+;                     filter gives live results: typing "keyword text" runs it with the text while typing and shows what it prints as
+;                     results (needs a keyword; .ahk .py .ps1; see ScriptFilter.ahk)
 ;   @altrun.selection Text, PDF         content type names (built-in or Preferences → Selection): the script is offered in the actions
 ;                     panel of such a selection (Ctrl+Alt+\, after the custom commands), which is passed to it as its first argument
 ;                     (several files: one argument each), with the panel's command-line checks (SelectionActions.SafeArgument)
 ; Read again when the folder changes (modified time), without reloading ALTRun. F3 edits the script in Notepad.
 ; A custom hotkey with Action "script:<file name>" runs a script (RunFromHotkey); renaming the file breaks it (shown in red in Preferences).
+; A filter script isn't offered for a selection; its hotkey opens the search window with "keyword " and the selected line of text.
 ;
 ; Settings (ALTRun.json -> Features.Scripts): Enabled / Keyword ("script backup" searches scripts only, "script " lists all,
 ; like the snippets' "snip"; just "script" without the space still shows the commands with that word)
@@ -41,6 +44,11 @@ class ScriptProvider {
         results := [], keyword := AppSettings.Feature("Scripts")["Keyword"], full := ""
         onlyScripts := (keyword != "" && query.HasRest && query.MatchKeyword([keyword], &term))
         needle := StrLower(onlyScripts ? term : query.Text)
+        if (!onlyScripts && query.HasRest)                                  ; "keyword text" of a filter script: its live results only
+            for script in ScriptProvider.Scripts
+                if (script.Mode = "filter" && query.Keyword = script.Keyword && ScriptFilter.Supports(script))
+                    return ScriptFilter.Results(script, query.Rest)
+        ScriptFilter.Leave()                                                ; not (or no longer) in one: a run still going isn't needed
         if (keyword != "" && !query.HasRest && query.MatchKeyword([keyword], &term))   ; "script" without the space: a hint, like the other keywords (ResultItem.KeywordHintScore); Enter completes "script "
             results.Push(ResultItem.KeywordHint(I18n.T("Scripts.Keyword"), keyword, ScriptProvider.HintIcon))
         else if (keyword != "" && query.StartsKeyword([keyword], &full))       ; "scrip": the same hint at the end of the list
@@ -55,7 +63,7 @@ class ScriptProvider {
                 }
                 continue
             }
-            if (script.Keyword != "" && query.Keyword = script.Keyword && script.Argument != "" && query.HasRest) {
+            if (script.Keyword != "" && query.Keyword = script.Keyword && script.Argument != "" && script.Mode != "filter" && query.HasRest) {
                 item := ScriptProvider.ItemFor(script, 150, query.Rest)
                 item.Exclusive := true
                 return [item]
@@ -104,10 +112,10 @@ class ScriptProvider {
         if !ProviderRegistry.IsEnabled(ScriptProvider)
             return actions
         for script in ScriptProvider.Current() {
-            if !(ScriptProvider.ForTypes(script, info.Types) && SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script)))
+            if (script.Mode = "filter" || !(ScriptProvider.ForTypes(script, info.Types) && SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script))))
                 continue
             actions.Push(ResultItem(script.Title, I18n.T("Script.Subtitle", script.Name)
-                , {Icon: ScriptProvider._Icon(script), OnRun: ScriptProvider._Runner(script, ScriptProvider.SelectionArgument(info))}))
+                , {Icon: ScriptProvider.IconOf(script), OnRun: ScriptProvider._Runner(script, ScriptProvider.SelectionArgument(info))}))
         }
         return actions
     }
@@ -142,6 +150,15 @@ class ScriptProvider {
             Logger.Warn("ScriptProvider: the hotkey's script " name " no longer exists")
             return App.Notify(I18n.T("Hotkey.ScriptMissing", name), 3000)
         }
+        if (script.Mode = "filter") {                                      ; the search window with "keyword " and the selected line of text, if any
+            text := ""
+            if (ScriptFilter.Problem(script) = "" && IsObject(selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture())) {
+                info := SelectionActions.Classify(selection)
+                if (info.Kind = "text" || info.Kind = "url") && StrLen(info.Term) <= 200 && !RegExMatch(info.Term, "[\r\n]")
+                    text := info.Term
+            }
+            return ScriptProvider.Run(script, text)
+        }
         takesArgument := (script.Argument != ""), argument := ""
         if (takesArgument || script.Selection.Length) {
             selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture()
@@ -160,21 +177,25 @@ class ScriptProvider {
     }
 
     static ItemFor(script, score, argument := "") {
-        props := {Kind: "file", Arg: script.Path, Icon: ScriptProvider._Icon(script), Score: score, Source: script
+        props := {Kind: "file", Arg: script.Path, Icon: ScriptProvider.IconOf(script), Score: score, Source: script
             , Uid: ScriptProvider.Uid(script), OnRun: (*) => ScriptProvider.Run(script, argument)}
         title := script.Title, subtitle := I18n.T("Script.Subtitle", script.Name)
-        if (script.Argument != "") {
+        if (script.Argument != "" || script.Mode = "filter") {
             if (argument = "") {
                 props.Valid := (script.Keyword = "")                        ; with a keyword: Enter completes "keyword " so the argument can be typed next
                 props.AutoComplete := (script.Keyword != "") ? script.Keyword " " : ""
-                subtitle := ((script.Keyword != "") ? I18n.T("Search.TypeArgAfter", script.Keyword, script.Argument) : script.Argument) " · " subtitle
+                hint := ScriptProvider.HintText(script)
+                subtitle := ((script.Keyword != "") ? I18n.T("Search.TypeArgAfter", script.Keyword, hint) : hint) " · " subtitle
             } else
                 title .= ": " argument
         }
         return ResultItem(title, subtitle, props)
     }
 
-    static _Icon(script) {
+    ; What to type after the keyword: @altrun.argument, or for a filter script without one "text to search for"
+    static HintText(script) => (script.Argument != "") ? script.Argument : (script.Mode = "filter") ? I18n.T("Script.FilterHint") : ""
+
+    static IconOf(script) {
         switch script.Ext {
             case "ahk": return A_IsCompiled ? A_ScriptFullPath : A_AhkPath
             case "ps1": return A_WinDir "\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -202,6 +223,11 @@ class ScriptProvider {
     static _Arguments(argument) => (argument is Array) ? argument : (argument != "") ? [argument] : []
 
     static Run(script, argument := "") {
+        if (script.Mode = "filter") {                                      ; runs only from the search box: open it in the keyword mode
+            if ((problem := ScriptFilter.Problem(script)) != "")
+                return App.Notify(I18n.T((problem = "NeedsKeyword") ? "Script.Filter.NeedsKeyword" : "Script.Filter.NotForType", script.Title), 4000)
+            return SearchWindow.Show(script.Keyword " " (argument is Array ? "" : argument))
+        }
         for each in ScriptProvider._Arguments(argument)
             if (InStr(each, '"') && ScriptProvider.ThroughCmd(script))
                 return App.Notify(I18n.T("Script.QuoteInArgument"), 4000)
@@ -246,11 +272,15 @@ class ScriptProvider {
         return message
     }
 
-    ; F3: edit the script in Notepad
-    static EditItem(item) {
-        Run('notepad.exe "' item.Source.Path '"')
+    ; F3: edit the script in Notepad (also on a filter script's results)
+    static EditItem(item) => ScriptProvider.EditScript(item.Source)
+
+    static EditScript(script) {
+        Run('notepad.exe "' script.Path '"')
         return false
     }
+
+    static Hidden() => ScriptFilter.Stop()                                  ; the search window hid: end a filter script's run, forget its results
 
     static Load() {
         scripts := []
@@ -286,7 +316,7 @@ class ScriptProvider {
         } catch
             return ""
         mode := StrLower(meta["mode"])
-        if !(mode = "silent" || mode = "output")
+        if !(mode = "silent" || mode = "output" || mode = "filter")
             mode := "window"
         title := meta["title"], keyword := StrLower(Trim(meta["keyword"]))
         types := []
@@ -314,9 +344,28 @@ class ScriptProvider {
     }
 
     ; Example scripts, each showing one form: background with a notification (ahk, silent), a keyword with an argument (bat, window; the keyword mustn't clash with the default commands),
-    ; all output in Notepad (ps1, output). ASCII only: Windows PowerShell 5 reads files without BOM as ANSI
+    ; all output in Notepad (ps1, output), live results (ahk, filter; one result per line). ASCII only: Windows PowerShell 5 reads files without BOM as ANSI
     static ExampleScripts() {
         return Map(
+            "Environment Variables.ahk",
+                "; @altrun.title     Example: Environment Variables`r`n"
+              . "; @altrun.keyword   envvar`r`n"
+              . "; @altrun.mode      filter`r`n"
+              . "; @altrun.argument  part of a name`r`n"
+              . '; Live results: type "envvar path" in ALTRun. While you type, ALTRun runs this script with the text (A_Args[1]) and shows' "`r`n"
+              . "; what it prints: one result per line, title<Tab>subtitle<Tab>arg<Tab>type (or JSON, see the Scripts page in the wiki).`r`n"
+              . "; Type text: Enter copies the value.`r`n"
+              . 'query := A_Args.Length ? A_Args[1] : ""' "`r`n"
+              . 'block := DllCall("GetEnvironmentStringsW", "Ptr"), at := block, out := ""' "`r`n"
+              . 'while ((entry := StrGet(at, "UTF-16")) != "") {' "`r`n"
+              . '    at += (StrLen(entry) + 1) * 2' "`r`n"
+              . '    split := InStr(entry, "=", , 2)' "`r`n"
+              . '    name := SubStr(entry, 1, split - 1), value := StrReplace(SubStr(entry, split + 1), "``t", " ")' "`r`n"
+              . '    if (split > 1 && SubStr(name, 1, 7) != "ALTRUN_" && (query = "" || InStr(name, query)))' "`r`n"
+              . '        out .= name "``t" value "``t" value "``ttext``n"' "`r`n"
+              . '}' "`r`n"
+              . 'DllCall("FreeEnvironmentStringsW", "Ptr", block)' "`r`n"
+              . 'FileAppend(out, "*", "UTF-8-RAW")' "`r`n",
             "Today.ahk",
                 "; @altrun.title  Example: Today's Date`r`n"
               . "; @altrun.mode   silent`r`n"

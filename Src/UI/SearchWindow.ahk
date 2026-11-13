@@ -528,6 +528,26 @@ class SearchWindow {
             SearchWindow.SetResults(results)
     }
 
+    ; A filter script's live results arrived (ScriptFilter.OnResults): search the same text again, which now takes them; swapped in only
+    ; when something changed, keeping the selected row when it is still there (same title and target)
+    static LiveResultsArrived() {
+        if (!SearchWindow.IsVisible() || SearchWindow.Session.Mode != "results" || SearchWindow.Session.FileMode)
+            return
+        request := SearchWindow.Session.StartSearch(SearchWindow.Input.Value)
+        results := request.Run()
+        if (!SearchWindow.Session.IsCurrent(request) || SearchWindow.SameResults(results, SearchWindow.Session.Results))
+            return
+        selected := SearchWindow.Session.SelectedItem()
+        SearchWindow.SetResults(results)
+        if IsObject(selected)
+            for index, item in results
+                if (item.Title == selected.Title && item.Arg == selected.Arg) {
+                    if (index > 1)
+                        SearchWindow.MoveSelection(index - 1)
+                    break
+                }
+    }
+
     static SameResults(a, b) {
         if (a.Length != b.Length)
             return false

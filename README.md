@@ -85,7 +85,7 @@ You can also install with winget or Scoop, or run `ALTRun.ahk` with AutoHotkey v
 - **Examples on demand**: the hotkey, custom command, snippet and web search lists in Preferences can add back the built-in examples you don't have yet ("Add Examples"), without touching your own items.
 - **Folder sync**: keep a folder in step with another one (for example a server share and your OneDrive) with Windows' robocopy: set up in Preferences, run in the task's sync window (live progress) or from the search window; a preview lists what a mirror would delete before anything is deleted.
 - **Delayed start**: start programs such as OneDrive a few minutes after signing in to Windows, so the desktop is ready sooner (Windows Task Scheduler starts them, no administrator rights needed).
-- **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown; give them a hotkey, or offer them for selected content of a type (`@altrun.selection`).
+- **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown; give them a hotkey, offer them for selected content of a type (`@altrun.selection`), or let one show live results while you type (`@altrun.mode filter`).
 
 **For structural engineers**
 - **Structural calculations** (off by default): the calculator can add beam main bars and rebar area below its result.
