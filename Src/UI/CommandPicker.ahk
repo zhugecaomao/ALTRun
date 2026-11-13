@@ -4,16 +4,17 @@
 ; Opened by "Choose..." in the hotkey edit window (HotkeyEditor). One list of everything a hotkey can run, in three kinds:
 ;   ALTRun           Search in ALTRun, Show / hide ALTRun (no prefix in the hotkey's Action)
 ;   Custom command   the user's custom commands ("custom:<Id>")
+;   Script           the scripts in the Scripts folder ("script:<file name>")
 ;   System command   SystemProvider's commands (no prefix)
-; Typing filters it with FuzzyMatcher (names, keywords, English names of system commands, pinyin initials), keeping the kinds in
+; Typing filters it with FuzzyMatcher (names, keywords, English names of system commands, script file names, pinyin initials), keeping the kinds in
 ; that order and the best matches first within a kind. ↑ ↓ Page Up / Down in the search box move in the list; Enter or a double-click chooses.
 ; A drop-down can't do this: there are 70+ system commands and the user's commands can be hundreds.
 ;
 ; Usage:
-;   id := CommandPicker.Choose(ownerGui, currentId, commands)   -> the chosen Action ("Search", "Lock", "custom:<Id>"), "" when cancelled
+;   id := CommandPicker.Choose(ownerGui, currentId, commands)   -> the chosen Action ("Search", "Lock", "custom:<Id>", "script:<file name>"), "" when cancelled
 ;       commands: the custom commands to list (in Preferences the ones being edited, so a command added there can be chosen);
 ;       those without an Id get one first (AppSettings.EnsureIds), so the hotkey can refer to them
-;   CommandPicker.Choices(commands)           -> [{Id, Title, Kind, Keyword, Keys}] in the order shown
+;   CommandPicker.Choices(commands [, scripts]) -> [{Id, Title, Kind, Keyword, Keys}] in the order shown (scripts: the Scripts folder's when not given)
 ;   CommandPicker.Filter(choices, text)       -> the choices matching text, in the order shown
 ;===============================================================================
 
@@ -93,8 +94,9 @@ class CommandPicker {
         return (row && row <= ui.Shown.Length) ? ui.Shown[row].Id : ""
     }
 
-    static Choices(commands) {
+    static Choices(commands, scripts := "") {
         own := I18n.T("CommandPicker.Kind.ALTRun"), custom := I18n.T("CommandPicker.Kind.Custom"), system := I18n.T("CommandPicker.Kind.System")
+        scriptKind := I18n.T("CommandPicker.Kind.Script")
         choices := []
         add(id, title, kind, keyword := "", english := "") {
             keys := [FuzzyMatcher.Key(title)]
@@ -109,6 +111,8 @@ class CommandPicker {
             for command in commands
                 if (command is Map && command.Has("Id") && command["Id"] != "" && command.Has("Title"))
                     add("custom:" command["Id"], command["Title"], custom, command.Has("Keyword") ? command["Keyword"] : "")
+        for script in (scripts is Array) ? scripts : ScriptProvider.Current()
+            add(ScriptProvider.Uid(script), script.Title, scriptKind, script.Keyword, script.Name)
         for command in SystemProvider.Commands()
             add(command["Id"], command["Title"], system, "", command["English"])
         return choices

@@ -1769,7 +1769,7 @@ class ProviderTests {
         detail := HotkeyEditor.ActionDetail("custom:gone0001", commands)
         eq("detail: deleted", detail.Text "|" detail.Missing, I18n.T("HotkeyEditor.Detail.Missing") "|1")
 
-        choices := CommandPicker.Choices(commands)
+        choices := CommandPicker.Choices(commands, [])
         eq("own first, then custom (with an Id), then system", choices[1].Id "|" choices[2].Id "|" choices[3].Id "|" choices[5].Id "|" choices[6].Kind
             , "Search|ToggleWindow|custom:plain001|custom:types001|" I18n.T("CommandPicker.Kind.System"))
         ids(list) => list.Length ? list[1].Id : ""
@@ -1787,7 +1787,7 @@ class ProviderTests {
         eq("filter: nothing", CommandPicker.Filter(choices, "zzqqxx").Length, 0)
 
         AppSettings.EnsureIds(Map("CustomCommands", commands))              ; what Choose does first
-        eq("a new command gets an Id to be chosen", AppSettings.IsId(commands[4]["Id"]) "|" (CommandPicker.Choices(commands).Length = choices.Length + 1), "1|1")
+        eq("a new command gets an Id to be chosen", AppSettings.IsId(commands[4]["Id"]) "|" (CommandPicker.Choices(commands, []).Length = choices.Length + 1), "1|1")
 
         owner := Gui()
         for language in I18n.Languages() {
@@ -2253,6 +2253,114 @@ class ProviderTests {
             try DirDelete(examples, true)
         }
         DirDelete(root, true)
+    }
+
+    ; Scripts for a selection ("@altrun.selection") and hotkeys that run a script ("script:<file name>"): the panel rows with the
+    ; command-line checks of the script's real command line, several files as one argument each, the hotkey rules, the names in Preferences
+    static ScriptSelection() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptSelection." n, a, e)
+        root := A_Temp "\ALTRun-script-selection-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        root := TestRunner.LongPath(root)
+        FileAppend("; @altrun.title PDF Tool`n; @altrun.selection PDF, Files`n", root "\pdf.ahk", "UTF-8")
+        FileAppend("@echo off`nREM @altrun.title Ping IP`nREM @altrun.selection IP`n", root "\ip.bat", "UTF-8")
+        FileAppend("; @altrun.title Quiet`n; @altrun.mode silent`n; @altrun.selection Text`n", root "\quiet.ahk", "UTF-8")
+        FileAppend("# @altrun.title Lookup`n# @altrun.keyword lk`n# @altrun.argument a word`n", root "\lookup.ps1", "UTF-8")
+        FileAppend("# @altrun.title No Keyword`n# @altrun.argument some text`n", root "\noword.py", "UTF-8")
+        FileAppend("; @altrun.title Plain`n", root "\plain.ahk", "UTF-8")
+        saved := [ScriptProvider.Folder, ScriptProvider.Scripts, ScriptProvider._checked]
+        savedRun := ScriptProvider.GetOwnPropDesc("Run"), savedNotify := App.GetOwnPropDesc("Notify"), savedShow := SearchWindow.GetOwnPropDesc("Show")
+        savedUsage := Usage.Days.Clone(), scripts := AppSettings.Feature("Scripts"), savedEnabled := scripts["Enabled"]
+        ran := [], notices := [], shown := [], captured := 0
+        try {
+            ScriptProvider.Folder := root
+            ScriptProvider.Load()
+            byName := Map()
+            for script in ScriptProvider.Scripts
+                byName[script.Name] := script
+            names := ""
+            for script in ScriptProvider.Scripts
+                names .= script.Name "|"
+            eq("by file name", names, "ip.bat|lookup.ps1|noword.py|pdf.ahk|plain.ahk|quiet.ahk|")
+            eq("types read", PrefsPages.JoinNames(byName["pdf.ahk"].Selection) "/" byName["plain.ahk"].Selection.Length, "PDF, Files/0")
+            eq("types any case", ScriptProvider.ForTypes(byName["pdf.ahk"], ["File", "pdf"]) "|" ScriptProvider.ForTypes(byName["pdf.ahk"], ["Text"]), "1|0")
+            eq("shell of the real command line", SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["pdf.ahk"])["Target"]) "|"
+                SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["quiet.ahk"])["Target"]) "|" SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["ip.bat"])["Target"]) "|"
+                SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["lookup.ps1"])["Target"]), "|cmd|cmd|posix")
+
+            scripts["Enabled"] := 1
+            titles(info) {
+                list := ""
+                for row in ScriptProvider.ActionsFor(info)
+                    list .= row.Title "|"
+                return RTrim(list, "|")
+            }
+            text(term, types) => {Kind: "text", Types: types, Term: term, Quoted: SelectionActions.Quote(term), Text: term}
+            eq("panel: a file of the type", titles({Kind: "file", Types: ["File", "PDF"], Term: "C:\a.pdf", Quoted: '"C:\a.pdf"', Path: "C:\a.pdf"}), "PDF Tool")
+            eq("panel: safe text for cmd", titles(text("10.0.0.1", ["Text", "IP"])), "Ping IP|Quiet")
+            eq("panel: cmd characters refused (batch file, and an ahk whose output goes through cmd)", titles(text("10.0.0.1 & del x", ["Text", "IP"])), "")
+            eq("panel: no type, no script", titles(text("hello", ["Url"])), "")
+            files := ["C:\a b\1.pdf", "C:\2.pdf"]
+            argument := ScriptProvider.SelectionArgument({Kind: "files", Files: files, Term: '"C:\a b\1.pdf" "C:\2.pdf"'})
+            eq("several files: one argument each", (argument is Array) "|" ScriptProvider.CommandLine(byName["pdf.ahk"], argument)
+                , "1|" SubStr(ScriptProvider.CommandLine(byName["pdf.ahk"]), 1) ' "C:\a b\1.pdf" "C:\2.pdf"')
+            scripts["Enabled"] := 0
+            eq("panel: scripts turned off", titles(text("10.0.0.1", ["Text", "IP"])), "")
+            scripts["Enabled"] := 1
+            eq("titles for Preferences", PrefsPages.JoinNames(SelectionActions.CommandTitles(["pdf"], [Map("Title", "Open", "Selection", "PDF")], ScriptProvider.Scripts))
+                , "Open, " I18n.T("Selection.ScriptTitle", "PDF Tool"))
+
+            ScriptProvider.DefineProp("Run", {Call: (this, script, argument := "") => ran.Push({Name: script.Name, Argument: argument})})
+            App.DefineProp("Notify", {Call: (this, message, *) => notices.Push(message)})
+            SearchWindow.DefineProp("Show", {Call: (this, value := "", *) => shown.Push(value)})
+            capture(selection) => () => (captured++, selection)
+            runHotkey := (name, selection := "") => ScriptProvider.RunFromHotkey(name, capture(selection))
+            runHotkey("plain.ahk", {Text: "ignored"})
+            eq("plain: runs, the selection isn't copied", ran.Length "|" ran[1].Argument "|" captured, "1||0")
+            runHotkey("PDF.AHK", {Files: ["C:\Docs\report.docx"]})
+            eq("any case; the type isn't checked", ran.Length "|" ran[2].Name "|" ran[2].Argument "|" captured, "2|pdf.ahk|C:\Docs\report.docx|1")
+            runHotkey("pdf.ahk")
+            eq("content types, nothing selected: runs without one", ran.Length "|" ran[3].Argument, "3|")
+            runHotkey("lookup.ps1")
+            eq("argument and keyword, nothing selected: the search window", shown.Length "|" shown[1] "|" ran.Length, "1|lk |3")
+            runHotkey("noword.py")
+            eq("argument without keyword, nothing selected: says so", notices.Length "|" notices[1] "|" ran.Length, "1|" I18n.T("Selection.None") "|3")
+            runHotkey("lookup.ps1", {Text: "red apple"})
+            eq("argument: the selected text", ran.Length "|" ran[4].Argument, "4|red apple")
+            runHotkey("ip.bat", {Text: "8.8.8.8 & del x"})
+            eq("cmd characters: refused", notices.Length "|" notices[2] "|" ran.Length, "2|" I18n.T("Hotkey.SelectionRefused", "Ping IP") "|4")
+            runHotkey("pdf.ahk", {Files: files})
+            eq("several files", ran.Length "|" (ran[5].Argument is Array) "|" ran[5].Argument.Length, "5|1|2")
+            runHotkey("gone.ahk", {Text: "x"})
+            eq("missing script: says so", notices.Length "|" notices[3] "|" ran.Length, "3|" I18n.T("Hotkey.ScriptMissing", "gone.ahk") "|5")
+
+            eq("name", HotkeyEditor.ActionName("script:pdf.ahk") "|" HotkeyEditor.ActionName("script:gone.ahk"), "PDF Tool|" I18n.T("HotkeyEditor.ScriptMissing", "script:gone.ahk"))
+            eq("list text", HotkeyEditor.ListText(Map("Key", "^!p", "Action", "script:pdf.ahk")), I18n.T("Prefs.Hotkey.Run", "PDF Tool"))
+            eq("missing", HotkeyEditor.IsMissing(Map("Action", "script:gone.ahk")) "|" HotkeyEditor.IsMissing(Map("Action", "script:pdf.ahk")), "1|0")
+            detail := HotkeyEditor.ActionDetail("script:pdf.ahk")
+            eq("detail: takes the selection", detail.Text "|" detail.Missing, I18n.T("CommandPicker.Kind.Script") " · pdf.ahk · " I18n.T("HotkeyEditor.Detail.ScriptArgument") "|0")
+            eq("detail: plain", HotkeyEditor.ActionDetail("script:plain.ahk").Text, I18n.T("CommandPicker.Kind.Script") " · plain.ahk · " I18n.T("HotkeyEditor.Detail.Plain"))
+            detail := HotkeyEditor.ActionDetail("script:gone.ahk")
+            eq("detail: missing", detail.Text "|" detail.Missing, I18n.T("HotkeyEditor.Detail.ScriptMissing") "|1")
+            eq("summary", InStr(HotkeyEditor.Summary(Map("Key", "^!p", "Action", "script:pdf.ahk", "WinTitle", "")), '"PDF Tool"') > 0, true)
+
+            choices := CommandPicker.Choices([], ScriptProvider.Scripts)
+            kinds := Map()
+            for choice in choices
+                kinds[choice.Kind] := (kinds.Has(choice.Kind) ? kinds[choice.Kind] : 0) + 1
+            eq("picker: the scripts as their own kind, before the system commands", kinds[I18n.T("CommandPicker.Kind.Script")] "|" choices[3].Id "|" choices[3].Kind "|" choices[9].Kind
+                , "6|script:ip.bat|" I18n.T("CommandPicker.Kind.Script") "|" I18n.T("CommandPicker.Kind.System"))
+            found := CommandPicker.Filter(choices, "noword")
+            eq("picker: found by file name", found.Length ? found[1].Id : "", "script:noword.py")
+            found := CommandPicker.Filter(choices, "lk")
+            eq("picker: found by keyword", found.Length ? found[1].Id : "", "script:lookup.ps1")
+        } finally {
+            ScriptProvider.DefineProp("Run", savedRun), App.DefineProp("Notify", savedNotify), SearchWindow.DefineProp("Show", savedShow)
+            Usage.Days := savedUsage, scripts["Enabled"] := savedEnabled
+            ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2], ScriptProvider._checked := saved[3]
+            try DirDelete(root, true)
+        }
     }
 
     ; Snippets: the text is searched too

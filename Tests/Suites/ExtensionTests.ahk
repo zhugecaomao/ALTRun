@@ -2325,7 +2325,7 @@ class ExtensionTests {
         eq("editor: own name is fine", fields[1].Check.Call("PO", Map()), "")
         ok("editor: bad regex warns", fields[3].Check.Call("(x", Map("Kind", "Text")) != "")
         commands := [Map("Title", "A", "Selection", "PO"), Map("Title", "B"), Map("Title", "C", "Selection", ["pdf", "po"])]
-        eq("command titles", joined(SelectionActions.CommandTitles(["Text", "PO"], commands)), "A|C")
+        eq("command titles", joined(SelectionActions.CommandTitles(["Text", "PO"], commands, [])), "A|C")
         eq("kind text", SelectionActions.KindText("File") "|" SelectionActions.KindText("Text"), "File (extensions)|Text (regex)")
         defaultTypes := AppSettings.Defaults()["SelectionTypes"]
         eq("defaults: typical types", PrefsPages.SelectionTypeKeys(defaultTypes[1])[1] "|" defaultTypes.Length, "Name: Email|5")
@@ -2339,7 +2339,7 @@ class ExtensionTests {
         ; every example type has an example command that works with it (#434: the examples can be used as they are)
         defaultCommands := AppSettings._DefaultCommands()
         for each in defaultTypes {
-            titles := SelectionActions.CommandTitles([each["Name"]], defaultCommands)
+            titles := SelectionActions.CommandTitles([each["Name"]], defaultCommands, [])
             eq("defaults: a command for " each["Name"], titles.Length, 1)
         }
         sample(text, files := "") {                                         ; the first row of the panel with the default types and commands

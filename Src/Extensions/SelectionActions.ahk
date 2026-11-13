@@ -22,6 +22,7 @@
 ;     a File / Command without {query} gets the selection appended as its last argument, quoted (as "Open with").
 ;   Selected text can't break out of the command line: a command isn't shown when the text has a line break or a double quote
 ;   (except URLs, which are encoded), nor when it runs a shell (cmd, PowerShell, a batch file...) and the text has that shell's special characters.
+;   Scripts with "@altrun.selection PO, PDF" in their header come after the custom commands, with the same checks (ScriptProvider.ActionsFor).
 ;
 ; Usage:
 ;   SelectionActions.Run()                    called by the hotkey
@@ -199,14 +200,16 @@ class SelectionActions {
         return names
     }
 
-    ; The custom commands for a selection (Classify's result), in the order of the command list; none with custom commands turned off
+    ; The custom commands for a selection (Classify's result), in the order of the command list (none with custom commands turned
+    ; off), then the scripts for it (ScriptProvider.ActionsFor)
     static CommandActions(info) {
         actions := []
-        if !ProviderRegistry.IsEnabled(CustomCommandProvider)
-            return actions
-        for command in AppSettings.CustomCommands
-            if (SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info)))
-                actions.Push(action)
+        if ProviderRegistry.IsEnabled(CustomCommandProvider)
+            for command in AppSettings.CustomCommands
+                if (SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info)))
+                    actions.Push(action)
+        for action in ScriptProvider.ActionsFor(info)
+            actions.Push(action)
         return actions
     }
 
@@ -219,12 +222,16 @@ class SelectionActions {
         return false
     }
 
-    ; The titles of the commands (a list being edited in Preferences) that are shown for these types
-    static CommandTitles(types, commands) {
+    ; The titles of the commands (a list being edited in Preferences) that are shown for these types, then of the scripts
+    ; ("Backup (script)"; scripts: ScriptProvider.Scripts-like objects, the Scripts folder's when not given)
+    static CommandTitles(types, commands, scripts := "") {
         titles := []
         for command in commands
             if (command is Map && SelectionActions.CommandFor(command, types))
                 titles.Push(command.Has("Title") ? command["Title"] : "")
+        for script in (scripts is Array) ? scripts : ScriptProvider.Current()
+            if ScriptProvider.ForTypes(script, types)
+                titles.Push(I18n.T("Selection.ScriptTitle", script.Title))
         return titles
     }
 

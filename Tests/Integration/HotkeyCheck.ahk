@@ -1,5 +1,6 @@
 ;===============================================================================
-; HotkeyCheck.ahk - custom hotkeys that run a custom command ("custom:<Id>"), pressed for real on a Windows desktop (AutoHotkey v2)
+; HotkeyCheck.ahk - custom hotkeys that run a custom command ("custom:<Id>") or a script ("script:<file name>"), pressed for real on a
+; Windows desktop (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Run by .github/workflows/hotkeys.yml; also works on your own PC (it takes over the keyboard for half a minute and starts its own
 ; copy of ALTRun from <appDir> with settings of its own). The commands write marker files with cmd.exe, so the check only looks at
@@ -8,6 +9,8 @@
 ;   selection   Ctrl+Alt+F10 runs a {query} command while text is selected in a window of this script: the marker holds that
 ;               text, and the clipboard is what it was before (ALTRun copies the selection with Ctrl+C and puts the clipboard back)
 ;   deleted     Ctrl+Alt+F11 points to a command that doesn't exist: nothing runs, ALTRun's log says so
+;   script      Ctrl+Alt+F12 runs a script with "@altrun.selection Text" (in <appDir>\Scripts) while text is selected: the script writes
+;               its first argument to its marker, so the marker holds that text, and the clipboard is what it was before
 ; Each is tried Rounds times. Prints one line per round (PASS / FAIL) and ALTRun's log on failure; the exit code is the number of
 ; failed rounds.
 ;
@@ -22,7 +25,8 @@
 global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 3
 global Work := "C:\HotkeyCheck\work", LogFile := A_Temp "\ALTRun.log"
-global PlainMarker := Work "\plain.txt", QueryMarker := Work "\query.txt"
+global PlainMarker := Work "\plain.txt", QueryMarker := Work "\query.txt", ScriptMarker := Work "\script.txt"
+global ScriptsDir := AppDir "\Scripts"                                    ; a portable copy (its folder is writable): the Scripts folder is in it
 global Failures := 0, AppPid := 0, Source := "", SourceEdit := ""
 OnError(Crashed)
 
@@ -34,6 +38,8 @@ try {
         Selection(A_Index)
     Loop Rounds
         Deleted(A_Index)
+    Loop Rounds
+        ScriptSelection(A_Index)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -65,7 +71,12 @@ Setup() {
         , "Hotkeys", [
             Map("Key", "^!F9", "Action", "custom:plain001", "WinTitle", "")
           , Map("Key", "^!F10", "Action", "custom:query001", "WinTitle", "")
-          , Map("Key", "^!F11", "Action", "custom:gone0001", "WinTitle", "")])
+          , Map("Key", "^!F11", "Action", "custom:gone0001", "WinTitle", "")
+          , Map("Key", "^!F12", "Action", "script:marker.ahk", "WinTitle", "")])
+    try DirDelete(ScriptsDir, true)
+    DirCreate(ScriptsDir)
+    FileAppend("; @altrun.title Write script marker`n; @altrun.selection Text`n"
+        . 'FileAppend((A_Args.Length ? A_Args[1] : "") "``n", "' ScriptMarker '")`n', ScriptsDir "\marker.ahk", "UTF-8")
     try DirDelete(AppDir "\Data", true)
     DirCreate(AppDir "\Data")
     FileAppend(JSON.Stringify(settings, 4), AppDir "\Data\ALTRun.json", "UTF-8")
@@ -122,6 +133,19 @@ Deleted(n) {
     Result("deleted", n, found && !ran, (found ? "logged" : "no log line in 5 s") (ran ? ", but a command ran" : ", nothing ran"))
 }
 
+ScriptSelection(n) {
+    try FileDelete(ScriptMarker)
+    A_Clipboard := "clipboard before script " n
+    FrontSource()
+    SendMessage(0xB1, 0, -1, SourceEdit)                                    ; EM_SETSEL: all of it selected
+    SendInput("^!{F12}")
+    text := WaitFor(ScriptMarker)
+    Sleep(300)
+    clip := A_Clipboard
+    Result("script", n, Trim(text, "`r`n ") == "hello123" && clip == "clipboard before script " n
+        , "marker: " (text = "" ? "not written in 5 s" : Trim(text, "`r`n ")) ", clipboard: " clip)
+}
+
 FrontSource() {
     WinActivate(Source.Hwnd)
     if !WinWaitActive(Source.Hwnd, , 3)
@@ -175,4 +199,5 @@ TearDown() {
             try ProcessClose(AppPid)
         AppPid := 0
     }
+    try DirDelete(ScriptsDir, true)
 }

@@ -10,7 +10,11 @@
 ;   @altrun.mode      window | silent | output
 ;                     window (default) runs normally with a window; silent runs in the background and shows the last line of output as a notification when done;
 ;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done
+;   @altrun.selection Text, PDF         content type names (built-in or Preferences → Selection): the script is offered in the actions
+;                     panel of such a selection (Ctrl+Alt+\, after the custom commands), which is passed to it as its first argument
+;                     (several files: one argument each), with the panel's command-line checks (SelectionActions.SafeArgument)
 ; Read again when the folder changes (modified time), without reloading ALTRun. F3 edits the script in Notepad.
+; A custom hotkey with Action "script:<file name>" runs a script (RunFromHotkey); renaming the file breaks it (shown in red in Preferences).
 ;
 ; Settings (ALTRun.json -> Features.Scripts): Enabled / Keyword ("script backup" searches scripts only, "script " lists all,
 ; like the snippets' "snip"; just "script" without the space still shows the commands with that word)
@@ -69,6 +73,92 @@ class ScriptProvider {
     ; and an installed ALTRun, and after the data folder moves. Before settings version 7 it was the full path (see Knowledge.ConvertUids)
     static Uid(script) => "script:" StrLower(script.Name)
 
+    ; The scripts as the folder has them now: read again when it changed (looked at most every 2 s, as Search does)
+    static Current() {
+        if (A_TickCount - ScriptProvider._checked > 2000)
+            ScriptProvider._RefreshIfChanged()
+        return ScriptProvider.Scripts
+    }
+
+    ; The script with this file name (any case; "script:<file name>" in a hotkey), "" when the folder has none
+    static FindByName(name) {
+        for script in ScriptProvider.Current()
+            if (script.Name = name)
+                return script
+        return ""
+    }
+
+    ; Whether "@altrun.selection" names one of these content types (any case)
+    static ForTypes(script, types) {
+        for name in script.Selection
+            for each in types
+                if (each = name)
+                    return true
+        return false
+    }
+
+    ; The actions panel rows of the scripts for a selection (SelectionActions.Classify's result), in file name order; none with
+    ; scripts turned off. A script whose command line can't take the selection safely isn't shown (as the custom commands)
+    static ActionsFor(info) {
+        actions := []
+        if !ProviderRegistry.IsEnabled(ScriptProvider)
+            return actions
+        for script in ScriptProvider.Current() {
+            if !(ScriptProvider.ForTypes(script, info.Types) && SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script)))
+                continue
+            actions.Push(ResultItem(script.Title, I18n.T("Script.Subtitle", script.Name)
+                , {Icon: ScriptProvider._Icon(script), OnRun: ScriptProvider._Runner(script, ScriptProvider.SelectionArgument(info))}))
+        }
+        return actions
+    }
+
+    static _Runner(script, argument) => (*) => ScriptProvider.Run(script, argument)   ; each row keeps its own argument
+
+    ; What a script gets for a selection: the text, the path, or several paths (an argument each)
+    static SelectionArgument(info) {
+        switch info.Kind {
+            case "files":          return info.Files.Clone()
+            case "file", "folder": return info.Path
+        }
+        return info.Term
+    }
+
+    ; The command line the selection checks look at (SelectionActions.SafeArgument): a script whose output is captured runs through cmd too
+    ; (named as cmd.exe: only looked at, and %ComSpec% may be any path)
+    static ShellCommand(script) {
+        line := ScriptProvider.CommandLine(script)
+        return Map("Target", ScriptProvider.ThroughCmd(script) ? "cmd.exe /c " line : line, "Arguments", "")
+    }
+
+    ; A custom hotkey whose Action is "script:<file name>", by the rules of CustomCommandProvider.RunFromHotkey: a script that takes
+    ; something (@altrun.argument or @altrun.selection) gets the selection as its argument (several files: one each), if it passes
+    ; the panel's checks; the content types aren't checked. Nothing selected: one with an argument and a keyword opens the search
+    ; window with "keyword ", one with an argument and no keyword says so, one with only content types runs without an argument.
+    ; Any other script runs directly, without copying the selection. capture: replaces SelectionActions.Capture in the tests
+    static RunFromHotkey(name, capture := "") {
+        ScriptProvider._RefreshIfChanged()                                  ; just renamed or added: the folder as it is now
+        script := ScriptProvider.FindByName(name)
+        if !IsObject(script) {
+            Logger.Warn("ScriptProvider: the hotkey's script " name " no longer exists")
+            return App.Notify(I18n.T("Hotkey.ScriptMissing", name), 3000)
+        }
+        takesArgument := (script.Argument != ""), argument := ""
+        if (takesArgument || script.Selection.Length) {
+            selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture()
+            if IsObject(selection) {
+                info := SelectionActions.Classify(selection)
+                if !SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script))
+                    return App.Notify(I18n.T("Hotkey.SelectionRefused", script.Title), 3000)
+                argument := ScriptProvider.SelectionArgument(info)
+            } else if takesArgument {
+                return (script.Keyword != "") ? SearchWindow.Show(script.Keyword " ") : App.Notify(I18n.T("Selection.None"), 2000)
+            }
+        }
+        Usage.Count(ScriptProvider.Id)
+        DllCall("AllowSetForegroundWindow", "UInt", 0xFFFFFFFF)            ; ASFW_ANY: the window it opens may come to the front
+        return ScriptProvider.Run(script, argument)
+    }
+
     static ItemFor(script, score, argument := "") {
         props := {Kind: "file", Arg: script.Path, Icon: ScriptProvider._Icon(script), Score: score, Source: script
             , Uid: ScriptProvider.Uid(script), OnRun: (*) => ScriptProvider.Run(script, argument)}
@@ -92,9 +182,11 @@ class ScriptProvider {
         }
     }
 
-    ; The command line that runs the script
+    ; The command line that runs the script; argument: one, or an array of them (several selected files)
     static CommandLine(script, argument := "") {
-        quoted := '"' script.Path '"' ((argument != "") ? " " Win.QuoteArg(argument) : "")
+        quoted := '"' script.Path '"'
+        for each in ScriptProvider._Arguments(argument)
+            quoted .= " " Win.QuoteArg(each)
         switch script.Ext {
             case "ahk": return '"' A_AhkPath '"' (A_IsCompiled ? " /script " : " ") quoted
             case "ps1": return 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ' quoted
@@ -107,9 +199,12 @@ class ScriptProvider {
     ; cmd doesn't know \" and ends the quoted argument there, so & | < > after it would run as commands: a quote in the argument is refused
     static ThroughCmd(script) => script.Mode != "window" || !RegExMatch(script.Ext, "^(ahk|ps1|py)$")
 
+    static _Arguments(argument) => (argument is Array) ? argument : (argument != "") ? [argument] : []
+
     static Run(script, argument := "") {
-        if (InStr(argument, '"') && ScriptProvider.ThroughCmd(script))
-            return App.Notify(I18n.T("Script.QuoteInArgument"), 4000)
+        for each in ScriptProvider._Arguments(argument)
+            if (InStr(each, '"') && ScriptProvider.ThroughCmd(script))
+                return App.Notify(I18n.T("Script.QuoteInArgument"), 4000)
         SplitPath(script.Path, , &dir)
         command := ScriptProvider.CommandLine(script, argument)
         if (script.Mode = "window")
@@ -164,8 +259,12 @@ class ScriptProvider {
                 ext := StrLower(A_LoopFileExt)
                 if !ScriptProvider.Extensions.Has(ext)
                     continue
-                if IsObject(script := ScriptProvider.ReadScript(A_LoopFileFullPath))
-                    scripts.Push(script)
+                if !IsObject(script := ScriptProvider.ReadScript(A_LoopFileFullPath))
+                    continue
+                position := scripts.Length + 1                              ; by file name (NTFS lists them so, other file systems may not)
+                while (position > 1 && StrCompare(scripts[position - 1].Name, script.Name, "Logical") > 0)
+                    position -= 1
+                scripts.InsertAt(position, script)
             }
         }
         ScriptProvider.Scripts := scripts
@@ -173,10 +272,10 @@ class ScriptProvider {
         ScriptProvider._checked := A_TickCount
     }
 
-    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Keys}; reads @altrun.xxx in the first 30 lines
+    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Selection: [type names], Keys}; reads @altrun.xxx in the first 30 lines
     static ReadScript(path) {
         SplitPath(path, &name, , &ext, &baseName)
-        meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window")
+        meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window", "selection", "")
         try {
             Loop Read, path {
                 if (A_Index > 30)
@@ -190,8 +289,12 @@ class ScriptProvider {
         if !(mode = "silent" || mode = "output")
             mode := "window"
         title := meta["title"], keyword := StrLower(Trim(meta["keyword"]))
+        types := []
+        for each in StrSplit(meta["selection"], [",", ";"])
+            if ((each := Trim(each)) != "")
+                types.Push(each)
         pinyinText := Pinyin.Initials(title)
-        return {Path: path, Name: name, Ext: StrLower(ext), Title: title, Keyword: keyword, Argument: Trim(meta["argument"]), Mode: mode
+        return {Path: path, Name: name, Ext: StrLower(ext), Title: title, Keyword: keyword, Argument: Trim(meta["argument"]), Mode: mode, Selection: types
               , Keys: [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]}
     }
 

@@ -177,7 +177,7 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
    ```
    `{query}` becomes the selected text or path (encoded in a `Url`); several files become `"a" "b"` (each quoted). A `File` / `Command` without `{query}` gets the selection added as its last argument, in quotes.
 
-Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword).
+Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword). [Scripts](Scripts) can be offered for content types too (`@altrun.selection PO` at the top of the script): they come after the custom commands, and the selection is passed as their first argument.
 
 **A hotkey for one content type**: give the commands for that type the same keyword with `{query}` (for example `po` for "ERP order" and "WMS order"), then add a hotkey in Preferences → Hotkeys with the action "Search in ALTRun" and the search text `po {selection}`. Select an order number and press it: the search window lists just those commands with the number filled in; Enter runs the first, ↓ picks another. This uses the selected text only (on one line, at most 100 characters; see [Hotkeys](Hotkeys)), and the check for shells below doesn't apply there, as when you type the text yourself; for files, use `Ctrl+Alt+\`, where the commands for the file's type come first.
 
