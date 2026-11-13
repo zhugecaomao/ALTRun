@@ -190,24 +190,28 @@ class PreferencesTests {
         ; the dialog: a new command gets its Id when it opens, the line shows its triggers and follows the keyword typed; Cancel changes nothing
         settings := {Commands: [Map("Id", "taken001", "Title", "A")], Hotkeys: [other], Value: (path) => ""}
         seen := {Text: "", Typed: "", Fits: false, Button: ""}
-        result := Dialog(CustomCommandProvider.NewCommand(), true)
-        eq("new: an Id", IsObject(result) && AppSettings.IsId(result.Command["Id"]) && result.Command["Id"] != "taken001", true)
-        eq("new: no Triggers key saved", IsObject(result) && !result.Command.Has("Triggers"), true)
-        eq("new: no hotkeys changed", IsObject(result) && !result.HotkeysChanged && settings.Hotkeys.Length = 1, true)
-        eq("line when opened", seen.Text, "Only found by its name in the search")
-        eq("line follows the keyword", seen.Typed, "Keyword np")
-        eq("button", seen.Button, "Set Hotkey...")
-        eq("fits", seen.Fits, true)
-        existing := Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP")
-        settings.Hotkeys.Push(hk("^!p"))
-        eq("cancelled", Dialog(existing, false), "")
-        eq("existing: its hotkey on the line", seen.Text, "Keyword ping · Selection IP · Hotkey Ctrl+Alt+P")
-        for language in I18n.Languages() {                                  ; the line and its button inside the window in every language
-            I18n.Init(language[1])
-            Dialog(existing, false)
-            eq(language[1] " fits", seen.Fits, true)
+        try Dialogs()
+        finally I18n.Init(savedLang)                                        ; a failure in a dialog doesn't leave the language changed for the tests after this one
+
+        Dialogs() {
+            result := Dialog(CustomCommandProvider.NewCommand(), true)
+            eq("new: an Id", IsObject(result) && AppSettings.IsId(result.Command["Id"]) && result.Command["Id"] != "taken001", true)
+            eq("new: no Triggers key saved", IsObject(result) && !result.Command.Has("Triggers"), true)
+            eq("new: no hotkeys changed", IsObject(result) && !result.HotkeysChanged && settings.Hotkeys.Length = 1, true)
+            eq("line when opened", seen.Text, "Only found by its name in the search")
+            eq("line follows the keyword", seen.Typed, "Keyword np")
+            eq("button", seen.Button, "Set Hotkey...")
+            eq("fits", seen.Fits, true)
+            existing := Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP")
+            settings.Hotkeys.Push(hk("^!p"))
+            eq("cancelled", Dialog(existing, false), "")
+            eq("existing: its hotkey on the line", seen.Text, "Keyword ping · Selection IP · Hotkey Ctrl+Alt+P")
+            for language in I18n.Languages() {                                  ; the line and its button inside the window in every language
+                I18n.Init(language[1])
+                Dialog(existing, false)
+                eq(language[1] " fits", seen.Fits, true)
+            }
         }
-        I18n.Init(savedLang)
 
         ; Opens the dialog, notes the line (and after typing a keyword), whether everything is inside the window, then OK / Cancel
         Dialog(item, ok) {

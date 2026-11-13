@@ -40,9 +40,10 @@ class HotkeyEditor {
         ui := HotkeyEditor.Build(owner, item, original, OnOk, commands, inUse)
         g := ui.Gui
         ui.Choose.Enabled := !fixedAction
+        hwnd := g.Hwnd                                                      ; kept: closed while being shown (a timer), g has no window any more
         owner.Opt("+Disabled")
         g.Show()
-        WinWaitClose(g.Hwnd)
+        WinWaitClose("ahk_id " hwnd)
         HotkeyBox.CancelActive()                                            ; the window was closed while a hotkey was being recorded
         owner.Opt("-Disabled")
         try WinActivate("ahk_id " owner.Hwnd)
