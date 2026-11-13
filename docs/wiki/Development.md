@@ -30,8 +30,8 @@ Src\UI\             SearchWindow (+ SearchSession, SearchKeys, ResultRows, Searc
                     ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (sync task editor and sync window)
 Src\Providers\      Search features, one class per feature
 Src\Extensions\     Features outside the search window: SnippetExpander, QuickSwitch (file dialogs; + QuickSwitchPanel, QuickSwitchFavorites,
-                    FileDialogs, FileManagers), AutoDate, CapsLockSwitch +
-                    CapsLockHelper, SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
+                    FileDialogs, FileManagers), AutoDate, CapsLockSwitch,
+                    AdminHelper (helper for administrator windows), SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
                     DelayedStart, RoboSync + SyncJobs + SyncProgress (folder sync with robocopy)
 Resources\          Data shipped with the program (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  Unit test runner: loads the code with in-memory settings and runs every suite
@@ -86,14 +86,14 @@ Rules every change keeps; where a check enforces one, it is named.
 - **The clipboard**: code that borrows it (`saved := ClipboardAll()`) puts it back in a `finally` block (`ProjectTests.ClipboardRestore`)
 - **Messages from other programs**: WM_COPYDATA is read only within the size the sender gave (`Win.CopyDataText`, `Everything.ParseList`); a command handed over by another instance that changes the program (`-Update`) asks first
 - **Command lines**: arguments are quoted with `Win.QuoteArg`; nothing the user typed goes through `cmd.exe` with a double quote in it (`ScriptProvider.ThroughCmd`)
-- **Anything run as administrator**: no file it uses is left where programs with normal rights can change it between the check and the use: the update is staged next to the program (`UpdateChecker.TempDir`), the task XML is held open while schtasks reads it (`CapsLockHelper.RegisterXml`); DLLs are loaded by full path
+- **Anything run as administrator**: no file it uses is left where programs with normal rights can change it between the check and the use: the update is staged next to the program (`UpdateChecker.TempDir`), the task XML is held open while schtasks reads it (`AdminHelper.RegisterXml`); DLLs are loaded by full path
 - **The network**: only the requests listed in [SECURITY.md](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#network-connections); a new one is added there first
 
 ### Threads, messages and re-entrancy
 AutoHotkey runs one thread at a time, but a hotkey, timer, `OnMessage` handler or GUI event starts a new thread that **interrupts the current one whenever it waits**: `Sleep`, `MsgBox` and other dialogs, `WinWait`, `Download()`, and `DllCall`s or `SendMessage`s that pump messages. Code that waits must expect shared state to have changed when it continues:
 - Two calls of the same function can overlap. `SafeFile` gives each write its own temporary file and lets the newest content win; `Everything` keeps one reply slot per query id (a query started while another waits for its reply); `ExplorerTabs.Open` takes only a new tab that no other running Open has taken
 - `Critical("On")` keeps a short section from being interrupted (painting the result rows, the icon cache); messages wait meanwhile, so keep it short and repaint afterwards (`SearchWindow`)
-- **Shared messages**: several handlers listen to the same message, so a handler returns a value only for its own: `WM_COPYDATA` (0x4A) goes to `App` (command lines from a second ALTRun), `Everything` (query replies), `QuickSwitch` (Total Commander's reply) and `CapsLockHelper`, each checking `dwData`; key messages (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) go to every window's handler, each checking the window
+- **Shared messages**: several handlers listen to the same message, so a handler returns a value only for its own: `WM_COPYDATA` (0x4A) goes to `App` (command lines from a second ALTRun), `Everything` (query replies), `QuickSwitch` (Total Commander's reply) and `AdminHelper`, each checking `dwData`; key messages (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) go to every window's handler, each checking the window
 - **Menus**: `Menu.Show` / `TrackPopupMenuEx` make ALTRun's hidden main window the foreground window; when the menu is closed without a choice, give the focus back (`QuickSwitchFavorites._DialogAfterMenu`)
 - **Paths on the network**: `FileExist`, `DirExist` and parsing a path (`SHParseDisplayName`) on a server that is offline wait for the network timeout on the calling thread (21 s on CI), freezing ALTRun. Don't touch a network path (`\\server\share`, a mapped drive) on the UI thread without a limit: take it as it is (`Path.ExistsOrRemote`), or check it on a thread of its own for a short time (`ExplorerTabs.FolderWithin`)
 - **Key state**: remote desktop tools inject every key, so `GetKeyState(key, "P")` never sees them down; use `App.IsKeyDown(key)` (logical or physical)

@@ -56,7 +56,7 @@ class PrefsPages {
         capsLabels := [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")]
         capsLock := PrefsForm.Choice("Keyboard.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"], capsLabels)            ; Caps Lock switches the input method (CapsLockSwitch)
         notice := PrefsForm.Check("Keyboard.CapsLockNotify", "Prefs.CapsLockNotify")            ; hint when Caps Lock turns on / off
-        elevated := PrefsForm.Check("Keyboard.CapsLockElevated", "Prefs.CapsLockElevated")            ; also in administrator windows (CapsLockHelper)
+        elevated := PrefsForm.Check("Keyboard.CapsLockElevated", "Prefs.CapsLockElevated")            ; also in administrator windows (AdminHelper)
         controls := PrefsForm._current.Controls
         elevatedDesc := controls[controls.Length]                           ; the description just added (sized for two lines, so the shorter text fits too)
         PreferencesWindow._ShieldAfter(elevated)                            ; turning it on / off asks for UAC

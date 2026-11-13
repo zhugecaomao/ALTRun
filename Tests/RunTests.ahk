@@ -95,7 +95,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\FileManagers.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CapsLockSwitch.ahk
-#Include %A_ScriptDir%\..\Src\Extensions\CapsLockHelper.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\AdminHelper.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\DelayedStart.ahk

@@ -124,7 +124,7 @@
 #Include Src\Extensions\FileManagers.ahk
 #Include Src\Extensions\AutoDate.ahk
 #Include Src\Extensions\CapsLockSwitch.ahk
-#Include Src\Extensions\CapsLockHelper.ahk
+#Include Src\Extensions\AdminHelper.ahk
 #Include Src\Extensions\TendonProfile.ahk
 #Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\DelayedStart.ahk

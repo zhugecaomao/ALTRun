@@ -30,8 +30,8 @@ Src\UI\             SearchWindow (+ SearchSession、SearchKeys 键盘、ResultRo
                     ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (同步任务编辑和同步窗口)
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框; + QuickSwitchPanel、QuickSwitchFavorites、
-                    FileDialogs、FileManagers), AutoDate, CapsLockSwitch +
-                    CapsLockHelper, SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
+                    FileDialogs、FileManagers), AutoDate, CapsLockSwitch,
+                    AdminHelper (helper for administrator windows), SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
                     DelayedStart, RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  单元测试的入口: 载入程序代码 (设置只在内存里), 运行所有测试类
@@ -86,14 +86,14 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 - **剪贴板**: 借用剪贴板的代码 (`saved := ClipboardAll()`) 在 `finally` 里还原 (`ProjectTests.ClipboardRestore`)
 - **其他程序发来的消息**: WM_COPYDATA 只在发送方给出的长度内读取 (`Win.CopyDataText`、`Everything.ParseList`); 另一个实例转交过来、会改动程序的命令 (`-Update`) 先询问
 - **命令行**: 参数用 `Win.QuoteArg` 加引号; 用户输入的内容带双引号时不经过 `cmd.exe` (`ScriptProvider.ThroughCmd`)
-- **以管理员身份运行的东西**: 用到的文件不放在普通权限程序能在检查和使用之间改动的地方: 更新包暂存在程序旁边 (`UpdateChecker.TempDir`), 任务 XML 在 schtasks 读取期间被占住 (`CapsLockHelper.RegisterXml`); DLL 用完整路径加载
+- **以管理员身份运行的东西**: 用到的文件不放在普通权限程序能在检查和使用之间改动的地方: 更新包暂存在程序旁边 (`UpdateChecker.TempDir`), 任务 XML 在 schtasks 读取期间被占住 (`AdminHelper.RegisterXml`); DLL 用完整路径加载
 - **网络**: 只有 [SECURITY.md](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#联网) 里列出的请求; 新增的先写进那里
 
 ### 线程、消息和重入
 AutoHotkey 同一时间只运行一个线程, 但热键、计时器、`OnMessage` 处理函数和界面事件会开一个新线程, **在当前线程等待时插进来**: `Sleep`、`MsgBox` 等对话框、`WinWait`、`Download()`, 以及会处理消息的 `DllCall` / `SendMessage`。等待过的代码继续时, 要假设共享的状态已经变了:
 - 同一个函数可能同时运行两次。`SafeFile` 每次写入用自己的临时文件, 并以最新的内容为准; `Everything` 每个查询 id 一个回复位置 (等回复时可能又开始一个查询); `ExplorerTabs.Open` 只拿没有被其他正在运行的 Open 拿走的新标签
 - `Critical("On")` 让一小段代码不被打断 (画结果行、图标缓存); 期间消息会排队, 所以要短, 结束后重绘 (`SearchWindow`)
-- **共用的消息**: 同一个消息有几个处理函数, 只在是自己的消息时才返回值: `WM_COPYDATA` (0x4A) 有 `App` (后启动的 ALTRun 传来的命令行)、`Everything` (查询回复)、`QuickSwitch` (Total Commander 的回复) 和 `CapsLockHelper`, 各自检查 `dwData`; 按键消息 (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) 每个窗口的处理函数都会收到, 各自检查窗口
+- **共用的消息**: 同一个消息有几个处理函数, 只在是自己的消息时才返回值: `WM_COPYDATA` (0x4A) 有 `App` (后启动的 ALTRun 传来的命令行)、`Everything` (查询回复)、`QuickSwitch` (Total Commander 的回复) 和 `AdminHelper`, 各自检查 `dwData`; 按键消息 (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) 每个窗口的处理函数都会收到, 各自检查窗口
 - **菜单**: `Menu.Show` / `TrackPopupMenuEx` 会把 ALTRun 隐藏的主窗口设成前台; 没选菜单项就关掉时, 要把焦点还回去 (`QuickSwitchFavorites._DialogAfterMenu`)
 - **网络路径**: 服务器离线时, `FileExist`、`DirExist` 和解析路径 (`SHParseDisplayName`) 会在调用的线程里等网络超时 (CI 上 21 秒), ALTRun 卡住。不要在界面线程里不限时地访问网络路径 (`\\server\share`、映射的网络驱动器): 直接当作存在 (`Path.ExistsOrRemote`), 或者在单独的线程里限时检查 (`ExplorerTabs.FolderWithin`)
 - **按键状态**: 远程桌面软件注入所有按键, `GetKeyState(key, "P")` 永远看不到它们按下; 用 `App.IsKeyDown(key)` (逻辑或物理按下)

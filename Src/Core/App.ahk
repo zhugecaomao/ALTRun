@@ -39,8 +39,8 @@ class App {
     static _handOffNote := ""
 
     static Start() {
-        if (A_Args.Length && A_Args[1] = CapsLockHelper.Arg)                 ; the helper that switches input languages in administrator windows; it does only that
-            return CapsLockHelper.Run()
+        if (A_Args.Length && AdminHelper.IsHelperArg(A_Args[1]))            ; the helper for administrator windows; it does only that
+            return AdminHelper.Run(A_Args[1])
         if App.HandOff()
             ExitApp()
         if A_IsAdmin
@@ -491,7 +491,7 @@ class App {
         if CapsLockSwitch.IsMode(capsLock) {                                ; CapsLock switches the input language; Caps Lock only when held
             CapsLockSwitch.Mode := capsLock
             CapsLockSwitch.Register((key, fn) => App._TryHotkey(key, fn))
-            CapsLockHelper.Start()                                          ; also in administrator windows (when that option is on)
+            AdminHelper.Start()                                          ; also in administrator windows (when that option is on)
         }
 
         if (AppSettings.General["SelectionHotkey"] != "")                  ; actions for the selection
@@ -784,6 +784,10 @@ class App {
             App.CapsLockNotice(args[2] = "1")
             return
         }
+        if (args.Length >= 2 && args[1] = "-AdminHelperNote") {             ; a line for the log from the helper for administrator windows
+            Logger.Debug("AdminHelper: " SubStr(args[2], 1, 300))
+            return
+        }
         if (args.Length >= 1 && args[1] = "-Update") {                     ; handed over to a running ALTRun: any program could have sent it (to one
             UpdateChecker.Check(!forwarded)                                 ; running as administrator too), so it asks first, like a check from the tray
             return
@@ -805,7 +809,7 @@ class App {
         if Logger.Enabled
             Logger.Debug(App.ExitNote(reason, App._exitBy, App.HeldKeys(), SearchWindow.ForegroundText()))
         try ErrorHandler.WriteCounts()                                     ; uncaught errors counted but not written yet
-        CapsLockHelper.Stop()
+        AdminHelper.Stop()
         try SyncPreview.SaveOnExit()                                       ; where an open sync window is (closing one saves it, quitting doesn't close them)
         catch as e
             Logger.Error("App: cannot save the sync window's place on exit - " e.Message)

@@ -74,13 +74,13 @@ class DelayedStartCheck {
         return DelayedStartCheck.Failures
     }
 
-    ; The Caps Lock helper's task is registered by schtasks /create /xml run as administrator (CapsLockHelper.RegisterXml), while ALTRun
+    ; The Caps Lock helper's task is registered by schtasks /create /xml run as administrator (AdminHelper.RegisterXml), while ALTRun
     ; holds the XML file open with a handle that refuses writing and deleting: schtasks must still be able to read it, and others must not change it
     static TaskFromXml(folderPath) {
         name := "CapsLock XML"
-        xml := CapsLockHelper.TaskXml(EnvGet("SystemRoot") "\System32\notepad.exe", "/a b.txt", A_Temp, TaskScheduler.UserId())
+        xml := AdminHelper.TaskXml(EnvGet("SystemRoot") "\System32\notepad.exe", "/a b.txt", A_Temp, TaskScheduler.UserId())
         try {
-            code := CapsLockHelper.RegisterXml(folderPath "\" name, xml)
+            code := AdminHelper.RegisterXml(folderPath "\" name, xml)
             tasks := DelayedStartCheck.ByName(TaskScheduler.Tasks(folderPath))
             DelayedStartCheck.Check("task from XML held open: schtasks read it", code = 0 && tasks.Has(name) && tasks[name].Arguments == "/a b.txt"
                 , "exit code " code ", " DelayedStartCheck.Names(tasks))
@@ -105,6 +105,24 @@ class DelayedStartCheck {
             DelayedStartCheck.Check("task from XML: no error", false, e.Message " (" e.What ", line " e.Line ")")
         try TaskScheduler.Delete(folderPath, name)
         try TaskScheduler.DeleteFolder(folderPath)
+        DelayedStartCheck.MoveOldTask()
+    }
+
+    ; A helper started by the task of a version up to 2026.11.13 ("ALTRun CapsLock Helper") moves it to the new name, starting the same
+    ; program as the helper; the old one is deleted. (Deleting a task doesn't end the process it started: probed on Windows CI, run 43443029900)
+    static MoveOldTask() {
+        if (AdminHelper.Window() || DelayedStartCheck.ByName(TaskScheduler.Tasks("\")).Has(AdminHelper.TaskName))   ; not on a computer that uses them
+            return DelayedStartCheck.Check("old task moved: skipped, the helper's task is in use here", true)
+        try {
+            code := AdminHelper.RegisterXml(AdminHelper.OldTaskName, AdminHelper.TaskXml(EnvGet("SystemRoot") "\System32\notepad.exe", "-CapsLockHelper", A_Temp, TaskScheduler.UserId()))
+            AdminHelper.MoveTask()
+            tasks := DelayedStartCheck.ByName(TaskScheduler.Tasks("\"))
+            DelayedStartCheck.Check("old task moved to the new name", code = 0 && tasks.Has(AdminHelper.TaskName) && !tasks.Has(AdminHelper.OldTaskName)
+                && RegExMatch(tasks[AdminHelper.TaskName].Arguments, " -AdminHelper$") > 0, "create " code ", " DelayedStartCheck.Names(tasks))
+        } catch as e
+            DelayedStartCheck.Check("old task moved: no error", false, e.Message " (" e.What ", line " e.Line ")")
+        try TaskScheduler.Delete("\", AdminHelper.OldTaskName)
+        try TaskScheduler.Delete("\", AdminHelper.TaskName)
     }
 
     ; A startup app of this user (a Run value made for the check): listed, turned off and on again as Task Manager does it, made into an entry
