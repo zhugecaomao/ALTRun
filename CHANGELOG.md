@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.12.13]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 自定义命令的 "状态" 列直接提示用不上的占位符 (不用先检查路径): `{query} 收不到` (有 `{query}` 但没有关键字、内容类型或热键)、`改用 {query}` (命令里写了 `{selection}`)、`不认识 {date}` (命令只替换 `{query}` `{hwnd}` `{pid}`, 其他原样传给程序)
+
 ## [2026.11.12.12]
 
 测试版。
@@ -1465,7 +1474,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.13...HEAD
+[2026.11.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.12...2026.11.12.13
 [2026.11.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.11...2026.11.12.12
 [2026.11.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.10...2026.11.12.11
 [2026.11.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.9...2026.11.12.10

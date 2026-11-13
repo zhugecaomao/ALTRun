@@ -885,6 +885,41 @@ class PreferencesTests {
         }
     }
 
+    ; Preferences → Custom Commands: placeholders that won't work are in the Status column without checking paths; a hotkey set
+    ; meanwhile (on the Hotkeys page) clears "{query} empty" when the page is shown again
+    static PreferencesCommandsStatus() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesCommandsStatus." n, a, e)
+        savedCommands := AppSettings.Data["CustomCommands"]
+        hadHotkeys := AppSettings.Data.Has("Hotkeys"), savedHotkeys := hadHotkeys ? AppSettings.Data["Hotkeys"] : ""
+        AppSettings.Data["CustomCommands"] := [Map("Id", "pa7k2m4x", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "")
+            , Map("Id", "pb7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "")
+            , Map("Id", "pc7k2m4x", "Title", "Echo", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k echo {selection}", "Keyword", "e")
+            , Map("Id", "pd7k2m4x", "Title", "Today", "Type", "Url", "Target", "https://example.com/{date}", "Arguments", "", "Keyword", "")]
+        AppSettings.Data["Hotkeys"] := []
+        PreferencesWindow.Show("Prefs.Page.Commands", -3000, -3000)
+        try {
+            list := PreferencesWindow._lists["CustomCommands"]
+            statuses() {
+                text := ""
+                Loop list.View.GetCount()
+                    text .= list.View.GetText(A_Index, 5) "|"
+                return text
+            }
+            eq("shown without checking", statuses(), "|{query} empty|Use {query}|Unknown {date}|")
+            PreferencesWindow.GetPath(PreferencesWindow.Working, "Hotkeys").Push(Map("Key", "^!p", "Action", "custom:pb7k2m4x", "SearchText", "", "WinTitle", ""))
+            PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Commands")].OnShow.Call()
+            eq("a hotkey gives {query} its text", statuses(), "||Use {query}|Unknown {date}|")
+            eq("not a change", PreferencesWindow._dirty, false)
+        } finally {
+            AppSettings.Data["CustomCommands"] := savedCommands
+            if hadHotkeys
+                AppSettings.Data["Hotkeys"] := savedHotkeys
+            else
+                AppSettings.Data.Delete("Hotkeys")
+            PreferencesWindow.Close()
+        }
+    }
+
     ; Preferences → Hotkeys: "Other hotkeys" lists the hotkeys set on other pages, fits above the bottom buttons; double-click goes to that page
     static PreferencesOtherHotkeys() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesOtherHotkeys." n, a, e)

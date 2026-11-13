@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
@@ -82,6 +82,7 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences General", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences Appearance", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences Commands", () => Shots.Preferences()],
+            ["prefs-commands-placeholders", "Light", "-Preferences Commands", () => Shots.Preferences(), () => Shots.PlaceholderCommands()],   ; Wiki: custom commands (the Status column's placeholder hints)
             ["command-editor",   "Light", "-Preferences Commands", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query}, the type IP and a hotkey)
             ["command-editor-hotkeys", "Light", "-Preferences Commands", () => Shots.SetHotkeyMenu(), () => Shots.PingForIp()],   ; "Set Hotkey..." of a command with a hotkey: the menu
             ["prefs-selection",  "Light", "-Preferences Selection", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
@@ -912,6 +913,17 @@ class Shots {
     }
 
     ; The default type IP and the default Ping command set for it, added after the six demo commands (row 7), for the command editor
+    ; Three commands whose placeholders won't work: {query} without a keyword, content type or hotkey; {selection}; {date}
+    static PlaceholderCommands() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["CustomCommands"].Push(Map("Title", "Translate", "Type", "Url", "Target", "https://translate.example.com/?text={query}", "Arguments", "", "Keyword", "")
+            , Map("Title", "Look Up Part", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k findstr {selection} parts.csv", "Keyword", "part")
+            , Map("Title", "Daily Notes", "Type", "File", "Target", "notepad.exe", "Arguments", "D:\Notes\{date}.txt", "Keyword", "notes"))
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
     static PingForIp() {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))

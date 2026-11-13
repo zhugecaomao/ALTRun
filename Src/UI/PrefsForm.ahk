@@ -498,8 +498,9 @@ class PrefsForm {
     ; Keys gives the texts that identify an item (compared case-insensitively); a default sharing any of them with an item in the list is skipped
     ; menu: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu.
     ; Check paths, menu and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
-    ; options: optional {RowColor, DeletePrompt, AfterDelete}, each a function of the item:
+    ; options: optional {RowColor, DeletePrompt, AfterDelete, Hint}, each a function of the item:
     ;   RowColor: the row's text color as a COLORREF (0xBBGGRR), "" = the normal color (drawn with NM_CUSTOMDRAW)
+    ;   Hint: a short text for the Status column, shown at once (no check needed) unless a check found the path missing / offline
     ;   DeletePrompt: the question before deleting it ("" = "Delete '<first column>'?"); AfterDelete: called once it is removed
     static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menu := "", options := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
@@ -541,9 +542,12 @@ class PrefsForm {
                     return row
             return 0
         }
-        StatusText(item) {
+        StatusText(item) {                                                  ; a path problem of the last check first, then the Hint (shown without checking)
             key := ObjPtr(item)
-            return statuses.Has(key) ? I18n.T("Prefs.Status." statuses[key]) : ""
+            status := statuses.Has(key) ? statuses[key] : ""
+            if (Option("Hint") && status != "Missing" && status != "Unavailable" && (hint := options.Hint.Call(item)) != "")
+                return hint
+            return (status != "") ? I18n.T("Prefs.Status." status) : ""
         }
         Recheck(item) {                                                     ; after a check, added / changed items are checked right away too
             if statuses.Count

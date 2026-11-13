@@ -555,6 +555,9 @@ class I18n {
         s["Prefs.Status.Missing"]      := "Not found"
         s["Prefs.Status.Unavailable"]  := "Offline"
         s["Prefs.Status.Skipped"]      := "-"
+        s["Prefs.Status.QueryEmpty"]   := "{query} empty"                ; a {query} command without a keyword, content type or hotkey: nothing fills it in
+        s["Prefs.Status.UseQuery"]     := "Use {query}"                  ; {selection} written in a command: commands get the selection through {query}
+        s["Prefs.Status.Unknown"]      := "Unknown {1}"                  ; another {word}: stays as written, e.g. "Unknown {date}"
         s["Prefs.ConfirmDelete"]       := "Delete '{1}'?"
         s["Prefs.Hotkey.Search"]       := "Search: {1}"
         s["Prefs.Hotkey.Run"]          := "Run: {1}"
