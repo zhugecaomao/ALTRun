@@ -52,7 +52,7 @@ class Shots {
             ["search",      "Light", "", () => Shots.Search("re")],
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
-            ["actions-command", "Light", "", () => Shots.Actions("en"), () => Shots.CommandHotkey()],   ; a custom command's actions panel: "Change Hotkey Ctrl+Alt+N..." (one without {query}: that one opens it only with text typed)
+            ["actions-command", "Light", "", () => Shots.ActionsFiltered("en", "hotkey"), () => Shots.CommandHotkey()],   ; a custom command's actions panel filtered to "Change Hotkey Ctrl+Alt+N..." (below the first 8 rows; a command without {query}: that one opens the panel only with text typed)
             ["shellmenu",   "Light", "", () => Shots.ShellMenu(), () => Shots.EnableContextMenu()],   ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
@@ -444,6 +444,14 @@ class Shots {
         hwnd := Shots.Search(text)
         ControlSend("{Right}", "Edit1", hwnd)
         Sleep(1500)
+        return hwnd
+    }
+
+    ; The actions panel of the result found by text, filtered by typing filter
+    static ActionsFiltered(text, filter) {
+        hwnd := Shots.Actions(text)
+        ControlSend("{Text}" filter, "Edit1", hwnd)
+        Sleep(800)
         return hwnd
     }
 
