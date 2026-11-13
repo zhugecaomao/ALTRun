@@ -83,15 +83,15 @@ class PreferencesWindow {
         ; The pages are in groups with a gap and a line between them (GroupStarts). The rows of a report ListView can't have gaps, so the
         ; list shows tiles one row high and as wide as the list, each put at its place: hover, selection and ↑ ↓ Home End work as in a list.
         ; Where tile view isn't available (Wine) it stays a plain list without gaps
-        if IsObject(layout := PreferencesWindow._TileView(pageList)) {
+        if IsObject(tiles := PreferencesWindow._TileView(pageList)) {
+            for index, name in names
+                pageList.Add("Icon" index, name)
+            layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height)
+            view := Buffer(16, 0)                                           ; the list keeps some room below the last tile: if it doesn't fit
+            if (SendMessage(0x1022, 0, view, pageList) && (over := NumGet(view, 12, "Int") - tiles.Height) > 0)   ; (LVM_GETVIEWRECT), lay out in less height
+                layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height - over)
             if (NavIcons.FontName() != "")
                 pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, Round(layout.RowH * 96 / A_ScreenDPI) - 2), 0)   ; tiles use the normal image list
-            for index, name in names {
-                pageList.Add("Icon" index, name)
-                point := Buffer(8, 0)
-                NumPut("Int", 0, "Int", layout.Tops[index], point)
-                SendMessage(0x1031, index - 1, point, pageList)              ; LVM_SETITEMPOSITION32
-            }
             PreferencesWindow._gapLines := layout.Lines
         } else {
             ; The image list's height is the row height (a roomier sidebar). The rows are measured with an empty image list first, then the
@@ -153,19 +153,29 @@ class PreferencesWindow {
             PreferencesWindow.SelectPage(row)
     }
 
-    ; Switches the (still empty) page list to tiles one row high and as wide as the list -> PageLayout(...); "" when tile view isn't available
+    ; Switches the (still empty) page list to tiles -> {Width, Height} (its client size, measured while empty: no scroll bar); "" when tile view isn't available
     static _TileView(pageList) {
         client := Buffer(16, 0)
-        DllCall("GetClientRect", "Ptr", pageList.Hwnd, "Ptr", client)       ; measured while empty: no scroll bar
+        DllCall("GetClientRect", "Ptr", pageList.Hwnd, "Ptr", client)
         if (SendMessage(0x108E, 4, 0, pageList) != 1)                       ; LVM_SETVIEW LV_VIEW_TILE (-1: not available)
             return ""
+        return {Width: NumGet(client, 8, "Int"), Height: NumGet(client, 12, "Int")}
+    }
+
+    ; Lays out the tiles in height pixels: one row high and as wide as the list, each at its place (gaps before the group starts) -> PageLayout(...)
+    static _PlaceTiles(pageList, tiles, height) {
         starts := []
         for key in PreferencesWindow.GroupStarts
             starts.Push(PreferencesWindow._PageIndex(key))
-        layout := PreferencesWindow.PageLayout(NumGet(client, 12, "Int"), PreferencesWindow.PageKeys.Length, starts, A_ScreenDPI / 96)
+        layout := PreferencesWindow.PageLayout(height, PreferencesWindow.PageKeys.Length, starts, A_ScreenDPI / 96)
         info := Buffer(40, 0)                                               ; LVTILEVIEWINFO: LVTVIM_TILESIZE | LVTVIM_COLUMNS, LVTVIF_FIXEDSIZE, no second line
-        NumPut("UInt", 40, "UInt", 0x3, "UInt", 0x3, "Int", NumGet(client, 8, "Int"), "Int", layout.RowH, "Int", 0, info)
+        NumPut("UInt", 40, "UInt", 0x3, "UInt", 0x3, "Int", tiles.Width, "Int", layout.RowH, "Int", 0, info)
         SendMessage(0x10A2, 0, info, pageList)                              ; LVM_SETTILEVIEWINFO
+        for top in layout.Tops {
+            point := Buffer(8, 0)
+            NumPut("Int", 0, "Int", top, point)
+            SendMessage(0x1031, A_Index - 1, point, pageList)               ; LVM_SETITEMPOSITION32
+        }
         return layout
     }
 

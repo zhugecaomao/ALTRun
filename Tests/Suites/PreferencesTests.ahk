@@ -351,16 +351,19 @@ class PreferencesTests {
         DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
         rowRect := (row) => (rect := Buffer(16, 0), SendMessage(0x100E, row - 1, rect, PreferencesWindow.PageList), [NumGet(rect, 0, "Int"), NumGet(rect, 4, "Int"), NumGet(rect, 8, "Int"), NumGet(rect, 12, "Int")])   ; LVM_GETITEMRECT, LVIR_BOUNDS
         last := rowRect(PreferencesWindow.PageKeys.Length)
-        eq("every page fits in the list, no scroll bar", (last[4] <= NumGet(listRect, 12, "Int") && !(DllCall("GetWindowLong", "Ptr", PreferencesWindow.PageList.Hwnd, "Int", -16) & 0x300000)) ? 1 : 0, 1)   ; WS_VSCROLL | WS_HSCROLL
+        style := DllCall("GetWindowLong", "Ptr", PreferencesWindow.PageList.Hwnd, "Int", -16)
+        eq("every page fits in the list, no scroll bar", "bottom " (last[4] <= NumGet(listRect, 12, "Int") ? "fits" : last[4] " > " NumGet(listRect, 12, "Int"))
+            . ", scroll bars " ((style & 0x300000) ? Format("{:#x}", style & 0x300000) : "none"), "bottom fits, scroll bars none")   ; WS_VSCROLL | WS_HSCROLL
         if (SendMessage(0x108F, 0, 0, PreferencesWindow.PageList) = 4) {   ; LVM_GETVIEW: tiles (Windows; Wine has no tile view and shows a plain list)
             wrong := ""                                                     ; a gap before each group's first page, none inside a group
             Loop PreferencesWindow.PageKeys.Length - 1 {
-                gap := rowRect(A_Index + 1)[2] - rowRect(A_Index)[4]
+                row := A_Index                                              ; (A_Index inside the for loop below is the for loop's)
+                gap := rowRect(row + 1)[2] - rowRect(row)[4]
                 starts := false
                 for key in PreferencesWindow.GroupStarts
-                    starts := starts || PreferencesWindow.PageKeys[A_Index + 1] = key
+                    starts := starts || PreferencesWindow.PageKeys[row + 1] = key
                 if (starts ? gap < 9 : gap > 4)
-                    wrong .= PreferencesWindow.PageKeys[A_Index + 1] " (" gap ") "
+                    wrong .= PreferencesWindow.PageKeys[row + 1] " (" gap ") "
             }
             eq("gaps only between the groups", wrong, "")
             first := rowRect(1)
