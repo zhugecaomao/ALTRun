@@ -132,6 +132,17 @@ class ExtensionTests {
         eq("jump: folder missing", with({Exists: false}), "refused: folder not found")
         eq("jump: not a folder path", AdminHelper.ReplyText(AdminHelper.CheckJump("C:\a*.txt", good)), "refused: not a folder path")
         eq("jump: no answer", AdminHelper.ReplyText(0), "no answer")
+        ; -Front (MenuHotkey's panel over an administrator dialog): only a shown window of ALTRun's own process, only over such a dialog
+        front := (change) => AdminHelper.ReplyText(AdminHelper.CheckFront({Dialog: change.HasOwnProp("Dialog") ? change.Dialog : true
+            , Own: change.HasOwnProp("Own") ? change.Own : true, Visible: change.HasOwnProp("Visible") ? change.Visible : true}), "activating")
+        eq("front: all checks pass", front({}), "activating")
+        eq("front: no administrator dialog in front", front({Dialog: false}), "refused: not in front")
+        eq("front: another program's window", front({Own: false}), "refused: not ALTRun's window")
+        eq("front: a hidden window", front({Visible: false}), "refused: hidden")
+        codes := Map()
+        for name, code in AdminHelper.Refused
+            codes[code] := true
+        eq("reply codes: each its own, none is 1", codes.Count = AdminHelper.Refused.Count && !codes.Has(1) ? 1 : 0, 1)
         ; with the option off, the hint says where to turn it on, once per dialog
         notes := []
         savedNotify := App.GetOwnPropDesc("Notify"), savedOptions := QuickSwitch.Options

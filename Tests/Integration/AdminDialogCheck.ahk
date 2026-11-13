@@ -16,8 +16,9 @@
 ;   3. the hotkeys, pressed for real (SendEvent at send level 1, like a person's keys) with the dialog back at Start: ALTRun's keyboard
 ;      hook gets no keys there, so the helper catches Ctrl+G and Ctrl+Shift+G and tells the client; Ctrl+G must jump the dialog to the file
 ;      manager's folder ("Pressed": the client's FileManagerFolder is replaced, there is no file manager on the runner), each hotkey must
-;      reach the client once, and the client's own Ctrl+G (as ALTRun's) must not fire as well. Whether the client could bring its window
-;      to the front after Ctrl+Shift+G (where ALTRun's folder panel would take the caret) is printed as INFO
+;      reach the client once, and the client's own Ctrl+G (as ALTRun's) must not fire as well. After Ctrl+Shift+G a window of the client
+;      (as ALTRun's folder panel) must come to the front through QuickSwitch.ActivatePanel: ALTRun can't over the elevated dialog, the helper
+;      does it (-Front); the helper refuses that for another program's window
 ; Prints one line per check (PASS / FAIL / INFO); returns the number of failed checks.
 ;
 ;   RunTests.ahk AdminDialogCheck admin <appDir> <testsDir> <user> <password>     appDir: a copy of the repository the standard user can read
@@ -81,6 +82,7 @@ class AdminDialogCheck {
             AdminDialogCheck.Check("with the helper the dialog jumps", folder ~= "\\Target$", "the dialog shows [" folder "]; client: " answers)
             AdminDialogCheck.Check("refused: a folder that doesn't exist", InStr(answers, "missing refused: folder not found") > 0, answers)
             AdminDialogCheck.Check("refused: a window that isn't a dialog in front", InStr(answers, "own window refused: not in front") > 0, answers)
+            AdminDialogCheck.Check("refused: bringing another program's window to the front", InStr(answers, "front of another program's window refused: not ALTRun's window") > 0, answers)
 
             ; 3. the hotkeys
             FileDialogs.Jump(demo "\Start\", dialog)                       ; this side runs as administrator: it can
@@ -103,7 +105,7 @@ class AdminDialogCheck {
             AdminDialogCheck.Check("Ctrl+G: ALTRun is told once", InStr(answers, "jump 1`n") > 0, answers)
             AdminDialogCheck.Check("Ctrl+Shift+G: ALTRun is told once", InStr(answers, "panel 1`n") > 0, answers)
             AdminDialogCheck.Check("ALTRun's own hotkeys don't fire too", InStr(answers, "own 0`n") > 0, answers)
-            AdminDialogCheck.Log("INFO after Ctrl+Shift+G the client's window came to the front: " (RegExMatch(answers, "front (\w+)", &m) ? m[1] : "?"))
+            AdminDialogCheck.Check("Ctrl+Shift+G: the panel comes to the front (through the helper)", InStr(answers, "front yes`n") > 0, answers)
         } catch as e
             AdminDialogCheck.Check("no error", false, e.Message " (line " e.Line ")")
         try AdminHelper.Stop()
@@ -139,6 +141,8 @@ class AdminDialogCheck {
             answers .= "missing " AdminHelper.ReplyText(reply) "`n"
             App.SendArgs(helper, ["-Jump", A_ScriptHwnd, target], &reply)
             answers .= "own window " AdminHelper.ReplyText(reply) "`n"
+            App.SendArgs(helper, ["-Front", dialog], &reply)                ; only ALTRun's own windows
+            answers .= "front of another program's window " AdminHelper.ReplyText(reply, "activating") "`n"
         } else
             answers .= "no helper window`n"
         AdminDialogCheck.Signal(io "\done2.txt", answers)
@@ -150,7 +154,7 @@ class AdminDialogCheck {
         count := Map("jump", 0, "panel", 0, "own", 0), front := {Seen: "no"}
         panel := Gui("+AlwaysOnTop", "AdminDialogCheck panel")
         FileManagers.DefineProp("FileManagerFolder", {Call: (*) => (count["jump"]++, {Path: AdminDialogCheck.Root "\demo\Pressed", Tag: "check", Hwnd: 0})})
-        QuickSwitch.DefineProp("FocusPanel", {Call: (*) => (count["panel"]++, panel.Show("NA w200 h40"), AdminDialogCheck.Activate(panel.Hwnd, front))})   ; shown, then activated as FocusPanel does
+        QuickSwitch.DefineProp("FocusPanel", {Call: (*) => (count["panel"]++, panel.Show("NA w200 h40"), AdminDialogCheck.Activate(panel.Hwnd, front))})   ; shown, then to the front as FocusPanel does
         OnMessage(0x4A, (p*) => App._OnCopyData(p*))
         HotIf((*) => FileDialogs.IsFileDialog())                            ; ALTRun's own hotkeys, as QuickSwitch.Init registers them
         Hotkey(options["Hotkey"], (*) => count["own"]++)
@@ -163,9 +167,9 @@ class AdminDialogCheck {
         return 0
     }
 
-    ; As QuickSwitch.FocusPanel brings the panel to the front (WinActivate)
+    ; As QuickSwitch.FocusPanel brings the panel to the front, over the dialog in front
     static Activate(hwnd, front) {
-        try WinActivate("ahk_id " hwnd)
+        QuickSwitch.ActivatePanel(hwnd, DllCall("GetForegroundWindow", "Ptr"))
         front.Seen := WinWaitActive("ahk_id " hwnd, , 2) ? "yes" : "no"
     }
 

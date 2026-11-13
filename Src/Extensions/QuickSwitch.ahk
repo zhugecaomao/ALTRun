@@ -342,9 +342,18 @@ class QuickSwitch {
         if !IsObject(QuickSwitchPanel._panel)
             return
         try {
-            WinActivate("ahk_id " QuickSwitchPanel._panel.Hwnd)
+            QuickSwitch.ActivatePanel(QuickSwitchPanel._panel.Hwnd, dialog)
             ControlFocus(QuickSwitchPanel._panelSearch)
         }
+    }
+
+    ; The panel to the front. Over a dialog of a program running as administrator ALTRun can't (Windows' foreground rules, even with the
+    ; helper's AllowSetForegroundWindow; seen on Windows CI), so the helper does it there (AdminHelper.Front). true = it is in front
+    static ActivatePanel(panel, dialog) {
+        if (!A_IsAdmin && AdminHelper.DialogsWanted(QuickSwitch.Options) && FileDialogs.IsElevatedDialog(dialog) && AdminHelper.Front(panel))
+            return true
+        try WinActivate("ahk_id " panel)
+        return WinActive("ahk_id " panel) != 0
     }
 
     ; The jump hotkey: the folder of the file manager used last (TC, Opus or Explorer, see FileManagerFolder)

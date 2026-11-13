@@ -21,8 +21,11 @@
 ;   - Quick Switch's hotkeys (Hotkey, MenuHotkey; read from the settings file like the rest): the helper registers them too, but only for
 ;     such a dialog in front (HotkeyDialog), where ALTRun's keyboard hook gets no keys; any other window's keys go on to ALTRun's own hotkeys,
 ;     so a key never does both. It sends ALTRun only which one was pressed ("-AdminHelperHotkey Hotkey / MenuHotkey"), no window or folder:
-;     ALTRun handles it as its own hotkey (HotkeyPressed), and a jump comes back as -Jump with the checks above
-;   - the helper only accepts "-Exit" and "-Jump" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
+;     ALTRun handles it as its own hotkey (HotkeyPressed), and a jump comes back as -Jump with the checks above.
+;     MenuHotkey puts the caret in ALTRun's folder panel, but ALTRun can't bring it to the front over the elevated dialog (Windows' foreground
+;     rules), so it hands "-Front <window>" to the helper (Front). The helper only activates a visible window of ALTRun's own process, and
+;     only while such a dialog is in front (CheckFront): nothing another program could misuse
+;   - the helper only accepts "-Exit", "-Jump" and "-Front" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
 ;   - older versions named the task "ALTRun CapsLock Helper" and started the helper with -AdminHelper. A helper started that way moves the task to
 ;     the new name itself (it has the rights, so no UAC prompt): it registers TaskName and deletes OldTaskName. Until then ALTRun runs the old one
 ;===============================================================================
@@ -145,6 +148,52 @@ class AdminHelper {
             SetTimer(() => ExitApp(), -1)
         else if (lines[1] = "-Jump")
             return AdminHelper._JumpRequest(lines)
+        else if (lines[1] = "-Front")
+            return AdminHelper._FrontRequest(lines)
+        return 1
+    }
+
+    ; -Front <window>: checked in the message like -Jump, activated right after
+    static _FrontRequest(lines) {
+        if !AdminHelper._dialogs
+            return AdminHelper.Refused["option off"]
+        if (lines.Length != 2 || !RegExMatch(lines[2], "^\d{1,20}$"))
+            return AdminHelper.Refused["bad request"]
+        window := Integer(lines[2])
+        code := AdminHelper.CheckFront(AdminHelper.FrontFacts(window))
+        if (code = 1)
+            SetTimer(() => AdminHelper._Front(window), -1)
+        return code
+    }
+
+    static _Front(window) {
+        try WinActivate("ahk_id " window)
+        AdminHelper._TellMain("-AdminHelperNote", "to the front: " (WinActive("ahk_id " window) ? "done" : "failed"))
+    }
+
+    ; What the helper sees for -Front: a dialog its hotkeys are for is in front (HotkeyDialog), the window belongs to ALTRun's process, it is shown
+    static FrontFacts(window) {
+        facts := {Dialog: AdminHelper.HotkeyDialog() != 0, Own: false, Visible: false}
+        if !facts.Dialog
+            return facts
+        mainPid := 0, pid := 0
+        if (main := App._RunningInstance())
+            DllCall("GetWindowThreadProcessId", "Ptr", main, "UInt*", &mainPid)
+        DllCall("GetWindowThreadProcessId", "Ptr", window, "UInt*", &pid)
+        facts.Own := mainPid != 0 && pid = mainPid
+        facts.Visible := DllCall("IsWindowVisible", "Ptr", window) != 0
+        return facts
+    }
+
+    ; 1 if the helper may bring the window to the front, otherwise a code of Refused. Any program may have sent it, so only a window of
+    ; ALTRun itself, shown, over a dialog of a program running as administrator (where ALTRun can't do it)
+    static CheckFront(facts) {
+        if !facts.Dialog
+            return AdminHelper.Refused["not in front"]
+        if !facts.Own
+            return AdminHelper.Refused["not ALTRun's window"]
+        if !facts.Visible
+            return AdminHelper.Refused["hidden"]
         return 1
     }
 
@@ -167,12 +216,13 @@ class AdminHelper {
         AdminHelper._TellMain("-AdminHelperNote", "jump to [" folder "] " (ok = false ? "failed" : "done"))
     }
 
-    ; Reply codes of -Jump: 1 = jumping; the others say why not (ALTRun logs the name)
-    static Refused := Map("not in front", 2, "not a dialog", 3, "not elevated", 4, "not a folder path", 5, "folder not found", 6, "option off", 7, "bad request", 8)
+    ; Reply codes of -Jump and -Front: 1 = doing it; the others say why not (ALTRun logs the name)
+    static Refused := Map("not in front", 2, "not a dialog", 3, "not elevated", 4, "not a folder path", 5, "folder not found", 6, "option off", 7, "bad request", 8
+        , "not ALTRun's window", 9, "hidden", 10)
 
-    static ReplyText(code) {
+    static ReplyText(code, done := "jumping") {
         if (code = 1)
-            return "jumping"
+            return done
         for name, value in AdminHelper.Refused
             if (value = code)
                 return "refused: " name
@@ -312,6 +362,17 @@ class AdminHelper {
         else
             QuickSwitch.FocusPanel()
         return true
+    }
+
+    ; ALTRun's side of -Front: a window of ALTRun (MenuHotkey's folder panel) to the front over a dialog of a program running as administrator,
+    ; which ALTRun can't do itself. true = it is in front
+    static Front(window) {
+        if !(helper := AdminHelper.Window())
+            return false
+        reply := 0
+        App.SendArgs(helper, ["-Front", window], &reply)
+        Logger.Debug("QuickSwitch: bringing the panel to the front is handed to the helper - " AdminHelper.ReplyText(reply, "activating"))
+        return reply = 1 && WinWaitActive("ahk_id " window, , 1) != 0
     }
 
     ; When ALTRun exits / reloads, the helper exits too (restarted with the new settings after reloading)
