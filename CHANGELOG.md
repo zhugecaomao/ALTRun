@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.10]
+
+测试版。
+
+Test build.
+
+### 修复
+- 只搜文件 (空格或 ' 开头) 时最多只显示 50 条, 偏好设置 → 文件搜索 → "文件搜索结果数" 设得更大不起作用; 现在按这个设置显示 (#515)
+
 ## [2026.11.13.9]
 
 测试版。
@@ -1498,7 +1507,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...HEAD
+[2026.11.13.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...2026.11.13.10
 [2026.11.13.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...2026.11.13.9
 [2026.11.13.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...2026.11.13.8
 [2026.11.13.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...2026.11.13.7

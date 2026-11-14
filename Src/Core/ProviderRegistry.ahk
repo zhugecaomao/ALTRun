@@ -172,8 +172,8 @@ class ProviderRegistry {
 
         results := ProviderRegistry._KeepExclusive(results)
         results := ProviderRegistry._Dedupe(ProviderRegistry.SortByScore(results))
-        if (results.Length > ProviderRegistry.MaxResults)
-            results.Length := ProviderRegistry.MaxResults
+        if (results.Length > (limit := ProviderRegistry.ResultLimit(results)))
+            results.Length := limit
         if !results.Length
             results := ProviderRegistry._Fallbacks(query)
         if (Logger.Enabled && (total := Logger.Ms() - started) >= ProviderRegistry.SlowSearchMs)   ; slow searches go into the log (without the input text)
@@ -240,6 +240,17 @@ class ProviderRegistry {
         for line in StrSplit(RTrim(Sort(lines, "N R"), "`n"), "`n")
             sorted.Push(items[Integer(StrSplit(line, "`t")[2])])
         return sorted
+    }
+
+    ; How many results are shown: MaxResults, or for a file-only search (space / ' first, "folder ") the user's
+    ; Features.FileSearch.MaxResults (1-1000) plus the fallback row, when that is more
+    static ResultLimit(items) {
+        if !items.Length
+            return ProviderRegistry.MaxResults
+        for item in items
+            if (!item.Exclusive || item.Provider != "FileSearch")                ; FileSearchProvider.Id (Core does not reference providers)
+                return ProviderRegistry.MaxResults
+        return Max(ProviderRegistry.MaxResults, AppSettings.Feature("FileSearch")["MaxResults"] + 1)
     }
 
     static _KeepExclusive(items) {
