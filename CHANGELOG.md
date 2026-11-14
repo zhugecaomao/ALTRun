@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.13.8]
+
+测试版。
+
+Test build.
+
+### 改进
+- 剪贴板历史: 复制的单个图片文件也显示缩略图 (QQ、微信等聊天软件里复制的图片一般是缓存里的文件, 以前只显示文件类型图标); 大图片和 WebP 等格式用系统缩略图, 不卡输入 (#509)
+- 剪贴板历史: 缩略图默认填满图标方格, 裁出中间部分, 宽截图不再缩成一条细线; 偏好设置 → 剪贴板历史 → "缩略图裁切填满图标" 关掉时缩小显示整张图 (#509)
+
 ## [2026.11.13.7]
 
 测试版。
@@ -1478,7 +1488,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...HEAD
+[2026.11.13.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...2026.11.13.8
 [2026.11.13.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...2026.11.13.7
 [2026.11.13.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...2026.11.13.6
 [2026.11.13.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...2026.11.13.5

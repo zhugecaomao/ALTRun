@@ -574,6 +574,7 @@ class PrefsPages {
         PrefsForm.Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
         PrefsForm.Check("Features.Clipboard.Images", "Prefs.ClipImages")
         PrefsForm.Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
+        PrefsForm.Check("Features.Clipboard.FillThumbnails", "Prefs.ClipFillThumbs")
         PrefsForm.Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]            ; where it is stored (ClipboardProvider.PlaceStorage)
             , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")   ; long options: full width
         PrefsForm.Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")

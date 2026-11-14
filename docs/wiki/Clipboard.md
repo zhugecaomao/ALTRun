@@ -9,11 +9,12 @@ Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied 
 | What was copied | Shown as | `Enter` | `F3` / `→` |
 |---|---|---|---|
 | Text | The beginning of the text | Pastes the text | Save as a snippet / copy, paste, large type |
-| Files | The file names (separated by commas) | Pastes the files (in Explorer that copies them there) | Add to custom commands / for one file: open, reveal in the file manager, copy path and more |
+| Files | The file names (separated by commas); one image file (a picture copied in QQ, WeChat and other chat programs is usually a file in their cache) with a thumbnail | Pastes the files (in Explorer that copies them there) | Add to custom commands / for one file: open, reveal in the file manager, copy path and more |
 | Image (screenshot, picture from a web page...) | "Image 1920 × 1080" with a thumbnail | Pastes the image | - / open in the image viewer, reveal in the file manager |
 
 - Images are saved as PNG files in the `Clipboard\` folder (by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard`, so they aren't uploaded every time when `Data\` is in a synced folder), at most 50 by default (`MaxImages`), and only recorded while "Keep history after ALTRun quits" is on; to stop recording images, turn off "Also record images" in Preferences → Clipboard
 - Type `clip image` to see only images
+- Thumbnails fill the icon square, cropped to the middle, so a wide screenshot doesn't become a thin strip; to see the whole image shrunk instead, turn off "Crop thumbnails to fill the icon" in Preferences → Clipboard (`FillThumbnails`). To see an image at full size, press `→` and open it in the image viewer
 - **Search the text**: select a text item and press `→` to search it on each site from [Web Search](Web-Search)
 - **Pin**: select an item, press `→` and choose "Pin". Pinned items always stay at the top (with a pin at the bottom right of the icon), are never pushed out when the history is full, and are kept by "Clear Clipboard History"; good for addresses, account names and the like
 - **Paste as plain text**: the system command "Paste as Plain Text" pastes the clipboard content without formatting (fonts, colors, tables...) and restores the clipboard afterwards. It's handiest as `Ctrl+Shift+V` in [custom hotkeys](Hotkeys)

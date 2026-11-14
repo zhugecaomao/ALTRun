@@ -328,6 +328,8 @@
   "Prefs.ClipKeyword": "キーワード",
   "Prefs.ClipMaxImages": "保存する画像数",
   "Prefs.ClipMaxImages.Desc": "超えると古い画像から削除されます。",
+  "Prefs.ClipFillThumbs": "サムネイルを切り抜いて枠いっぱいに表示",
+  "Prefs.ClipFillThumbs.Desc": "横長のスクリーンショットも見やすくなります。オフ：画像全体を縮小表示。",
   "Prefs.ClipMaxItems": "保存件数",
   "Prefs.ClipMaxItems.Desc": "件数を超えると古い項目から削除されます。最大文字数より長いテキストは記録されません。",
   "Prefs.ClipMaxLength": "最大文字数",
