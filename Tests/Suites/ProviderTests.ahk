@@ -2262,6 +2262,8 @@ class ProviderTests {
         ClipboardProvider.Save()
         ClipboardProvider.Entries := [], ClipboardProvider._Load()
         eq("saved", texts(), "one|five|four")
+        counts := ClipboardProvider.Counts()                                 ; for the question before "Clear History Now"
+        eq("counts", counts.Total " " counts.Pinned, "3 1")
         ClipboardProvider.Clear()
         eq("clear keeps pinned", texts(), "one")
         ClipboardProvider.Entries[1].Delete("Pinned"), ClipboardProvider.Clear()

@@ -439,6 +439,15 @@ class PrefsForm {
         }
     }
 
+    ; A unit right after an input box, on its row (e.g. "Max length [100000] characters")
+    static Unit(ctrl, textKey) {
+        ctrl.GetPos(&x, &y, &w)
+        saved := PrefsForm._y, PrefsForm._y := y + 3                       ; like a label, aligned with the box's text
+        unit := PrefsForm.Add("Text", "x" (x + w + 6), I18n.T(textKey))
+        PrefsForm._y := saved
+        return unit
+    }
+
     ; A single input control (without a label) bound to path; kind as in Pair
     static Input(x, path, labelKey, size, kind := "text", values := "", labels := "") {
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)

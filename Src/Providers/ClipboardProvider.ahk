@@ -352,6 +352,16 @@ class ClipboardProvider {
         ClipboardProvider._SaveLater()
     }
 
+    ; How many entries there are and how many of them are pinned (the saved history too, if it can be read now), e.g. for the question before Clear
+    static Counts() {
+        if ClipboardProvider._unread
+            ClipboardProvider._LoadUnread()
+        pinned := 0
+        for entry in ClipboardProvider.Entries
+            pinned += ClipboardProvider.IsPinned(entry) ? 1 : 0
+        return {Total: ClipboardProvider.Entries.Length, Pinned: pinned}
+    }
+
     static Clear() {                                                        ; pinned entries are kept
         if ClipboardProvider._unread                                        ; the saved history too, if it can be read now
             ClipboardProvider._LoadUnread()
