@@ -646,7 +646,14 @@ class IconCache {
         DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &canvas)   ; 32bppARGB
         DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", canvas, "Ptr*", &graphics)
         DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", graphics, "Int", 7)                  ; HighQualityBicubic
-        DllCall("gdiplus\GdipDrawImageRectI", "Ptr", graphics, "Ptr", image, "Int", (size - w) // 2, "Int", (size - h) // 2, "Int", w, "Int", h)
+        ; bicubic scaling also samples pixels just outside the image, which are transparent: the edges would come out half transparent (a faint frame
+        ; around a filled thumbnail). Mirroring the image at its edges (WrapModeTileFlipXY) keeps them solid
+        attributes := 0
+        DllCall("gdiplus\GdipCreateImageAttributes", "Ptr*", &attributes)
+        DllCall("gdiplus\GdipSetImageAttributesWrapMode", "Ptr", attributes, "Int", 3, "UInt", 0, "Int", 0)
+        DllCall("gdiplus\GdipDrawImageRectRectI", "Ptr", graphics, "Ptr", image, "Int", (size - w) // 2, "Int", (size - h) // 2, "Int", w, "Int", h
+            , "Int", 0, "Int", 0, "Int", width, "Int", height, "Int", 2, "Ptr", attributes, "Ptr", 0, "Ptr", 0)   ; UnitPixel
+        DllCall("gdiplus\GdipDisposeImageAttributes", "Ptr", attributes)
         DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
         DllCall("gdiplus\GdipDisposeImage", "Ptr", image)
         if hbm                                                              ; the shell's bitmap holds the pixels the image used: deleted after it

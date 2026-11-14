@@ -380,7 +380,7 @@ class ProviderTests {
                     ok(name " fill icon", fill)
                     eq(name " fit corner transparent", corner(fit), 0)
                     eq(name " fit middle opaque", middle(fit), 255)
-                    eq(name " fill corner covered", corner(fill), 255)
+                    eq(name " fill corner covered", corner(fill), 255)   ; solid up to the edge: no half-transparent frame from scaling
                     for hIcon in [fit, fill]
                         if hIcon
                             DllCall("DestroyIcon", "Ptr", hIcon)
