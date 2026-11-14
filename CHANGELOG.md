@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.13.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 剪贴板历史: 设置分成 历史 (退出后保留历史、保存位置)、图片 (也记录图片、保存图片数、缩略图裁切填满图标)、复制 三组; 不起作用的设置变灰 (没开 "退出后保留历史" 时保存位置和图片设置变灰, 不记录图片时保存图片数变灰); "最长字数" 后面写出单位
+- 偏好设置 → 剪贴板历史: "立即清空历史" 先确认, 写明要删几条, 置顶的条目保留
+
 ## [2026.11.13.8]
 
 测试版。
@@ -1488,7 +1498,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...HEAD
+[2026.11.13.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...2026.11.13.9
 [2026.11.13.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...2026.11.13.8
 [2026.11.13.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...2026.11.13.7
 [2026.11.13.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...2026.11.13.6

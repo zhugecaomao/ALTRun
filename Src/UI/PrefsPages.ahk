@@ -567,20 +567,40 @@ class PrefsPages {
         MsgBox(I18n.T("Snippet.Export.Done", rows.Length - 1, target), title, "Iconi Owner" owner.Hwnd)
     }
 
+    ; Clipboard: groups History (kept after quitting, where) / Images / Copy; settings that don't apply are grayed out
     static BuildClipboard() {
         PrefsForm.BeginPage("Prefs.Page.Clipboard", 120)
         PrefsForm.Pair(["Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "K", "hotkey"], ["Features.Clipboard.Keyword", "Prefs.ClipKeyword", "S"])
-        PrefsForm.Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
-        PrefsForm.Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
-        PrefsForm.Check("Features.Clipboard.Images", "Prefs.ClipImages")
-        PrefsForm.Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
-        PrefsForm.Check("Features.Clipboard.FillThumbnails", "Prefs.ClipFillThumbs")
-        PrefsForm.Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]            ; where it is stored (ClipboardProvider.PlaceStorage)
+        sizes := PrefsForm.Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
+        PrefsForm.Unit(sizes.Second, "Prefs.ClipMaxLength.Unit")
+        persist := PrefsForm.Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
+        storage := PrefsForm.Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]            ; where it is stored (ClipboardProvider.PlaceStorage)
             , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")   ; long options: full width
+        images := PrefsForm.Check("Features.Clipboard.Images", "Prefs.ClipImages", , , "Prefs.Group.Images")
+        maxImages := PrefsForm.Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
+        PrefsForm.Check("Features.Clipboard.FillThumbnails", "Prefs.ClipFillThumbs")
         PrefsForm.Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PrefsForm.Gap()
         PrefsForm.LinesButton("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps")
-        PrefsForm.Button("Prefs.ClipClear", (*) => ClipboardProvider.Clear())
+        PrefsForm.Button("Prefs.ClipClear", (*) => PrefsPages.ClearClipboard())
+        ; images are only recorded while the history is kept after quitting (Prefs.ClipImages.Desc)
+        update := (*) => (storage.Enabled := images.Enabled := persist.Value = 1
+            , maxImages.Enabled := persist.Value = 1 && images.Value = 1)
+        update()
+        persist.OnEvent("Click", update)
+        images.OnEvent("Click", update)
+    }
+
+    ; "Clear History Now": asks first, with the number of items it deletes (pinned ones are kept)
+    static ClearClipboard() {
+        counts := ClipboardProvider.Counts()
+        owner := " Owner" PreferencesWindow.Gui.Hwnd
+        if (counts.Total = counts.Pinned) {
+            MsgBox(I18n.T("Prefs.ClipClear.Nothing", counts.Pinned), App.Name, "Iconi" owner)
+            return
+        }
+        if (MsgBox(I18n.T("Prefs.ClipClear.Confirm", counts.Total - counts.Pinned, counts.Pinned), App.Name, "YesNo Icon? Default2" owner) = "Yes")
+            ClipboardProvider.Clear()
     }
 
     static BuildWebSearch() {

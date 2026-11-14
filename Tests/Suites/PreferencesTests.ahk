@@ -875,6 +875,59 @@ class PreferencesTests {
         g.Destroy()
     }
 
+    ; Preferences → Clipboard: settings that don't apply are grayed out (no saved history -> where / images; no images -> how many),
+    ; the unit after "Max length" on its row, and the groups History / Images / Copy in that order
+    static ClipboardPage() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardPage." n, a, e)
+        options := AppSettings.Feature("Clipboard")
+        saved := [options["Persist"], options["Images"]]
+        find := (controls, type, key) => PreferencesTests._Find(controls, type, I18n.T(key))
+        try {
+            for combo in [[1, 1, "1 1 1"], [1, 0, "1 1 0"], [0, 1, "0 0 0"]] {
+                options["Persist"] := combo[1], options["Images"] := combo[2]
+                PreferencesWindow.Show("Prefs.Page.Clipboard", -3000, -3000)
+                try {
+                    controls := PreferencesWindow.Pages[PreferencesWindow._page].Controls
+                    storage := "", maxImages := "", images := find(controls, "CheckBox", "Prefs.ClipImages")
+                    for index, ctrl in controls {
+                        if (ctrl.Type = "DDL")
+                            storage := ctrl
+                        else if (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.ClipMaxImages"))
+                            maxImages := controls[index + 1]                        ; the box right after its label
+                    }
+                    eq("enabled " combo[1] " " combo[2], storage.Enabled " " images.Enabled " " maxImages.Enabled, combo[3])
+                    if (A_Index = 1) {
+                        box := "", unit := find(controls, "Text", "Prefs.ClipMaxLength.Unit")
+                        for index, ctrl in controls
+                            if (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.ClipMaxLength"))
+                                box := controls[index + 1]
+                        box.GetPos(&bx, &by, &bw), unit.GetPos(&ux, &uy)
+                        eq("unit after the box", ux - (bx + bw), 6)
+                        eq("unit on the box's row", uy - by, 3)
+                        order := ""
+                        for ctrl in controls
+                            for key in ["Prefs.Group.History", "Prefs.ClipStorage", "Prefs.Group.Images", "Prefs.ClipMaxImages", "Prefs.ClipFillThumbs", "Prefs.Group.Copy"]
+                                if (ctrl.Text = I18n.T(key))
+                                    order .= key " "
+                        eq("groups", order, "Prefs.Group.History Prefs.ClipStorage Prefs.Group.Images Prefs.ClipMaxImages Prefs.ClipFillThumbs Prefs.Group.Copy ")
+                    }
+                } finally {
+                    PreferencesWindow.Close()
+                }
+            }
+        } finally {
+            options["Persist"] := saved[1], options["Images"] := saved[2]
+        }
+    }
+
+    ; The first control of a page with this type and text ("" if none)
+    static _Find(controls, type, text) {
+        for ctrl in controls
+            if (ctrl.Type = type && ctrl.Text = text)
+                return ctrl
+        return ""
+    }
+
     ; Preferences pages are built when needed: on opening only the page shown exists; switching builds the page, with Tab order list -> page -> bottom buttons;
     ; values the program fills in while building don't count as changes, later changes are recorded as usual
     ; Preferences → Selection: the hotkey, the content types with the commands that use them, and the test box (#434)
