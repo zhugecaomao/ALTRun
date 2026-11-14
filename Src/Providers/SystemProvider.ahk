@@ -32,7 +32,7 @@ class SystemProvider {
 
     ; A custom hotkey's search text with {selection} (any case) replaced by the text selected in the program in front: on one line
     ; (line breaks and runs of spaces as one space), at most 100 characters; nothing selected, or files: left out ("folder ").
-    ; The selection is copied only when the text asks for it: with nothing selected, waiting for the copy takes up to 0.8 s.
+    ; The selection is copied only when the text asks for it: with nothing selected, waiting for the copy takes up to 2 s (SelectionActions.WaitMs).
     ; selection: the copied selection ({Text} / {Files} / ""), given by the tests
     static FillSearchText(template, selection?) {
         if !RegExMatch(template, "i)\{selection\}")

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.12]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在 Excel 里选中单元格按 `Ctrl+Alt+\` (或用 `{selection}` 的热键) 报 "没有选中的内容": Excel 的文字比别的格式晚到剪贴板, 现在等到有文字再读 (最多 2 秒), 读到空的再试几次; 开了调试日志时取不到会记下剪贴板里有哪些格式 (#513)。真的没有选中时提示比以前晚约 1 秒
+
 ## [2026.11.13.11]
 
 测试版。
@@ -1516,7 +1525,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...HEAD
+[2026.11.13.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...2026.11.13.12
 [2026.11.13.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...2026.11.13.11
 [2026.11.13.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...2026.11.13.10
 [2026.11.13.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...2026.11.13.9
