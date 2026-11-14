@@ -808,6 +808,26 @@ class ProviderTests {
         }
     }
 
+    ; File-only search (space / ' first): up to Features.FileSearch.MaxResults + the fallback row, not the general 50 (#515)
+    static ResultLimit() {
+        eq := (n, a, e) => TestRunner.Equal("ResultLimit." n, a, e)
+        options := AppSettings.Feature("FileSearch"), saved := options["MaxResults"]
+        try {
+            files := [], mixed := []
+            Loop 3
+                files.Push(ResultItem("f" A_Index, "", {Exclusive: true, Provider: FileSearchProvider.Id}))
+            mixed.Push(ResultItem("f", "", {Exclusive: true, Provider: FileSearchProvider.Id}), ResultItem("c", "", {Exclusive: true, Provider: "Clipboard"}))
+            options["MaxResults"] := 200
+            eq("file search", ProviderRegistry.ResultLimit(files), 201)
+            eq("other exclusive", ProviderRegistry.ResultLimit(mixed), ProviderRegistry.MaxResults)
+            eq("not exclusive", ProviderRegistry.ResultLimit([ResultItem("a", "", {Provider: FileSearchProvider.Id})]), ProviderRegistry.MaxResults)
+            eq("empty", ProviderRegistry.ResultLimit([]), ProviderRegistry.MaxResults)
+            options["MaxResults"] := 30
+            eq("smaller setting keeps 50", ProviderRegistry.ResultLimit(files), ProviderRegistry.MaxResults)
+        } finally
+            options["MaxResults"] := saved
+    }
+
     ; With many commands: results only for the top MaxResults (counting the learned bonus); typing on only searches the previous results
     static CommandSearchScale() {
         eq := (n, a, e) => TestRunner.Equal("CommandSearchScale." n, a, e)
