@@ -1085,7 +1085,7 @@ class I18n {
         s["Prefs.ClipMaxImages"]       := "Keep images"
         s["Prefs.ClipMaxImages.Desc"]  := "The oldest images are removed first."
         s["Prefs.ClipFillThumbs"]      := "Fill image thumbnails"
-        s["Prefs.ClipFillThumbs.Desc"] := "Crops to the middle so wide screenshots stay readable. Off: the whole image, shrunk."
+        s["Prefs.ClipFillThumbs.Desc"] := "Crops the middle so wide screenshots stay readable. Off: shows the whole image."
         s["Prefs.ClipMerge"]           := "Press Ctrl+C twice to append to the previous item"
         s["Prefs.ClipMerge.Desc"]      := "Copy one piece, then select the next and press Ctrl+C twice quickly: both become one item, also on the clipboard."
         s["Prefs.ClipIgnoreApps"]      := "Never record from"
