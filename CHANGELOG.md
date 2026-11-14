@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.11]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置开着时在搜索窗口里置顶或取消置顶, 之后在偏好设置点确定, 这次置顶的改动会丢; 现在会保留
+
 ## [2026.11.13.10]
 
 测试版。
@@ -1507,7 +1516,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...HEAD
+[2026.11.13.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...2026.11.13.11
 [2026.11.13.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...2026.11.13.10
 [2026.11.13.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...2026.11.13.9
 [2026.11.13.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...2026.11.13.8

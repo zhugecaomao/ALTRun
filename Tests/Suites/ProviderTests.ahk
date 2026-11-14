@@ -2191,6 +2191,16 @@ class ProviderTests {
         eq("forget", titles(RecentProvider.EmptyResults()), "c.txt|" I18n.T("Sys.Lock") "|b.txt")
         RecentProvider.DeleteItem(items[1])                                  ; pinned: unpinned
         eq("unpin", options["Pinned"].Length, 0)
+        savedGui := PreferencesWindow.Gui, savedWorking := PreferencesWindow.Working   ; Preferences open: its copy gets the change too, so OK there keeps it
+        try {
+            PreferencesWindow.Gui := {}, PreferencesWindow.Working := Map("Features", Map("Recent", Map("Pinned", [])))
+            working := PreferencesWindow.Working["Features"]["Recent"]["Pinned"]
+            RecentProvider.Pin(fileItem("b.txt"))
+            eq("pin while Preferences open", options["Pinned"].Length "|" working.Length "|" (working[1] != options["Pinned"][1]), "1|1|1")
+            RecentProvider.Unpin("file:b.txt")
+            eq("unpin while Preferences open", options["Pinned"].Length "|" working.Length, "0|0")
+        } finally
+            PreferencesWindow.Gui := savedGui, PreferencesWindow.Working := savedWorking
         AppSettings.Window["RecentCount"] := 0
         eq("count 0", RecentProvider.EmptyResults().Length, 0)
         Knowledge.Recent := saved.Recent, Knowledge.File := saved.File, AppSettings.File := saved.SettingsFile

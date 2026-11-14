@@ -91,20 +91,36 @@ class RecentProvider {
     static Pin(item) {
         if (!IsObject(entry := RecentProvider.Snapshot(item)) || RecentProvider.IsPinned(item))
             return false
-        AppSettings.Feature("Recent")["Pinned"].Push(entry)
+        for pinned in RecentProvider._PinnedLists()
+            pinned.Push(A_Index = 1 ? entry : entry.Clone())
         App.Notify(I18n.T("Recent.PinnedHint", item.Title))
         return AppSettings.Save()
     }
 
     static Unpin(uid) {
-        pinned := AppSettings.Feature("Recent")["Pinned"]
-        for index, entry in pinned {
-            if (entry is Map && entry.Has("Uid") && entry["Uid"] = uid) {
-                pinned.RemoveAt(index)
-                return AppSettings.Save()
+        found := false
+        for pinned in RecentProvider._PinnedLists() {
+            for index, entry in pinned {
+                if (entry is Map && entry.Has("Uid") && entry["Uid"] = uid) {
+                    pinned.RemoveAt(index), found := true
+                    break
+                }
             }
         }
-        return false
+        return found ? AppSettings.Save() : false
+    }
+
+    ; The pinned lists a pin / unpin goes to: the settings, and while Preferences is open its copy too
+    ; (OK there replaces all settings with that copy, which would otherwise undo the change)
+    static _PinnedLists() {
+        lists := [AppSettings.Feature("Recent")["Pinned"]]
+        if (IsObject(PreferencesWindow.Gui) && IsObject(PreferencesWindow.Working))
+            try {
+                working := PreferencesWindow.Working["Features"]["Recent"]["Pinned"]
+                if (working is Array && working != lists[1])
+                    lists.Push(working)
+            }
+        return lists
     }
 
     ; Saved Map -> result; system commands are looked up by Id ("" if the command no longer exists)
