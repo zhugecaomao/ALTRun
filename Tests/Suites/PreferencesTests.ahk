@@ -624,6 +624,59 @@ class PreferencesTests {
         I18n.Init(savedLang)
     }
 
+    ; Edit... next to "Show pinned items" (#514): Move Up / Unpin change only the editor's list; OK returns it, Cancel returns ""
+    static PinnedEditor() {
+        eq := (n, a, e) => TestRunner.Equal("PinnedEditor." n, a, e)
+        pinned := [Map("Uid", "file:a", "Title", "a", "Kind", "file", "Arg", "C:\a.txt"), Map("Uid", "file:b", "Title", "b", "Kind", "file", "Arg", "C:\b.txt")
+            , Map("Uid", "system:Lock", "Title", "Lock", "System", "Lock")]
+        names(list) {
+            text := ""
+            for entry in (list is Array ? list : [])
+                text .= (text = "" ? "" : "|") entry["Title"]
+            return (list is Array) ? text : "(cancelled)"
+        }
+        eq("columns", PrefsPages.PinnedText(pinned[1])[2] "|" PrefsPages.PinnedText(pinned[3])[2], "C:\a.txt|system:Lock")
+        title := I18n.T("Prefs.PinnedEditor"), steps := [], done := {Steps: 0}
+        EditorShown() {
+            DetectHiddenWindows(false)
+            hwnd := WinExist(title " ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())
+            return (hwnd && DllCall("IsWindowVisible", "Ptr", hwnd)) ? hwnd : 0
+        }
+        FindControl(hwnd, type, text := "") {
+            for ctrl in GuiFromHwnd(hwnd)
+                if (ctrl.Type = type && (text = "" || ctrl.Text = text))
+                    return ctrl
+        }
+        NextStep() {                                                            ; one step every 150 ms once the window shows: select a row, or click a button
+            if !(hwnd := EditorShown())
+                return SetTimer(NextStep, -100)
+            action := steps.RemoveAt(1), done.Steps += 1
+            if IsInteger(action)
+                FindControl(hwnd, "ListView").Modify(action, "Select Focus")
+            else if IsObject(button := FindControl(hwnd, "Button", action))
+                PostMessage(0xF5, 0, 0, button)                             ; BM_CLICK
+            if steps.Length
+                SetTimer(NextStep, -150)
+        }
+        GiveUpEditor() {                                                          ; still open: closed, so the test fails instead of hanging the run
+            DetectHiddenWindows(true)
+            if (hwnd := WinExist(title " ahk_class AutoHotkeyGUI ahk_pid " ProcessExist()))
+                WinClose(hwnd)
+        }
+        OpenEditor(list) {
+            steps.Length := 0, steps.Push(list*), done.Steps := 0
+            SetTimer(NextStep, -200), SetTimer(GiveUpEditor, -15000)
+            edited := PrefsPages.PinnedEditor(ItemEditor.Owner(), pinned)
+            SetTimer(GiveUpEditor, 0), SetTimer(NextStep, 0)
+            return edited
+        }
+        result := OpenEditor([2, I18n.T("Prefs.MoveUp"), 3, I18n.T("Action.Unpin"), "OK"])
+        eq("move up, unpin, OK", names(result) " (" done.Steps " steps)", "b|a (5 steps)")
+        eq("the list given is unchanged", names(pinned), "a|b|Lock")
+        eq("same entries", IsObject(result) && result.Length = 2 && result[1] == pinned[2], true)
+        eq("cancel", names(OpenEditor([1, I18n.T("Action.Unpin"), I18n.T("Prefs.Cancel")])), "(cancelled)")
+    }
+
     static PreferencesFit() {
         savedLang := I18n.Lang
         for language in I18n.Languages() {                                   ; sorted by code, ja before zh-TW (Wine lacks both fonts, and Japanese measured too narrow after JhengHei was used first)
@@ -712,6 +765,25 @@ class PreferencesTests {
                             ctrl.GetPos(&labelX)
                     }
                     TestRunner.Equal("PreferencesFit." lang " keep minutes indented", labelX, checkX = "" ? "?" : checkX + PrefsForm.CheckIndent)
+                    ; the empty search box (#514): Edit... / Clear... at the right edge, each on its check box's row, nothing running into them
+                    found := Map()
+                    for ctrl in page.Controls
+                        for key in ["Prefs.ShowPinned", "Prefs.ShowRecent", "Prefs.ShowRecent.Unit", "Prefs.EditList", "Prefs.ClearRecent"]
+                            if (ctrl.Text = I18n.T(key) && !found.Has(key))
+                                found[key] := ctrl
+                    TestRunner.Equal("PreferencesFit." lang " empty box controls", found.Count, 5)
+                    if (found.Count = 5) {
+                        pos := Map()
+                        for key, ctrl in found
+                            ctrl.GetPos(&x, &y, &w, &h), pos[key] := {X: x, Y: y, R: x + w, M: y + h / 2}
+                        editPos := pos["Prefs.EditList"], clearPos := pos["Prefs.ClearRecent"]
+                        TestRunner.True("PreferencesFit." lang " empty box buttons at the right edge (" editPos.R " " clearPos.R ")"
+                            , editPos.R = clearPos.R && editPos.R = PrefsForm.ContentX + PrefsForm.ContentW)
+                        TestRunner.True("PreferencesFit." lang " empty box buttons on their rows"
+                            , Abs(editPos.M - pos["Prefs.ShowPinned"].M) <= 2 && Abs(clearPos.M - pos["Prefs.ShowRecent"].M) <= 2)
+                        TestRunner.True("PreferencesFit." lang " empty box: room before the buttons (" pos["Prefs.ShowPinned"].R " " pos["Prefs.ShowRecent.Unit"].R ")"
+                            , pos["Prefs.ShowPinned"].R <= editPos.X && pos["Prefs.ShowRecent.Unit"].R + 4 <= clearPos.X)
+                    }
                 }
                 if (page.Key = "Prefs.Page.Window" || page.Key = "Prefs.Page.Keyboard") {   ; the input boxes / drop-downs of these pages share one left edge
                     lefts := "", count := 0

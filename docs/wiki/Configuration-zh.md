@@ -16,7 +16,7 @@
 | 偏好设置页面 | 文档 |
 |---|---|
 | 通用 / 高级 | [设置文件参考](Configuration-zh) |
-| 搜索窗口 / 功能 / 使用统计 | [搜索与快捷键](Usage-zh); 功能页里的各项: [浏览器书签](Bookmarks-zh)、[窗口切换](Window-Switching-zh)、[置顶和最近使用](Recent-zh)、[系统命令和终端](System-Commands-zh) |
+| 搜索窗口 / 功能 / 使用统计 | [搜索与快捷键](Usage-zh)、[置顶和最近使用](Recent-zh) (空搜索框); 功能页里的各项: [浏览器书签](Bookmarks-zh)、[窗口切换](Window-Switching-zh)、[系统命令和终端](System-Commands-zh) |
 | 网页搜索 | [网页搜索](Web-Search-zh) |
 | 外观 | [主题](Themes-zh) |
 | 应用 | [设置文件参考: 应用索引](Configuration-zh#applications-应用) |
@@ -88,7 +88,9 @@
 | ShowTips | 1 | 轮换显示使用提示, 用灰色文字显示在空搜索框里 |
 | StatusBar | 1 | 搜索窗口底部的状态栏 (有结果时显示: `Enter` 和 `→` 做什么); 0 = 不显示 |
 | Placeholder | "" | 空搜索框里的灰色文字; 空 = 默认的 "ALTRun 搜索", 只写空格 = 什么都不显示 (有使用提示时不显示) |
-| RecentCount | 0 | 空搜索框里显示几个最近打开的项目, 0 = 不显示 (默认只显示置顶的项目) |
+| ShowPinned | 1 | 空搜索框先列出置顶的项目 (`Features.Recent.Pinned`) |
+| ShowRecent | 0 | ... 再列出最近打开的项目, 最多 `RecentCount` 个。2026.11.13.13 以前的设置文件没有这个键: `RecentCount` 大于 0 时算勾上; `Features.Recent.Enabled` 为 0 (原来功能页的开关) 时两个都不勾 |
+| RecentCount | 5 | 勾了 `ShowRecent` 时最多显示几个最近打开的项目 |
 
 ## Keyboard 键盘
 偏好设置 → 键盘。设置版本 6 及以前在 `General` 里。
@@ -194,7 +196,7 @@
 脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Scripts-zh)。
 
 ### Recent 置顶和最近使用
-显示几个最近使用的项目: `Window.RecentCount`。
+空搜索框显示什么: `Window.ShowPinned`、`Window.ShowRecent`、`Window.RecentCount`。`Enabled` 不在偏好设置里了, 保持 1。
 
 | 键 | 默认 | 说明 |
 |---|---|---|

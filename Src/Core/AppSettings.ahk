@@ -341,12 +341,36 @@ class AppSettings {
 
     ; Adds the keys that defaults has and target lacks (recursively; only Maps are filled in, arrays count as a whole).
     ; Returns whether anything changed. A wrong type (e.g. a Map edited into a string by hand) is replaced by the default too.
-    ; New settings that an existing settings file doesn't have yet: keep the old behavior instead of the new install's default (see the three below). Returns whether one was added
+    ; New settings that an existing settings file doesn't have yet: keep the old behavior instead of the new install's default (see the four below). Returns whether one was added
     static _KeepPrevious(data) {
         keptDensity := AppSettings._KeepDensity(data)
         keptLargeType := AppSettings._KeepLargeType(data)                  ; not called largeType: that would shadow the LargeType class
         keptClipboard := AppSettings._KeepClipboardStorage(data)
-        return keptDensity || keptLargeType || keptClipboard
+        keptEmptyBox := AppSettings._KeepEmptyBox(data)
+        return keptDensity || keptLargeType || keptClipboard || keptEmptyBox
+    }
+
+    ; The empty search box got two check boxes in 2026.11.13.13 (Window.ShowPinned / ShowRecent, #514) instead of the number alone and the
+    ; "Pinned and recent items" feature switch: an existing file without ShowRecent shows the recent items when RecentCount > 0 (a count
+    ; of 0 becomes the default 5, used once the box is checked); the feature switch turned off (Features.Recent.Enabled 0) becomes both
+    ; boxes unchecked, and the switch, no longer in Preferences, is turned back on. Returns whether anything changed
+    static _KeepEmptyBox(data) {
+        if !(data.Has("Window") && data["Window"] is Map)
+            data["Window"] := Map()
+        window := data["Window"], changed := false
+        if !window.Has("ShowRecent") {
+            count := (window.Has("RecentCount") && IsNumber(window["RecentCount"])) ? window["RecentCount"] : 0
+            window["ShowRecent"] := (count > 0) ? 1 : 0
+            if (count <= 0)
+                window["RecentCount"] := AppSettings.Defaults()["Window"]["RecentCount"]
+            changed := true
+        }
+        try recent := data["Features"]["Recent"]
+        if (IsSet(recent) && recent is Map && recent.Has("Enabled") && !recent["Enabled"]) {
+            window["ShowPinned"] := 0, window["ShowRecent"] := 0, recent["Enabled"] := 1
+            changed := true
+        }
+        return changed
     }
 
     ; An existing settings file without Features.Clipboard.LocalFiles: keep the clipboard history where it was before 2026.11.09
@@ -598,7 +622,9 @@ class AppSettings {
                 "ShowTips"            , 1,                                  ; rotate usage tips in the empty search box
                 "StatusBar"           , 1,                                  ; status bar at the bottom of the search window (the mode, the selected result's Enter action and →)
                 "Placeholder"         , "",                                 ; gray text in the empty search box, empty = the default ("ALTRun Search")
-                "RecentCount"         , 0                                   ; how many recently opened items the empty search box shows (0 = none; by default only the pinned ones)
+                "ShowPinned"          , 1,                                  ; the empty search box lists the pinned items (Features.Recent.Pinned) first
+                "ShowRecent"          , 0,                                  ; ... then the recently opened items (Knowledge.Recent), at most RecentCount of them
+                "RecentCount"         , 5                                   ; (an existing file without ShowRecent: see _KeepEmptyBox)
             ),
             "Keyboard", Map(                                                ; Preferences → Keyboard
                 "CapsLock"            , "",                                 ; CapsLock: Layout = switch input language, Mode = toggle Chinese / English mode, "" = as usual (see CapsLockSwitch)
@@ -730,7 +756,7 @@ class AppSettings {
                     "Keyword"    , "script"                                 ; "script backup" searches scripts only, "script " lists them all
                 ),
                 "Recent", Map(
-                    "Enabled"    , 1,                                       ; how many recent items show: Window.RecentCount
+                    "Enabled"    , 1,                                       ; always on (not in Preferences): Window.ShowPinned / ShowRecent decide what shows
                     "Pinned"     , []                                       ; items pinned to the empty search box ("Pin" in the actions panel)
                 ),
                 "Windows", Map(

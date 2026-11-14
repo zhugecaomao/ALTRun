@@ -44,8 +44,141 @@ class PrefsPages {
         PrefsForm.Section("Prefs.Section.EmptyBox")
         placeholder := PrefsForm.InlineField("Window.Placeholder", "Prefs.Placeholder", "M")
         Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; empty shows the default text in gray
-        recent := PrefsForm.InlineField("Window.RecentCount", "Prefs.RecentCount", "S", "number")
-        PrefsForm.AlignLeft(keepFor, placeholder, recent)                   ; the input boxes on this page share one left edge
+        ; what the empty search box lists: [x] pinned items [Edit...] / [x] the last [N] recently used items [Clear...] (#514)
+        x := PrefsForm.InputX(), buttonX := x + PrefsForm.InputW() - PrefsForm.WidthS
+        pinned := PrefsForm.Check("Window.ShowPinned", "Prefs.ShowPinned", x, , , buttonX - 8 - x)
+        editButton := PrefsPages._RowButton(pinned, buttonX, "Prefs.EditList", (*) => PrefsPages.EditPinned())
+        pinned.GetPos(, &pinnedY, , &pinnedH), editButton.GetPos(, , , &buttonH)
+        recentY := Max(PrefsForm._y, pinnedY + buttonH + 4, pinnedY + pinnedH + 7)   ; 4 pixels between the two buttons, and below the check box for the number box
+        PrefsForm._y := recentY
+        showRecent := PrefsForm.Add("Checkbox", "x" x, I18n.T("Prefs.ShowRecent"))              ; as wide as its text: the number follows it
+        showRecent.Value := PreferencesWindow.GetPath(PreferencesWindow.Working, "Window.ShowRecent") ? 1 : 0
+        PrefsForm.Bind("Window.ShowRecent", () => showRecent.Value)
+        showRecent.GetPos(, , &checkW, &checkH)
+        PrefsForm._y := recentY - 3                                         ; the box's text on the check box's line
+        count := PrefsForm.Add("Edit", "x" (x + checkW + 6) " w" PrefsForm.WidthS " r1 -Multi Number"
+            , PreferencesWindow.GetPath(PreferencesWindow.Working, "Window.RecentCount"))
+        PrefsForm.Bind("Window.RecentCount", () => IsInteger(count.Value) ? Integer(count.Value) : 0)
+        PrefsForm.AlignLeft(keepFor, placeholder, count)                    ; the input boxes on this page share one left edge
+        unit := PrefsForm.Unit(count, "Prefs.ShowRecent.Unit")
+        clear := PrefsPages._RowButton(showRecent, buttonX, "Prefs.ClearRecent", (*) => PrefsPages.ClearRecent())
+        PrefsForm._y := recentY
+        PrefsForm.Below(0, showRecent, count, unit, clear)
+        PrefsForm.Desc("Prefs.ShowRecent", x + PrefsForm.CheckIndent)
+        update := (*) => (count.Enabled := showRecent.Value = 1)            ; the number only matters while the box is checked
+        update()
+        showRecent.OnEvent("Click", (*) => ((showRecent.Value && !(IsInteger(count.Value) && count.Value > 0))
+            ? (count.Value := AppSettings.Defaults()["Window"]["RecentCount"]) : 0, update()))         ; checked with no number: the default
+    }
+
+    ; A small button at the right end of a check box's row (Edit... / Clear...)
+    static _RowButton(check, buttonX, labelKey, fn) {
+        check.GetPos(, &checkY, , &checkH)
+        h := PrefsForm.ButtonH - 2
+        saved := PrefsForm._y, PrefsForm._y := checkY + (checkH - h) // 2
+        button := PrefsForm.Add("Button", "x" buttonX " w" PrefsForm.WidthS " h" h, I18n.T(labelKey))
+        button.OnEvent("Click", fn)
+        PrefsForm._y := saved
+        return button
+    }
+
+    ; Edit... next to "Show pinned items": the pinned items in a list to reorder or unpin. Changes Preferences' copy only (OK / Apply saves it)
+    static EditPinned() {
+        pinned := PreferencesWindow.GetPath(PreferencesWindow.Working, "Features.Recent.Pinned")
+        if !(pinned is Array)
+            return
+        edited := PrefsPages.PinnedEditor(PreferencesWindow.Gui, pinned)
+        if !(edited is Array)
+            return
+        same := edited.Length = pinned.Length
+        for index, entry in edited
+            same := same && entry == pinned[index]
+        if same
+            return
+        pinned.Length := 0                                                  ; the same array: a pin made meanwhile goes to it too (RecentProvider._PinnedLists)
+        pinned.Push(edited*)
+        PreferencesWindow.MarkDirty()
+    }
+
+    ; The window of Edit...: Move Up / Move Down / Unpin, OK / Cancel. Returns the new list, "" when cancelled
+    static PinnedEditor(owner, pinned) {
+        state := {Result: "", Items: pinned.Clone()}
+        g := Gui("+Owner" owner.Hwnd " -MinimizeBox", I18n.T("Prefs.PinnedEditor"))
+        g.SetFont("s9", ThemeManager.FontName())
+        g.MarginX := 14, g.MarginY := 12
+        listW := 470, buttonW := 100
+        g.AddText("w" (listW + 10 + buttonW), I18n.T("Prefs.PinnedEditor.Help"))
+        list := g.AddListView("xm y+10 w" listW " r12 -Multi NoSortHdr", [I18n.T("Prefs.Col.Title"), I18n.T("Prefs.Col.Target")])
+        up := g.AddButton("x+10 yp w" buttonW, I18n.T("Prefs.MoveUp"))
+        down := g.AddButton("xp y+6 w" buttonW, I18n.T("Prefs.MoveDown"))
+        unpin := g.AddButton("xp y+6 w" buttonW, I18n.T("Action.Unpin"))
+        list.GetPos(, &listY, , &listH)
+        g.AddButton("xm+" (listW + 10 + buttonW - 170) " y" (listY + listH + 14) " w80 Default", "OK").OnEvent("Click", OnOk)
+        g.AddButton("x+10 yp w80", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => g.Destroy())
+        up.OnEvent("Click", (*) => Move(-1))
+        down.OnEvent("Click", (*) => Move(1))
+        unpin.OnEvent("Click", (*) => Remove())
+        list.OnEvent("ItemSelect", (*) => Update())
+        g.OnEvent("Escape", (*) => g.Destroy())
+        g.OnEvent("Close", (*) => g.Destroy())
+        Fill(1)
+        owner.Opt("+Disabled")
+        g.Show()
+        WinWaitClose(g.Hwnd)
+        owner.Opt("-Disabled")
+        try WinActivate("ahk_id " owner.Hwnd)
+        return state.Result
+
+        Fill(selected) {
+            list.Delete()
+            for entry in state.Items
+                list.Add(, PrefsPages.PinnedText(entry)*)
+            if (selected >= 1 && selected <= state.Items.Length)
+                list.Modify(selected, "Select Focus Vis")
+            list.ModifyCol(1, 190), list.ModifyCol(2, listW - 190 - 25)
+            Update()
+        }
+        Update() {
+            row := list.GetNext()
+            up.Enabled := row > 1, down.Enabled := row && row < state.Items.Length, unpin.Enabled := row > 0
+        }
+        Move(step) {
+            row := list.GetNext(), target := row + step
+            if (!row || target < 1 || target > state.Items.Length)
+                return
+            entry := state.Items.RemoveAt(row)
+            state.Items.InsertAt(target, entry)
+            Fill(target)
+        }
+        Remove() {
+            if !(row := list.GetNext())
+                return
+            state.Items.RemoveAt(row)
+            Fill(Min(row, state.Items.Length))
+        }
+        OnOk(*) {
+            state.Result := state.Items
+            g.Destroy()
+        }
+    }
+
+    ; A pinned entry as the editor's two columns: its title, and what it opens (a system command: its Id)
+    static PinnedText(entry) {
+        if !(entry is Map)
+            return ["?", ""]
+        title := entry.Has("Title") ? entry["Title"] : ""
+        target := entry.Has("System") ? "system:" entry["System"] : entry.Has("Arg") ? entry["Arg"] : ""
+        return [title, target]
+    }
+
+    ; Clear... next to the recently used items: asks first, with how many; done at once (like the clipboard history), pinned items stay
+    static ClearRecent() {
+        count := Knowledge.Recent.Length
+        owner := " Owner" PreferencesWindow.Gui.Hwnd
+        if !count
+            return MsgBox(I18n.T("Prefs.ClearRecent.Nothing"), App.Name, "Iconi" owner)
+        if (MsgBox(I18n.T("Prefs.ClearRecent.Confirm", count), App.Name, "YesNo Icon? Default2" owner) = "Yes")
+            RecentProvider.ClearRecent()
     }
 
     ; Keyboard: input method switching (Caps Lock, English when shown) and the keys in the search box.
@@ -226,7 +359,7 @@ class PrefsPages {
     static BuildFeatures() {
         PrefsForm.BeginPage("Prefs.Page.Features", 140)
         PrefsForm.Section("Prefs.EnabledFeatures")
-        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "BrowserHistory", "Windows", "Recent", "FileSearch", "Scripts", "Terminal", "System", "Help"]
+        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "BrowserHistory", "Windows", "FileSearch", "Scripts", "Terminal", "System", "Help"]
         startY := PrefsForm._y, columnW := PrefsForm.InputW() // 2                       ; two columns: the English names are long, three would wrap
         rowH := 20                                                          ; row spacing: at least 4 more than a check box (Chinese and Japanese check boxes are taller)
         for index, feature in features {

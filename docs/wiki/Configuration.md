@@ -16,7 +16,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Preferences page | Documentation |
 |---|---|
 | General / Advanced | [Settings reference](Configuration) |
-| Search Window / Features / Usage | [Search and shortcuts](Usage); items on the Features page: [Browser bookmarks](Bookmarks), [Window switching](Window-Switching), [Pinned and recent items](Recent), [System commands and terminal](System-Commands) |
+| Search Window / Features / Usage | [Search and shortcuts](Usage), [Pinned and recent items](Recent) (empty search box); items on the Features page: [Browser bookmarks](Bookmarks), [Window switching](Window-Switching), [System commands and terminal](System-Commands) |
 | Web Search | [Web search](Web-Search) |
 | Appearance | [Themes](Themes) |
 | Applications | [Settings reference: Applications](Configuration#features) |
@@ -88,7 +88,9 @@ Preferences → Search Window. Up to settings version 6 (ALTRun 2026.11.12) thes
 | ShowTips | 1 | Show a usage tip, a different one each time, as gray text in the empty search box |
 | StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: what `Enter` and `→` do); 0 = off |
 | Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (not shown while there is a usage tip) |
-| RecentCount | 0 | How many recently opened items the empty search box shows; 0 = none (only pinned items by default) |
+| ShowPinned | 1 | The empty search box lists the pinned items (`Features.Recent.Pinned`) first |
+| ShowRecent | 0 | ... then the recently opened items, at most `RecentCount` of them. A settings file from before 2026.11.13.13 without this key: on when `RecentCount` was more than 0; `Features.Recent.Enabled` 0 (the old switch on the Features page) turns both off |
+| RecentCount | 5 | How many recently opened items show with `ShowRecent` on |
 
 ## Keyboard
 Preferences → Keyboard. Up to settings version 6 these were in `General`.
@@ -194,7 +196,7 @@ Also in Preferences → Features → Feature options. See [Browser history](Book
 Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](Scripts) for how to write them.
 
 ### Recent (pinned and recent items)
-How many recent items show: `Window.RecentCount`.
+What the empty search box shows: `Window.ShowPinned`, `Window.ShowRecent` and `Window.RecentCount`. `Enabled` is no longer in Preferences and stays 1.
 
 | Key | Default | Description |
 |---|---|---|

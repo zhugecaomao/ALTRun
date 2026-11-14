@@ -2155,11 +2155,13 @@ class ProviderTests {
 
     static RecentItems() {
         eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
-        eq("default count", AppSettings.Defaults()["Window"]["RecentCount"], 0)   ; by default only pinned items show
-        saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File}
-        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := AppSettings.Window["RecentCount"]
+        defaults := AppSettings.Defaults()["Window"]
+        eq("defaults", defaults["ShowPinned"] "|" defaults["ShowRecent"] "|" defaults["RecentCount"], "1|0|5")   ; by default only pinned items show
+        window := AppSettings.Window
+        saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File, ShowPinned: window["ShowPinned"], ShowRecent: window["ShowRecent"]}
+        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := window["RecentCount"]
         Knowledge.Recent := [], Knowledge.File := A_Temp "\ALTRun-recent-test.json", AppSettings.File := A_Temp "\ALTRun-recent-settings.json"
-        options["Pinned"] := [], AppSettings.Window["RecentCount"] := 2
+        options["Pinned"] := [], window["RecentCount"] := 2, window["ShowPinned"] := 1, window["ShowRecent"] := 1
         fileItem := (name) => ResultItem(name, "C:\Docs\" name, {Kind: "file", Arg: "C:\Docs\" name, Uid: "file:" name, Provider: "FileSearch", Icon: "C:\Docs\" name})
         RecentProvider.Remember(fileItem("a.txt"))
         RecentProvider.Remember(fileItem("b.txt"))
@@ -2181,6 +2183,11 @@ class ProviderTests {
         items := RecentProvider.EmptyResults()
         eq("pinned first", titles(items), "c.txt|" I18n.T("Sys.Lock") "|a.txt")
         eq("pinned flag", items[1].Pinned "|" items[2].Pinned "|" items[1].Provider, "1|0|Recent")
+        window["ShowPinned"] := 0                                            ; pinned not shown: c.txt only counts as recently used (third, after the 2 shown)
+        eq("pinned off", titles(RecentProvider.EmptyResults()), I18n.T("Sys.Lock") "|a.txt")
+        window["ShowPinned"] := 1, window["ShowRecent"] := 0
+        eq("recent off", titles(RecentProvider.EmptyResults()), "c.txt")
+        window["ShowRecent"] := 1
         eq("is pinned", RecentProvider.IsPinned(fileItem("c.txt")) "|" RecentProvider.IsPinned(fileItem("b.txt")), "1|0")
         eq("can pin", RecentProvider.CanPin(fileItem("b.txt")) "|" RecentProvider.CanPin(clip), "1|0")
         actions := ""
@@ -2201,10 +2208,12 @@ class ProviderTests {
             eq("unpin while Preferences open", options["Pinned"].Length "|" working.Length, "0|0")
         } finally
             PreferencesWindow.Gui := savedGui, PreferencesWindow.Working := savedWorking
-        AppSettings.Window["RecentCount"] := 0
+        window["RecentCount"] := 0
         eq("count 0", RecentProvider.EmptyResults().Length, 0)
+        eq("clear: how many", RecentProvider.ClearRecent() "|" Knowledge.Recent.Length, "3|0")
+        eq("clear: nothing left", RecentProvider.ClearRecent(), 0)
         Knowledge.Recent := saved.Recent, Knowledge.File := saved.File, AppSettings.File := saved.SettingsFile
-        options["Pinned"] := savedPinned, AppSettings.Window["RecentCount"] := savedCount
+        options["Pinned"] := savedPinned, window["RecentCount"] := savedCount, window["ShowPinned"] := saved.ShowPinned, window["ShowRecent"] := saved.ShowRecent
         try FileDelete(A_Temp "\ALTRun-recent-test.json")
         try FileDelete(A_Temp "\ALTRun-recent-settings.json")
     }
