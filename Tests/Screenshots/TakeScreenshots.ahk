@@ -36,7 +36,7 @@ class Shots {
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor"
-                         , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
+                         , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
     static Themes() {
@@ -108,6 +108,7 @@ class Shots {
             ["prefs-dialogpanel", "Light", "-Preferences QSPanel", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
             ["prefs-datestamp",  "Light", "-Preferences DateStamp", () => Shots.Preferences()],     ; Wiki: date stamp
             ["prefs-window",     "Light", "-Preferences Window", () => Shots.Preferences()],      ; Wiki: search and shortcuts
+            ["pinned-editor",    "Light", "-Preferences Window", () => Shots.SyncWindow("Edit...", "Pinned Items", 0), () => Shots.WritePinnedAndRecent()],   ; Wiki: pinned and recent items (Edit... next to "Show pinned items")
             ["prefs-features",   "Light", "-Preferences Features", () => Shots.Preferences()],      ; Wiki: settings reference (features)
             ["prefs-applications", "Light", "-Preferences Applications", () => Shots.Preferences()],    ; Wiki: automatic app index updates
             ["prefs-clipboard",  "Light", "-Preferences Clipboard", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
@@ -308,10 +309,11 @@ class Shots {
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 1),
-                "Recent", Map("Pinned", Shots.Pinned, "RecentCount", 5),
+                "Recent", Map("Pinned", Shots.Pinned),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0),
                 "Clipboard", Map("LocalFiles", 0)                           ; the made-up history stays in this Data folder, away from this PC's %LOCALAPPDATA%
             ),
+            "Window", Map("ShowPinned", 1, "ShowRecent", 1, "RecentCount", 5),   ; the empty search box: pinned and recent items (#514)
             "Extensions", Map("QuickSwitch", Map("RecentFolders", 3, "Favorites", [demo, demo "\Annual Report 2026"])),   ; the folder panel: two favorites, and only the recent items WriteRecentFolders created
             "CustomCommands", [
                 Map("Title", "Website Redesign", "Type", "Folder", "Target", demo "\Website Redesign", "Arguments", "", "Keyword", ""),
@@ -1076,7 +1078,7 @@ class Shots {
     }
 
     ; Preferences → Sync: selects the first task, clicks a button (Edit / Preview) and returns the window that opens (its title starts with title)
-    ; A list page's button that opens a window (also the hotkey editor): row = the list row selected first
+    ; A list page's button that opens a window (also the hotkey editor): row = the list row selected first; 0 = a page without a list (pinned items)
     static SyncWindow(buttonText, title, row := 1) {
         prefs := Shots.Preferences()
         list := 0, button := 0
@@ -1088,10 +1090,12 @@ class Shots {
             if (!button && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = buttonText)
                 button := ctrl
         }
-        if !(list && button)
+        if !((list || !row) && button)
             throw Error("sync page: list or " buttonText " button not found")
-        ControlFocus(list), ControlSend("{Home}" (row > 1 ? "{Down " (row - 1) "}" : ""), list)
-        Sleep(300)
+        if row {
+            ControlFocus(list), ControlSend("{Home}" (row > 1 ? "{Down " (row - 1) "}" : ""), list)
+            Sleep(300)
+        }
         PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK: a posted mouse click (ControlClick) was sometimes lost; posted, so Edit's modal window doesn't block
         window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 20)
         if !window {

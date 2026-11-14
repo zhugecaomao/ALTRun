@@ -2,13 +2,14 @@
 ; RecentProvider.ahk - pinned and recently used items in the empty search box (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; As in Raycast / Alfred, they are listed when the search window is shown and nothing is typed yet:
-;   1. pinned items: "Pin to empty search box" in the actions panel (→), stored in ALTRun.json (Features.Recent.Pinned), so they go with the settings
-;   2. recently opened items (RecentCount, 0 = none), stored in Data\Knowledge.json (Knowledge.Recent)
+;   1. pinned items (Window.ShowPinned): "Pin to empty search box" in the actions panel (→), stored in ALTRun.json (Features.Recent.Pinned),
+;      so they go with the settings; reordered / removed in Preferences → Search Window → Edit... (PrefsPages.EditPinned)
+;   2. recently opened items (Window.ShowRecent, at most RecentCount), stored in Data\Knowledge.json (Knowledge.Recent); Clear... in Preferences
 ; Ctrl+Del: unpin / remove from the recently used.
 ; Only results that can be opened again are kept: files, folders, programs, URLs (path saved) and system commands (Id saved, shown with the name in the current language);
 ; clipboard history, calculation results, snippets, web searches, windows and others that depend on the input or the moment aren't.
 ;
-; Settings (ALTRun.json): Features.Recent: Enabled / Pinned; Window.RecentCount
+; Settings (ALTRun.json): Features.Recent: Enabled (always on) / Pinned; Window: ShowPinned / ShowRecent / RecentCount
 ;===============================================================================
 
 class RecentProvider {
@@ -23,18 +24,18 @@ class RecentProvider {
         return []
     }
 
-    ; Empty search box: pinned first, then the recently used (without the pinned ones)
+    ; Empty search box: pinned first, then the recently used (without the pinned ones shown above)
     static EmptyResults() {
-        options := AppSettings.Feature("Recent")
+        options := AppSettings.Feature("Recent"), window := AppSettings.Window
         results := [], seen := Map()
-        for entry in options["Pinned"] {
-            if IsObject(item := RecentProvider.ItemFor(entry, true)) {
-                results.Push(item), seen[entry["Uid"]] := true
+        if window["ShowPinned"]
+            for entry in options["Pinned"] {
+                if IsObject(item := RecentProvider.ItemFor(entry, true))
+                    results.Push(item), seen[entry["Uid"]] := true
             }
-        }
-        shown := 0
+        shown := 0, limit := window["ShowRecent"] ? window["RecentCount"] : 0
         for entry in Knowledge.Recent {
-            if (shown >= AppSettings.Window["RecentCount"])
+            if (shown >= limit)
                 break
             if (!(entry is Map) || !entry.Has("Uid") || seen.Has(entry["Uid"]))
                 continue
@@ -166,6 +167,16 @@ class RecentProvider {
             }
         }
         return false
+    }
+
+    ; Clear... in Preferences: forgets all the recently used items (the pinned ones stay); returns how many there were
+    static ClearRecent() {
+        count := Knowledge.Recent.Length
+        if count {
+            Knowledge.Recent.Length := 0
+            Knowledge.Save()
+        }
+        return count
     }
 
     static DeletePrompt(item) {

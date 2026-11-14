@@ -227,7 +227,7 @@ class CoreTests {
         data["Keyboard"]["HistorySize"] := "45", data["Features"]["Snippets"]["PasteDelay"] := 250.6, data["Window"]["RecentCount"] := Map()
         eq("changed", AppSettings.ClampNumbers(data), true)
         eq("raised / lowered to the range", data["Appearance"]["Width"] "|" data["Appearance"]["VisibleRows"] "|" data["Appearance"]["Position"]["X"] "|" data["Features"]["Clipboard"]["MaxItems"], "450|9|0|1")
-        eq("not a number -> default", data["Features"]["FileSearch"]["MaxResults"] "|" data["Window"]["RecentCount"], "30|0")
+        eq("not a number -> default", data["Features"]["FileSearch"]["MaxResults"] "|" data["Window"]["RecentCount"], "30|5")
         eq("text and decimals -> whole numbers", Type(data["Keyboard"]["HistorySize"]) "|" data["Keyboard"]["HistorySize"] "|" data["Features"]["Snippets"]["PasteDelay"], "Integer|45|251")
         eq("second pass changes nothing", AppSettings.ClampNumbers(data), false)
         eq("missing sections skipped", AppSettings.ClampNumbers(Map("General", "broken", "Appearance", Map("Position", 5))), false)
@@ -498,6 +498,23 @@ class CoreTests {
         eq("no group made without a key to move", AppSettings.MoveGroups(empty) "|" empty.Has("Window") "|" empty.Has("Keyboard"), "0|0|0")
         broken := Map("General", Map("SpaceToRun", 1), "Keyboard", "broken")
         eq("a broken group is replaced", AppSettings.MoveGroups(broken) "|" broken["Keyboard"]["SpaceToRun"], "1|1")
+    }
+
+    ; The empty search box's two check boxes (#514): an existing file without ShowRecent keeps what it showed; the old feature switch turned off unchecks both
+    static EmptyBoxSettings() {
+        eq := (n, a, e) => TestRunner.Equal("EmptyBoxSettings." n, a, e)
+        shown(data) => data["Window"].Get("ShowPinned", "-") "|" data["Window"]["ShowRecent"] "|" data["Window"]["RecentCount"]
+        data := Map("Window", Map("RecentCount", 4), "Features", Map("Recent", Map("Enabled", 1)))
+        eq("count > 0: recent shown", AppSettings._KeepEmptyBox(data) "|" shown(data), "1|-|1|4")
+        eq("second pass changes nothing", AppSettings._KeepEmptyBox(data), false)
+        data := Map("Window", Map("RecentCount", 0))
+        eq("count 0: not shown, default count", AppSettings._KeepEmptyBox(data) "|" shown(data), "1|-|0|5")
+        data := Map("Window", Map("RecentCount", 3), "Features", Map("Recent", Map("Enabled", 0, "Pinned", [])))
+        eq("feature off: both unchecked, switch back on", AppSettings._KeepEmptyBox(data) "|" shown(data) "|" data["Features"]["Recent"]["Enabled"], "1|0|0|3|1")
+        data := Map("Window", Map("ShowPinned", 1, "ShowRecent", 1, "RecentCount", 2), "Features", Map("Recent", Map("Enabled", 1)))
+        eq("already there: unchanged", AppSettings._KeepEmptyBox(data) "|" shown(data), "0|1|1|2")
+        data := Map("General", Map())
+        eq("no Window group yet", AppSettings._KeepEmptyBox(data) "|" shown(data), "1|-|0|5")
     }
 
     ; "" when every moved key has a default in its new group and none in its old place; else the keys that don't

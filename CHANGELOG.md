@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.13]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 搜索窗口 → 空搜索框: 改成两个勾 "显示置顶的项目" (旁边 "编辑..." 可以上移 / 下移 / 取消置顶) 和 "显示最近使用的项目, 最多 N 个" (旁边 "清空..." 确认后马上清空, 置顶的不受影响), 可以只开一个 (#514)。功能页去掉 "置顶和最近使用" 开关: 原来关掉的升级后两个都不勾; 原来最近使用个数大于 0 的照样显示
+
 ## [2026.11.13.12]
 
 测试版。
@@ -1525,7 +1534,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...HEAD
+[2026.11.13.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...2026.11.13.13
 [2026.11.13.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...2026.11.13.12
 [2026.11.13.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...2026.11.13.11
 [2026.11.13.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...2026.11.13.10
