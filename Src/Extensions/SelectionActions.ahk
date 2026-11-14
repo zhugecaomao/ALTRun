@@ -52,26 +52,77 @@ class SelectionActions {
         className := ""
         try className := WinGetClass("A")
         Win.WaitModifiersUp()                                               ; with the hotkey's Ctrl+Alt still held, Ctrl+C would become Ctrl+Alt+C
-        ClipboardData.Borrow(2000)
+        ClipboardData.Borrow(SelectionActions.WaitMs + SelectionActions.RetryMs + 500)
         saved := ClipboardAll(), result := ""
         try {                                                               ; the user's clipboard comes back even when this fails half way
             A_Clipboard := ""
             Send(RegExMatch(className, SelectionActions.ConsoleClasses) ? "^{Insert}" : "^c")
-            if ClipWait(0.8, 1) {
-                if DllCall("IsClipboardFormatAvailable", "UInt", 15) {     ; CF_HDROP: files were copied
-                    files := []
-                    for line in StrSplit(A_Clipboard, "`n", "`r")
-                        if (line != "")
-                            files.Push(line)
-                    if files.Length
-                        result := {Files: files}
-                } else if (Trim(A_Clipboard, " `t`r`n") != "") {
-                    result := {Text: A_Clipboard}
-                }
-            }
+            result := SelectionActions.ReadCopied(className)
         } finally
             A_Clipboard := saved
         return result
+    }
+
+    ; Reads what the copy just put on the emptied clipboard: {Files: [...]} for files (CF_HDROP), {Text: "..."} for text, "" for nothing.
+    ; Excel (#513) doesn't put text there at once: its formats come one by one and the text is made only when a program reads it,
+    ; so the first format can come before the text, and the first read can be empty. So: wait up to WaitMs for files or text
+    ; (CF_UNICODETEXT, which Windows also offers for CF_TEXT), then read empty text again every 50 ms for up to RetryMs.
+    ; With nothing selected this takes WaitMs. With the debug log on, a failed read logs the formats seen and the time waited
+    static WaitMs := 2000, RetryMs := 500
+    static ReadCopied(className := "") {
+        start := A_TickCount
+        while !(hasFiles := ClipboardData.HasFiles()) && !DllCall("IsClipboardFormatAvailable", "UInt", 13) {
+            if (A_TickCount - start >= SelectionActions.WaitMs)
+                return SelectionActions._LogNothing(className, start, "no text or files")
+            Sleep(20)
+        }
+        if hasFiles {
+            files := []
+            for line in StrSplit(A_Clipboard, "`n", "`r")
+                if (line != "")
+                    files.Push(line)
+            return files.Length ? {Files: files} : SelectionActions._LogNothing(className, start, "no file paths")
+        }
+        retryUntil := A_TickCount + SelectionActions.RetryMs
+        Loop {
+            text := A_Clipboard
+            if (Trim(text, " `t`r`n") != "")
+                return {Text: text}
+            if (A_TickCount >= retryUntil)
+                return SelectionActions._LogNothing(className, start, "the text is empty")
+            Sleep(50)
+        }
+    }
+
+    static _LogNothing(className, start, reason) {
+        if Logger.Enabled
+            Logger.Debug("Selection: nothing read from [" className "] after " (A_TickCount - start) " ms, " reason
+                "; clipboard formats: " SelectionActions.ClipboardFormats())
+        return ""
+    }
+
+    ; The formats on the clipboard, "13 CF_UNICODETEXT, 49161 DataObject, ..." (at most 20; "none" when empty)
+    static ClipboardFormats() {
+        static names := Map(1, "CF_TEXT", 2, "CF_BITMAP", 3, "CF_METAFILEPICT", 4, "CF_SYLK", 5, "CF_DIF", 7, "CF_OEMTEXT", 8, "CF_DIB"
+            , 13, "CF_UNICODETEXT", 14, "CF_ENHMETAFILE", 15, "CF_HDROP", 16, "CF_LOCALE", 17, "CF_DIBV5")
+        if !ClipboardData._Open()
+            return "(the clipboard is held by another program)"
+        list := "", count := 0, formatId := 0
+        try {
+            while (formatId := DllCall("EnumClipboardFormats", "UInt", formatId, "UInt")) {
+                if (++count > 20)
+                    return list ", ..."
+                name := names.Has(formatId) ? names[formatId] : ""
+                if (name = "") {
+                    buf := Buffer(256 * 2, 0)
+                    if DllCall("GetClipboardFormatName", "UInt", formatId, "Ptr", buf, "Int", 256)
+                        name := StrGet(buf)
+                }
+                list .= (list = "" ? "" : ", ") formatId (name != "" ? " " name : "")
+            }
+        } finally
+            DllCall("CloseClipboard")
+        return (list = "") ? "none" : list
     }
 
     static ItemFor(selection) {

@@ -2253,6 +2253,47 @@ class ExtensionTests {
         eq("transform", SelectionActions.Transforms()[1][2].Call("abc"), "ABC")
     }
 
+    ; Reading the copied selection (#513): text that comes late (Excel) or reads empty at first is still read; nothing copied gives up after WaitMs
+    static SelectionReadCopied() {
+        eq := (n, a, e) => TestRunner.Equal("SelectionRead." n, a, e)
+        ok := (n, c) => TestRunner.True("SelectionRead." n, c)
+        textOf(result) => IsObject(result) && result.HasOwnProp("Text") ? result.Text : "(none)"
+        savedClip := ClipboardAll(), savedWait := SelectionActions.WaitMs, savedRetry := SelectionActions.RetryMs
+        try {
+            A_Clipboard := "already there"
+            eq("text at once", textOf(SelectionActions.ReadCopied()), "already there")
+            ok("formats: text", InStr(SelectionActions.ClipboardFormats(), "13 CF_UNICODETEXT") > 0)
+
+            A_Clipboard := ""
+            SetTimer(() => A_Clipboard := "late text", -300)
+            start := A_TickCount
+            eq("text after 300 ms", textOf(SelectionActions.ReadCopied()), "late text")
+            ok("waited for it", A_TickCount - start >= 250)
+
+            A_Clipboard := " `r`n"
+            SetTimer(() => A_Clipboard := "filled in", -150)
+            eq("empty text read again", textOf(SelectionActions.ReadCopied()), "filled in")
+
+            SelectionActions.WaitMs := 200, SelectionActions.RetryMs := 100
+            A_Clipboard := ""
+            start := A_TickCount
+            eq("nothing copied", SelectionActions.ReadCopied(), "")
+            elapsed := A_TickCount - start
+            ok("nothing copied: gives up after WaitMs (" elapsed " ms)", elapsed >= 180 && elapsed < 1000)
+            eq("formats: none", SelectionActions.ClipboardFormats(), "none")
+
+            A_Clipboard := "  "
+            eq("only blanks", SelectionActions.ReadCopied(), "")
+
+            ClipboardData.SetFiles([A_WinDir "\notepad.exe"])
+            result := SelectionActions.ReadCopied()
+            eq("files", IsObject(result) && result.HasOwnProp("Files") ? result.Files[1] : "(none)", A_WinDir "\notepad.exe")
+        } finally {
+            SelectionActions.WaitMs := savedWait, SelectionActions.RetryMs := savedRetry
+            A_Clipboard := savedClip
+        }
+    }
+
     ; The user's content types of a selection and the custom commands shown first for them (#434)
     ; {hwnd} / {pid} in a command shown for a selection (the Ctrl+Alt+\ panel): kept in the row, filled in when it runs with the window
     ; in front before the panel opened (App.PreviousWindow, the window the selection came from), next to the selection itself
