@@ -652,6 +652,7 @@ class AppSettings {
                     "Images"       , 1,                                     ; record images too (saved as Clipboard\*.png, needs Persist = 1)
                     "LocalFiles"   , 2,                                     ; where it is stored: 0 = all in Data; 1 = images and very long entries only on this PC (%LOCALAPPDATA%\ALTRun); 2 = the history too (see ClipboardProvider.PlaceStorage)
                     "MaxImages"    , 50,
+                    "FillThumbnails", 1,                                    ; image thumbnails fill the icon square (cropped); 0 = the whole image, shrunk to fit
                     "MergeDoubleCopy", 0,                                   ; press Ctrl+C twice quickly: append to the previous entry
                     "IgnoreApps"   , ["KeePass.exe", "KeePassXC.exe", "1Password.exe", "Bitwarden.exe"]
                 ),

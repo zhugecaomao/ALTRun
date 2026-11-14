@@ -328,6 +328,8 @@
   "Prefs.ClipKeyword": "关键字",
   "Prefs.ClipMaxImages": "保存图片数",
   "Prefs.ClipMaxImages.Desc": "超过时先删除最早的图片",
+  "Prefs.ClipFillThumbs": "图片缩略图填满图标",
+  "Prefs.ClipFillThumbs.Desc": "裁出中间部分, 宽截图也看得清; 关闭时缩小显示整张图",
   "Prefs.ClipMaxItems": "保存条数",
   "Prefs.ClipMaxItems.Desc": "超过条数时先删除最早的记录; 比最长字数更长的内容不记录",
   "Prefs.ClipMaxLength": "最长字数",

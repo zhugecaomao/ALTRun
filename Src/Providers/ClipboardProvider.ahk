@@ -174,7 +174,7 @@ class ClipboardProvider {
                 if (files.Length = 1) {                                     ; one file: like a file search result, with open / reveal and the other actions
                     filePath := files[1], isFolder := InStr(FileExist(filePath), "D") ? true : false
                     props.Kind := isFolder ? "folder" : "file", props.Arg := filePath
-                    props.Icon := isFolder ? IconCache.FolderIcon(filePath) : filePath
+                    props.Icon := isFolder ? IconCache.FolderIcon(filePath) : ClipboardProvider.FileIcon(filePath)
                     title := Path.Leaf(RTrim(filePath, "\"))
                     subtitle := I18n.T("Clipboard.FileSubtitle", when, source, filePath)
                 } else {
@@ -186,7 +186,7 @@ class ClipboardProvider {
                 props.RunTitle := I18n.T("Clipboard.PasteFiles")
             case "image":
                 imageFile := ClipboardProvider.Folder "\" entry["Image"]
-                props.Kind := "file", props.Arg := imageFile, props.Icon := "thumb:" imageFile
+                props.Kind := "file", props.Arg := imageFile, props.Icon := ClipboardProvider.Thumbnail(imageFile)
                 props.RunTitle := I18n.T("Clipboard.PasteImage")
                 title := ClipboardProvider._ImageTitle(entry)
                 subtitle := I18n.T("Clipboard.ImageSubtitle", when, source)
@@ -201,6 +201,13 @@ class ClipboardProvider {
         props.Pinned := pinned                                              ; pinned: a pin is drawn on the icon (SearchWindow)
         return ResultItem(title, subtitle, props)
     }
+
+    ; Icon of an image: its thumbnail, filling the icon square or the whole image (Features.Clipboard.FillThumbnails, see IconCache)
+    static Thumbnail(file) => (AppSettings.Feature("Clipboard")["FillThumbnails"] ? "thumbfill:" : "thumb:") file
+
+    ; Icon of one copied file: image files (a picture copied in a chat program is often a file in its cache) show a thumbnail like copied images;
+    ; not on network locations, where IconCache reads no files
+    static FileIcon(file) => (RegExMatch(file, "i)\.(jpe?g|png|gif|bmp|webp|tiff?|heic|avif)$") && !Path.IsRemote(file)) ? ClipboardProvider.Thumbnail(file) : file
 
     static _ImageTitle(entry) => I18n.T("Clipboard.Image", entry.Has("Width") ? entry["Width"] : "?", entry.Has("Height") ? entry["Height"] : "?")
 

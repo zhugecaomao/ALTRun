@@ -333,6 +333,80 @@ class ProviderTests {
     }
 
     ; Files and images in the clipboard history, merging a double Ctrl+C
+    ; Thumbnails in the clipboard history: images and one copied image file show a thumbnail, filling the square (FillThumbnails) or the whole image;
+    ; a wide image filled covers the corners, fitted it leaves them transparent; big files go through the shell's thumbnails (falling back to GDI+)
+    static ClipboardThumbnails() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardThumbnails." n, a, e)
+        ok := (n, v) => TestRunner.True("ClipboardThumbnails." n, v)
+        options := AppSettings.Feature("Clipboard")
+        saved := [options["FillThumbnails"], IconCache.ShellThumbBytes]
+        root := A_Temp "\ALTRun-test-clip-thumbs"
+        try DirDelete(root, true)
+        DirCreate(root)
+        try {
+            eq("default fill", options["FillThumbnails"], 1)
+            eq("image fill", ClipboardProvider.Thumbnail("C:\x.png"), "thumbfill:C:\x.png")
+            eq("image file", ClipboardProvider.FileIcon("C:\Cache\a.JPG"), "thumbfill:C:\Cache\a.JPG")
+            eq("webp file", ClipboardProvider.FileIcon("C:\Cache\a.webp"), "thumbfill:C:\Cache\a.webp")
+            eq("other file", ClipboardProvider.FileIcon("C:\x.txt"), "C:\x.txt")
+            eq("network image file", ClipboardProvider.FileIcon("\\server\share\a.png"), "\\server\share\a.png")
+            options["FillThumbnails"] := 0
+            eq("image fit", ClipboardProvider.Thumbnail("C:\x.png"), "thumb:C:\x.png")
+            eq("image file fit", ClipboardProvider.FileIcon("C:\a.png"), "thumb:C:\a.png")
+            eq("cache key", IconCache._CacheKey("thumbfill:C:\A.png"), "thumbfill:c:\a.png")
+            ok("not a file key", !IconCache.IsFileKey("thumbfill:c:\a.png"))
+
+            ; a 64 x 16 opaque image: fitted, the top-left corner of the square stays transparent; filled, it is covered.
+            ; Wine's GDI+ can't write or read image files (ClipboardKinds.thumbnail icon fails there too): Windows only
+            isWine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+            if !isWine {
+                ok("gdiplus", ClipboardData.StartGdiplus())
+                wide := root "\wide.png", bitmap := 0, graphics := 0
+                DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", 64, "Int", 16, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &bitmap)
+                DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", bitmap, "Ptr*", &graphics)
+                DllCall("gdiplus\GdipGraphicsClear", "Ptr", graphics, "UInt", 0xFFCC2020)
+                DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+                clsid := Buffer(16)
+                DllCall("ole32\CLSIDFromString", "Str", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "Ptr", clsid)   ; PNG encoder
+                DllCall("gdiplus\GdipSaveImageToFile", "Ptr", bitmap, "WStr", wide, "Ptr", clsid, "Ptr", 0)
+                DllCall("gdiplus\GdipDisposeImage", "Ptr", bitmap)
+                ok("wide image saved", FileExist(wide))
+                corner := (hIcon) => (hIcon && (pixels := IconCache.IconPixels(hIcon))) ? NumGet(pixels, 3, "UChar") : -1   ; alpha of the top-left pixel
+                middle := (hIcon) => (hIcon && (pixels := IconCache.IconPixels(hIcon))) ? NumGet(pixels, ((IconCache.Size // 2) * IconCache.Size + IconCache.Size // 2) * 4 + 3, "UChar") : -1
+                for name, bytes in Map("gdiplus", 1 << 30, "shell", 0) {    ; "shell": every file goes through the shell's thumbnails first
+                    IconCache.ShellThumbBytes := bytes
+                    fit := IconCache._FromImage(wide, false), fill := IconCache._FromImage(wide, true)
+                    ok(name " fit icon", fit)
+                    ok(name " fill icon", fill)
+                    eq(name " fit corner transparent", corner(fit), 0)
+                    eq(name " fit middle opaque", middle(fit), 255)
+                    eq(name " fill corner covered", corner(fill), 255)
+                    for hIcon in [fit, fill]
+                        if hIcon
+                            DllCall("DestroyIcon", "Ptr", hIcon)
+                }
+                IconCache.ShellThumbBytes := saved[2]
+                hbm := 0                                                    ; Windows has a thumbnail handler for PNG: the shell path itself gives an image
+                image := IconCache._ShellThumbnail(wide, 128, &hbm)
+                ok("shell thumbnail", image && hbm)
+                if image
+                    DllCall("gdiplus\GdipDisposeImage", "Ptr", image)
+                if hbm
+                    DllCall("DeleteObject", "Ptr", hbm)
+            }
+            ; a file that can't be read as an image: the file's own icon instead of none
+            FileAppend("not an image", root "\broken.png")
+            eq("broken image", IconCache._FromImage(root "\broken.png", true), 0)
+            fallback := IconCache._LoadRaw("thumbfill:" root "\broken.png")
+            ok("broken image falls back to the file icon", fallback)
+            if fallback
+                DllCall("DestroyIcon", "Ptr", fallback)
+        } finally {
+            options["FillThumbnails"] := saved[1], IconCache.ShellThumbBytes := saved[2]
+            try DirDelete(root, true)
+        }
+    }
+
     static ClipboardKinds() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardKinds." n, a, e)
         ok := (n, v) => TestRunner.True("ClipboardKinds." n, v)
@@ -385,7 +459,7 @@ class ProviderTests {
         eq("image title", imageItem.Title, I18n.T("Clipboard.Image", 800, 600))
         eq("image kind", imageItem.Kind, "file")
         eq("image arg", imageItem.Arg, root "\Clipboard\one.png")
-        eq("image thumbnail", imageItem.Icon, "thumb:" root "\Clipboard\one.png")
+        eq("image thumbnail", imageItem.Icon, "thumbfill:" root "\Clipboard\one.png")
         eq("image search word", ClipboardProvider.Search(SearchQuery("clip image")).Length, 2)
         ok("image not editable", !ResultActions.CanEdit(imageItem))
         ok("image deletable", ResultActions.CanDelete(imageItem))

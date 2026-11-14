@@ -8,7 +8,8 @@
 ;   "ext:.pdf"                   the default icon of an extension
 ;   "url:"                       the browser's icon: the program in General.Browser, else the default browser's (of .html)
 ;   "folder:"                    the generic folder icon
-;   "thumb:C:\x.png"             a thumbnail of the image itself (images in the clipboard history)
+;   "thumb:C:\x.png"             a thumbnail of the image itself, the whole image shrunk to fit (site icons of web search engines)
+;   "thumbfill:C:\x.png"         the same, cropped to fill the square (images in the clipboard history, Features.Clipboard.FillThumbnails)
 ; exe / lnk / ico etc. differ per file and are cached by full path; other files are cached by extension.
 ; Files and folders on network locations (\\server\share, mapped drives) aren't read from disk; the generic icons of the extension / folder are used:
 ; reading one icon over the network can take hundreds of milliseconds, and loading icons runs on the same thread as typing.
@@ -50,6 +51,7 @@ class IconCache {
     static _loading := Map()              ; being read (while reading, the UI may ask for the same icon again; don't queue it twice)
     static _timer   := ""
     static MaxIcons := 1500
+    static ShellThumbBytes := 256 * 1024   ; image files bigger than this are read from the shell's thumbnails (_FromImage)
     static SlowLoadMs := 200              ; reading one icon slower than this many milliseconds goes into the debug log (see _LoadQueued)
     static _used    := Map(), _tick := 0  ; key -> sequence number of its last use (higher = more recent)
 
@@ -284,7 +286,7 @@ class IconCache {
         return IconCache.DaysSince(entry.Saved) >= IconCache.DiskRecheckDays
     }
 
-    static IsFileKey(key) => !RegExMatch(key, "i)^(res|ext|url|folder|thumb|shell):|^::\{")
+    static IsFileKey(key) => !RegExMatch(key, "i)^(res|ext|url|folder|thumb|thumbfill|shell):|^::\{")
 
     ; A file's "modified time|size" (folders have size 0); "" if it doesn't exist
     static Stamp(key) {
@@ -305,7 +307,7 @@ class IconCache {
 
     ; A newly read icon goes into the disk cache (thumbnails of clipboard images don't: each image is only used for a while)
     static _Remember(key, hIcon) {
-        if (!hIcon || IconCache.DiskDir = "" || SubStr(key, 1, 6) = "thumb:")
+        if (!hIcon || IconCache.DiskDir = "" || RegExMatch(key, "i)^thumb(fill)?:"))
             return
         if !(pixels := IconCache.IconPixels(hIcon))
             return
@@ -570,7 +572,7 @@ class IconCache {
     }
 
     static _CacheKey(spec) {
-        if RegExMatch(spec, "i)^(res|ext|url|folder|thumb):")
+        if RegExMatch(spec, "i)^(res|ext|url|folder|thumb|thumbfill):")
             return StrLower(spec)
         ext := Path.Extension(spec)
         if Path.IsRemote(spec)
@@ -602,8 +604,8 @@ class IconCache {
             return IconCache._FromShell(".html", FILE_ATTRIBUTE_NORMAL, true)
         if (spec = "folder:")
             return IconCache._FromShell("folder", FILE_ATTRIBUTE_DIRECTORY, true)
-        if (SubStr(spec, 1, 6) = "thumb:")
-            return IconCache._FromImage(SubStr(spec, 7))
+        if RegExMatch(spec, "i)^thumb(fill)?:(.*)$", &thumb)              ; an image that can't be read (no thumbnail, unknown format): the file's own icon
+            return IconCache._FromImage(thumb[2], thumb[1] != "") || IconCache._FromShell(thumb[2], 0, false)
 
         target := Path.Resolve(spec)
         if RegExMatch(target, "i)^(shell:|::\{)") {
@@ -624,17 +626,22 @@ class IconCache {
         return IconCache._FromShell(ext != "" ? "." ext : ".exe", FILE_ATTRIBUTE_NORMAL, true)
     }
 
-    ; The image is shrunk and centered in a transparent Size x Size square (keeping its proportions) and made into an icon
-    static _FromImage(file) {
+    ; The image is scaled keeping its proportions and centered in a transparent Size x Size square, then made into an icon:
+    ; fill = false: the whole image, shrunk to fit; fill = true: it covers the square and what sticks out is cut off (a wide screenshot shows its middle, not a thin strip).
+    ; Big files and formats GDI+ can't read (WebP, HEIC...) come from the shell's thumbnails (Explorer's thumbnail cache: decoded at a small size, so a large photo
+    ; doesn't hold up the thread for long); small ones (site icons) are read with GDI+ directly, keeping their transparency exactly
+    static _FromImage(file, fill := false) {
         if (!FileExist(file) || !ClipboardData.StartGdiplus())
             return 0
-        image := 0
-        if (DllCall("gdiplus\GdipLoadImageFromFile", "WStr", file, "Ptr*", &image) || !image)
+        image := 0, hbm := 0
+        if (FileGetSize(file) > IconCache.ShellThumbBytes || !RegExMatch(file, "i)\.(png|jpe?g|gif|bmp|tiff?|ico)$"))
+            image := IconCache._ShellThumbnail(file, IconCache.Size * 4, &hbm)   ; 4x: a 4:1 image still covers the square when filling
+        if (!image && (DllCall("gdiplus\GdipLoadImageFromFile", "WStr", file, "Ptr*", &image) || !image))
             return 0
         width := 0, height := 0, canvas := 0, graphics := 0, hIcon := 0
         DllCall("gdiplus\GdipGetImageWidth", "Ptr", image, "UInt*", &width)
         DllCall("gdiplus\GdipGetImageHeight", "Ptr", image, "UInt*", &height)
-        size := IconCache.Size, scale := (width && height) ? Min(size / width, size / height) : 1
+        size := IconCache.Size, scale := (width && height) ? (fill ? Max(size / width, size / height) : Min(size / width, size / height)) : 1
         w := Max(1, Round(width * scale)), h := Max(1, Round(height * scale))
         DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &canvas)   ; 32bppARGB
         DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", canvas, "Ptr*", &graphics)
@@ -642,9 +649,59 @@ class IconCache {
         DllCall("gdiplus\GdipDrawImageRectI", "Ptr", graphics, "Ptr", image, "Int", (size - w) // 2, "Int", (size - h) // 2, "Int", w, "Int", h)
         DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
         DllCall("gdiplus\GdipDisposeImage", "Ptr", image)
+        if hbm                                                              ; the shell's bitmap holds the pixels the image used: deleted after it
+            DllCall("DeleteObject", "Ptr", hbm)
         DllCall("gdiplus\GdipCreateHICONFromBitmap", "Ptr", canvas, "Ptr*", &hIcon)
         DllCall("gdiplus\GdipDisposeImage", "Ptr", canvas)
         return hIcon
+    }
+
+    ; The shell's thumbnail of a file (IShellItemImageFactory::GetImage, thumbnails only, fitting in px x px) as a GDI+ image that uses the pixels of
+    ; hbm: the caller disposes the image first, then deletes hbm. 0 when there is none (no thumbnail handler for the format, the file can't be read)
+    static _ShellThumbnail(file, px, &hbm) {
+        static SIIGBF_THUMBNAILONLY := 0x8
+        hbm := 0, factory := 0, image := 0
+        iid := Buffer(16)
+        DllCall("ole32\CLSIDFromString", "Str", "{BCC18B79-BA16-442F-80C4-8A59C30C463B}", "Ptr", iid)   ; IID_IShellItemImageFactory
+        if (DllCall("shell32\SHCreateItemFromParsingName", "WStr", file, "Ptr", 0, "Ptr", iid, "Ptr*", &factory) || !factory)
+            return 0
+        try ComCall(3, factory, "Int64", px | (px << 32), "UInt", SIIGBF_THUMBNAILONLY, "Ptr*", &hbm)   ; GetImage(SIZE {px, px}, flags, &hbm)
+        ObjRelease(factory)
+        if !hbm
+            return 0
+        info := Buffer(A_PtrSize = 8 ? 104 : 84, 0)                        ; DIBSECTION: BITMAP, then BITMAPINFOHEADER
+        header := A_PtrSize = 8 ? 32 : 24
+        if (DllCall("GetObjectW", "Ptr", hbm, "Int", info.Size, "Ptr", info) && NumGet(info, 18, "UShort") = 32 && (bits := NumGet(info, header - A_PtrSize, "Ptr"))) {
+            width := NumGet(info, 4, "Int"), height := NumGet(info, 8, "Int"), stride := NumGet(info, 12, "Int")
+            scan0 := bits, pitch := stride
+            if (NumGet(info, header + 8, "Int") > 0)                        ; bottom-up: the first row in memory is the bottom row
+                scan0 := bits + (height - 1) * stride, pitch := -stride
+            ; 32-bit with premultiplied alpha; thumbnails of images without transparency may come with alpha 0 everywhere, then the alpha byte is ignored
+            pixelFormat := IconCache._HasAlpha(bits, width, height, stride) ? 0xE200B : 0x22009   ; PixelFormat32bppPARGB / 32bppRGB
+            DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", width, "Int", height, "Int", pitch, "Int", pixelFormat, "Ptr", scan0, "Ptr*", &image)
+        } else
+            DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hbm, "Ptr", 0, "Ptr*", &image)   ; other depths: copied, without transparency
+        if !image {
+            DllCall("DeleteObject", "Ptr", hbm)
+            hbm := 0
+        }
+        return image
+    }
+
+    ; Whether any pixel of a 32-bit bitmap has a non-zero alpha byte, looking at a 16 x 16 grid of them (enough to tell "alpha 0 everywhere")
+    static _HasAlpha(bits, width, height, stride) {
+        stepX := Max(1, width // 16), stepY := Max(1, height // 16)
+        y := 0
+        while (y < height) {
+            x := 0
+            while (x < width) {
+                if NumGet(bits, y * stride + x * 4 + 3, "UChar")
+                    return true
+                x += stepX
+            }
+            y += stepY
+        }
+        return false
     }
 
     ; SHGetFileInfo gives the index in the system image list, then the icon is taken from the image list of a suitable size

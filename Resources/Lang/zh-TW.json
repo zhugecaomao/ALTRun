@@ -329,6 +329,8 @@
   "Prefs.ClipKeyword": "關鍵字",
   "Prefs.ClipMaxImages": "儲存圖片數",
   "Prefs.ClipMaxImages.Desc": "超過時先刪除最早的圖片",
+  "Prefs.ClipFillThumbs": "圖片縮圖填滿圖示",
+  "Prefs.ClipFillThumbs.Desc": "裁出中間部分, 寬截圖也看得清; 關閉時縮小顯示整張圖",
   "Prefs.ClipMaxItems": "儲存筆數",
   "Prefs.ClipMaxItems.Desc": "超過筆數時先刪除最早的記錄; 比最長字數更長的內容不記錄",
   "Prefs.ClipMaxLength": "最長字數",
