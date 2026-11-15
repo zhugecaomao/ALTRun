@@ -81,6 +81,8 @@ class FileManagers {
             hwnd := WinExist("ahk_class CabinetWClass")
         if !hwnd
             return ""
+        if (folder := ExplorerTabs.ActivePath(hwnd))     ; the active tab (Windows 11 22H2+); "" when it can't be told
+            return folder
         try {
             for window in ComObject("Shell.Application").Windows
                 if (window.HWND = hwnd)

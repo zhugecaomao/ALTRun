@@ -74,6 +74,12 @@ Main() {
         check("file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder) "; " ExplorerTabs.SelectInfo)
     }
 
+    ; The tab the window shows is the active one: after opening the folders above, the last one is active, not the first
+    ; (a window with several tabs used to report the first tab's folder, #521)
+    active := ExplorerTabs.ActivePath(hwnd)
+    check("active tab: the last opened folder", ExplorerTabs.SameFolder(active, folders[folders.Length])
+        , active " (tabs: " TabPaths(hwnd) ")")
+
     ; Two at once (two folder hotkeys pressed quickly): a timer starts the second Open while the first waits for its tab, so
     ; the second interrupts the first. Each folder must end up in its own new tab with its file selected, no tab left empty
     for delay in [10, 30, 50, 80, 150] {

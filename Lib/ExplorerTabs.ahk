@@ -9,6 +9,8 @@
 ;      (counting items would be fooled by other windows opening and closing meanwhile)
 ;   3. Navigate2 with the folder's PIDL as a byte array reaches any folder: no URL, so spaces, # % and Chinese need no escaping
 ;   4. Document.SelectItem selects a file in it (Reveal)
+;   5. the tab the window shows is the one whose view is visible (IShellBrowser::GetWindow): the other tabs' views are
+;      hidden (ExplorerTabs.ActiveTab; checked by Tests\Integration\ExplorerTabsCheck.ahk)
 ; Tried and not working: explorer.exe has no switch for it; Navigate2's navOpenInNewTab replaces the current tab;
 ; BrowseObject(SBSP_NEWBROWSER) opens no tab; the "opennewtab" verb through ShellExecute opens a new window; keys (Ctrl+T, Ctrl+L,
 ; typing the path) depend on the focus, the input method and tab bar add-ons. Thanks to the ideas in #440 and AHK forum t=141197 #47.
@@ -27,6 +29,7 @@
 ;   ExplorerTabs.Supported()                          Windows 11 22H2 or later
 ;   ExplorerTabs.Open(folder [, file, preferred])     true = shown in a new tab of an open window (file selected in it);
 ;                                                     preferred: an Explorer window to use first (e.g. the one in front before)
+;   ExplorerTabs.ActivePath(hwnd)                   the folder of the tab the window is showing ("" when it can't be told)
 ;   ExplorerTabs.Reachable(folder)                    false when a network folder doesn't answer within NetworkTimeout
 ;   ExplorerTabs.LastError                            why the last Open returned false
 ;   ExplorerTabs.LastErrorExpected                    true when that is a normal case (no tabs on this Windows, no Explorer
@@ -259,6 +262,22 @@ class ExplorerTabs {
     static _Path(hwnd, tab) {
         try return ExplorerTabs._Item(hwnd, tab).Document.Folder.Self.Path
         return ""
+    }
+
+    ; The folder of the tab the window is showing ("" when it can't be told): the active tab is the one whose view is
+    ; visible, the other tabs' views are hidden. The caller falls back to the first tab's folder when this returns ""
+    static ActivePath(hwnd) {
+        if !(tab := ExplorerTabs.ActiveTab(hwnd))
+            return ""
+        return ExplorerTabs._Path(hwnd, tab)
+    }
+
+    ; The tab view handle of the tab the window is showing; 0 when it can't be told (no tabs, or none visible)
+    static ActiveTab(hwnd) {
+        for each in ExplorerTabs._Tabs(hwnd)
+            if (each.Tab && DllCall("IsWindowVisible", "Ptr", each.Tab))
+                return each.Tab
+        return 0
     }
 
     static SameFolder(a, b) => (a != "" && StrLower(RTrim(a, "\ ")) = StrLower(RTrim(b, "\ ")))

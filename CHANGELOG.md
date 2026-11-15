@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.14]
+
+测试版。
+
+Test build.
+
+### 修复
+- 资源管理器一个窗口有多个标签页时, 打开 / 另存为对话框的跳转 (Ctrl+G、自动跳转) 总是跳到第一个标签页的目录; 现在跳到当前活动的标签页 (#521)
+
 ## [2026.11.13.13]
 
 测试版。
@@ -1534,7 +1543,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...HEAD
+[2026.11.13.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...2026.11.13.14
 [2026.11.13.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...2026.11.13.13
 [2026.11.13.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...2026.11.13.12
 [2026.11.13.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...2026.11.13.11
