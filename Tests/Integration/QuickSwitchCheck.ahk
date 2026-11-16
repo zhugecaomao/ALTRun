@@ -228,18 +228,22 @@ TabFail(name, n, why, logSize := -1) {
 ; AutoSwitchOnOpen: Explorer at Folder A behind a window of this check (not a file manager), then a new Open dialog opens at
 ; Start: it jumps to Folder A within 5 s, as it opens. The dialog is closed again
 OpenRound(n) {
-    static front := ""
+    static first := "", second := ""
     name := "dialog opens"
-    if !IsObject(front)
-        front := Gui("", "QuickSwitchCheck front")
+    if !IsObject(first)
+        first := Gui("", "QuickSwitchCheck first"), second := Gui("", "QuickSwitchCheck second")
     WinActivate(Explorer)                                                   ; Explorer: the file manager used last
     if !WinWaitActive(Explorer, , 3)
         return Fail(name, n, "Explorer didn't come to the front")
     Sleep(300)
-    front.Show("w300 h100")
-    if !WinWaitActive("ahk_id " front.Hwnd, , 3)
-        return Fail(name, n, "the window of this check didn't come to the front")
-    Sleep(400)                                                              ; ALTRun notes it as the window in front: no switch from Explorer
+    ; Two windows of this check one after the other: the first comes from Explorer (ALTRun counts a switch from a file manager), the
+    ; second from the first (not from a file manager any more), so AutoSwitch alone wouldn't jump the dialog that opens next
+    for window in [first, second] {
+        window.Show("w300 h100")
+        if !WinWaitActive("ahk_id " window.Hwnd, , 3)
+            return Fail(name, n, "a window of this check didn't come to the front")
+        Sleep(400)
+    }
     helper := A_Temp "\QuickSwitchCheckOpen.ahk"
     try FileDelete(helper)
     FileAppend('#NoTrayIcon`nFileSelect(, "' Demo '\Start", "Open on open")`n', helper, "UTF-8")
@@ -254,9 +258,11 @@ OpenRound(n) {
             Sleep(20)
         if !ShowsFolder("Folder A", opened)
             return Fail(name, n, "the new dialog didn't jump to Folder A" (ShowsFolder("Start", opened) ? " (still at Start)" : ""), logSize)
+        if !InStr(LogSince(logSize), "QuickSwitch: a dialog opened")             ; the jump came from AutoSwitchOnOpen, not from AutoSwitch
+            return Fail(name, n, "it jumped, but not because the dialog opened (no 'a dialog opened' in ALTRun's log)", logSize)
         Say("PASS " name " " n ": jumped as it opened in " (A_TickCount - start) " ms")
     } finally {
-        front.Hide()
+        first.Hide(), second.Hide()
         if opened
             try WinClose(opened)
         if (pid && !ProcessWaitClose(pid, 3))
@@ -342,10 +348,9 @@ Fail(method, n, why, logSize := -1) {
     global Failures
     Failures++
     Say("FAIL " method " " n ": " why)
-    if (logSize >= 0)
-        for line in StrSplit(LogSince(logSize), "`n", "`r")
-            if InStr(line, "QuickSwitch")
-                Say("     " line)
+    if (logSize >= 0)                                                       ; every line: what kept ALTRun busy shows too (Perf: slow ...)
+        for line in StrSplit(Trim(LogSince(logSize), "`r`n"), "`n", "`r")
+            Say("     " line)
 }
 
 ; Types the Start folder into the file name box and presses Enter: the dialog goes there
