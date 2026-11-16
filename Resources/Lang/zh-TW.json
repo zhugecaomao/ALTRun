@@ -774,6 +774,7 @@
   "Prefs.Placeholder": "提示文字",
   "Prefs.Placeholder.Desc": "留空 = 顯示預設的文字; 輸入一個空格 = 什麼都不顯示",
   "Prefs.QSAuto": "從 TC / Opus / 檔案總管切換過來時自動跳轉",
+  "Prefs.QSAutoOpen": "對話框開啟時也跳到最近用過的檔案管理器的資料夾",
   "Prefs.QSAutoExclude": "不自動跳轉的對話框",
   "Prefs.QSAutoExclude.Desc": "這些對話框不自動跳轉; 仍然可以按快速鍵跳轉",
   "Prefs.QSAutoExclude.Help": "開啟時不自動跳轉的對話框, 每行一個: ahk_exe 程式.exe、ahk_class 視窗類別名稱, 或者標題的一部分, 例如 ahk_exe acad.exe。\n\n這些對話框裡仍然可以按快速鍵跳轉, 對話框面板也照常顯示。",

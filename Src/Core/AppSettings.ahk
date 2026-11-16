@@ -781,6 +781,7 @@ class AppSettings {
                     "PanelSearch"      , "folders",                         ; panel search box: folders = folders only, all = folders and files
                     "ShowPanel"        , 1,                                 ; show the folder panel below a dialog as soon as it appears (as in Listary); one click jumps there
                     "AutoSwitch"       , 0,
+                    "AutoSwitchOnOpen" , 0,                                 ; a dialog that has just opened jumps too, to the file manager used last (overrides the folder the program remembers)
                     "StandardDialogs"  , 1,                                 ; the standard Open / Save dialogs (ahk_class #32770)
                     "DialogWindows"    , [],                                ; dialogs programs draw themselves, e.g. "ahk_class Qt5QWindowIcon" (WPS)
                     "BrowseDialogs"    , 1,                                 ; also the old "Browse for Folder" dialog (folder tree only, SHBrowseForFolder)

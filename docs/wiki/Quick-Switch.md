@@ -19,6 +19,8 @@ The existing file name is preserved when jumping. For example, a name suggested 
 
 Enable **Auto switch** in Preferences → Quick Switch to jump automatically when you switch from Total Commander, Directory Opus or File Explorer to an Open / Save dialog: the dialog goes to the folder of the window you came from. It works however you switch (taskbar, Alt+Tab, a click on the dialog's title bar). In standard Open / Save dialogs the folder is put into the file name box and the dialog is told to go there with window messages, without simulated keys; a name Save As suggested stays in the box.
 
+Tick **Also jump when a dialog opens, to the file manager used last** (`AutoSwitchOnOpen`, off by default) and a dialog that has just opened jumps once too, to the folder of the Total Commander / Directory Opus / Explorer window used last (the frontmost one), for example after browsing a folder in Explorer and pressing Ctrl+O in Word. It overrides the folder the program remembers (such as where Save As suggests saving), so it is off by default; **No auto jump in** applies to it too.
+
 **Works in**: tick **Standard Open / Save dialogs** (`ahk_class #32770`, on by default; only dialogs with an Explorer file list count, so program windows that are dialogs themselves, such as System Information (msinfo32), are left alone); **Browse for Folder dialogs** (on by default) covers the older folder picker that only shows a folder tree (see below); dialogs that programs draw themselves go in **Other dialogs** (**Edit...**, one per line), for example WPS's `ahk_class Qt5QWindowIcon` (ALTRun types the folder into the dialog's file name box and presses Enter, which works in most Qt, GTK and Java file dialogs). Windows in **Never in** never switch (these lists are edited with **Edit...** too, one window per line); **No auto jump in** disables only automatic switching, and the hotkeys still work there.
 
 ## Browse for Folder dialogs
@@ -49,6 +51,7 @@ Preferences → Quick Switch controls the hotkeys, eligible windows and automati
 | `Enabled` | `1` = enable Quick Switch |
 | `Hotkey` | The jump hotkey, default `Ctrl+G`: the folder of the Total Commander / Directory Opus / File Explorer window used last (`TotalCmdHotkey` before settings version 6) |
 | `AutoSwitch` | Jump automatically when switching from Total Commander, Directory Opus or File Explorer to a dialog, default `0` (off) |
+| `AutoSwitchOnOpen` | A dialog that has just opened jumps once too, to the folder of the file manager used last, default `0` (off) |
 | `StandardDialogs` | `1` = in the standard Open / Save dialogs (`ahk_class #32770`) |
 | `DialogWindows` | Other dialogs where Quick Switch works (dialogs programs draw themselves), a list of window conditions, default `[]` |
 | `BrowseDialogs` | `1` = also in "Browse for Folder" dialogs (folder tree only) |

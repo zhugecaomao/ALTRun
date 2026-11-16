@@ -13,6 +13,8 @@
 ; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later; opened with Ctrl+T as a user does):
 ; switching to the dialog must jump to Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G, sent at
 ; send level 1 like a person's keys); the tab is closed again (Ctrl+W) after each round.
+; Then AutoSwitchOnOpen: with a window of this check in front (not a file manager) and Explorer behind it at Folder A, a new Open
+; dialog must jump to Folder A as it opens (a switch from Explorer isn't involved, so AutoSwitch alone wouldn't jump).
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -42,6 +44,8 @@ try {
             TabRound(A_Index)
     else
         Say("SKIP tab shown: no Explorer tabs on Windows " A_OSVersion)
+    Loop Rounds
+        OpenRound(A_Index)
     for how in ["click", "alt+down"]
         Loop Rounds
             MenuRound(how, A_Index)
@@ -61,7 +65,7 @@ Setup() {
     DirCreate(Demo "\Folder A"), DirCreate(Demo "\Folder B"), DirCreate(Demo "\Start")
     settings := Map("SchemaVersion", 6
         , "General", Map("Language", "en", "LaunchAtLogin", 0, "CheckForUpdates", 0, "ShowTips", 0, "SaveLog", 1, "SendToMenu", 0, "StartMenuShortcut", 0)
-        , "Extensions", Map("QuickSwitch", Map("AutoSwitch", 1)))
+        , "Extensions", Map("QuickSwitch", Map("AutoSwitch", 1, "AutoSwitchOnOpen", 1)))
     try DirDelete(AppDir "\Data", true)
     DirCreate(AppDir "\Data")
     FileAppend(JSON.Stringify(settings, 4), AppDir "\Data\ALTRun.json", "UTF-8")
@@ -221,6 +225,46 @@ TabFail(name, n, why, logSize := -1) {
         try Say("     window: " Describe(hwnd) " | " WinGetTitle(hwnd))
 }
 
+; AutoSwitchOnOpen: Explorer at Folder A behind a window of this check (not a file manager), then a new Open dialog opens at
+; Start: it jumps to Folder A within 5 s, as it opens. The dialog is closed again
+OpenRound(n) {
+    static front := ""
+    name := "dialog opens"
+    if !IsObject(front)
+        front := Gui("", "QuickSwitchCheck front")
+    WinActivate(Explorer)                                                   ; Explorer: the file manager used last
+    if !WinWaitActive(Explorer, , 3)
+        return Fail(name, n, "Explorer didn't come to the front")
+    Sleep(300)
+    front.Show("w300 h100")
+    if !WinWaitActive("ahk_id " front.Hwnd, , 3)
+        return Fail(name, n, "the window of this check didn't come to the front")
+    Sleep(400)                                                              ; ALTRun notes it as the window in front: no switch from Explorer
+    helper := A_Temp "\QuickSwitchCheckOpen.ahk"
+    try FileDelete(helper)
+    FileAppend('#NoTrayIcon`nFileSelect(, "' Demo '\Start", "Open on open")`n', helper, "UTF-8")
+    logSize := LogLength()
+    start := A_TickCount
+    Run('"' A_AhkPath '" "' helper '"', , , &pid)
+    opened := WinWait("Open on open ahk_class #32770 ahk_pid " pid, , 10)
+    try {
+        if !opened
+            return Fail(name, n, "the dialog didn't open")
+        while (A_TickCount - start < 5000 && !ShowsFolder("Folder A", opened))
+            Sleep(20)
+        if !ShowsFolder("Folder A", opened)
+            return Fail(name, n, "the new dialog didn't jump to Folder A" (ShowsFolder("Start", opened) ? " (still at Start)" : ""), logSize)
+        Say("PASS " name " " n ": jumped as it opened in " (A_TickCount - start) " ms")
+    } finally {
+        front.Hide()
+        if opened
+            try WinClose(opened)
+        if (pid && !ProcessWaitClose(pid, 3))
+            try ProcessClose(pid)
+        Sleep(300)
+    }
+}
+
 ; The panel's ☆ menu (how: "click" on the star, or "alt+down" in the search box), closed with Esc: the dialog is in front again
 MenuRound(how, n) {
     name := "menu " how " + esc"
@@ -320,10 +364,11 @@ BackToStart() {
 }
 
 ; The dialog's address bar (a ToolbarWindow32 "Address: ...") shows the folder
-ShowsFolder(name) {
+ShowsFolder(name, window := 0) {      ; window: the dialog, the global Dialog when 0 (names don't differ by case alone: AutoHotkey ignores case)
+    window := window ? window : Dialog
     try {
-        for ctl in WinGetControls(Dialog)
-            if (InStr(ctl, "ToolbarWindow32") = 1 && RegExMatch(ControlGetText(ctl, Dialog), "\Q" name "\E$"))
+        for ctl in WinGetControls(window)
+            if (InStr(ctl, "ToolbarWindow32") = 1 && RegExMatch(ControlGetText(ctl, window), "\Q" name "\E$"))
                 return true
     }
     return false
