@@ -12,6 +12,10 @@
 | `msix/Assets/*.png` | 包里的图标, 由 `icon/make_store_assets.py` 生成 (和程序图标同一套图形) |
 
 ## 发布新版本时
+创建 GitHub Release 之前, Release 工作流先把要发布的 `ALTRun.exe` 上传到 VirusTotal 扫描 (`Scan-VirusTotal.ps1`)。有引擎报恶意 (malicious), 或 15 分钟内没有结果, 就停下, 不建 Release、不更新清单; 报告链接和报毒的引擎在运行摘要里。确认是误报后, 勾选 `allow_detections` 重新运行。只报 "可疑" (suspicious) 的不拦。测试版勾选 `virustotal` 也会扫。
+
+`VT_API_KEY`: 在 virustotal.com 登录 → 头像 → API key, 复制后在本仓库 Settings → Secrets and variables → Actions 里新建 `VT_API_KEY`。没有设置时发布会停下 (不会悄悄跳过)。免费接口只能非商业使用, 每分钟 4 次 (一次上传 + 每 20 秒查一次); 上传的文件会分享给 VirusTotal 的合作厂商。
+
 Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 1. 运行 `Update-Manifests.ps1`, 把 Scoop / winget 清单更新到新版本并提交到 main。Scoop 用户 `scoop update altrun` 就能拿到新版本
 2. 如果仓库设置了 `WINGET_TOKEN` secret, 运行 `Submit-Winget.ps1`: 先用 GitHub 的 merge-upstream 把你 fork 的 winget-pkgs 同步到最新 (winget-pkgs 每天有几百个提交, fork 放着不管会落后很多, wingetcreate 自己同步不了时会失败, 2026.11.03 就遇到过); fork 的 master 上有自己的提交、合并不了时 (2026.11.03 和 2026.11.09 都遇到过), 把它的 master 直接设成上游的最新提交, 和网页上的 Sync fork → Discard commits 一样 (这个 fork 只用来开 winget 的 PR, 每个 PR 用自己的分支, master 上的东西都不需要)。再用 [wingetcreate](https://github.com/microsoft/winget-create) 提交新版本的 PR (微软自动检查后合并, 一般 1~3 天); 下载安装包失败时 (GitHub 偶尔超时返回 504) 隔 30 / 60 / 120 / 240 秒再试, 最多 4 次。这一步失败不影响发布
