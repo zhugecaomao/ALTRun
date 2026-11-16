@@ -304,7 +304,7 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 - 字符串按值传给函数时会整段复制: 在循环里反复把一个大字符串 (整个文件) 传给函数, 耗时会随长度平方增长, 要按引用传 (`&text`), 见 `Lib\JSON.ahk`
 - 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段、慢搜索和慢的后台任务的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的, 计时器的回调用 `Logger.Watch(label, fn)` 包一层 (超过 50 ms 才记)
 - 不要在主线程里用 `Download()` 下载 (下载完之前整个程序都停着), 用 `HttpGet.Start(url, done, fail)` 在后台下载
-- 要运行一个程序并读它的输出, 用 `ChildProcess.Start(commandLine, done, options)` (`Lib\ChildProcess.ahk`), 不用 `RunWait` 或 `cmd /c ... > 文件`: 它直接启动程序 (不经 cmd.exe, 参数里的 `& | > %` 只是文字; 每个参数用 `Win.QuoteArg` 加引号), 用短定时器读输出、不等待, 程序放在作业对象里, 所以 `ChildProcess.Kill`、超时和 ALTRun 退出都会结束它启动的所有程序。它启动的程序会随它结束, 不能用来启动要一直开着的程序
+- 要运行一个程序并读它的输出, 用 `ChildProcess.Start(commandLine, done, options)` (`Lib\ChildProcess.ahk`), 不用 `RunWait` 或 `cmd /c ... > 文件`: 它直接启动程序 (不经 cmd.exe, 参数里的 `& | > %` 只是文字; 每个参数用 `Win.QuoteArg` 加引号), 用短定时器读输出、不等待, 程序放在作业对象里, 所以 `ChildProcess.Kill`、超时和 ALTRun 退出都会结束它启动的所有程序。它启动的程序会随它结束, 除非用 `KeepStarted` (这时只结束程序本身; 脚本扩展的后台运行用它)。不是 UTF-8 的输出按 OEM 代码页读, 或按给的 `Codepage` (0 = ANSI, AutoHotkey 默认写的就是它)。批处理仍由 cmd 读参数 (直接启动时 Windows 也经过 cmd), 所以参数里的 `& | > "` 不安全
 - 要知道文件夹里的变化, 用 `FolderWatcher` (`Lib\FolderWatcher.ahk`, 定时 `Poll()` 不等待), 不要定时扫描整个文件夹; 关闭时它会等异步读取结束再放掉缓冲区
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)
 - 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行 (有测试检查)

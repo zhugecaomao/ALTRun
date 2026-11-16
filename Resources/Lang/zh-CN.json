@@ -992,6 +992,8 @@
   "Recent.ConfirmUnpin": "取消置顶 '{1}' 吗?",
   "Recent.PinnedHint": "已置顶: 搜索框为空时显示 {1}",
   "Script.Done": "{1}: 完成",
+  "Script.TimedOut": "已停止: 运行超过 {1} 秒",
+  "Script.OutputCut": "(输出太多, 只显示前 {1} MB)",
   "Script.Mode.Output": "后台, 记事本显示输出",
   "Script.Mode.Silent": "后台, 显示通知",
   "Script.Mode.Window": "正常窗口",

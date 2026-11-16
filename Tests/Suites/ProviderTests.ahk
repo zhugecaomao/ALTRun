@@ -2312,6 +2312,65 @@ class ProviderTests {
         try DirDelete(root, true)
     }
 
+    ; A background run's end (ScriptProvider.Finished, with made-up ChildProcess results): the notification of a silent script, the
+    ; text an output script opens; and the real thing once (silent .ahk printing ANSI, with the variables of a background run)
+    static _ScriptFinished(eq, silent, output, root) {
+        savedNotify := ScriptProvider.NotifyFn, savedOpen := ScriptProvider.OpenFn, savedPrevious := App.PreviousWindow
+        notices := [], opened := []
+        ScriptProvider.NotifyFn := (text, ms) => notices.Push(text "/" ms)
+        ScriptProvider.OpenFn := (file) => opened.Push(file)
+        result(out, err := "", code := 0, extra := "") {
+            r := {ExitCode: code, Stdout: out, Stderr: err, TimedOut: false, Error: "", Truncated: false, Ms: 5, Pid: 1}
+            if IsObject(extra)
+                for name, value in extra.OwnProps()
+                    r.%name% := value
+            return r
+        }
+        try {
+            title := silent.Title
+            eq("silent: last line", ScriptProvider.Finished(silent, result("line one`r`n`r`nlast line  `r`n")), "last line")
+            eq("silent: no output", ScriptProvider.Finished(silent, result("", "a warning")), I18n.T("Script.Done", title))
+            eq("silent: failed, first line of standard error", ScriptProvider.Finished(silent, result("out", "`r`nC:\x.ps1 : bad thing`r`n    + CategoryInfo", 1)), title ": C:\x.ps1 : bad thing")
+            eq("silent: other exit code, no error text: last line (robocopy and the like)", ScriptProvider.Finished(silent, result("copied 3`n", "", 1)), "copied 3")
+            eq("silent: other exit code, nothing printed", ScriptProvider.Finished(silent, result("", "", 7)), title ": " I18n.T("ScriptFilter.ExitCode", 7))
+            eq("silent: timed out", ScriptProvider.Finished(silent, result("partial", "", "", {TimedOut: true})), title ": " I18n.T("Script.TimedOut", 120))
+            eq("silent: can't start", ScriptProvider.Finished(silent, result("", "", "", {Error: "no such file"})), title ": " I18n.T("ScriptFilter.CantStart", "no such file"))
+            eq("silent: notification times", notices[1] "|" notices[3], "last line/3000|" title ": C:\x.ps1 : bad thing/4000")
+
+            textFile := ScriptProvider.Finished(output, result("a`r`nb`r`n`r`n", "err line`r`n", 1))
+            eq("output: opened", opened.Length "|" (opened.Length ? opened[1] : ""), "1|" textFile)
+            eq("output: standard error after an empty line", FileRead(textFile, "UTF-8"), "a`r`nb`r`n`r`nerr line`r`n")
+            head := FileRead(textFile, "RAW")
+            eq("output: UTF-8 with a BOM", NumGet(head, 0, "UChar") "," NumGet(head, 1, "UChar") "," NumGet(head, 2, "UChar"), "239,187,191")
+            textFile := ScriptProvider.Finished(output, result("caf" Chr(0xE9) " " Chr(0x4E2D), "", "", {TimedOut: true, Truncated: true}))
+            eq("output: cut and stopped noted", FileRead(textFile, "UTF-8"), "caf" Chr(0xE9) " " Chr(0x4E2D) "`r`n`r`n" I18n.T("Script.OutputCut", 16) "`r`n`r`n" I18n.T("Script.TimedOut", 120))
+            eq("output: nothing printed", FileRead(ScriptProvider.Finished(output, result("")), "UTF-8"), "")
+            eq("output: can't start: no file", ScriptProvider.Finished(output, result("", "", "", {Error: "x"})) "|" opened.Length, output.Title ": " I18n.T("ScriptFilter.CantStart", "x") "|3")
+            for each in opened
+                try FileDelete(each)
+
+            ; the real run: a silent .ahk printing without an encoding (ANSI), an argument with cmd's characters and a quote, and
+            ; the variables of a background run
+            scriptPath := root "\real.ahk"
+            FileAppend('FileAppend("caf' Chr(0xE9) ' [" A_Args[1] "] " EnvGet("ALTRUN_ACTION") " " EnvGet("ALTRUN_ARG") " " EnvGet("ALTRUN_HWND") " " EnvGet("ALTRUN_PROCESS") "``n", "*")`n', scriptPath, "UTF-8")
+            script := ScriptProvider.ReadScript(scriptPath), script.Mode := "silent"
+            App.PreviousWindow := A_ScriptHwnd
+            notices := []
+            saved := DetectHiddenWindows(true)                                ; (the test's own window stands for the one in front)
+            ScriptProvider.Run(script, 'a "b" & c')
+            DetectHiddenWindows(saved)
+            started := A_TickCount
+            while (!notices.Length && A_TickCount - started < 15000)
+                Sleep(50)
+            processName := ""
+            try processName := WinGetProcessName("ahk_id " A_ScriptHwnd)
+            ansi := Buffer(StrPut("caf" Chr(0xE9), "CP0")), StrPut("caf" Chr(0xE9), ansi, "CP0")   ; what an ANSI code page keeps of it
+            eq("real silent run", notices.Length ? notices[1] : "(no notification)", Trim(StrGet(ansi, "CP0") ' [a "b" & c] run a "b" & c ' A_ScriptHwnd " " processName) "/3000")
+        } finally {
+            ScriptProvider.NotifyFn := savedNotify, ScriptProvider.OpenFn := savedOpen, App.PreviousWindow := savedPrevious
+        }
+    }
+
     ; Scripts extension: @altrun.xxx read from the leading comments, found by name / keyword, arguments, command lines, output of background runs
     static Scripts() {
         eq := (n, a, e) => TestRunner.Equal("Scripts." n, a, e)
@@ -2362,18 +2421,19 @@ class ProviderTests {
         eq("default script keyword", AppSettings.Defaults()["Features"]["Scripts"]["Keyword"], "script")
         eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
         eq("bat command", ScriptProvider.CommandLine(byTitle["Clean Temp"]), A_ComSpec ' /c ""' root '\clean.bat""')
-        ; arguments as programs read them; through cmd.exe (batch files, captured output) a quote isn't safe and is refused
+        ; arguments as programs read them; through cmd.exe (batch files) a quote isn't safe and is refused
         eq("argument: quote and trailing backslash", ScriptProvider.CommandLine(byTitle["Ping Host"], 'say "hi" C:\'), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "say \"hi\" C:\\"')
-        eq("through cmd", ScriptProvider.ThroughCmd({Ext: "bat", Mode: "window"}) "|" ScriptProvider.ThroughCmd({Ext: "ps1", Mode: "output"}) "|" ScriptProvider.ThroughCmd({Ext: "ps1", Mode: "window"}), "1|1|0")
+        eq("through cmd: batch files only", ScriptProvider.ThroughCmd({Ext: "bat", Mode: "silent"}) "|" ScriptProvider.ThroughCmd({Ext: "cmd", Mode: "window"}) "|"
+            . ScriptProvider.ThroughCmd({Ext: "ps1", Mode: "output"}) "|" ScriptProvider.ThroughCmd({Ext: "ahk", Mode: "silent"}) "|" ScriptProvider.ThroughCmd({Ext: "py", Mode: "window"}), "1|1|0|0|0")
+        eq("background ahk: errors printed", ScriptProvider.BackgroundLine(byTitle["Restart Explorer"], 'a "b" & c')
+            , '"' A_AhkPath '"' (A_IsCompiled ? " /script" : "") ' /ErrorStdOut "' root '\restart.ahk" "a \"b\" & c"')
+        eq("background ps1: as in a window", ScriptProvider.BackgroundLine(byTitle["Ping Host"], "x"), ScriptProvider.CommandLine(byTitle["Ping Host"], "x"))
         ; output files of earlier runs are deleted after a day
         FileAppend("old", root "\ALTRun-script-1.txt"), FileAppend("new", root "\ALTRun-script-2.txt")
         FileSetTime(DateAdd(A_Now, -25, "Hours"), root "\ALTRun-script-1.txt", "M")
         ScriptProvider.CleanOutputs(root)
         eq("old output deleted, new kept", (FileExist(root "\ALTRun-script-1.txt") ? 1 : 0) "|" (FileExist(root "\ALTRun-script-2.txt") ? 1 : 0), "0|1")
-        FileAppend("line one`r`n`r`nlast line  `r`n", root "\out.txt")
-        eq("silent: last line", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\out.txt"), "last line")
-        FileAppend("", root "\empty.txt")
-        eq("silent: no output", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\empty.txt"), I18n.T("Script.Done", "Restart Explorer"))
+        ProviderTests._ScriptFinished(eq, byTitle["Restart Explorer"], byTitle["Ping Host"], root)
         FileAppend("; @altrun.title New One`n", root "\new.ahk", "UTF-8")
         ScriptProvider._checked := 0                                         ; the folder changed: read again at the next search
         eq("refresh", titles("new one"), "New One")
@@ -2884,7 +2944,7 @@ class ProviderTests {
             eq("types any case", ScriptProvider.ForTypes(byName["pdf.ahk"], ["File", "pdf"]) "|" ScriptProvider.ForTypes(byName["pdf.ahk"], ["Text"]), "1|0")
             eq("shell of the real command line", SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["pdf.ahk"])["Target"]) "|"
                 SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["quiet.ahk"])["Target"]) "|" SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["ip.bat"])["Target"]) "|"
-                SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["lookup.ps1"])["Target"]), "|cmd|cmd|posix")
+                SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["lookup.ps1"])["Target"]), "||cmd|posix")
 
             scripts["Enabled"] := 1
             titles(info) {
@@ -2896,7 +2956,7 @@ class ProviderTests {
             text(term, types) => {Kind: "text", Types: types, Term: term, Quoted: SelectionActions.Quote(term), Text: term}
             eq("panel: a file of the type", titles({Kind: "file", Types: ["File", "PDF"], Term: "C:\a.pdf", Quoted: '"C:\a.pdf"', Path: "C:\a.pdf"}), "PDF Tool")
             eq("panel: safe text for cmd", titles(text("10.0.0.1", ["Text", "IP"])), "Ping IP|Quiet")
-            eq("panel: cmd characters refused (batch file, and an ahk whose output goes through cmd)", titles(text("10.0.0.1 & del x", ["Text", "IP"])), "")
+            eq("panel: cmd characters refused for a batch file, not for a silent ahk (no cmd)", titles(text("10.0.0.1 & del x", ["Text", "IP"])), "Quiet")
             eq("panel: no type, no script", titles(text("hello", ["Url"])), "")
             files := ["C:\a b\1.pdf", "C:\2.pdf"]
             argument := ScriptProvider.SelectionArgument({Kind: "files", Files: files, Term: '"C:\a b\1.pdf" "C:\2.pdf"'})

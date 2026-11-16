@@ -485,6 +485,8 @@ class I18n {
         s["BrowserHistory.NoBrowser"]  := "No browser history found (Chrome, Edge, Brave, Vivaldi)"
         s["BrowserHistory.Unavailable"] := "Browser history needs winsqlite3.dll (Windows 10 or later)"
         s["Script.Done"]               := "{1}: done"
+        s["Script.TimedOut"]           := "Stopped: still running after {1} s"
+        s["Script.OutputCut"]          := "(More was printed; only the first {1} MB is shown)"
         s["Win.Subtitle"]              := "{1} - switch to this window"
         s["Win.Gone"]                  := "That window has been closed"
         s["Setting.Subtitle"]          := "Windows Settings"

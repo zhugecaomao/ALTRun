@@ -9,7 +9,8 @@
 ;   @altrun.argument  hint text         takes an argument: type "keyword text", and the text is passed to the script as its first argument
 ;   @altrun.mode      window | silent | output | filter
 ;                     window (default) runs normally with a window; silent runs in the background and shows the last line of output as a notification when done;
-;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done;
+;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done
+;                     (both: BackgroundLine, Finished);
 ;                     filter gives live results: typing "keyword text" runs it with the text while typing and shows what it prints as
 ;                     results (needs a keyword; .ahk .py .ps1; see ScriptFilter.ahk)
 ;   @altrun.filter    altrun            a filter script runs once on entering the keyword; ALTRun then filters what it printed while typing
@@ -19,6 +20,10 @@
 ; Read again when the folder changes (modified time), without reloading ALTRun. F3 edits the script in Notepad.
 ; A custom hotkey with Action "script:<file name>" runs a script (RunFromHotkey); renaming the file breaks it (shown in red in Preferences).
 ; A filter script isn't offered for a selection; its hotkey opens the search window with "keyword " and the selected line of text.
+; Background runs (silent / output) start the script itself with ChildProcess (no cmd.exe, so & | > " in an argument are just text;
+; batch files still go through cmd, ThroughCmd), with the variables of a filter script's run (Environment). What the script starts
+; keeps running (KeepStarted); the script itself is ended after TimeoutMs. AutoHotkey writes ANSI unless told otherwise, so an .ahk's
+; output that isn't UTF-8 is read as ANSI, the others' as OEM (a console's default).
 ;
 ; Settings (ALTRun.json -> Features.Scripts): Enabled / Keyword ("script backup" searches scripts only, "script " lists all,
 ; like the snippets' "snip"; just "script" without the space still shows the commands with that word)
@@ -29,7 +34,11 @@ class ScriptProvider {
     static Extensions := Map("ahk", 1, "ps1", 1, "bat", 1, "cmd", 1, "py", 1)
     static Scripts := []
     static _lastStamp := "", _checked := 0
-    static TimeoutMs := 120000                                              ; how long to wait for a background script at most
+    static TimeoutMs := 120000                                              ; how long a background script may run at most
+    static MaxOutput := 16777216                                            ; the most an "output" script's text can be (16 MB; more is cut)
+    static StartFn := (line, done, options) => ChildProcess.Start(line, done, options)   ; replaced in tests
+    static NotifyFn := (text, ms) => App.Notify(text, ms)
+    static OpenFn := (file) => Path.OpenText(file)
 
     static HintIcon := "res:imageres.dll,-5323"                             ; icon of the keyword hint row
     static Folder := ""                                                     ; when not empty, this folder is used (for tests)
@@ -132,7 +141,7 @@ class ScriptProvider {
         return info.Term
     }
 
-    ; The command line the selection checks look at (SelectionActions.SafeArgument): a script whose output is captured runs through cmd too
+    ; The command line the selection checks look at (SelectionActions.SafeArgument): a batch file runs through cmd
     ; (named as cmd.exe: only looked at, and %ComSpec% may be any path)
     static ShellCommand(script) {
         line := ScriptProvider.CommandLine(script)
@@ -217,9 +226,31 @@ class ScriptProvider {
         }
     }
 
-    ; Whether the command line goes through cmd.exe: batch files, and every script whose output is captured (cmd redirects it).
+    ; Whether the command line goes through cmd.exe: batch files (started directly, Windows still has cmd read the arguments).
     ; cmd doesn't know \" and ends the quoted argument there, so & | < > after it would run as commands: a quote in the argument is refused
-    static ThroughCmd(script) => script.Mode != "window" || !RegExMatch(script.Ext, "^(ahk|ps1|py)$")
+    static ThroughCmd(script) => !RegExMatch(script.Ext, "^(ahk|ps1|py)$")
+
+    ; The command line of a background run (silent / output): CommandLine, with /ErrorStdOut for an .ahk (a syntax error is printed
+    ; instead of shown in a dialog; an error while it runs still is)
+    static BackgroundLine(script, argument := "") {
+        if (script.Ext != "ahk")
+            return ScriptProvider.CommandLine(script, argument)
+        line := '"' A_AhkPath '"' (A_IsCompiled ? " /script" : "") ' /ErrorStdOut "' script.Path '"'
+        for each in ScriptProvider._Arguments(argument)
+            line .= " " Win.QuoteArg(each)
+        return line
+    }
+
+    ; The variables of a background run, as a filter script's run of a script item gets them (ScriptFilter.RunItem): ALTRUN_ACTION=run,
+    ; ALTRUN_ARG (the first argument), ALTRUN_KEYWORD, ALTRUN_VERSION and the window in front before (ALTRUN_HWND / _PID / _PROCESS)
+    static Environment(script, argument := "") {
+        arguments := ScriptProvider._Arguments(argument)
+        env := Map("ALTRUN_ACTION", "run", "ALTRUN_ARG", arguments.Length ? arguments[1] : "", "ALTRUN_KEYWORD", script.Keyword
+            , "ALTRUN_VERSION", App.Version, "PYTHONIOENCODING", "utf-8")
+        for name, value in ScriptFilter.WindowVariables(App.PreviousWindow)
+            env[name] := value
+        return env
+    }
 
     static _Arguments(argument) => (argument is Array) ? argument : (argument != "") ? [argument] : []
 
@@ -233,20 +264,14 @@ class ScriptProvider {
             if (InStr(each, '"') && ScriptProvider.ThroughCmd(script))
                 return App.Notify(I18n.T("Script.QuoteInArgument"), 4000)
         SplitPath(script.Path, , &dir)
-        command := ScriptProvider.CommandLine(script, argument)
         if (script.Mode = "window")
-            return Run(command, dir)
+            return Run(ScriptProvider.CommandLine(script, argument), dir)
         ScriptProvider.CleanOutputs()
-        output := A_Temp "\ALTRun-script-" A_TickCount ".txt"              ; runs in the background, output goes to a temporary file
-        Run(A_ComSpec ' /c "' command ' > "' output '" 2>&1"', dir, "Hide", &pid)
-        started := A_TickCount
-        check() {
-            if (ProcessExist(pid) && A_TickCount - started < ScriptProvider.TimeoutMs)
-                return
-            SetTimer(check, 0)
-            ScriptProvider._Finished(script, output)
-        }
-        SetTimer(check, 300)
+        output := (script.Mode = "output")
+        ScriptProvider.StartFn.Call(ScriptProvider.BackgroundLine(script, argument), (result) => ScriptProvider.Finished(script, result)
+            , {Dir: dir, Env: ScriptProvider.Environment(script, argument), TimeoutMs: ScriptProvider.TimeoutMs, KeepStarted: true
+            , MaxStdout: output ? ScriptProvider.MaxOutput : "", MaxStderr: output ? 65536 : ""
+            , Codepage: (script.Ext = "ahk") ? 0 : ""})
     }
 
     ; The output files of earlier runs, at least a day old (the "output" mode leaves its file for the editor showing it)
@@ -256,20 +281,63 @@ class ScriptProvider {
                 try FileDelete(A_LoopFileFullPath)
     }
 
-    static _Finished(script, output) {
-        text := ""
-        try text := FileRead(output)
-        if (script.Mode = "output") {
-            Path.OpenText(output)                                           ; the default program for .txt (usually Notepad); the file stays a day (CleanOutputs)
-            return
+    ; A background run ended (ChildProcess result). silent: exit code 0 shows the last line printed (none: "Title: done"); another exit
+    ; code the first line of standard error, else the last line printed, else the exit code; can't start / time-out the reason.
+    ; output: what it printed, then standard error, opened as text (OpenOutput). Returns the text shown (output: the file)
+    static Finished(script, result) {
+        if Logger.Enabled
+            Logger.Debug("Perf: script " script.Name " " result.Ms " ms, exit " result.ExitCode (result.TimedOut ? ", timed out" : "") (result.Error != "" ? ", can't start" : ""))
+        timedOut := I18n.T("Script.TimedOut", Round(ScriptProvider.TimeoutMs / 1000))
+        if (result.Error != "")
+            return ScriptProvider._Notify(script.Title ": " I18n.T("ScriptFilter.CantStart", result.Error), 4000)
+        if (script.Mode = "output")
+            return ScriptProvider.OpenOutput(result, timedOut)
+        if result.TimedOut
+            return ScriptProvider._Notify(script.Title ": " timedOut, 4000)
+        last := ScriptProvider._LineOf(result.Stdout)
+        if (result.ExitCode != 0) {
+            if ((first := ScriptProvider._LineOf(result.Stderr, false)) != "")
+                return ScriptProvider._Notify(script.Title ": " first, 4000)
+            return (last != "") ? ScriptProvider._Notify(last, 3000) : ScriptProvider._Notify(script.Title ": " I18n.T("ScriptFilter.ExitCode", result.ExitCode), 4000)
         }
-        try FileDelete(output)
-        last := ""
+        return ScriptProvider._Notify((last != "") ? last : I18n.T("Script.Done", script.Title), 3000)
+    }
+
+    ; An "output" script's text: what it printed, then standard error after an empty line, a note when more was printed than kept or
+    ; it was stopped (timedOut: that note). Written as UTF-8 to a temporary file opened with the default program for .txt (usually
+    ; Notepad); the file stays a day (CleanOutputs). Returns the file
+    static OpenOutput(result, timedOut := "") {
+        text := result.Stdout
+        add(part) => text := (Trim(text, " `t`r`n") = "") ? part : RTrim(text, " `t`r`n") "`r`n`r`n" part
+        if (Trim(result.Stderr, " `t`r`n") != "")
+            add(result.Stderr)
+        if result.Truncated
+            add(I18n.T("Script.OutputCut", Round(ScriptProvider.MaxOutput / 1048576)))
+        if result.TimedOut
+            add(timedOut)
+        textFile := A_Temp "\ALTRun-script-" A_TickCount ".txt"
+        while FileExist(textFile)
+            textFile := A_Temp "\ALTRun-script-" A_TickCount "-" A_Index ".txt"
+        out := FileOpen(textFile, "w", "UTF-8")                             ; with a BOM, so any editor reads it as UTF-8
+        out.Write(text), out.Close()
+        ScriptProvider.OpenFn.Call(textFile)
+        return textFile
+    }
+
+    ; The last (or first) line of text that isn't blank, trimmed; "" for none
+    static _LineOf(text, last := true) {
+        found := ""
         Loop Parse, text, "`n", "`r"
-            if (Trim(A_LoopField) != "")
-                last := Trim(A_LoopField)
-        message := (last != "") ? last : I18n.T("Script.Done", script.Title)
-        App.Notify(message, 3000)
+            if ((line := Trim(A_LoopField)) != "") {
+                found := line
+                if !last
+                    break
+            }
+        return found
+    }
+
+    static _Notify(message, ms) {
+        ScriptProvider.NotifyFn.Call(message, ms)
         return message
     }
 

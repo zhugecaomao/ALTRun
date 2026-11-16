@@ -992,6 +992,8 @@
   "Recent.ConfirmUnpin": "'{1}' のピン留めを解除しますか?",
   "Recent.PinnedHint": "ピン留めしました: 検索ボックスが空のときに {1} を表示します",
   "Script.Done": "{1}: 完了",
+  "Script.TimedOut": "停止しました: {1} 秒を超えても実行中でした",
+  "Script.OutputCut": "(出力が多すぎるため、最初の {1} MB のみ表示しています)",
   "Script.Mode.Output": "バックグラウンド、メモ帳で出力",
   "Script.Mode.Silent": "バックグラウンド、通知",
   "Script.Mode.Window": "ウィンドウ",
