@@ -8,6 +8,9 @@
 #   3. merging the PR to main builds it by itself (publish = false: the "push" trigger below, only when App.Version changed);
 #      to release, run "Release" on the Actions page on main with publish = true
 # A test build on a PR branch before merging: run "Release" on that branch with publish = false.
+# Before the release is created, ALTRun.exe (the very file that is published) is scanned on VirusTotal (packaging/Scan-VirusTotal.ps1,
+# repository secret VT_API_KEY): with an engine reporting it as malicious, or no result in 15 minutes, nothing is published; check
+# the report in the run summary and, for a false positive, run again with allow_detections. A test build can be scanned with virustotal.
 # After publishing, the Scoop (bucket/altrun.json) and winget (packaging/winget) manifests are updated to the new version and committed to main;
 # with the WINGET_TOKEN secret (a GitHub token with public_repo scope) wingetcreate also submits the new version to winget-pkgs.
 name: Release
@@ -23,6 +26,14 @@ on:
     inputs:
       publish:
         description: "Create the GitHub release (false = build and test only)"
+        type: boolean
+        default: false
+      virustotal:
+        description: "Scan ALTRun.exe on VirusTotal in a test build too (publishing always scans)"
+        type: boolean
+        default: false
+      allow_detections:
+        description: "Publish even if VirusTotal flags ALTRun.exe (only after checking the report: a false positive)"
         type: boolean
         default: false
 
@@ -361,6 +372,16 @@ jobs:
         with:
           name: ALTRun_v${{ steps.version.outputs.version }}_msix          # for the Microsoft Store submission (unsigned: can't be installed as it is)
           path: build/msix/*.msix
+
+      # Before anything is published: the exe being released, not an earlier test build (that one is test-signed, so its hash differs)
+      - name: VirusTotal scan (ALTRun.exe)
+        if: inputs.publish || inputs.virustotal
+        shell: pwsh
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          $allow = "${{ inputs.allow_detections }}" -eq "true"
+          ./packaging/Scan-VirusTotal.ps1 -Path build/ALTRun/ALTRun.exe -AllowDetections:$allow -NotesFile build/notes.md
 
       - name: Create GitHub release
         if: inputs.publish
