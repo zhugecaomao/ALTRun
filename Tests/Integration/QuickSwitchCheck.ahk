@@ -333,6 +333,11 @@ LogSince(size) {
 }
 
 TearDown() {
+    if Failures {                                                           ; what ALTRun did up to the end (a check that took long shows as "Perf: slow")
+        lines := StrSplit(Trim(LogSince(0), "`r`n"), "`n", "`r")
+        Loop Min(40, lines.Length)
+            Say("     final log: " lines[lines.Length - Min(40, lines.Length) + A_Index])
+    }
     try WinClose(Dialog)
     if DialogPid && !ProcessWaitClose(DialogPid, 3)
         try ProcessClose(DialogPid)
