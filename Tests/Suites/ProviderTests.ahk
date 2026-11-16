@@ -2871,6 +2871,11 @@ class ProviderTests {
                 rows := ScriptProvider.Search(SearchQuery(keyword " " text))
                 eq(keyword ": results", rows.Length ? rows[1].Title "|" rows[1].Exclusive : "none", expected "|1")
                 FileAppend("NOTE ScriptFilter: " keyword " " (A_TickCount - started) " ms from typing to results`n", "*")
+                if (rows.Length && rows[1].Title != expected) {                 ; an error row: why (time-out, exit code, standard error)
+                    detail := (rows[1].LargeText is String) ? rows[1].LargeText : ""
+                    FileAppend("NOTE ScriptFilter: " keyword " error row [" rows[1].Subtitle "]" (detail != rows[1].Subtitle ? ", standard error ["
+                        . StrReplace(Trim(detail, "`r`n"), "`n", " | ") "]" : "") "`n", "*")
+                }
                 return rows
             }
             rows := timed("fd", 'a & "b"', 'got a & "b"')
