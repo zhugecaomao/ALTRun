@@ -82,7 +82,11 @@ class QuickSwitch {
     ;     settle     any other window, for SettleMs after it came to the front: EVENT_OBJECT_NAMECHANGE (a window listed by a title
     ;                that is set a moment later)
     ;     panel      the caret is in the panel's search box: EVENT_OBJECT_DESTROY of the dialog's thread (closed by its program)
-    ; Only if a hook can't be set, it checks every PollMs instead (all the time, or while that window is watched)
+    ; Only if a hook can't be set, it checks every PollMs instead (all the time, or while that window is watched).
+    ; While a file dialog is open, the window in front is also compared every PollMs (one GetForegroundWindow call): when a program
+    ; brings a window to the front (SetForegroundWindow), EVENT_SYSTEM_FOREGROUND sometimes doesn't come, or comes a moment before the
+    ; window is in front (Windows CI, probe 11-16: Explorer's or the dialog's event missing in rounds 1 and 2 of 5 of 5 runs), so a
+    ; switch from Explorer to the dialog was noticed only SettleMs later, or not at all. A change no check has seen is checked then
     ;---------------------------------------------------------------------------
     static PollMs := 250, SettleMs := 1500, CheckDelayMs := 50, DragMs := 15
     static Phases := Map("candidate", [[0x8001, 0x8003], [0x800C, 0x800C]], "dialog", [[0xA, 0xB]], "settle", [[0x800C, 0x800C]], "panel", [[0x8001, 0x8001]])
@@ -98,6 +102,8 @@ class QuickSwitch {
     ; (see _InputSettled), at most AutoSwitchWaitMs
     static AutoSwitchWaitMs := 3000
     static _checkTimer := "", _settleTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
+    ; The foreground check while a file dialog is open (see above): the dialog, the window in front at the last check, the timer
+    static _openDialog := 0, _checkedForeground := 0, _foregroundTimer := ""
 
     static _StartWatching() {
         QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events), the end of settle
@@ -105,6 +111,7 @@ class QuickSwitch {
         QuickSwitch._pollTimer := Logger.Watch("quick switch watch", () => QuickSwitch._Check())
         QuickSwitch._placeTimer := () => QuickSwitchPanel._panelFor && QuickSwitchPanel._PlacePanel(QuickSwitchPanel._panelFor)
         QuickSwitch._dragTimer := () => QuickSwitchPanel._panelFor && QuickSwitchPanel._PlacePanel(QuickSwitchPanel._panelFor)   ; only if the drag hook can't be set
+        QuickSwitch._foregroundTimer := () => QuickSwitch._CheckForeground()
         if !(QuickSwitch._foregroundHook := QuickSwitch._HookEvent(0x3, 0x3)) {   ; EVENT_SYSTEM_FOREGROUND, every process
             Logger.Error("QuickSwitch: cannot watch foreground changes, checking every " QuickSwitch.PollMs " ms")
             QuickSwitch._alwaysPoll := true
@@ -179,6 +186,28 @@ class QuickSwitch {
         SetTimer(QuickSwitch._pollTimer, on ? QuickSwitch.PollMs : 0)
     }
 
+    ; A file dialog is open: compare the window in front every PollMs until it is closed (see "Watching dialogs" above)
+    static _WatchForeground(dialog) {
+        if (dialog = QuickSwitch._openDialog || QuickSwitch._foregroundTimer = "")
+            return
+        QuickSwitch._openDialog := dialog
+        SetTimer(QuickSwitch._foregroundTimer, QuickSwitch.PollMs)
+    }
+
+    static _CheckForeground() {
+        if !DllCall("IsWindow", "Ptr", QuickSwitch._openDialog) {           ; closed: no dialog to switch to
+            QuickSwitch._openDialog := 0
+            return SetTimer(QuickSwitch._foregroundTimer, 0)
+        }
+        active := DllCall("GetForegroundWindow", "Ptr")
+        if (active && active != QuickSwitch._checkedForeground) {          ; another window in front that no check has seen: its event didn't come
+            if Logger.Enabled
+                Logger.Debug(Format("QuickSwitch: 0x{:X} {} came to the front without an event", active, QuickSwitch.ClassOf(active)))
+            QuickSwitch._checkedForeground := active                        ; once per change, also while the check is still to run
+            SetTimer(QuickSwitch._checkTimer, -1)
+        }
+    }
+
     ; The window (default: the one in front) matches the dialog lists: it may be a dialog, or become one once it is shown and its controls or title are there
     static _MayBeDialog(hwnd := 0) {
         if !(hwnd := hwnd || DllCall("GetForegroundWindow", "Ptr"))
@@ -245,6 +274,7 @@ class QuickSwitch {
     static _Check() {
         if !(active := DllCall("GetForegroundWindow", "Ptr"))               ; read once: every step below is about the same window
             return                                                          ; none for a moment while switching: the next event comes
+        QuickSwitch._checkedForeground := active
         if (IsObject(QuickSwitchPanel._panel) && active = QuickSwitchPanel._panel.Hwnd) {   ; typing in the panel's search box: the dialog and panel stay as they are
             if !DllCall("IsWindow", "Ptr", QuickSwitchPanel._panelFor)          ; the dialog was closed (by its program): close the panel too
                 QuickSwitchPanel.HidePanel(), QuickSwitch._UnwatchWindow()
@@ -277,7 +307,7 @@ class QuickSwitch {
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitchPanel._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitchPanel._UpdatePanel(isDialog ? active : 0)
         if isDialog
-            QuickSwitch._WatchWindow(active, "dialog")
+            QuickSwitch._WatchWindow(active, "dialog"), QuickSwitch._WatchForeground(active)
         else if QuickSwitch._MayBeDialog(active)
             QuickSwitch._WatchWindow(active, "candidate")
         else if (active = QuickSwitch._foreground && (left := QuickSwitch.SettleMs - (A_TickCount - QuickSwitch._foregroundAt)) > 0) {
