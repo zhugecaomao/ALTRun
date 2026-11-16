@@ -133,11 +133,20 @@ TabRound(n) {
     if !BackToStart()
         return TabFail(name, n, "couldn't send the dialog back to Start")
     folderB := Demo "\Folder B"
-    if !ExplorerTabs.Open(folderB)                                          ; a new tab of the Explorer window, shown and in front
-        return TabFail(name, n, "no new tab at Folder B: " ExplorerTabs.LastError)
+    ; As a user does it, with Explorer's own keys (this script makes no COM call into Explorer, which could change what is tested):
+    ; Ctrl+T a new tab, Ctrl+L the address bar, the folder, Enter
+    WinActivate(Explorer)
+    if !WinWaitActive(Explorer, , 3)
+        return TabFail(name, n, "Explorer didn't come to the front")
+    Send("^t")
+    Sleep(1000)
+    Send("^l")
+    Sleep(300)
+    SendText(folderB)
+    Send("{Enter}")
     try {
         SetTitleMatchMode(2)
-        shown := WinWait("Folder B ahk_id " Explorer, , 3)                  ; the title is the name of the tab shown
+        shown := WinWait("Folder B ahk_id " Explorer, , 5)                  ; the title is the name of the tab shown
         SetTitleMatchMode(3)
         if !shown
             return TabFail(name, n, "Explorer doesn't show Folder B (title '" WinGetTitle(Explorer) "')")
@@ -168,10 +177,14 @@ TabRound(n) {
             return TabFail(name " ctrl+g", n, "Ctrl+G didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
         Say("PASS " name " ctrl+g " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
     } finally {
-        for each in ExplorerTabs._Tabs(Explorer)                            ; close the Folder B tab: Explorer shows Folder A again
-            if ExplorerTabs.SameFolder(ExplorerTabs._Path(Explorer, each.Tab), folderB)
-                try each.Item.Quit()
-        Sleep(500)
+        WinActivate(Explorer)                                               ; close the Folder B tab (Ctrl+W): Explorer shows Folder A again
+        if WinWaitActive(Explorer, , 3) {
+            SetTitleMatchMode(2)
+            if WinActive("Folder B ahk_id " Explorer)
+                Send("^w")
+            SetTitleMatchMode(3)
+        }
+        Sleep(800)
     }
 }
 
