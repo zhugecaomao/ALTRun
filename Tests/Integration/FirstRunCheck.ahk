@@ -92,7 +92,7 @@ AnswerNo() {
         return "a start-up shortcut was written before the answer"
     if ((value := Stored()) != 0)
         return "LaunchAtLogin before the answer: " value " (expected 0)"
-    ControlClick("Button2", dialog)                                         ; No (Button1 is Yes)
+    PostMessage(0x111, 7, 0, , dialog)                                      ; WM_COMMAND IDNO: the No button of the message box
     if !WinWaitClose(dialog, , 5)
         return "the question didn't close after No"
     Sleep(1500)
@@ -134,6 +134,7 @@ AnswerYes() {
 ExistingSettings() {
     Fresh()
     settings := Map("SchemaVersion", 7, "General", Map("Language", "en", "LaunchAtLogin", 1, "CheckForUpdates", 0))
+    DirCreate(AppDir "\Data")
     FileAppend(JSON.Stringify(settings, 4), AppDir "\Data\ALTRun.json", "UTF-8")
     if (problem := StartAndExpectNoQuestion())
         return problem
