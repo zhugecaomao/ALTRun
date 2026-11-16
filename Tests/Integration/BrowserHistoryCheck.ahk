@@ -2,7 +2,8 @@
 ; BrowserHistoryCheck.ahk - reading the History of a running browser (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Run by .github/workflows/browser-history.yml after it opened a few pages in Edge and Chrome and left them running
-; (the file named on the command line lists them, one "url|title" per line in the order they were opened). Checks the part that depends on Windows and the browsers:
+; (the file named on the command line lists them, one "url|title" per line in the order they were opened). Waits until each
+; browser has written them (at most WaitMs). Checks the part that depends on Windows and the browsers:
 ;   - winsqlite3.dll is there
 ;   - BrowserHistoryProvider.ReadFile reads each browser's History while the browser keeps it open (in place, without
 ;     locking it): every page is found, with its title (a Chinese one too), most recent first by the stored visit time
@@ -16,6 +17,10 @@
 #Warn VarUnset, Off                                                         ; the provider names ALTRun classes this check doesn't load (not called here)
 #Include %A_ScriptDir%\..\..\Lib\Sqlite.ahk
 #Include %A_ScriptDir%\..\..\Src\Providers\BrowserHistoryProvider.ahk
+
+; A browser writes History some time after a visit: Chrome on a fresh runner took 8 to 31 s after the last page was opened (it may
+; create the file only then). So each browser is read until every page is there, at most WaitMs, and then checked
+global WaitMs := 90000
 
 class Logger {                                                              ; ReadFile writes a debug line when it falls back to a copy
     static Lines := []
@@ -46,6 +51,9 @@ Main() {
     check("pages to look for", expected.Length >= 2, expected.Length)
     for browser in [["Edge", "Microsoft\Edge\User Data\Default\History", "msedge.exe"], ["Chrome", "Google\Chrome\User Data\Default\History", "chrome.exe"]] {
         historyPath := EnvGet("LOCALAPPDATA") "\" browser[2]
+        waited := WaitForPages(historyPath, expected)
+        out("INFO " browser[1] ": " (waited >= 0 ? "every page in History after " waited " ms" : "not every page in History after " WaitMs " ms"))
+        Logger.Lines := []                                                  ; only the read below counts for "read in place"
         if !FileExist(historyPath) {
             check(browser[1] ": History exists", false, historyPath)
             continue
@@ -78,4 +86,27 @@ Main() {
     }
     check("no copy in TEMP", !DirExist(A_Temp "\ALTRun-History-" DllCall("GetCurrentProcessId")))
     ExitApp(failures)
+}
+
+; Reads historyPath until it has every expected page: the ms that took, or -1 after WaitMs. A read that fails (the file or its tables
+; not there yet) counts as "not yet"
+WaitForPages(historyPath, expected) {
+    start := A_TickCount
+    loop {
+        if FileExist(historyPath) {
+            try {
+                have := Map()
+                for row in BrowserHistoryProvider.ReadFile(historyPath)
+                    have[row[1]] := true
+                missing := 0
+                for page in expected
+                    missing += have.Has(page[1]) ? 0 : 1
+                if !missing
+                    return A_TickCount - start
+            }
+        }
+        if (A_TickCount - start >= WaitMs)
+            return -1
+        Sleep(250)
+    }
 }
