@@ -101,7 +101,7 @@ if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; listing: only for Notepad
 ```
 The window closes first, so the program you came from is in front again. What the script starts (an editor, a folder window) keeps running when it ends. After it ends, the last line it printed, if any, is shown as a notification; when it fails (can't start, ends with an exit code other than 0, or is stopped after 2 minutes) the reason is shown. Arrow `→` on such a result: run it, or copy its `arg` (`Alt+Enter`).
 
-**A list ALTRun filters**: when the list doesn't depend on what you type (your projects, servers, bookmarks of a tool), add `@altrun.filter altrun`. The script then runs once, with an empty text, when you type the keyword and the space; ALTRun keeps what it printed until the search window closes and filters it as you type, the same way it matches other results (fuzzy, pinyin initials too), on `match` or else the title, best match first. Nothing runs while you type, so this suits slow starters such as PowerShell.
+**A list ALTRun filters**: when the list doesn't depend on what you type (your projects, servers, bookmarks of a tool), add `@altrun.filter altrun`. The script then runs once, with an empty text, when you type the keyword and the space; ALTRun keeps what it printed until the search window closes and filters it as you type, the same way it matches other results (fuzzy, pinyin initials too), on `match` or else the title, best match first. Nothing runs while you type, so this suits slow starters such as PowerShell. Such a list can have up to 2,000 results (other live results: the first 200).
 
 **When something goes wrong**: one row says what (the first line the script wrote to its error output, its exit code, the JSON problem, or the time-out). `Enter` on it edits the script, `Ctrl+L` shows all of the error output. A script that prints nothing shows "No results".
 
@@ -211,3 +211,12 @@ Unescape(s) {                                       ; inside a JSON string -> te
 }
 ```
 Without a key, or before you type, the row says what to do; a key DeepL doesn't accept, the monthly limit, or no connection show as an error row. To translate into another language, change `target` (DeepL's codes, for example `JA`, `DE`, `EN-GB`).
+
+### Example: Total Commander commands
+A command palette for [Total Commander](https://www.ghisler.com): type `tc` and part of a command's name, in English or in the language Total Commander uses (pinyin initials too), and `Enter` runs it in Total Commander. It lists Total Commander's internal commands (`cm_...`, from `TOTALCMD.INC`, named by its language file when there is one, e.g. Chinese) and your own commands (`em_...`, from `usercmd.ini`, by their menu text). It works on the Total Commander window you came from, or else the one used last. Needs ALTRun 2026.11.16.4 or later.
+
+1. Download [TC Commands.ahk](https://github.com/zhugecaomao/ALTRun/blob/main/docs/scripts/TC%20Commands.ahk) ([raw file](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/scripts/TC%20Commands.ahk): right-click → Save link as) into the `Scripts\` folder (Preferences → Scripts → Open Scripts Folder).
+2. In Total Commander, open ALTRun and type `tc ` (with the space): the commands are listed; type to filter, `Enter` to run.
+3. Optionally give it a hotkey in Total Commander: Preferences → Hotkeys → Add..., the action "Search in ALTRun", the search text `tc ` (with the space), works in "only in windows matching" `ahk_class TTOTAL_CMD`, and a key such as `Ctrl+Shift+P` (it then does this instead of what the key did in Total Commander, if anything). Use "Search in ALTRun" rather than the script itself as the action: a hotkey for a script first copies the selection, which in Total Commander copies the selected files.
+
+How it works: the script reads `TOTALCMD.INC` in Total Commander's program folder, and `wincmd.ini` (where `COMMANDER_INI`, the registry value `IniFileName` or the program folder says, else `%APPDATA%\GHISLER`) for the language file and the folder of `usercmd.ini`. `Enter` sends a `cm_` command as its number (the message `WM_USER+51`) and an `em_` command by name (`WM_COPYDATA`), as Total Commander's documentation describes. A Total Commander running as administrator doesn't accept them from ALTRun. Commands that need parameters (`CD <directory>` and the like) aren't listed.

@@ -23,7 +23,7 @@
 ;     notification; nothing printed and exit code 0: nothing shown; can't start / another exit code / time-out: the reason (Finished)
 ;   - "@altrun.filter altrun": run once on entering the keyword (with an empty text), then ALTRun filters what it printed while
 ;     typing (fuzzy, on "match" or the title, pinyin initials too) without running it again: for lists that don't depend on the
-;     text (projects, hosts...) and for slow starters such as PowerShell
+;     text (projects, hosts...) and for slow starters such as PowerShell. Up to MaxListItems items are read (others: MaxItems)
 ;   - Nothing usable printed: one error row (the first line of standard error, the exit code, the JSON problem, the time-out);
 ;     Enter edits the script, Ctrl+L shows all of standard error. Exit code 0 and no items: a "No results" row
 ;   - The log gets the script's file name, time, item count and exit code, never the text typed or the output
@@ -39,6 +39,7 @@
 
 class ScriptFilter {
     static DebounceMs := 150, WaitRowMs := 300, TimeoutMs := 10000, MaxStdout := 524288, MaxItems := 200, CacheSize := 20
+    static MaxListItems := 2000                                              ; a list ALTRun filters (@altrun.filter altrun), e.g. Total Commander's ~600 commands
     static RunTimeoutMs := 120000                                            ; a script item's run (as ScriptProvider.TimeoutMs)
     static Extensions := Map("ahk", 1, "py", 1, "ps1", 1)
     static OnResults := () => SearchWindow.LiveResultsArrived()             ; results arrived: search again (replaced in tests)
@@ -51,6 +52,9 @@ class ScriptFilter {
     static _child := "", _runningKey := "", _gen := 0
     static _wanted := "", _wantedAt := 0, _session := ""
     static _runTimer := "", _waitTimer := ""
+
+    ; How many items of a script's output are read: more for a list ALTRun filters (it runs once; only the matches become rows)
+    static Limit(script) => (script.FilterBy = "altrun") ? ScriptFilter.MaxListItems : ScriptFilter.MaxItems
 
     static Supports(script) => script.Keyword != "" && ScriptFilter.Extensions.Has(script.Ext)
 
@@ -133,15 +137,15 @@ class ScriptFilter {
         return Map("ALTRUN_HWND", (pid != "") ? hwnd : "", "ALTRUN_PID", pid, "ALTRUN_PROCESS", process)
     }
 
-    ; A run's result (ChildProcess) -> {Items: [...], Error: "" or the error row's text, Detail: all of standard error}
-    static Read(result) {
+    ; A run's result (ChildProcess) -> {Items: [...] (at most limit), Error: "" or the error row's text, Detail: all of standard error}
+    static Read(result, limit := ScriptFilter.MaxItems) {
         entry := {Items: [], Error: "", Detail: Trim(result.Stderr, " `t`r`n")}
         if (result.Error != "")
             return (entry.Error := I18n.T("ScriptFilter.CantStart", result.Error), entry)
         if result.TimedOut
             return (entry.Error := I18n.T("ScriptFilter.TimedOut", Round(ScriptFilter.TimeoutMs / 1000)), entry)
         problem := ""
-        try entry.Items := ScriptFilter.Parse(result.Stdout)
+        try entry.Items := ScriptFilter.Parse(result.Stdout, limit)
         catch as e
             problem := e.Message
         if (entry.Items.Length && problem = "")
@@ -159,9 +163,9 @@ class ScriptFilter {
         return entry
     }
 
-    ; What a script printed -> [{Title, Subtitle, Arg, Type, Icon, Uid, Valid, AutoComplete, Match, LargeText}], at most MaxItems;
+    ; What a script printed -> [{Title, Subtitle, Arg, Type, Icon, Uid, Valid, AutoComplete, Match, LargeText}], at most limit;
     ; throws when JSON can't be read. JSON when it starts with "{", else one result per line (Tab-separated)
-    static Parse(text) {
+    static Parse(text, limit := ScriptFilter.MaxItems) {
         text := LTrim(text, " `t`r`n")
         items := []
         if (SubStr(text, 1, 1) = "{") {
@@ -178,7 +182,7 @@ class ScriptFilter {
                 large := (each.Has("text") && each["text"] is Map && each["text"].Has("largetype")) ? String(each["text"]["largetype"]) : ""
                 item := ScriptFilter._Item(field("title"), field("subtitle"), field("arg"), field("type"), IsObject(icon) ? "" : icon
                     , field("uid"), !(each.Has("valid") && (each["valid"] = 0 || each["valid"] = "false")), field("autocomplete"), field("match"), large)
-                if IsObject(item) && (items.Push(item), items.Length >= ScriptFilter.MaxItems)
+                if IsObject(item) && (items.Push(item), items.Length >= limit)
                     break
             }
             return items
@@ -187,7 +191,7 @@ class ScriptFilter {
             columns := StrSplit(A_LoopField, "`t")
             column := (n) => columns.Length >= n ? Trim(columns[n]) : ""
             item := ScriptFilter._Item(column(1), column(2), column(3), column(4), column(5))
-            if IsObject(item) && (items.Push(item), items.Length >= ScriptFilter.MaxItems)
+            if IsObject(item) && (items.Push(item), items.Length >= limit)
                 break
         }
         return items
@@ -368,7 +372,7 @@ class ScriptFilter {
     }
 
     static _Done(want, gen, result) {
-        entry := ScriptFilter.Read(result)
+        entry := ScriptFilter.Read(result, ScriptFilter.Limit(want.Script))
         if Logger.Enabled
             Logger.Debug("Perf: script filter " want.Script.Name " " result.Ms " ms, " entry.Items.Length " items, exit " result.ExitCode
                 . (entry.Error != "" ? ", error" : "") (result.TimedOut ? ", timed out" : ""))

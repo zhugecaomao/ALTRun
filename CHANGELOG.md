@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.16.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- Total Commander 命令面板的示例脚本 `TC Commands.ahk` (#520; 关键字 `tc`, 不默认安装, 见 Wiki 的脚本页): 输入 `tc ` 和命令名 (英文或 TC 界面语言, 也认拼音首字母), `Enter` 在 TC 里执行。列出 TC 的内部命令 (cm_, 读 TOTALCMD.INC, 有语言文件就用译名) 和自己的命令 (em_, 读 usercmd.ini); 作用于打开 ALTRun 之前的 TC 窗口, 没有就用最近用过的那个
+
+### 改进
+- 由 ALTRun 过滤的实时结果脚本 (`@altrun.filter altrun`) 最多读 2000 条 (以前 200 条, 多出的看不到); 边输入边运行的仍是 200 条
+
 ## [2026.11.16.3]
 
 测试版。
@@ -1509,7 +1521,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...HEAD
+[2026.11.16.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...2026.11.16.4
 [2026.11.16.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...2026.11.16.3
 [2026.11.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...2026.11.16.2
 [2026.11.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...2026.11.16.1

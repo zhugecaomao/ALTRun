@@ -101,7 +101,7 @@ if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; 列结果: 只在记事�
 ```
 搜索窗口先关掉, 所以原来的程序又回到前台。脚本启动的东西 (编辑器、文件夹窗口) 在脚本结束后照常运行。脚本结束后, 有输出就把最后一行显示成通知; 失败时 (启动不了、退出码不是 0、2 分钟后还没结束被停掉) 显示原因。在这种结果上按 `→`: 运行, 或复制它的 `arg` (`Alt+Enter`)。
 
-**由 ALTRun 过滤的列表**: 列表和输入的文字无关时 (自己的项目、服务器、某个工具的书签), 加一行 `@altrun.filter altrun`。这样输入关键字和空格时脚本只运行一次 (文字为空), ALTRun 把输出留到搜索窗口关闭, 边输入边过滤, 匹配方式和其他结果一样 (模糊匹配, 也认拼音首字母), 用 `match`, 没有就用标题, 最匹配的排前面。输入时不再运行脚本, 所以适合 PowerShell 这种启动慢的。
+**由 ALTRun 过滤的列表**: 列表和输入的文字无关时 (自己的项目、服务器、某个工具的书签), 加一行 `@altrun.filter altrun`。这样输入关键字和空格时脚本只运行一次 (文字为空), ALTRun 把输出留到搜索窗口关闭, 边输入边过滤, 匹配方式和其他结果一样 (模糊匹配, 也认拼音首字母), 用 `match`, 没有就用标题, 最匹配的排前面。输入时不再运行脚本, 所以适合 PowerShell 这种启动慢的。 这样的列表最多 2000 条结果 (其他实时结果只取前 200 条)。
 
 **出错时**: 显示一行原因 (脚本写到错误输出的第一行、退出码、JSON 的问题或超时)。在这一行上 `Enter` 编辑脚本, `Ctrl+L` 显示全部错误输出。什么都没输出时显示 "没有结果"。
 
@@ -211,3 +211,12 @@ Unescape(s) {                                       ; inside a JSON string -> te
 }
 ```
 没有 key 或还没输入时, 那一行会提示该做什么; key 不被接受、本月额度用完、连不上 DeepL 时显示一行错误。要译成别的语言, 改 `target` (DeepL 的代码, 例如 `JA`、`DE`、`EN-GB`)。
+
+### 例子: Total Commander 命令面板
+[Total Commander](https://www.ghisler.com) 的命令面板: 输入 `tc` 和命令名的一部分 (英文或 TC 界面用的语言, 也认拼音首字母), `Enter` 就在 TC 里执行。列出 TC 的内部命令 (`cm_...`, 读 `TOTALCMD.INC`, 有语言文件时用译名, 例如中文) 和你自己的命令 (`em_...`, 读 `usercmd.ini`, 用菜单文字)。作用于打开 ALTRun 之前的那个 TC 窗口, 没有就用最近用过的 TC 窗口。需要 ALTRun 2026.11.16.4 或更新的版本。
+
+1. 下载 [TC Commands.ahk](https://github.com/zhugecaomao/ALTRun/blob/main/docs/scripts/TC%20Commands.ahk) ([原始文件](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/scripts/TC%20Commands.ahk): 右键 → 链接另存为), 放进 `Scripts\` 文件夹 (偏好设置 → 脚本 → 打开脚本文件夹)。
+2. 在 TC 里打开 ALTRun, 输入 `tc ` (带空格): 列出命令; 继续输入筛选, `Enter` 执行。
+3. 可以在 TC 里给它设热键: 偏好设置 → 热键 → 添加, 动作选 "在 ALTRun 中搜索", 搜索内容填 `tc ` (带空格), 生效范围选 "只在这些窗口里" 填 `ahk_class TTOTAL_CMD`, 键例如 `Ctrl+Shift+P` (之后在 TC 里按它就做这件事, 不再是 TC 原来的功能, 如果有的话)。动作用 "在 ALTRun 中搜索", 不要直接选这个脚本: 脚本的热键会先复制选中的内容, 在 TC 里就是复制选中的文件。
+
+原理: 脚本读 TC 程序文件夹里的 `TOTALCMD.INC`, 再读 `wincmd.ini` (按 `COMMANDER_INI`、注册表的 `IniFileName`、程序文件夹的顺序找, 都没有就用 `%APPDATA%\GHISLER`) 找语言文件和 `usercmd.ini` 所在的文件夹。`Enter` 时按 TC 文档的方法: `cm_` 命令发它的编号 (消息 `WM_USER+51`), `em_` 命令发名字 (`WM_COPYDATA`)。以管理员身份运行的 TC 不接受 ALTRun 发来的命令。需要参数的命令 (`CD <目录>` 等) 不列出。
