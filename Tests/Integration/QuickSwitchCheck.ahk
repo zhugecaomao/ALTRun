@@ -195,7 +195,12 @@ TabFail(name, n, why, logSize := -1) {
     shown := ""
     try shown := ExplorerTabs.CurrentItem(Explorer).Document.Folder.Self.Path
     Say("     Explorer: '" WinGetTitle(Explorer) "', tabs " tabs ", shown " shown)
-    Say("     ALTRun running: " (ProcessExist(AppPid) ? "yes" : "no"))
+    answered := DllCall("SendMessageTimeoutW", "Ptr", AppWindow, "UInt", 0, "Ptr", 0, "Ptr", 0, "UInt", 2, "UInt", 2000, "Ptr*", 0, "Ptr")   ; WM_NULL, SMTO_ABORTIFHUNG
+    Say("     ALTRun running: " (ProcessExist(AppPid) ? "yes" : "no") ", answers messages: " (answered ? "yes" : "no (busy or hung)")
+        . ", hung: " (DllCall("IsHungAppWindow", "Ptr", AppWindow) ? "yes" : "no"))
+    lines := StrSplit(Trim(LogSince(0), "`r`n"), "`n", "`r")                ; where ALTRun got to: the end of its log
+    Loop Min(25, lines.Length)
+        Say("     log end: " lines[lines.Length - Min(25, lines.Length) + A_Index])
     for hwnd in WinGetList()
         try Say("     window: " Describe(hwnd) " | " WinGetTitle(hwnd))
 }
