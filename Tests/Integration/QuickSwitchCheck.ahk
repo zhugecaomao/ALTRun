@@ -36,14 +36,14 @@ try {
     for method in ["activate", "alt+tab", "title click"]
         Loop Rounds
             Round_(method, A_Index)
-    for how in ["click", "alt+down"]
-        Loop Rounds
-            MenuRound(how, A_Index)
     if ExplorerTabs.Supported()
         Loop Rounds
             TabRound(A_Index)
     else
         Say("SKIP tab shown: no Explorer tabs on Windows " A_OSVersion)
+    for how in ["click", "alt+down"]
+        Loop Rounds
+            MenuRound(how, A_Index)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
