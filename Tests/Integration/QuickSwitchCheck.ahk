@@ -323,7 +323,7 @@ LogLength() => FileExist(LogFile) ? FileGetSize(LogFile) : 0
 
 LogSince(size) {
     try {
-        f := FileOpen(LogFile, "r -w", "UTF-8")                              ; ALTRun keeps it open for writing
+        f := FileOpen(LogFile, "r", "UTF-8")                                 ; shared: ALTRun keeps it open for writing ("-w" would refuse that)
         f.Pos := size
         text := f.Read()
         f.Close()
