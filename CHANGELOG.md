@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- 实时结果脚本的结果可以是 `"type": "script"` (#520): 按 `Enter` 关掉搜索窗口, 在后台用结果的 `arg` 再运行这个脚本 (第一个参数和 `ALTRUN_ARG`; `ALTRUN_ACTION` 是 `run`, 列结果时是 `filter`; 输入的文字和 `ALTRUN_HWND` 等窗口变量一样)。一个脚本就能做前台程序的命令面板: 按当前程序列出命令, 选中后对那个窗口执行。脚本启动的程序在它结束后照常运行; 结束后打印的最后一行显示成通知, 失败时显示原因; `→` 动作面板里可以运行或复制 `arg` (`Alt+Enter`)
+
 ## [2026.11.16.2]
 
 测试版。
@@ -1500,7 +1509,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...HEAD
+[2026.11.16.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...2026.11.16.3
 [2026.11.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...2026.11.16.2
 [2026.11.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...2026.11.16.1
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16

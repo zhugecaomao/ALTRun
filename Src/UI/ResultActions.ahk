@@ -70,6 +70,8 @@ class ResultActions {
             case "text":
                 add("Action.Copy", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), enter)
                 add("Action.Paste", "res:imageres.dll,-5314", ResultActions._PasteFn(item, target), "Ctrl+Enter")
+            case "script":                                                  ; a filter script's item: Enter runs the script with it (RunTitle)
+                add("Action.Copy", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
             default:
                 add("Action.Run", item.Icon, (*) => ActionCatalog.RunDefault(item), enter)
         }

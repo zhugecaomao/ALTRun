@@ -973,6 +973,7 @@ class I18n {
         s["ScriptFilter.Running"]           := "Running {1}..."
         s["ScriptFilter.Error"]             := "{1}: error"
         s["ScriptFilter.EditScript"]        := "Edit script"
+        s["ScriptFilter.RunIn"]             := "Run in {1}"
         s["ScriptFilter.NoResults"]         := "No results"
         s["ScriptFilter.CantStart"]         := "Can't start: {1}"
         s["ScriptFilter.TimedOut"]          := "No result after {1} s"

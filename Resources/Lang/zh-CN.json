@@ -1004,6 +1004,7 @@
   "ScriptFilter.Running": "正在运行 {1}…",
   "ScriptFilter.Error": "{1}: 出错",
   "ScriptFilter.EditScript": "编辑脚本",
+  "ScriptFilter.RunIn": "用 {1} 运行",
   "ScriptFilter.NoResults": "没有结果",
   "ScriptFilter.CantStart": "无法启动: {1}",
   "ScriptFilter.TimedOut": "{1} 秒内没有结果",

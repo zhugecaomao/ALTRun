@@ -1005,6 +1005,7 @@
   "ScriptFilter.Running": "正在執行 {1}…",
   "ScriptFilter.Error": "{1}: 發生錯誤",
   "ScriptFilter.EditScript": "編輯腳本",
+  "ScriptFilter.RunIn": "用 {1} 執行",
   "ScriptFilter.NoResults": "沒有結果",
   "ScriptFilter.CantStart": "無法啟動: {1}",
   "ScriptFilter.TimedOut": "{1} 秒內沒有結果",

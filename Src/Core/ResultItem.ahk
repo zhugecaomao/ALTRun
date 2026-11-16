@@ -6,7 +6,8 @@
 ;   Title        main title
 ;   Subtitle     gray subtitle (path / URL / description)
 ;   Icon         icon description, see IconCache.Get(): file path / "res:dll,index" / "url:" ...
-;   Kind         result type, decides the actions: file / folder / url / text / command
+;   Kind         result type, decides the actions: file / folder / url / text / command / script (a filter script's item that runs
+;                the script again with Arg: OnRun; Alt+Enter copies Arg, see ScriptFilter.RunItem)
 ;   Arg          what the action works on: file path / URL / text
 ;   Arguments    command-line arguments when running a program (optional, file type)
 ;   Uid          a stable unique Id to learn "what was typed -> what was chosen"; empty = not learned
@@ -73,7 +74,7 @@ class ResultItem {
 
     ; the text copied to the clipboard
     CopyText() {
-        if (this.Kind = "text" || this.Kind = "file" || this.Kind = "folder" || this.Kind = "url")
+        if (this.Kind = "text" || this.Kind = "file" || this.Kind = "folder" || this.Kind = "url" || this.Kind = "script")
             return (this.Arg != "") ? this.Arg : this.Title
         return this.Title
     }

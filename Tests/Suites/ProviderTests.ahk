@@ -2513,6 +2513,64 @@ class ProviderTests {
         }
     }
 
+    ; type script: Enter runs the same script again in the background with arg (ALTRUN_ARG, ALTRUN_ACTION=run, the typed text and the
+    ; window), what it starts kept (KeepStarted), not ended by hiding the window; then the last line printed, nothing, or the reason.
+    ; Last, a real run of an .ahk script
+    static ScriptFilterRunItem() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterRunItem." n, a, e)
+        saved := [ScriptFilter.StartFn, ScriptFilter.KillFn, ScriptFilter.NotifyFn]
+        starts := [], kills := [], notices := []
+        ScriptFilter.StartFn := (line, done, options) => (starts.Push({Line: line, Done: done, Options: options}), {Id: starts.Length})
+        ScriptFilter.KillFn := (child) => kills.Push(child.Id)
+        ScriptFilter.NotifyFn := (text, ms) => notices.Push(text)
+        script := ProviderTests._FilterScript("find.ahk", "fd")
+        try {
+            items := ScriptFilter.Parse('{"items": [{"title": "Go", "arg": "cm_Go", "type": "Script"}, {"title": "Off", "type": "script", "valid": false}]}')
+            eq("JSON type", items[1].Type "|" items[1].Arg "|" items[2].Valid, "script|cm_Go|0")
+            eq("line type", ScriptFilter.Parse("Go`t`tcm_Go`tscript")[1].Type, "script")
+            eq("never guessed", ScriptFilter.KindOf("", "script"), "text")
+            rows := ScriptFilter.Rows(script, {Items: items, Error: "", Detail: ""}, "g o")
+            eq("row", rows[1].Kind "|" rows[1].RunTitle "|" rows[1].CopyText() "|" IsObject(rows[1].OnRun), "script|" I18n.T("ScriptFilter.RunIn", "Find") "|cm_Go|1")
+            eq("filter runs: ALTRUN_ACTION", ScriptFilter.Environment(script, "")["ALTRUN_ACTION"], "filter")
+
+            rows[1].OnRun.Call(rows[1])
+            started := starts.Length ? starts[1] : {Line: "", Options: {Env: Map(), TimeoutMs: "", KeepStarted: "", Dir: ""}}
+            env := started.Options.Env
+            eq("command line: arg first", started.Line, ScriptFilter.CommandLine(script, "cm_Go", "ALTRUN_ARG"))
+            eq("variables", env["ALTRUN_ACTION"] "|" env["ALTRUN_ARG"] "|" env["ALTRUN_QUERY"] "|" env["ALTRUN_KEYWORD"] "|" env.Has("ALTRUN_HWND")
+                , "run|cm_Go|g o|fd|1")
+            eq("options", started.Options.TimeoutMs "|" started.Options.KeepStarted "|" started.Options.Dir, ScriptFilter.RunTimeoutMs "|1|C:\s")
+            ScriptFilter.Stop()
+            eq("hiding doesn't end it", kills.Length, 0)
+            ps := ProviderTests._FilterScript("cmds.ps1", "tc")
+            TestRunner.True("ScriptFilterRunItem.PowerShell takes ALTRUN_ARG", InStr(ScriptFilter.CommandLine(ps, "-x", "ALTRUN_ARG"), "$env:ALTRUN_ARG;") > 0
+                && !InStr(ScriptFilter.CommandLine(ps, "-x", "ALTRUN_ARG"), "-x"))
+
+            result := (out, err := "", code := 0, timedOut := false, problem := "") => {Stdout: out, Stderr: err, ExitCode: code, TimedOut: timedOut, Error: problem, Ms: 5}
+            eq("last line", ScriptFilter.Finished(script, result("one`r`nTwo done`r`n`r`n")), "Two done")
+            eq("nothing printed: nothing", ScriptFilter.Finished(script, result("  `n")) "|" notices.Length, "|1")
+            eq("exit code: first error line", ScriptFilter.Finished(script, result("out", "`nboom`nmore", 2)), "Find: boom")
+            eq("exit code alone", ScriptFilter.Finished(script, result("", "", 3)), "Find: " I18n.T("ScriptFilter.ExitCode", 3))
+            eq("timed out", ScriptFilter.Finished(script, result("", "", "", true)), "Find: " I18n.T("ScriptFilter.TimedOut", 120))
+            eq("can't start", ScriptFilter.Finished(script, result("", "", "", false, "nope")), "Find: " I18n.T("ScriptFilter.CantStart", "nope"))
+            eq("notified", notices.Length, 5)
+
+            ; a real run: the .ahk script gets arg, the action and the text
+            root := A_Temp "\ALTRun-script-item-test"
+            try DirDelete(root, true)
+            DirCreate(root)
+            FileAppend("; @altrun.keyword ri`n; @altrun.mode filter`n#NoTrayIcon`n"
+                . 'FileAppend(A_Args[1] "|" EnvGet("ALTRUN_ACTION") "|" EnvGet("ALTRUN_ARG") "|" EnvGet("ALTRUN_QUERY") "``n", "*", "UTF-8-RAW")`n', root "\item.ahk", "UTF-8")
+            ScriptFilter.StartFn := saved[1], notices.Length := 0
+            real := {Path: root "\item.ahk", Name: "item.ahk", Ext: "ahk", Title: "Item", Keyword: "ri", Argument: "", Mode: "filter", Selection: [], FilterBy: "script", Keys: []}
+            ScriptFilter.RunItem(real, 'a & "b"', "typed")
+            TestUtil.WaitFor(() => notices.Length, 20000)
+            eq("real run", notices.Length ? notices[1] : "none", 'a & "b"|run|a & "b"|typed')
+            try DirDelete(root, true)
+        } finally
+            ScriptFilter.StartFn := saved[1], ScriptFilter.KillFn := saved[2], ScriptFilter.NotifyFn := saved[3]
+    }
+
     ; When a filter script runs (fake runs): at once on entering the keyword, then once typing paused; a new run ends the one before;
     ; the last results stay while the next one runs; "Running..." only after WaitRowMs; results kept per text; late results of an
     ; ended run dropped; leaving the keyword / hiding ends it
