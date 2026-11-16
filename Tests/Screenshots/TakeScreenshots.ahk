@@ -36,7 +36,7 @@ class Shots {
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor"
-                         , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
+                         , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list", "first-run"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
     static Themes() {
@@ -122,6 +122,7 @@ class Shots {
             ["prefs-advanced",   "Light", "-Preferences Advanced", () => Shots.Preferences()],     ; Wiki: data files
             ["data-location",    "Light", "-Preferences Advanced", () => Shots.DataLocation(), () => Shots.DemoOneDrive()],   ; Wiki: FAQ, several PCs (Change Location...)
             ["data-location-list", "Light", "-Preferences Advanced", () => Shots.DataLocation(true), () => Shots.DemoOneDrive()],   ; the same with its list of places open
+            ["first-run",        "Light", "-Startup", () => Shots.FirstRunQuestion(), () => Shots.FreshInstall()],   ; a new installation asks whether to start at login
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -433,6 +434,39 @@ class Shots {
             DetectHiddenWindows(saved)
         }
         Sleep(Shots.SettleMs)
+    }
+
+    ; A new installation: no ALTRun.json (the question follows the Windows display language then: English on the runner). Such a start
+    ; writes the Send to and Start menu shortcuts before it asks; ALTRun.lnk shortcuts that were there wait aside and come back
+    static KeptShortcuts := Map()
+    static ShellShortcuts() => [A_Startup "\ALTRun.lnk", RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk", A_Programs "\ALTRun.lnk"]
+
+    static FreshInstall() {
+        try FileDelete(Shots.AppDir "\Data\ALTRun.json")
+        Shots.KeptShortcuts := Map()
+        for path in Shots.ShellShortcuts() {
+            if FileExist(path) {
+                FileMove(path, path ".shots", true)
+                Shots.KeptShortcuts[path] := path ".shots"
+            }
+        }
+    }
+
+    static FirstRunQuestion() {
+        try {
+            hwnd := WinWait("ALTRun ahk_class #32770 ahk_pid " Shots.Pid, , 20)
+            if !hwnd
+                throw Error("the question about starting at login didn't show")
+            Sleep(500)                                                      ; the shortcuts before it are written by now
+        } finally {
+            for path in Shots.ShellShortcuts() {
+                try FileDelete(path)
+                if Shots.KeptShortcuts.Has(path)
+                    try FileMove(Shots.KeptShortcuts[path], path, true)
+            }
+            Shots.KeptShortcuts := Map()
+        }
+        return hwnd
     }
 
     static Close() {

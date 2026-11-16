@@ -67,7 +67,7 @@
 | HotkeySides | 0 | 1 = 在偏好设置里录制的热键记住按的是左边还是右边的 `Ctrl` / `Alt` / `Shift` / `Win` (`<!Space` = 只有左 Alt + 空格), 见 [设置热键](Hotkeys-zh#设置热键); 已经设好的热键不变 |
 | SelectionHotkey | `^!\` | 选中文字 / 文件 / 网址后按下, 直接打开它们的操作 (Ctrl+Alt+\), 见 [选中内容的操作](Usage-zh#选中内容的操作); 留空 = 不用 |
 | Language | `auto` | `auto` 跟随 Windows 的显示语言, 或语言代码: `en` / `zh-CN` (简体中文) / `zh-TW` (繁體中文) / `ja`; 除了英文, 每种语言是 `Resources\Lang\` 里的一个文件 (以前的 `zh` 等于 `zh-CN`) |
-| LaunchAtLogin | 1 | 开机自动启动 |
+| LaunchAtLogin | 1 | 开机自动启动 (新安装第一次启动时询问, 点 "是" 之前为关) |
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号。可以用环境变量, 例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`; 找不到这个程序时用资源管理器打开文件夹 (记在日志里) |
 | FolderNewTab | `0` | 1 = 在新标签页中打开文件夹 (偏好设置 → 通用 → "在新标签页中打开文件夹")。资源管理器: 在最近用过的资源管理器窗口 (显示 ALTRun 之前在前台的那个, 没有就用当前虚拟桌面上最前面的那个) 里开新标签页, "在文件管理器中显示" 时选中那个文件; 要 Windows 11 22H2 及以上, 没有打开的资源管理器窗口、网络文件夹 0.5 秒内没有响应 (服务器离线) 或者不成功时, 和以前一样新开窗口。Total Commander: 参数里没有 `/O /T` 时自动加上。其他文件管理器: 在 FileManager 里填它自己的参数 |

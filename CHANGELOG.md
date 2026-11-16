@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.1]
+
+测试版。
+
+Test build.
+
+### 改进
+- 新安装第一次启动时先问 "开机时自动启动 ALTRun?" (默认按钮是 "是"), 点 "是" 才在 "启动" 文件夹建快捷方式; 点 "否" 或没回答就关掉算关, 以后不再问。已有的设置和从 `ALTRun.ini` 升级的不受影响, 也不会问 (发送到 / 开始菜单快捷方式照旧)
+
 ## [2026.11.16]
 
 ### Summary
@@ -1479,7 +1488,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...HEAD
+[2026.11.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...2026.11.16.1
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12

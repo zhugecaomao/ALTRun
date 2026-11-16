@@ -262,6 +262,8 @@ GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.
 
 ### 热键
 GitHub → Actions → **Hotkeys** 用 `Tests\Integration\HotkeyCheck.ahk` 在真实的 Windows 桌面上按运行自定义命令 (`custom:<Id>`) 的自定义热键。它启动一份 ALTRun 副本, 设两条用 `cmd.exe` 写标记文件的命令和三个热键: 一个运行没有 `{query}` 的命令 (标记文件必须写出来), 一个在检查自己的编辑框里选中文字时运行带 `{query}` 的命令 (标记文件里必须是这段文字, 剪贴板必须还是原来的内容), 一个指向不存在的命令 (什么都不运行, ALTRun 的日志里有说明)。每个试 3 次; 失败的那次打印 ALTRun 的日志。修改 `App.ahk`、`CustomCommandProvider.ahk`、`SelectionActions.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑 (会占用键盘半分钟左右): `HotkeyCheck.ahk <仓库副本> [次数]`。
+### 首次启动
+GitHub → Actions → **First run** 用 `Tests\Integration\FirstRunCheck.ahk` 对真实的 "启动" 文件夹检查新安装第一次启动时的询问 (`App.AskLaunchAtLogin`): 没有 Data 文件夹时会问, 等回答时 "启动" 文件夹里没有快捷方式、`ALTRun.json` 里已经是 `LaunchAtLogin` 0; 点 "否" 保持关闭; 下次启动不再问; 按 Enter ("是", 默认按钮) 建开机启动快捷方式; 旧版本的 `ALTRun.json` 和从 `ALTRun.ini` 升级都不问。修改 `App.ahk`、`AppSettings.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑, 原来的 "启动" / "发送到" / 开始菜单 `ALTRun.lnk` 会放回去: `FirstRunCheck.ahk <仓库副本>`。
 ### 延迟启动
 GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查延迟启动: 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改延迟启动或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。
 

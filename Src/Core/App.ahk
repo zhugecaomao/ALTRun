@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.16"
+    static Version := "2026.11.16.1"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -82,7 +82,7 @@ class App {
         AutoDate.Init(AppSettings.Extension("AutoDate"))
         PTToolsWindow.Load(AppSettings.Extension("PTTools"))
         Logger.Time("startup: snippets, extensions", phase), phase := Logger.Ms()
-        App._UpdateShellShortcuts()
+        App._UpdateShellShortcuts(AppSettings.FirstRun)                    ; a new installation: the start-up shortcut waits for the answer (AskLaunchAtLogin)
         OnExit((reason, *) => App._OnExit(reason))
         Logger.Time("startup: shortcuts", phase)
 
@@ -110,7 +110,24 @@ class App {
         Logger.TraceUntil := A_TickCount + 60000                            ; log finer steps for 1 minute after start-up (Logger.Trace)
         OnMessage(0x4A, (p*) => App._OnCopyData(p*))                        ; command-line arguments handed over by ALTRun instances started later (WM_COPYDATA)
         App._WatchWake()
+        if AppSettings.FirstRun
+            App.AskLaunchAtLogin()                                          ; last: hotkeys, the tray and handing over (WM_COPYDATA) work while it asks
         App._HandleCommandLine(A_Args)
+    }
+
+    ; A new installation (AppSettings.FirstRun) asks once whether to start at login, instead of writing to the Startup folder unasked.
+    ; Yes is the default button. The settings file already has it off (AppSettings.Load), so a question that never got an answer
+    ; (ALTRun was closed or killed meanwhile) leaves it off, and the next start isn't a new installation: it isn't asked again
+    static _askLaunchFn := (text) => MsgBox(text, App.Name, "YesNo Icon? 0x40000") = "Yes"   ; replaced in the tests
+    static _shortcutsFn := () => App._UpdateShellShortcuts()
+
+    static AskLaunchAtLogin() {
+        yes := App._askLaunchFn.Call(I18n.T("App.AskLaunchAtLogin")) ? 1 : 0
+        AppSettings.General["LaunchAtLogin"] := yes
+        AppSettings.Save()
+        Logger.Debug("App: launch at login " (yes ? "on" : "off") " (asked at the first start)")
+        App._shortcutsFn.Call()
+        return yes
     }
 
     ;---------------------------------------------------------------------------
@@ -680,7 +697,8 @@ class App {
     ; The start-up / Explorer "Send to" / Start menu shortcuts, created or deleted as set.
     ; Only ALTRun's own are deleted (see IsOwnShortcut): a shortcut of the same name the user put there is left alone.
     ; Packaged, no Start menu shortcut of its own: the package has its Start menu entry
-    static _UpdateShellShortcuts() {
+    ; skipStartup: the start-up shortcut is left as it is (a new installation before the user answered AskLaunchAtLogin)
+    static _UpdateShellShortcuts(skipStartup := false) {
         general := AppSettings.General
         target := A_IsCompiled ? App.ExePath : A_AhkPath
         prefix := A_IsCompiled ? "" : '"' A_ScriptFullPath '" '
@@ -692,6 +710,8 @@ class App {
             [general["SendToMenu"], sendTo, "-SendTo"],
             [general["StartMenuShortcut"] && App.PackageFamily = "", A_Programs "\ALTRun.lnk", ""]
         ] {
+            if (skipStartup && shortcut[3] = "-Startup")
+                continue
             try {
                 arguments := Trim(prefix shortcut[3])
                 if !shortcut[1]

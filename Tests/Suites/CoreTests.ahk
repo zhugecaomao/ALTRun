@@ -1663,6 +1663,7 @@ Func | PTTools | PT Tools (AHK)=99
         AppSettings.Load()
         settings := AppSettings.Data
         eq("imported from", AppSettings.ImportedFrom, iniFile)
+        eq("upgrade, not a new installation", AppSettings.FirstRun, false)
         eq("version", settings["SchemaVersion"], AppSettings.CurrentVersion)
         eq("json written to Data", FileExist(folder "\Data\ALTRun.json") != "", true)
         eq("nothing moved", AppSettings.MovedFrom, "")
@@ -1706,6 +1707,58 @@ Func | PTTools | PT Tools (AHK)=99
         AppSettings.File := savedFile, AppSettings.LegacyFile := savedLegacy, AppSettings.Data := savedData
         AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0
         try DirDelete(folder, true)
+    }
+
+    ; A new installation (no ALTRun.json, no ALTRun.ini) asks whether to start at login: off until answered, asked only once;
+    ; settings that already exist (or can't be read) aren't a new installation and keep their value
+    static FirstRunLaunchAtLogin() {
+        eq := (n, a, e) => TestRunner.Equal("FirstRunLaunchAtLogin." n, a, e)
+        TestRunner.True("FirstRunLaunchAtLogin.default still on", AppSettings.Defaults()["General"]["LaunchAtLogin"] = 1)
+        root := A_Temp "\ALTRunFirstRunTest"
+        try DirDelete(root, true)
+        DirCreate(root)
+        savedFile := AppSettings.File, savedLegacy := AppSettings.LegacyFile, savedData := AppSettings.Data
+        savedAsk := App._askLaunchFn, savedShortcuts := App._shortcutsFn, savedNotice := AppSettings._noticeFn, savedRestore := AppSettings._askFn
+        stored := () => JSON.Parse(FileRead(AppSettings.File, "UTF-8"))["General"]["LaunchAtLogin"]
+        try {
+            AppSettings.File := root "\Data\ALTRun.json", AppSettings.LegacyFile := root "\ALTRun.json"
+            AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0, AppSettings.MovedFrom := ""
+            AppSettings.Load()
+            eq("new installation", AppSettings.FirstRun, true)
+            eq("off until answered", AppSettings.General["LaunchAtLogin"] "|" stored(), "0|0")
+
+            asked := "", shortcuts := 0
+            App._askLaunchFn := (text) => (asked := text, true)
+            App._shortcutsFn := () => shortcuts++
+            eq("yes", App.AskLaunchAtLogin(), 1)
+            eq("yes: on and saved", AppSettings.General["LaunchAtLogin"] "|" stored(), "1|1")
+            eq("asked with the text", asked, I18n.T("App.AskLaunchAtLogin"))
+            eq("yes: shortcuts updated", shortcuts, 1)
+            App._askLaunchFn := (text) => false
+            eq("no", App.AskLaunchAtLogin(), 0)
+            eq("no: off and saved", AppSettings.General["LaunchAtLogin"] "|" stored() "|" shortcuts, "0|0|2")
+
+            AppSettings.Load()                                              ; the next start: the file is there now
+            eq("asked only once", AppSettings.FirstRun, false)
+            eq("answer kept", AppSettings.General["LaunchAtLogin"], 0)
+
+            data := AppSettings.Defaults()                                  ; settings that already exist (an upgrade): unchanged
+            FileDelete(AppSettings.File), FileAppend(JSON.Stringify(data), AppSettings.File, "UTF-8")
+            AppSettings.Load()
+            eq("existing settings", AppSettings.FirstRun "|" AppSettings.General["LaunchAtLogin"], "0|1")
+
+            ; a file that can't be read is set aside and the defaults are used: settings the user had, not a new installation
+            try FileDelete(AppSettings.BackupFile)
+            AppSettings._noticeFn := (text) => 0, AppSettings._askFn := (text) => false
+            FileDelete(AppSettings.File), FileAppend("{not json", AppSettings.File, "UTF-8")
+            AppSettings.Load()
+            eq("invalid file", AppSettings.FirstRun "|" AppSettings.General["LaunchAtLogin"], "0|1")
+        } finally {
+            App._askLaunchFn := savedAsk, App._shortcutsFn := savedShortcuts, AppSettings._noticeFn := savedNotice, AppSettings._askFn := savedRestore
+            AppSettings.File := savedFile, AppSettings.LegacyFile := savedLegacy, AppSettings.Data := savedData
+            AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0, AppSettings.MovedFrom := "", AppSettings.FirstRun := false
+            try DirDelete(root, true)
+        }
     }
 
     ; An old ALTRun.json in the program folder moves to Data\ at start-up
