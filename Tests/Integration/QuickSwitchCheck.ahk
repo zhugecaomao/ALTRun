@@ -10,8 +10,9 @@
 ; Then the folder panel's ☆ menu: opened with a click on the star, or with Alt+↓ in the panel's search box, and closed with Esc:
 ; the dialog must be in front again within 2 s (so typing goes on in the dialog); a failure prints the windows in front before
 ; and after Esc.
-; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later): switching to the dialog must jump to
-; Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G); the tab is closed again after each round.
+; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later; opened with Ctrl+T as a user does):
+; switching to the dialog must jump to Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G, sent at
+; send level 1 like a person's keys); the tab is closed again (Ctrl+W) after each round.
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -170,7 +171,9 @@ TabRound(n) {
             return TabFail(name " ctrl+g", n, "couldn't send the dialog back to Start")
         logSize := LogLength()
         start := A_TickCount
-        Send("^g")
+        SendLevel(1)                                                        ; hook hotkeys ignore other scripts' keys at send level 0
+        SendEvent("^g")
+        SendLevel(0)
         while (A_TickCount - start < 3000 && !ShowsFolder("Folder B"))
             Sleep(20)
         if !ShowsFolder("Folder B")
