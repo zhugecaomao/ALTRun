@@ -12,6 +12,7 @@ on:
       - Src/Extensions/QuickSwitchFavorites.ahk
       - Src/Extensions/FileDialogs.ahk
       - Src/Extensions/FileManagers.ahk
+      - Lib/ExplorerTabs.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - Src/Extensions/AdminHelper.ahk
       - Tests/Integration/AdminDialogCheck.ahk
@@ -25,6 +26,7 @@ on:
       - Src/Extensions/QuickSwitchFavorites.ahk
       - Src/Extensions/FileDialogs.ahk
       - Src/Extensions/FileManagers.ahk
+      - Lib/ExplorerTabs.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - Src/Extensions/AdminHelper.ahk
       - Tests/Integration/AdminDialogCheck.ahk

@@ -10,6 +10,8 @@
 ; Then the folder panel's ☆ menu: opened with a click on the star, or with Alt+↓ in the panel's search box, and closed with Esc:
 ; the dialog must be in front again within 2 s (so typing goes on in the dialog); a failure prints the windows in front before
 ; and after Esc.
+; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later): switching to the dialog must jump to
+; Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G); the tab is closed again after each round.
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -20,6 +22,7 @@
 #NoTrayIcon
 #Warn All, StdOut
 #Include ..\..\Lib\JSON.ahk
+#Include ..\..\Lib\ExplorerTabs.ahk
 
 global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 5
@@ -36,6 +39,11 @@ try {
     for how in ["click", "alt+down"]
         Loop Rounds
             MenuRound(how, A_Index)
+    if ExplorerTabs.Supported()
+        Loop Rounds
+            TabRound(A_Index)
+    else
+        Say("SKIP tab shown: no Explorer tabs on Windows " A_OSVersion)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -49,7 +57,7 @@ Say(text) => FileAppend(text "`n", "*")
 Setup() {
     global AppPid, AppWindow, DialogPid, Explorer, Dialog
     try DirDelete(Demo, true)
-    DirCreate(Demo "\Folder A"), DirCreate(Demo "\Start")
+    DirCreate(Demo "\Folder A"), DirCreate(Demo "\Folder B"), DirCreate(Demo "\Start")
     settings := Map("SchemaVersion", 6
         , "General", Map("Language", "en", "LaunchAtLogin", 0, "CheckForUpdates", 0, "ShowTips", 0, "SaveLog", 1, "SendToMenu", 0, "StartMenuShortcut", 0)
         , "Extensions", Map("QuickSwitch", Map("AutoSwitch", 1)))
@@ -116,6 +124,54 @@ Round_(method, n) {
     if !ShowsFolder("Folder A")
         return Fail(method, n, "the dialog didn't jump to Folder A", logSize)
     Say("PASS " method " " n ": jumped in " (A_TickCount - start) " ms")
+}
+
+; Explorer with a second tab at Folder B, shown (#521): switching to the dialog jumps to Folder B, not to Folder A of the first
+; tab; then the jump hotkey (Ctrl+G) in the dialog does too. The tab is closed again
+TabRound(n) {
+    name := "tab shown"
+    if !BackToStart()
+        return Fail(name, n, "couldn't send the dialog back to Start")
+    folderB := Demo "\Folder B"
+    if !ExplorerTabs.Open(folderB)                                          ; a new tab of the Explorer window, shown and in front
+        return Fail(name, n, "no new tab at Folder B: " ExplorerTabs.LastError)
+    try {
+        SetTitleMatchMode(2)
+        shown := WinWait("Folder B ahk_id " Explorer, , 3)                  ; the title is the name of the tab shown
+        SetTitleMatchMode(3)
+        if !shown
+            return Fail(name, n, "Explorer doesn't show Folder B (title '" WinGetTitle(Explorer) "')")
+        WinActivate(Explorer)
+        if !WinWaitActive(Explorer, , 3)
+            return Fail(name, n, "Explorer didn't come to the front")
+        Sleep(400)                                                          ; ALTRun notes Explorer as the window in front
+        logSize := LogLength()
+        start := A_TickCount
+        WinActivate(Dialog)
+        if !WinWaitActive(Dialog, , 3)
+            return Fail(name, n, "the dialog didn't come to the front", logSize)
+        while (A_TickCount - start < 5000 && !ShowsFolder("Folder B"))
+            Sleep(20)
+        if !ShowsFolder("Folder B")
+            return Fail(name, n, "the dialog didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
+        Say("PASS " name " " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
+
+        if !BackToStart()                                                   ; Explorer stays the file manager used last
+            return Fail(name " ctrl+g", n, "couldn't send the dialog back to Start")
+        logSize := LogLength()
+        start := A_TickCount
+        Send("^g")
+        while (A_TickCount - start < 3000 && !ShowsFolder("Folder B"))
+            Sleep(20)
+        if !ShowsFolder("Folder B")
+            return Fail(name " ctrl+g", n, "Ctrl+G didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
+        Say("PASS " name " ctrl+g " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
+    } finally {
+        for each in ExplorerTabs._Tabs(Explorer)                            ; close the Folder B tab: Explorer shows Folder A again
+            if ExplorerTabs.SameFolder(ExplorerTabs._Path(Explorer, each.Tab), folderB)
+                try each.Item.Quit()
+        Sleep(500)
+    }
 }
 
 ; The panel's ☆ menu (how: "click" on the star, or "alt+down" in the search box), closed with Esc: the dialog is in front again

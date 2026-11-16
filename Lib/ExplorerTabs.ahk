@@ -1,5 +1,5 @@
 ;===============================================================================
-; ExplorerTabs.ahk - open a folder in a new tab of a File Explorer window that is already open (AutoHotkey v2)
+; ExplorerTabs.ahk - open a folder in a new tab of a File Explorer window that is already open; the tab shown (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Explorer has tabs since Windows 11 22H2 (build 22621) but no switch or API to open one. What works (probed on Windows CI,
 ; Windows Server 2025 24H2, see Tests\Integration\ExplorerTabsCheck.ahk):
@@ -28,6 +28,8 @@
 ;   ExplorerTabs.Open(folder [, file, preferred])     true = shown in a new tab of an open window (file selected in it);
 ;                                                     preferred: an Explorer window to use first (e.g. the one in front before)
 ;   ExplorerTabs.Reachable(folder)                    false when a network folder doesn't answer within NetworkTimeout
+;   ExplorerTabs.CurrentItem(hwnd)                    the Shell.Application.Windows item of the tab shown in an Explorer window
+;                                                     (see CurrentTab), "" when the window has none
 ;   ExplorerTabs.LastError                            why the last Open returned false
 ;   ExplorerTabs.LastErrorExpected                    true when that is a normal case (no tabs on this Windows, no Explorer
 ;                                                     window open, a key held, a folder that can't be reached), not Explorer failing
@@ -116,6 +118,42 @@ class ExplorerTabs {
             return onCurrent != 0
         }
         return true
+    }
+
+    ; The tab shown in an Explorer window. Every tab is an item of Shell.Application.Windows with the window's HWND, listed in the
+    ; order the tabs were opened, so the first item with that HWND is the first tab, not the one shown (#521). Each tab has its own
+    ; tab view (ShellTabWindowClass, a child of the window, see _TabOf); Explorer hides the views of the tabs not shown, so the
+    ; shown one is the visible view; with none or several visible, the frontmost (ShellTabWindowClass1). The item whose view that
+    ; is; when no item has it (a tab add-on, a Windows that answers differently), the first item of the window, as before
+    static CurrentItem(hwnd) {
+        if !hwnd
+            return ""
+        view := ExplorerTabs.CurrentTab(hwnd), first := ""
+        try {
+            for item in ComObject("Shell.Application").Windows {
+                try {
+                    if (item.HWND != hwnd)
+                        continue
+                } catch
+                    continue
+                if (view && ExplorerTabs._TabOf(item) = view)
+                    return item
+                if !IsObject(first)
+                    first := item
+            }
+        }
+        return first
+    }
+
+    ; The tab view handle of the tab shown (see CurrentItem), 0 when the window has no tab view
+    static CurrentTab(hwnd) {
+        frontmost := 0, visible := 0, count := 0, view := 0
+        while (view := DllCall("FindWindowExW", "Ptr", hwnd, "Ptr", view, "Str", "ShellTabWindowClass", "Ptr", 0, "Ptr")) {   ; children in Z-order
+            frontmost := frontmost ? frontmost : view
+            if DllCall("IsWindowVisible", "Ptr", view)
+                visible := view, count += 1
+        }
+        return count = 1 ? visible : frontmost
     }
 
     ; [{Tab: tab view handle, Item}] of the window's tabs (Shell.Application.Windows has an item for every tab)

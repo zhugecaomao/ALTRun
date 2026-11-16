@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.14]
+
+测试版。
+
+Test build.
+
+### 修复
+- 资源管理器一个窗口开了几个标签页时, 打开 / 另存为对话框的跳转 (Ctrl+G 和自动跳转) 跳到第一个标签页的文件夹, 不是正在显示的标签页; 现在跳到正在显示的那个。"在当前文件夹打开终端" 和动作面板的 "复制到 / 移动到 资源管理器 当前的文件夹" 也一样 (#521)
+
 ## [2026.11.13.13]
 
 测试版。
@@ -1534,7 +1543,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...HEAD
+[2026.11.13.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...2026.11.13.14
 [2026.11.13.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...2026.11.13.13
 [2026.11.13.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...2026.11.13.12
 [2026.11.13.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...2026.11.13.11
