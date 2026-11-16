@@ -16,7 +16,8 @@
 ;     done(result) called once when the program ended, timed out or couldn't start (not after Kill):
 ;                  {ExitCode, Stdout, Stderr (text), TimedOut, Truncated (more than the maximum was printed), Error (why it
 ;                  couldn't start, "" when it ran), Ms (how long it ran), Pid}
-;     options      {Dir: working folder, Env: Map(name, value) set for the program only, TimeoutMs (30 s),
+;     options      {Dir: working folder, Env: Map(name, value) for the program only, on top of this process's variables (an
+;                   empty value: the program doesn't get that variable; this process's own variables never change), TimeoutMs (30 s),
 ;                   MaxStdout (512 KB), MaxStderr (8 KB): what is printed beyond them is read and thrown away}
 ;   ChildProcess.Kill(child)      ends a program that hasn't finished, with everything it started: done isn't called
 ;   ChildProcess.Pending          number of programs still running
@@ -78,10 +79,40 @@ class ChildProcess {
         return StrGet(ptr, size, "CP" DllCall("GetOEMCP", "UInt"))
     }
 
+    ; The environment block for a program (CreateProcessW's lpEnvironment, UTF-16): this process's variables with env's on top
+    ; (names in any case; an empty value removes the variable), sorted by name ignoring case as Windows expects (a Map lists
+    ; string keys in code order, so the keys are the names in upper case); the per-drive folders ("=C:=C:\...") stay first.
+    ; A block instead of setting the variables here for the call: a timer running meanwhile could start a program with them
+    static EnvironmentBlock(env) {
+        entries := Map()                                                    ; upper-case name -> "name=value"
+        if (strings := DllCall("GetEnvironmentStringsW", "Ptr")) {
+            ptr := strings
+            while ((entry := StrGet(ptr, "UTF-16")) != "") {
+                ptr += (StrLen(entry) + 1) * 2
+                if ((split := InStr(entry, "=", , 2)) > 1)                  ; (from 2: "=C:=C:\..." starts with one)
+                    entries[StrUpper(SubStr(entry, 1, split - 1))] := entry
+            }
+            DllCall("FreeEnvironmentStringsW", "Ptr", strings)
+        }
+        for name, value in env
+            if (value != "")
+                entries[StrUpper(name)] := name "=" value
+            else if entries.Has(StrUpper(name))
+                entries.Delete(StrUpper(name))
+        size := 4                                                           ; the empty string that ends it (two at least)
+        for , entry in entries
+            size += (StrLen(entry) + 1) * 2
+        block := Buffer(size, 0), offset := 0
+        for , entry in entries
+            offset += StrPut(entry, block.Ptr + offset, "UTF-16")              ; (bytes, with the 0 at the end)
+        return block
+    }
+
     static _Create(child, commandLine, dir, env) {
         inherit := Buffer(A_PtrSize * 3, 0)                                 ; SECURITY_ATTRIBUTES with bInheritHandle
         NumPut("UInt", inherit.Size, inherit, 0), NumPut("Int", 1, inherit, A_PtrSize * 2)
-        outWrite := 0, errWrite := 0, nul := 0, attributes := "", saved := Map()
+        outWrite := 0, errWrite := 0, nul := 0, attributes := ""
+        block := (env is Map) ? ChildProcess.EnvironmentBlock(env) : ""
         try {
             if !DllCall("CreatePipe", "Ptr*", &outRead := 0, "Ptr*", &outWrite, "Ptr", inherit, "UInt", 0)
                 throw OSError()
@@ -115,18 +146,14 @@ class ChildProcess {
             info := Buffer(A_PtrSize * 2 + 8, 0)                            ; PROCESS_INFORMATION
             line := Buffer(StrPut(commandLine) * 2), StrPut(commandLine, line)   ; CreateProcessW may write to the command line
 
-            if (env is Map)                                                 ; the program inherits this process's variables: set them just for the call
-                for name, value in env
-                    saved[name] := EnvGet(name), EnvSet(name, value)
-            ; CREATE_SUSPENDED: into the job before it can start anything; CREATE_NO_WINDOW; EXTENDED_STARTUPINFO_PRESENT
-            created := DllCall("CreateProcessW", "Ptr", 0, "Ptr", line, "Ptr", 0, "Ptr", 0, "Int", 1, "UInt", 0x4 | 0x08000000 | 0x80000
-                , "Ptr", 0, dir != "" ? "Str" : "Ptr", dir != "" ? dir : 0, "Ptr", startup, "Ptr", info)
+            ; CREATE_SUSPENDED: into the job before it can start anything; CREATE_NO_WINDOW; EXTENDED_STARTUPINFO_PRESENT;
+            ; CREATE_UNICODE_ENVIRONMENT with its own variables (else it inherits this process's)
+            created := DllCall("CreateProcessW", "Ptr", 0, "Ptr", line, "Ptr", 0, "Ptr", 0, "Int", 1, "UInt", 0x4 | 0x08000000 | 0x80000 | (IsObject(block) ? 0x400 : 0)
+                , "Ptr", IsObject(block) ? block.Ptr : 0, dir != "" ? "Str" : "Ptr", dir != "" ? dir : 0, "Ptr", startup, "Ptr", info)
             lastError := A_LastError
             if !created
                 throw OSError(lastError)
         } finally {
-            for name, value in saved
-                (value != "") ? EnvSet(name, value) : EnvSet(name)
             if (attributes != "")
                 DllCall("DeleteProcThreadAttributeList", "Ptr", attributes)
             for handle in [outWrite, errWrite, nul]                         ; the program has its own copies now: the pipes end when it (and what it started) closes them

@@ -2490,6 +2490,29 @@ class ProviderTests {
             . "|" ScriptFilter.Problem({Mode: "window", Keyword: "", Ext: "bat"}), "|NotForType|NeedsKeyword|")
     }
 
+    ; The window in front before ALTRun was shown, for a filter script: ALTRUN_HWND / ALTRUN_PID / ALTRUN_PROCESS (as {hwnd} / {pid});
+    ; none of them when that window is gone
+    static ScriptFilterWindow() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterWindow." n, a, e)
+        g := Gui(), savedPrevious := App.PreviousWindow
+        try {
+            SplitPath(A_AhkPath, &exe)
+            g.Show("NoActivate x0 y0 w120 h40")                             ; (a hidden window counts as gone, as for {hwnd})
+            App.PreviousWindow := g.Hwnd
+            env := ScriptFilter.Environment(ProviderTests._FilterScript("find.ahk", "fd"), "abc")
+            eq("the window", env["ALTRUN_HWND"] "|" env["ALTRUN_PID"] "|" StrLower(env["ALTRUN_PROCESS"]) "|" env["ALTRUN_QUERY"]
+                , g.Hwnd "|" ProcessExist() "|" StrLower(exe) "|abc")
+            eq("same as {hwnd} {pid}", ActionCatalog.FillWindow("{hwnd} {pid}", g.Hwnd), env["ALTRUN_HWND"] " " env["ALTRUN_PID"])
+            hwnd := g.Hwnd, g.Destroy()
+            env := ScriptFilter.WindowVariables(hwnd)
+            eq("gone: not passed", env["ALTRUN_HWND"] "|" env["ALTRUN_PID"] "|" env["ALTRUN_PROCESS"], "||")
+            eq("none", ScriptFilter.WindowVariables(0)["ALTRUN_HWND"], "")
+        } finally {
+            App.PreviousWindow := savedPrevious
+            try g.Destroy()
+        }
+    }
+
     ; When a filter script runs (fake runs): at once on entering the keyword, then once typing paused; a new run ends the one before;
     ; the last results stay while the next one runs; "Running..." only after WaitRowMs; results kept per text; late results of an
     ; ended run dropped; leaving the keyword / hiding ends it
