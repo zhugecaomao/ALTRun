@@ -5,164 +5,73 @@
 
 ## [未发布]
 
-## [2026.11.13.17]
+## [2026.11.16]
 
-测试版。
+### Summary
 
-Test build.
+**Quick Switch now works in dialogs of programs running as administrator**: tick one option, confirm UAC once, and a small helper with administrator rights jumps those Open / Save and Browse for Folder dialogs, with `Ctrl+G` / `Ctrl+Shift+G`, the folder panel and auto switch, while ALTRun itself keeps normal rights. **File Explorer with several tabs** now jumps to the folder of the tab shown, not the first tab. A new option jumps a dialog **as soon as it opens** to the file manager used last (Ctrl+O in Word after browsing a folder). Web pages can open in **a browser of your choice** without making it the default, and **portable browsers'** bookmarks and history are searchable. Clipboard history shows **thumbnails of copied image files** (QQ, WeChat). Double-tapping the left Alt shows ALTRun, and Alt+Space can be freed once double-tap or the second hotkey is set. Fixes for Excel cells as the selection, file search stopping at 50 results, and AltGr characters in the search box.
 
-### 新增
-- 对话框跳转: 新选项 "对话框打开时也跳到最近用过的文件管理器的文件夹" (偏好设置 → 对话框跳转, 默认关)。勾上后, 打开 / 另存为对话框刚打开时也会跳一次, 跳到最近用过的 Total Commander / Directory Opus / 资源管理器窗口的文件夹, 例如在资源管理器里看完文件夹再到 Word 里按 Ctrl+O; 原来的自动跳转只在从文件管理器切换到对话框时才跳。会盖掉程序自己记住的文件夹, 所以默认关; "不自动跳转的对话框" 也适用 (#521)
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
 
-## [2026.11.13.16]
+### New
+- **Quick Switch in dialogs of programs running as administrator** (AppInn forum): Preferences → Quick Switch → Works in, tick **Dialogs of programs running as administrator** (confirm UAC once). A small helper with administrator rights does the jump (one scheduled task, shared with Caps Lock's "also in administrator windows"); ALTRun itself keeps normal rights. The folder panel, auto switch, Open / Save and Browse for Folder dialogs all work, and so do `Ctrl+G` / `Ctrl+Shift+G`: ALTRun can't get the keys there, so the helper takes them and only tells ALTRun which one was pressed. The helper only takes the standard dialog in front, of a program running as administrator, and a folder that exists; it never clicks Open or Save for you
+- **Jump when a dialog opens** (#521): Preferences → Quick Switch, **Also jump when a dialog opens, to the file manager used last** (off by default). An Open / Save dialog that has just opened jumps once to the folder of the Total Commander / Directory Opus / File Explorer window used last, for example Ctrl+O in Word after browsing a folder in Explorer; auto switch alone only jumps when you switch from a file manager to the dialog. It overrides the folder the program remembers, so it is off by default; **No auto jump in** applies to it too
+- **Open web pages in a browser of your choice** (#505): Preferences → General → **Browser**, without making it the default browser: bookmarks, browser history, web searches, URL custom commands, links in the selected text and the help pages. Parameters can follow (for example `"C:\Apps\Vivaldi\vivaldi.exe" --new-window`); empty = the default browser. Web results show that browser's icon
+- **Bookmarks and history of portable and other Chromium browsers** (#492): Preferences → Features → **Other browsers**, one folder per line (a browser's User Data folder, such as Google Chrome Portable's `Data\profile`, or a single profile folder). Bookmarks (`bm`) and browser history (`h`) include all its profiles; the box shows how many profiles each folder has ("no profile found" means the wrong folder). Environment and `A_` variables work; a relative path starts from ALTRun's folder, so a browser on the same USB drive is found under another drive letter too
+- **Double-tap the left Alt** to show the search window (#501): Preferences → General → Double-tap → **Left Alt**. The left one only: the right Alt is AltGr on French, German, Polish and other keyboards. A single Alt press opens the menu bar of some programs (Notepad, Explorer) and the second press closes it, so it may flash; Alt+Space, Alt+Tab and other combinations don't count
 
-测试版。
+### Improvements
+- **The ALTRun hotkey (Alt+Space) can be cleared** (#521) once the second hotkey or double-tap (for example double Ctrl, as in Listary) is set: Backspace in the box in Preferences → General. With none of the three, Alt+Space comes back, so ALTRun can always be shown; the tray tip and the "already running" note show the way that works
+- **Clipboard history: thumbnails of copied image files** (#509): a single copied image file (QQ, WeChat and other chat programs copy pictures as files in their cache) shows its thumbnail instead of the file type icon; large pictures and formats like WebP use the system thumbnails, so typing doesn't stall. Thumbnails fill the icon square by default, cropped to the middle, so a wide screenshot is no longer a thin line; Preferences → Clipboard History → **Crop thumbnails to fill the icon** off shows the whole picture smaller
+- **Pinned and recent items in the empty search box are two choices** (#514): Preferences → Search Window → Empty search box, **Show pinned items** (Edit... moves them up / down or unpins) and **Show recently used items** (Clear... empties the list at once after confirming, pinned ones stay), with **Number of recent items to show** on its own line; either can be on alone. The Features page's "Pinned and recent" switch is gone: if it was off, both are unticked after the upgrade; a recent count above 0 keeps showing them
+- Preferences → Clipboard History: grouped into History (keep history after exit, save location), Images (also record images, images to keep, crop thumbnails) and Copy; settings that have no effect are grayed out; Max length shows its unit; **Clear History Now** asks first, saying how many items go (pinned ones stay)
+- Quick Switch: without the administrator option, a jump in an Open / Save dialog of a program running as administrator now explains where to turn it on (before, only Browse for Folder dialogs did), once per dialog
+- Snippets in the results start their second line with the text that expands them (`;sig, ;signature · Paste snippet · ...`), so typing `snip` lists every trigger (AutoHotkey forum); not shown when auto-expand is off for the snippet
+- The scheduled task of the administrator helper is renamed `ALTRun Admin Helper`; an existing `ALTRun CapsLock Helper` is moved over by the helper itself on the first start, without a UAC prompt
 
-Test build.
+### Fixes
+- **File Explorer with several tabs in one window** (#521): Ctrl+G and auto switch jumped to the folder of the first tab, not the tab shown; now the tab shown. "Open Terminal at Current Folder" and the actions "Copy / Move to Current Folder in Explorer" too
+- **Excel cells as the selection** (#513): `Ctrl+Alt+\` (or a hotkey with `{selection}`) on selected cells said nothing was selected, because Excel puts its text on the clipboard later than other formats; ALTRun now waits for the text (up to 2 s) and tries again when it is empty, and with logging on writes which clipboard formats it found. With nothing selected, the hint comes about 1 s later than before
+- **File search only** (a leading space or `'`) showed at most 50 results whatever **File search results** was set to; it follows the setting now (#515)
+- **AltGr in the search box** (AutoHotkey forum, French AZERTY): characters typed with AltGr were taken as Ctrl shortcuts (AltGr+3 `#` ran the third row, AltGr+8 `\` typed nothing; AltGr+E `€` in German and French opened the edit window; Polish AltGr+C / N / L copied, moved down, showed large type). Windows sends AltGr as Ctrl+Alt; with both held the search box's Ctrl shortcuts are off and the character is typed
+- Pinning or unpinning in the search window while Preferences was open was lost when Preferences was closed with OK; it is kept now
 
-### 改进
-- 呼出热键 (默认 Alt+Space) 可以清空了: 设了第二个呼出热键或双击呼出 (例如双击 Ctrl, 和 Listary 一样) 时, 在偏好设置 → 通用的呼出热键框里按 Backspace 就不再用 Alt+Space。三种都没设时仍改回 Alt+Space, 保证总能呼出 ALTRun。托盘提示和 "已在运行" 提示显示实际能用的呼出方式 (#521)
+---
 
-## [2026.11.13.15]
+### 中文说明
 
-测试版。
+**对话框快速跳转可以用在以管理员身份运行的程序里了**: 勾一个选项、确认一次 UAC, 由一个管理员权限的小助手跳转这些程序的打开 / 保存和浏览文件夹对话框, `Ctrl+G` / `Ctrl+Shift+G`、文件夹面板、自动跳转都能用, ALTRun 本身仍是普通权限。**资源管理器开了多个标签页**时, 现在跳到正在显示的标签页, 不再是第一个。新选项让对话框**一打开**就跳到最近用过的文件管理器 (在资源管理器里看完文件夹, 再到 Word 里按 Ctrl+O)。网页可以用**指定的浏览器**打开, 不用设成默认浏览器; **便携版浏览器**的书签和历史也能搜。剪贴板历史显示**复制的图片文件的缩略图** (QQ、微信)。双击左 Alt 可以呼出; 设了双击呼出或第二个热键后可以空出 Alt+Space。另外修复了 Excel 单元格作为选中内容、文件搜索只显示 50 条、搜索框里 AltGr 打字符的问题。
 
-Test build.
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
 
-### 改进
-- 偏好设置 → 搜索窗口 → 空搜索框: "编辑..." 和 "清空..." 移到左边, 和上面的提示文字框对齐; 最近使用的个数单独一行 "最近使用的项目显示数量", 数字框和 "清空..." 对齐 (不勾 "显示最近使用的项目" 时变灰) (#514)
+#### 新增
+- **对话框快速跳转可以用在以管理员身份运行的程序里** (AppInn 论坛): 偏好设置 → 对话框跳转 → 生效的窗口, 勾选 **以管理员身份运行的程序的对话框** (确认一次 UAC)。由一个管理员权限的小助手跳转 (和 CapsLock 的 "在管理员窗口里也生效" 共用一个计划任务), ALTRun 本身还是普通权限。文件夹面板、自动跳转、打开 / 保存对话框和浏览文件夹对话框都可以, `Ctrl+G` / `Ctrl+Shift+G` 也能用: ALTRun 收不到那里的按键, 由小助手接住, 只告诉 ALTRun 按了哪个快捷键。小助手只接受前台的、管理员程序的标准对话框和存在的文件夹, 不替你点打开或保存
+- **对话框打开时也跳转** (#521): 偏好设置 → 对话框跳转, **对话框打开时也跳到最近用过的文件管理器的文件夹** (默认关)。打开 / 另存为对话框刚打开时跳一次, 跳到最近用过的 Total Commander / Directory Opus / 资源管理器窗口的文件夹, 例如在资源管理器里看完文件夹再到 Word 里按 Ctrl+O; 原来的自动跳转只在从文件管理器切换到对话框时才跳。会盖掉程序自己记住的文件夹, 所以默认关; "不自动跳转的对话框" 也适用
+- **用指定的浏览器打开网页** (#505): 偏好设置 → 通用 → **浏览器**, 不用把它设为默认浏览器: 书签、浏览器历史记录、网页搜索、网址类的自定义命令、选中文字里的链接、帮助页面。后面可以带参数 (例如 `"C:\Apps\Vivaldi\vivaldi.exe" --new-window`), 留空用默认浏览器; 网页结果显示这个浏览器的图标
+- **便携版和其他基于 Chromium 的浏览器的书签和历史记录也能搜** (#492): 偏好设置 → 功能 → **其他浏览器**, 每行一个文件夹 (浏览器的 User Data 文件夹, 例如 Google Chrome Portable 的 `Data\profile`; 或单个用户配置文件夹)。书签 (`bm`) 和浏览器历史 (`h`) 都会包括它的各个配置; 框里显示每个文件夹找到几个配置 ("没找到配置" 说明文件夹不对)。可以用环境变量和 `A_` 变量; 相对路径从 ALTRun 所在的文件夹算起, 浏览器和 ALTRun 在同一个 U 盘上时换了盘符也能找到
+- **双击左 Alt 呼出搜索窗口** (#501): 偏好设置 → 通用 → 双击呼出 → **左 Alt**。只有左 Alt: 右 Alt 在法语、德语、波兰语等键盘上是 AltGr, 用来打字符。单独按一下 Alt 会打开部分程序 (记事本、资源管理器) 的菜单栏, 按第二下又关掉, 可能看到闪一下; Alt+Space、Alt+Tab 等组合不算
 
-## [2026.11.13.14]
-
-测试版。
-
-Test build.
-
-### 修复
-- 资源管理器一个窗口开了几个标签页时, 打开 / 另存为对话框的跳转 (Ctrl+G 和自动跳转) 跳到第一个标签页的文件夹, 不是正在显示的标签页; 现在跳到正在显示的那个。"在当前文件夹打开终端" 和动作面板的 "复制到 / 移动到 资源管理器 当前的文件夹" 也一样 (#521)
-
-## [2026.11.13.13]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 搜索窗口 → 空搜索框: 改成两个勾 "显示置顶的项目" (旁边 "编辑..." 可以上移 / 下移 / 取消置顶) 和 "显示最近使用的项目, 最多 N 个" (旁边 "清空..." 确认后马上清空, 置顶的不受影响), 可以只开一个 (#514)。功能页去掉 "置顶和最近使用" 开关: 原来关掉的升级后两个都不勾; 原来最近使用个数大于 0 的照样显示
-
-## [2026.11.13.12]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在 Excel 里选中单元格按 `Ctrl+Alt+\` (或用 `{selection}` 的热键) 报 "没有选中的内容": Excel 的文字比别的格式晚到剪贴板, 现在等到有文字再读 (最多 2 秒), 读到空的再试几次; 开了调试日志时取不到会记下剪贴板里有哪些格式 (#513)。真的没有选中时提示比以前晚约 1 秒
-
-## [2026.11.13.11]
-
-测试版。
-
-Test build.
-
-### 修复
-- 偏好设置开着时在搜索窗口里置顶或取消置顶, 之后在偏好设置点确定, 这次置顶的改动会丢; 现在会保留
-
-## [2026.11.13.10]
-
-测试版。
-
-Test build.
-
-### 修复
-- 只搜文件 (空格或 ' 开头) 时最多只显示 50 条, 偏好设置 → 文件搜索 → "文件搜索结果数" 设得更大不起作用; 现在按这个设置显示 (#515)
-
-## [2026.11.13.9]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 剪贴板历史: 设置分成 历史 (退出后保留历史、保存位置)、图片 (也记录图片、保存图片数、缩略图裁切填满图标)、复制 三组; 不起作用的设置变灰 (没开 "退出后保留历史" 时保存位置和图片设置变灰, 不记录图片时保存图片数变灰); "最长字数" 后面写出单位
-- 偏好设置 → 剪贴板历史: "立即清空历史" 先确认, 写明要删几条, 置顶的条目保留
-
-## [2026.11.13.8]
-
-测试版。
-
-Test build.
-
-### 改进
-- 剪贴板历史: 复制的单个图片文件也显示缩略图 (QQ、微信等聊天软件里复制的图片一般是缓存里的文件, 以前只显示文件类型图标); 大图片和 WebP 等格式用系统缩略图, 不卡输入 (#509)
-- 剪贴板历史: 缩略图默认填满图标方格, 裁出中间部分, 宽截图不再缩成一条细线; 偏好设置 → 剪贴板历史 → "缩略图裁切填满图标" 关掉时缩小显示整张图 (#509)
-
-## [2026.11.13.7]
-
-测试版。
-
-Test build.
-
-### 新增
-- Quick Switch 的快捷键 `Ctrl+G` / `Ctrl+Shift+G` 在以管理员身份运行的程序的对话框里也能用 (勾选 "以管理员身份运行的程序的对话框" 时): ALTRun 收不到那里的按键, 由管理员权限的小助手接住, 只告诉 ALTRun 按了哪个快捷键; 跳转仍由小助手检查后执行, 在别的窗口里不会触发两次 (AppInn 论坛)
-
-## [2026.11.13.6]
-
-测试版。
-
-Test build.
-
-### 新增
-- 对话框快速跳转可以用在以管理员身份运行的程序里 (AppInn 论坛): 偏好设置 → Quick Switch → 生效的窗口 勾选 **以管理员身份运行的程序的对话框** (确认一次 UAC)。由一个管理员权限的小助手跳转 (和 CapsLock 的 "在管理员窗口里也生效" 共用一个计划任务), ALTRun 本身还是普通权限; 文件夹面板、自动跳转、打开 / 保存对话框和浏览文件夹对话框都可以。小助手只接受前台的、管理员程序的标准对话框和存在的文件夹, 不替你点打开或保存。快捷键 `Ctrl+G` 在管理员窗口里仍然收不到
-
-### 改进
-- 没开这个选项时, 在管理员程序的打开 / 保存对话框里跳转也会提示 (以前只有浏览文件夹对话框提示), 提示里写明在哪里打开; 每个对话框只提示一次
+#### 改进
+- **呼出热键 (Alt+Space) 可以清空了** (#521): 设了第二个呼出热键或双击呼出 (例如双击 Ctrl, 和 Listary 一样) 时, 在偏好设置 → 通用的呼出热键框里按 Backspace 即可。三种都没设时仍改回 Alt+Space, 保证总能呼出 ALTRun; 托盘提示和 "已在运行" 提示显示实际能用的呼出方式
+- **剪贴板历史: 复制的图片文件显示缩略图** (#509): 复制的单个图片文件 (QQ、微信等聊天软件复制的图片一般是缓存里的文件) 显示缩略图, 不再只显示文件类型图标; 大图片和 WebP 等格式用系统缩略图, 不卡输入。缩略图默认裁出中间部分填满图标方格, 宽截图不再缩成一条细线; 偏好设置 → 剪贴板历史 → **缩略图裁切填满图标** 关掉时缩小显示整张图
+- **空搜索框的置顶和最近使用分成两个选项** (#514): 偏好设置 → 搜索窗口 → 空搜索框, **显示置顶的项目** (编辑... 可以上移 / 下移 / 取消置顶) 和 **显示最近使用的项目** (清空... 确认后马上清空, 置顶的不受影响), **最近使用的项目显示数量** 单独一行; 可以只开一个。功能页去掉 "置顶和最近使用" 开关: 原来关掉的升级后两个都不勾; 原来最近使用个数大于 0 的照样显示
+- 偏好设置 → 剪贴板历史: 分成 历史 (退出后保留历史、保存位置)、图片 (也记录图片、保存图片数、缩略图裁切填满图标)、复制 三组; 不起作用的设置变灰; "最长字数" 后面写出单位; "立即清空历史" 先确认, 写明要删几条, 置顶的保留
+- 对话框跳转: 没开管理员选项时, 在管理员程序的打开 / 保存对话框里跳转也会提示在哪里打开 (以前只有浏览文件夹对话框提示), 每个对话框只提示一次
+- 片段在搜索结果里的第二行开头显示展开它要输入的文字 (例如 `;sig, ;signature · 粘贴片段 · ...`), 输入 `snip` 就能看到全部片段的触发词 (AutoHotkey 论坛); 关掉自动展开或单个片段不展开时不显示
 - 管理员窗口小助手的计划任务改名为 `ALTRun Admin Helper`: 已有的 `ALTRun CapsLock Helper` 在第一次启动时由小助手自己迁移, 不弹 UAC
 
-## [2026.11.13.5]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 通用 → "浏览器": 用指定的浏览器打开网页 (书签、浏览器历史记录、网页搜索、网址类的自定义命令、选中文字里的链接、帮助页面), 不用把它设为默认浏览器; 后面可以带参数 (例如 `"C:\Apps\Vivaldi\vivaldi.exe" --new-window`), 留空用默认浏览器; 网页结果显示这个浏览器的图标 (#505)
-
-## [2026.11.13.4]
-
-测试版。
-
-Test build.
-
-### 改进
-- 片段在搜索结果里的第二行开头显示展开它要输入的文字 (例如 `;sig, ;signature · 粘贴片段 · ...`), 输入 `snip` 就能看到全部片段的触发词 (AutoHotkey 论坛); 关掉自动展开或单个片段不展开时不显示
-
-## [2026.11.13.3]
-
-测试版。
-
-Test build.
-
-### 新增
-- 双击左 Alt 也能呼出搜索窗口 (#501): 偏好设置 → 常规 → "双击呼出" 选 **左 Alt**。只有左 Alt: 右 Alt 在法语、德语、波兰语等键盘上是 AltGr, 用来打字符。单独按一下 Alt 会打开部分程序 (记事本、资源管理器) 的菜单栏, 按第二下又关掉, 可能看到闪一下; Alt+Space、Alt+Tab 等组合不算
-
-## [2026.11.13.2]
-
-测试版。
-
-Test build.
-
-### 修复
-- 搜索框里按 AltGr 打字符被当成 Ctrl 快捷键 (AutoHotkey 论坛, 法语 AZERTY 键盘): AltGr+3 (`#`) 运行了第 3 行, AltGr+8 (`\`) 打不出来; 德语、法语的 AltGr+E (`€`) 打开了编辑文件, 波兰语的 AltGr+C / N / L 变成复制、下移、大字显示。Windows 把 AltGr 当成 Ctrl+Alt, 现在 Ctrl 和 Alt 同时按着时搜索框的 Ctrl 快捷键 (`Ctrl+1` ~ `Ctrl+9`、`Ctrl+N` / `P` / `C` / `L` / `E` / `,`) 不起作用, 字符照常输入
-
-## [2026.11.13.1]
-
-测试版。
-
-Test build.
-
-### 新增
-- 便携版和其他基于 Chromium 的浏览器的书签和历史记录也能搜 (#492): 偏好设置 → 功能 → 功能选项 → **其他浏览器** 里每行加一个文件夹 (浏览器的 User Data 文件夹, 例如 Google Chrome Portable 的 `Data\profile`; 或单个用户配置文件夹), 书签 (`bm`) 和浏览器历史 (`h`) 都会包括它的各个配置。页面上的框显示每个文件夹找到几个配置 ("没找到配置" 说明文件夹不对)。可以用环境变量和 `A_` 变量; 相对路径从 ALTRun 所在的文件夹算起, 浏览器和 ALTRun 在同一个 U 盘上时换了盘符也能找到。设置键 `Features.Bookmarks.BrowserFolders`
+#### 修复
+- **资源管理器一个窗口开了几个标签页时** (#521), Ctrl+G 和自动跳转跳到第一个标签页的文件夹, 不是正在显示的; 现在跳到正在显示的那个。"在当前文件夹打开终端" 和动作面板的 "复制到 / 移动到 资源管理器 当前的文件夹" 也一样
+- **Excel 单元格作为选中内容** (#513): 在 Excel 里选中单元格按 `Ctrl+Alt+\` (或用 `{selection}` 的热键) 报 "没有选中的内容", 因为 Excel 的文字比别的格式晚到剪贴板; 现在等到有文字再读 (最多 2 秒), 读到空的再试几次; 开了调试日志时取不到会记下剪贴板里有哪些格式。真的没有选中时提示比以前晚约 1 秒
+- **只搜文件** (空格或 ' 开头) 时最多只显示 50 条, "文件搜索结果数" 设得更大不起作用; 现在按这个设置显示 (#515)
+- **搜索框里的 AltGr** (AutoHotkey 论坛, 法语 AZERTY 键盘): 用 AltGr 打的字符被当成 Ctrl 快捷键 (AltGr+3 `#` 运行了第 3 行, AltGr+8 `\` 打不出来; 德语、法语的 AltGr+E `€` 打开了编辑窗口; 波兰语的 AltGr+C / N / L 变成复制、下移、大字显示)。Windows 把 AltGr 当成 Ctrl+Alt, 现在两个同时按着时搜索框的 Ctrl 快捷键不起作用, 字符照常输入
+- 偏好设置开着时在搜索窗口里置顶或取消置顶, 之后在偏好设置点确定, 这次置顶的改动会丢; 现在会保留
 
 ## [2026.11.13]
 
@@ -1570,24 +1479,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.17...HEAD
-[2026.11.13.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.16...2026.11.13.17
-[2026.11.13.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.15...2026.11.13.16
-[2026.11.13.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...2026.11.13.15
-[2026.11.13.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...2026.11.13.14
-[2026.11.13.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...2026.11.13.13
-[2026.11.13.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...2026.11.13.12
-[2026.11.13.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.10...2026.11.13.11
-[2026.11.13.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.9...2026.11.13.10
-[2026.11.13.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.8...2026.11.13.9
-[2026.11.13.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.7...2026.11.13.8
-[2026.11.13.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.6...2026.11.13.7
-[2026.11.13.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.5...2026.11.13.6
-[2026.11.13.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.4...2026.11.13.5
-[2026.11.13.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.3...2026.11.13.4
-[2026.11.13.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.2...2026.11.13.3
-[2026.11.13.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.1...2026.11.13.2
-[2026.11.13.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13...2026.11.13.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...HEAD
+[2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
