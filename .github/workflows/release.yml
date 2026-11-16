@@ -232,6 +232,8 @@ jobs:
           if ($settings.SchemaVersion -lt 4) { throw "Settings were not upgraded" }
           if ($settings.CustomCommands.Count -ne 10) { throw "Expected 10 imported commands" }
           if ($settings.General.Language -ne "zh-CN") { throw "Config section was not imported" }
+          # an upgrade isn't a new installation: not asked about starting at login (that would keep it off until answered)
+          if ($settings.General.LaunchAtLogin -ne 1) { throw "LaunchAtLogin is $($settings.General.LaunchAtLogin) after the upgrade (expected 1, as in ALTRun.ini)" }
           if ((Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash -ne $iniHash) { throw "ALTRun.ini was modified" }
 
       - name: Single instance test (compiled ALTRun.exe)

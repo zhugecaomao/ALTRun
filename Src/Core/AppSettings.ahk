@@ -53,6 +53,7 @@ class AppSettings {
     static ImportedFrom := ""         ; the old ALTRun.ini imported at this start-up ("" = none)
     static NewerVersion := 0          ; the file's SchemaVersion when a newer ALTRun saved it (0 = no), see Load
     static MovedFrom := ""            ; moved from the program folder to Data\ at this start-up ("" = no)
+    static FirstRun := false          ; a new installation: there were no settings at all (no ALTRun.json, no ALTRun.ini imported), see Load
 
     static General        => AppSettings.Data["General"]
     static Window         => AppSettings.Data["Window"]
@@ -154,6 +155,7 @@ class AppSettings {
 
     static Load() {
         AppSettings.MoveLegacyFile()
+        fresh := !FileExist(AppSettings.File)                              ; not when the file is there but can't be read: settings the user had
         data := AppSettings._ReadFile()
         changed := AppSettings.Restored                                     ; restored from the backup: written back as ALTRun.json
 
@@ -184,6 +186,7 @@ class AppSettings {
         } else {
             changed := true                                                 ; first run: write a file with the defaults
         }
+        AppSettings.FirstRun := fresh && !data.Count && AppSettings.ImportedFrom = ""
         if (AppSettings.DataLocationMissing != "")
             Logger.Warn("AppSettings: DataLocation " AppSettings.DataLocation " has %" AppSettings.DataLocationMissing "%, which this PC doesn't have; the default data folder is used")
 
@@ -195,6 +198,8 @@ class AppSettings {
             changed := true
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
+        if AppSettings.FirstRun                                             ; a new installation asks first (App.AskLaunchAtLogin); off until it is answered,
+            data["General"]["LaunchAtLogin"] := 0                           ; so a question closed unanswered leaves it off and isn't asked again
         if AppSettings.ClampNumbers(data)
             changed := true
         if AppSettings.EnsureShowHotkey(data)
