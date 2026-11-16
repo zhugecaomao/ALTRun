@@ -6,7 +6,9 @@
 ;   - Only in the script's keyword mode ("keyword " with the space); never for scripts without a keyword. .ahk .py .ps1 only:
 ;     a batch file always goes through cmd.exe, which would take & | > in the text as commands
 ;   - The text arrives as the first argument (empty: "") and in the variable ALTRUN_QUERY (also ALTRUN_KEYWORD, ALTRUN_VERSION).
-;     PowerShell gets it only from the variable (-Command, never put into the command's text; a text starting with - isn't a parameter)
+;     PowerShell gets it only from the variable (-Command, never put into the command's text; a text starting with - isn't a parameter).
+;     The window in front before ALTRun was shown (as {hwnd} / {pid} in custom commands): ALTRUN_HWND (decimal), ALTRUN_PID,
+;     ALTRUN_PROCESS (its program's file name, e.g. TOTALCMD64.EXE); not set when that window is gone
 ;   - The first run starts at once; later ones once typing paused DebounceMs. A new run ends the one still running (with what it
 ;     started, ChildProcess); so do hiding the window and leaving the keyword. A run takes at most TimeoutMs
 ;   - Results are kept per text until the window hides (Backspace back to a text shows them again without running)
@@ -106,7 +108,20 @@ class ScriptFilter {
     }
 
     static Environment(script, text) {
-        return Map("ALTRUN_QUERY", text, "ALTRUN_KEYWORD", script.Keyword, "ALTRUN_VERSION", App.Version, "PYTHONIOENCODING", "utf-8")
+        env := Map("ALTRUN_QUERY", text, "ALTRUN_KEYWORD", script.Keyword, "ALTRUN_VERSION", App.Version, "PYTHONIOENCODING", "utf-8")
+        for name, value in ScriptFilter.WindowVariables(App.PreviousWindow)
+            env[name] := value
+        return env
+    }
+
+    ; ALTRUN_HWND / ALTRUN_PID / ALTRUN_PROCESS of a window; all empty (not passed) when it is gone or hwnd is 0
+    static WindowVariables(hwnd) {
+        pid := "", process := ""
+        if (hwnd && WinExist("ahk_id " hwnd)) {
+            try pid := WinGetPID("ahk_id " hwnd)
+            try process := WinGetProcessName("ahk_id " hwnd)
+        }
+        return Map("ALTRUN_HWND", (pid != "") ? hwnd : "", "ALTRUN_PID", pid, "ALTRUN_PROCESS", process)
     }
 
     ; A run's result (ChildProcess) -> {Items: [...], Error: "" or the error row's text, Detail: all of standard error}

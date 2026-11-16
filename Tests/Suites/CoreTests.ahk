@@ -1183,6 +1183,31 @@ class CoreTests {
         TestRunner.True("ChildProcessOutput.can't start: " result.Error, result.Error != "" && result.ExitCode = "")
     }
 
+    ; The program's variables come in their own block (CreateProcessW's lpEnvironment): this process's variables with Env on top,
+    ; names in any case, an empty value removing one; this process's own variables never change. The block is sorted by name, ignoring case
+    static ChildProcessEnvironment() {
+        eq := (n, a, e) => TestRunner.Equal("ChildProcessEnvironment." n, a, e)
+        EnvSet("ALTRUN_CP_KEEP", "kept"), EnvSet("ALTRUN_CP_DROP", "dropped")
+        try {
+            script := CoreTests._ChildScript("env.ahk", 'for name in ["ALTRUN_CP_KEEP", "ALTRUN_CP_DROP", "ALTRUN_CP_NEW", "SystemRoot"]`n'
+                . '    FileAppend(EnvGet(name) "|", "*", "UTF-8-RAW")`n')
+            result := CoreTests._RunChild(CoreTests._AhkLine(script)
+                , {Env: Map("altrun_cp_keep", "new = 中文", "ALTRUN_CP_DROP", "", "ALTRUN_CP_NEW", "a=b")})
+            eq("the program's variables", result.Stdout, "new = 中文||a=b|" EnvGet("SystemRoot") "|")
+            eq("this process's unchanged", EnvGet("ALTRUN_CP_KEEP") "|" EnvGet("ALTRUN_CP_DROP") "|" EnvGet("ALTRUN_CP_NEW"), "kept|dropped|")
+
+            block := ChildProcess.EnvironmentBlock(Map("ALTRUN_CP_NEW", "x"))
+            names := [], ptr := block.Ptr
+            while ((entry := StrGet(ptr, "UTF-16")) != "")
+                ptr += (StrLen(entry) + 1) * 2, names.Push(StrUpper(SubStr(entry, 1, InStr(entry, "=", , 2) - 1)))
+            sorted := true
+            Loop names.Length - 1
+                sorted := sorted && StrCompare(names[A_Index], names[A_Index + 1], true) < 0
+            TestRunner.True("ChildProcessEnvironment.sorted, ends inside the block (" names.Length ")", sorted && names.Length > 3 && ptr + 2 <= block.Ptr + block.Size)
+        } finally
+            EnvSet("ALTRUN_CP_KEEP"), EnvSet("ALTRUN_CP_DROP")
+    }
+
     ; Kill and a timeout end the program and what it started (the job object); done isn't called after Kill. A program that
     ; ends and leaves something running: that ends too (the job is closed)
     static ChildProcessKill() {

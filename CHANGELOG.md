@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.16.2]
+
+测试版。
+
+Test build.
+
+### 新增
+- 实时结果脚本 (`@altrun.mode filter`) 能拿到 ALTRun 弹出前在前台的窗口 (#520): 环境变量 `ALTRUN_HWND` (窗口句柄, 和自定义命令的 `{hwnd}` 一样)、`ALTRUN_PID`、`ALTRUN_PROCESS` (程序文件名, 例如 `TOTALCMD64.EXE`), 脚本可以按当前程序列出不同的结果
+
+### 改进
+- 后台运行脚本时, 传给它的环境变量 (`ALTRUN_QUERY` 等) 只放进它自己的环境, ALTRun 自己的环境变量不再临时改动 (以前同一时刻启动的别的程序可能带上输入的文字)
+
 ## [2026.11.16.1]
 
 测试版。
@@ -1488,7 +1500,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...HEAD
+[2026.11.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...2026.11.16.2
 [2026.11.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...2026.11.16.1
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13

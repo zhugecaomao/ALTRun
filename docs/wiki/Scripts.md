@@ -54,7 +54,7 @@ FileAppend(out, "*", "UTF-8-RAW")
 ```
 Type `proj alt`: the folders under `D:\Projects` whose names contain "alt" are listed; `Enter` opens one.
 
-**What the script gets**: the text after the keyword as its first argument (`""` when nothing is typed yet) and in the variable `ALTRUN_QUERY` (also `ALTRUN_KEYWORD` and `ALTRUN_VERSION`). In `.ps1` scripts use `$env:ALTRUN_QUERY`. The script is started directly, not through cmd, so `&`, `|`, `>` or quotes in the text are just text.
+**What the script gets**: the text after the keyword as its first argument (`""` when nothing is typed yet) and in the variable `ALTRUN_QUERY` (also `ALTRUN_KEYWORD` and `ALTRUN_VERSION`). In `.ps1` scripts use `$env:ALTRUN_QUERY`. The window that was in front before ALTRun was shown is in `ALTRUN_HWND` (its handle, a decimal number, the same as `{hwnd}` in custom commands), `ALTRUN_PID` and `ALTRUN_PROCESS` (its program's file name, e.g. `TOTALCMD64.EXE`); they aren't set when that window is gone. A script can list commands for that program, e.g. `if (EnvGet("ALTRUN_PROCESS") = "TOTALCMD64.EXE")`. The script is started directly, not through cmd, so `&`, `|`, `>` or quotes in the text are just text.
 
 **What it prints**, either:
 - one result per line, separated by tabs: `title⇥subtitle⇥target⇥type⇥icon` (only the title is needed; the target is the title when left out), or

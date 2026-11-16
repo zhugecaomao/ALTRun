@@ -54,7 +54,7 @@ FileAppend(out, "*", "UTF-8-RAW")
 ```
 输入 `proj alt`: 列出 `D:\Projects` 下名字含 "alt" 的文件夹; `Enter` 打开。
 
-**脚本收到什么**: 关键字后面的文字作为第一个参数 (还没输入时是 `""`), 也在环境变量 `ALTRUN_QUERY` 里 (另外有 `ALTRUN_KEYWORD` 和 `ALTRUN_VERSION`)。`.ps1` 脚本用 `$env:ALTRUN_QUERY`。脚本是直接启动的, 不经过 cmd, 所以文字里的 `&`、`|`、`>`、引号都只是文字。
+**脚本收到什么**: 关键字后面的文字作为第一个参数 (还没输入时是 `""`), 也在环境变量 `ALTRUN_QUERY` 里 (另外有 `ALTRUN_KEYWORD` 和 `ALTRUN_VERSION`)。`.ps1` 脚本用 `$env:ALTRUN_QUERY`。ALTRun 弹出前在前台的窗口在 `ALTRUN_HWND` (窗口句柄, 十进制, 和自定义命令的 `{hwnd}` 一样)、`ALTRUN_PID` 和 `ALTRUN_PROCESS` (程序文件名, 例如 `TOTALCMD64.EXE`) 里; 那个窗口已经不在时不设这三个变量。脚本可以按程序列出不同的命令, 例如 `if (EnvGet("ALTRUN_PROCESS") = "TOTALCMD64.EXE")`。脚本是直接启动的, 不经过 cmd, 所以文字里的 `&`、`|`、`>`、引号都只是文字。
 
 **脚本输出什么**, 两种都行:
 - 每行一个结果, 用 Tab 分开: `标题⇥副标题⇥目标⇥类型⇥图标` (只有标题必须写; 不写目标就是标题), 或
