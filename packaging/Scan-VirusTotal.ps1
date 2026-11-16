@@ -1,20 +1,19 @@
 # Scans a file with VirusTotal (API v3) before it is published: uploads it, waits for the analysis and reports how many engines
 # flag it. Run by .github/workflows/release.yml before the GitHub Release is created (publish = true, or virustotal = true).
 #
-#   ./packaging/Scan-VirusTotal.ps1 -Path build/ALTRun/ALTRun.exe [-AllowDetections] [-NotesFile build/notes.md]
+#   ./packaging/Scan-VirusTotal.ps1 -Path build/ALTRun/ALTRun.exe [-AllowDetections]
 #
 # The API key comes from the environment variable VT_API_KEY (the repository secret of the same name); without it the scan stops
 # with an error, it is never skipped quietly. Exit code 0 = no engine reports the file as malicious (suspicious ones are only
 # reported); otherwise it throws, so the release isn't created, unless -AllowDetections (the workflow input allow_detections,
 # after checking the report: a false positive) lets it go on. Not finishing within -TimeoutMinutes counts as not clean too.
-# Writes the result and the engines that flag the file to the job summary (GITHUB_STEP_SUMMARY), and with -NotesFile adds a line
-# with the report link to the release notes.
+# Writes the result, the engines that flag the file and the report link to the job summary (GITHUB_STEP_SUMMARY); not to the
+# release notes (a single engine's verdict there would only worry users).
 # The public API allows 4 requests a minute: one upload, then one check every 20 s. Uploaded files are shared with VirusTotal's
 # partners; the free API is for non-commercial use.
 param(
     [Parameter(Mandatory)] [string] $Path,
     [switch] $AllowDetections,
-    [string] $NotesFile = "",
     [int] $TimeoutMinutes = 15,
     [int] $PollSeconds = 20
 )
@@ -69,9 +68,6 @@ if ($status -ne "completed") {
         $summary += $flagged | Sort-Object Category, Engine | ForEach-Object { "| $($_.Engine) | $($_.Category) | $($_.Result) |" }
     }
     $clean = $stats.malicious -eq 0
-    if ($NotesFile) {
-        Add-Content $NotesFile -Encoding UTF8 -Value @("", "**VirusTotal** (ALTRun.exe): [$($stats.malicious) / $engines engines]($report)")
-    }
 }
 Write-Host $line
 Write-Host "Report: $report"

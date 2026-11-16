@@ -381,7 +381,7 @@ jobs:
           VT_API_KEY: ${{ secrets.VT_API_KEY }}
         run: |
           $allow = "${{ inputs.allow_detections }}" -eq "true"
-          ./packaging/Scan-VirusTotal.ps1 -Path build/ALTRun/ALTRun.exe -AllowDetections:$allow -NotesFile build/notes.md
+          ./packaging/Scan-VirusTotal.ps1 -Path build/ALTRun/ALTRun.exe -AllowDetections:$allow
 
       - name: Create GitHub release
         if: inputs.publish
