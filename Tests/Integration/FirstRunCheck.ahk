@@ -118,11 +118,17 @@ AnswerYes() {
     WinActivate(dialog)
     if !WinWaitActive(dialog, , 5)
         return "the question didn't come to the front"
+    focused := ""
+    try focused := ControlGetClassNN(ControlGetFocus(dialog)) " " ControlGetText(ControlGetFocus(dialog))
     Send("{Enter}")                                                         ; the default button: Yes
     if !WinWaitClose(dialog, , 5)
-        return "the question didn't close after Enter"
-    if !WaitForFile(StartupLink, 5000)
-        return "Yes wrote no start-up shortcut in 5 s"
+        return "the question didn't close after Enter (focus: " focused ")"
+    answered := A_TickCount
+    written := WaitForFile(StartupLink, 15000)                              ; the shell can be slow to write a shortcut: not this check's to time
+    Say("INFO yes: focus before Enter " focused "; start-up shortcut " (written ? "after " (A_TickCount - answered) " ms" : "not written in 15 s")
+        . "; LaunchAtLogin " Stored())
+    if !written
+        return "Yes wrote no start-up shortcut in 15 s"
     if ((value := Stored()) != 1)
         return "LaunchAtLogin after Yes: " value " (expected 1)"
     FileGetShortcut(StartupLink, , , &arguments)
