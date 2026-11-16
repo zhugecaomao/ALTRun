@@ -2668,9 +2668,103 @@ class ProviderTests {
             ScriptFilter.Stop()
             ScriptFilter.Results(script, "al"), Sleep(40)
             eq("hidden: runs again", starts.Length, 2)
+            ; a long list (e.g. Total Commander's ~600 commands, TC Commands.ahk): up to MaxListItems items, not MaxItems; time to filter
+            many := ""
+            Loop 2500
+                many .= "item " A_Index "`tsub`tcm_Item" A_Index "`tscript`n"
+            starts[2].Done.Call({Stdout: many, Stderr: "", ExitCode: 0, TimedOut: false, Error: "", Ms: 5})
+            eq("up to MaxListItems items", ScriptFilter.Results(script, "").Length "|" ScriptFilter.MaxListItems "|" ScriptFilter.Limit(script)
+                . "|" ScriptFilter.Limit(ProviderTests._FilterScript("x.ahk", "x")), "2000|2000|2000|" ScriptFilter.MaxItems)
+            ScriptFilter.Stop()
+            ScriptFilter.Results(script, ""), Sleep(40)
+            words := ["Source", "Copy", "Move", "Panel", "Tab", "Sort", "View", "Mark", "Search", "Config"], listing := '{"items": ['
+            Loop 650 {
+                title := words[Mod(A_Index, 10) + 1] ": command " A_Index, chinese := "源面板 复制 第" A_Index "个"
+                listing .= (A_Index > 1 ? "," : "") '{"title": "' chinese '", "subtitle": "Source · cm_Command' A_Index '", "arg": "cm_Command' A_Index
+                    . '", "type": "script", "uid": "cm_Command' A_Index '", "match": "' chinese " " title " cm_Command" A_Index '"}'
+            }
+            started := A_TickCount
+            starts[3].Done.Call({Stdout: listing "]}", Stderr: "", ExitCode: 0, TimedOut: false, Error: "", Ms: 5})
+            readMs := A_TickCount - started, started := A_TickCount
+            all := ScriptFilter.Results(script, "").Length
+            allMs := A_TickCount - started, started := A_TickCount
+            first := ScriptFilter.Results(script, "cop").Length
+            firstMs := A_TickCount - started, started := A_TickCount
+            again := ScriptFilter.Results(script, "copy").Length
+            againMs := A_TickCount - started, started := A_TickCount
+            initials := ScriptFilter.Results(script, "fz").Length
+            pinyinMs := A_TickCount - started
+            FileAppend("NOTE ScriptFilter: 650 items read in " readMs " ms; all rows " allMs " ms; filter first " firstMs " ms, again " againMs " ms, pinyin " pinyinMs " ms`n", "*")
+            eq("650 items: all, filtered, pinyin", all "|" (first >= 65) "|" (again >= 65) "|" (initials >= 650), "650|1|1|1")
         } finally {
             ScriptFilter.Stop()
             ScriptFilter.StartFn := saved[1], ScriptFilter.KillFn := saved[2], ScriptFilter.OnResults := saved[3]
+        }
+    }
+
+    ; docs\scripts\TC Commands.ahk (the wiki's Total Commander example) with made-up TC files and FakeTotalCmd: the list (em_ from
+    ; usercmd.ini first, names from the language file in UTF-8 or the ANSI code page, no "(etc...)" titles, no commands with parameters),
+    ; Enter sends a cm_ as its number (WM_USER+51) and an em_ (or an unknown cm_) by name (WM_COPYDATA "EM"); without TC a hint
+    static ScriptFilterTotalCmd() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptFilterTotalCmd." n, a, e)
+        script := A_ScriptDir "\..\docs\scripts\TC Commands.ahk", dir := A_Temp "\ALTRun-TC-test", sentFile := dir "\sent.txt"
+        if !FileExist(script)
+            return TestRunner.True("ScriptFilterTotalCmd.script found: " script, false)
+        try DirDelete(dir, true)
+        DirCreate(dir "\Language")
+        FileAppend("[________________Source________________]=0`r`ncm_SrcComments=300;Source: Show comments`r`ncm_GoToDriveF=2066;(etc, define your own if)`r`n"
+            . "[________________File Operations________________]=0`r`ncm_Copy=3101;Copy files`r`n[________Commands with Parameters_________]=0`r`n"
+            . ";These negative numbers are just used for translation`r`nCD <directory>=-2;Switch to the given directory`r`n", dir "\TOTALCMD.INC", "UTF-8-RAW")
+        FileAppend("[Configuration]`r`nLanguageIni=WCMD_TST.LNG`r`n", dir "\wincmd.ini", "UTF-16")
+        FileAppend("[em_hello]`r`ncmd=notepad.exe`r`nmenu=Say hello`r`n[em_bare]`r`ncmd=calc.exe`r`n[Other]`r`nmenu=x`r`n", dir "\usercmd.ini", "UTF-16")
+        FileAppend('All="全部"`r`nFileOperations="文件操作"`r`n300="源面板: 显示文件注释"`r`n3101="..."`r`n', dir "\Language\WCMD_TST.INC", "UTF-8-RAW")
+        Run('"' A_AhkPath '" "' A_ScriptDir '\Fixtures\FakeTotalCmd.ahk" "' sentFile '"', , , &fakePid)
+        fakeHwnd := WinWait("ALTRun Fake Total Commander ahk_pid " fakePid, , 5)
+        runScript(action, process, arg := "") {
+            env := Map("COMMANDER_PATH", dir, "COMMANDER_INI", dir "\wincmd.ini", "ALTRUN_ACTION", action, "ALTRUN_PROCESS", process
+                , "ALTRUN_HWND", (process = "") ? "" : fakeHwnd, "ALTRUN_PID", (process = "") ? "" : fakePid, "ALTRUN_ARG", arg)
+            return CoreTests._RunChild('"' A_AhkPath '" /ErrorStdOut "' script '"' (arg != "" ? " " Win.QuoteArg(arg) : ""), {Env: env, TimeoutMs: 15000})
+        }
+        show(result) {
+            list := ""
+            for each in ScriptFilter.Parse(result.Stdout, ScriptFilter.MaxListItems)
+                list .= each.Title "|" each.Subtitle "|" each.Arg "|" each.Type "|" each.Uid "|" (each.Icon != "") "/"
+            return list result.Stderr
+        }
+        sent(expected) {
+            TestUtil.WaitFor(() => FileExist(sentFile) && InStr(FileRead(sentFile), expected) > 0, 3000)
+            return FileExist(sentFile) ? Trim(StrReplace(FileRead(sentFile), "`n", "/"), "/") : ""
+        }
+        try {
+            dot := " " Chr(0xB7) " ", icon := 0                              ; the icon: TC's program file (Wine doesn't tell a window's program)
+            try icon := (WinGetProcessPath("ahk_id " fakeHwnd) != "")
+            eq("list", show(runScript("filter", "TOTALCMD64.EXE")), "Say hello|usercmd.ini" dot "em_hello|em_hello|script|em_hello|" icon "/bare|usercmd.ini" dot "em_bare|em_bare|script|em_bare|" icon "/"
+                . "源面板: 显示文件注释|Source" dot "cm_SrcComments|cm_SrcComments|script|cm_SrcComments|" icon "/GoToDriveF|Source" dot "cm_GoToDriveF|cm_GoToDriveF|script|cm_GoToDriveF|" icon "/"
+                . "Copy files|文件操作" dot "cm_Copy|cm_Copy|script|cm_Copy|" icon "/")
+            items := ScriptFilter.Parse(runScript("filter", "TOTALCMD64.EXE").Stdout, ScriptFilter.MaxListItems)
+            eq("matched on both names", items.Length > 2 ? items[3].Match : "", "源面板: 显示文件注释 Source: Show comments cm_SrcComments")
+            ansi := Buffer(16, 0), size := StrPut("300=" Chr(0x22) "Fen" Chr(0xEA) "tre" Chr(0x22), ansi, "CP1252") - 1
+            langFile := FileOpen(dir "\Language\WCMD_TST.INC", "w"), langFile.RawWrite(ansi, size), langFile.Close()
+            items := ScriptFilter.Parse(runScript("filter", "TOTALCMD64.EXE").Stdout, ScriptFilter.MaxListItems)
+            eq("language file in the ANSI code page", items.Length > 2 ? items[3].Title : "", StrGet(ansi.Ptr + 5, size - 6, "CP0"))
+            result := runScript("run", "TOTALCMD64.EXE", "cm_SrcComments")
+            eq("cm_ as its number", result.ExitCode "|" result.Stdout result.Stderr "|" sent("cm 300"), "0||cm 300")
+            runScript("run", "TOTALCMD64.EXE", "em_hello")
+            eq("em_ by name", sent("em em_hello"), "cm 300/em em_hello")
+            runScript("run", "TOTALCMD64.EXE", "CM_Copy")
+            eq("prefix in lower case", sent("cm 3101"), "cm 300/em em_hello/cm 3101")
+            runScript("run", "TOTALCMD64.EXE", "cm_NotInTheFile")
+            eq("unknown cm_ by name", sent("em cm_NotInTheFile"), "cm 300/em em_hello/cm 3101/em cm_NotInTheFile")
+            result := runScript("run", "TOTALCMD64.EXE", "notepad.exe")
+            eq("not a command", result.ExitCode "|" Trim(result.Stderr, "`r`n"), "1|Not a Total Commander command: notepad.exe")
+            if !WinExist("ahk_class TTOTAL_CMD") {                          ; (a real Total Commander open would be used)
+                eq("no TC: a hint", show(runScript("filter", "")), "Total Commander is not running|Start it, then type tc again|Total Commander is not running|text||0/")
+                result := runScript("run", "", "cm_SrcComments")
+                eq("no TC: run fails", result.ExitCode "|" Trim(result.Stderr, "`r`n"), "1|Total Commander isn't running")
+            }
+        } finally {
+            ProcessClose(fakePid)
+            try DirDelete(dir, true)
         }
     }
 
