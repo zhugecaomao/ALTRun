@@ -11,6 +11,8 @@
 ;   - a folder that can't be reached returns false and leaves no empty tab behind
 ;   - a network folder on a server that doesn't answer returns false within about NetworkTimeout (not after the network timeout);
 ;     a network folder that answers (\\localhost\C$) opens in a new tab
+;   - the tab shown (CurrentItem, #521): after each new tab, and after switching tabs with Ctrl+1 / Ctrl+2, it is the tab whose
+;     folder the window's title shows, also with the window behind another one (the first item of the window is the first tab)
 ; Prints PASS / FAIL lines; the exit code is the number of failures. On a system without Explorer tabs it prints SKIP and exits 0
 ;===============================================================================
 #Requires AutoHotkey v2.0
@@ -72,6 +74,29 @@ Main() {
         check("one more tab " folder, ExplorerTabs._Tabs(hwnd).Length = before + 1, ExplorerTabs._Tabs(hwnd).Length " tabs")
         check("in that window " folder, HasTab(hwnd, folder))
         check("file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder) "; " ExplorerTabs.SelectInfo)
+        front.Show()                                                       ; the tab shown doesn't depend on the window being in front
+        Sleep(200)
+        check("shown tab " folder, ExplorerTabs.SameFolder(ShownPath(hwnd), folder) && TitleShows(hwnd, folder)
+            , "current item '" ShownPath(hwnd) "', title '" WinGetTitle("ahk_id " hwnd) "', " ViewInfo(hwnd))
+    }
+
+    ; The tab shown after switching tabs by hand: Ctrl+2 shows the second tab (the first folder above), Ctrl+1 the first (root)
+    for each in [{Keys: "^2", Folder: folders[1]}, {Keys: "^1", Folder: root}, {Keys: "^4", Folder: folders[3]}] {
+        WinActivate("ahk_id " hwnd)
+        WinWaitActive("ahk_id " hwnd, , 3)
+        Sleep(300)
+        Send(each.Keys)
+        deadline := A_TickCount + 3000
+        while (!TitleShows(hwnd, each.Folder) && A_TickCount < deadline)
+            Sleep(50)
+        Sleep(300)
+        name := "switched with " each.Keys ": "
+        check(name "the title shows " each.Folder, TitleShows(hwnd, each.Folder), "title '" WinGetTitle("ahk_id " hwnd) "'")
+        front.Show()
+        Sleep(200)
+        check(name "shown tab", ExplorerTabs.SameFolder(ShownPath(hwnd), each.Folder)
+            , "current item '" ShownPath(hwnd) "', title '" WinGetTitle("ahk_id " hwnd) "', " ViewInfo(hwnd))
+        out("INFO " name ViewInfo(hwnd))
     }
 
     ; Two at once (two folder hotkeys pressed quickly): a timer starts the second Open while the first waits for its tab, so
@@ -188,6 +213,31 @@ Selected(hwnd, folder) {
         }
     }
     return "no tab"
+}
+
+; the folder of the tab shown, by ExplorerTabs.CurrentItem
+ShownPath(hwnd) {
+    try return ExplorerTabs.CurrentItem(hwnd).Document.Folder.Self.Path
+    return ""
+}
+
+; the window's title starts with the folder's name: Explorer shows the name of the tab shown ("<name>", "<name> - File Explorer",
+; "<name> and 6 more tabs - File Explorer" on Windows Server 2025)
+TitleShows(hwnd, folder) {
+    SplitPath(RTrim(folder, "\"), &name)
+    title := WinGetTitle("ahk_id " hwnd)
+    return title = name || InStr(title, name " - ") = 1 || InStr(title, name " and ") = 1
+}
+
+; the window's tab views (ShellTabWindowClass): how many, how many visible, whether the frontmost is the visible one, for a failure's detail
+ViewInfo(hwnd) {
+    views := 0, visible := 0, frontmostVisible := false, view := 0
+    while (view := DllCall("FindWindowExW", "Ptr", hwnd, "Ptr", view, "Str", "ShellTabWindowClass", "Ptr", 0, "Ptr")) {
+        views += 1
+        if DllCall("IsWindowVisible", "Ptr", view)
+            visible += 1, frontmostVisible := frontmostVisible || views = 1
+    }
+    return views " tab views, " visible " visible, frontmost visible " (frontmostVisible ? "yes" : "no") ", " ExplorerTabs._Tabs(hwnd).Length " tabs"
 }
 
 ; the folders of the window's tabs, for a failure's detail

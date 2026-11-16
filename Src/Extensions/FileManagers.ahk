@@ -75,17 +75,14 @@ class FileManagers {
         return dir
     }
 
-    ; The current folder of an Explorer window; hwnd = 0 takes the frontmost Explorer window
+    ; The current folder of an Explorer window: the folder of the tab shown, not of its first tab (#521, see ExplorerTabs.CurrentItem);
+    ; hwnd = 0 takes the frontmost Explorer window
     static ExplorerFolder(hwnd := 0) {
         if !hwnd
             hwnd := WinExist("ahk_class CabinetWClass")
         if !hwnd
             return ""
-        try {
-            for window in ComObject("Shell.Application").Windows
-                if (window.HWND = hwnd)
-                    return window.Document.Folder.Self.Path
-        }
+        try return ExplorerTabs.CurrentItem(hwnd).Document.Folder.Self.Path
         return ""
     }
 
