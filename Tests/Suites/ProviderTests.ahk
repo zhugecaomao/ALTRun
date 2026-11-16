@@ -2357,13 +2357,13 @@ class ProviderTests {
             App.PreviousWindow := A_ScriptHwnd
             notices := []
             saved := DetectHiddenWindows(true)                                ; (the test's own window stands for the one in front)
+            processName := ""
+            try processName := WinGetProcessName("ahk_id " A_ScriptHwnd)
             ScriptProvider.Run(script, 'a "b" & c')
             DetectHiddenWindows(saved)
             started := A_TickCount
             while (!notices.Length && A_TickCount - started < 15000)
                 Sleep(50)
-            processName := ""
-            try processName := WinGetProcessName("ahk_id " A_ScriptHwnd)
             ansi := Buffer(StrPut("caf" Chr(0xE9), "CP0")), StrPut("caf" Chr(0xE9), ansi, "CP0")   ; what an ANSI code page keeps of it
             eq("real silent run", notices.Length ? notices[1] : "(no notification)", Trim(StrGet(ansi, "CP0") ' [a "b" & c] run a "b" & c ' A_ScriptHwnd " " processName) "/3000")
         } finally {
