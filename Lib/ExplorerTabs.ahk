@@ -122,9 +122,9 @@ class ExplorerTabs {
 
     ; The tab shown in an Explorer window. Every tab is an item of Shell.Application.Windows with the window's HWND, listed in the
     ; order the tabs were opened, so the first item with that HWND is the first tab, not the one shown (#521). Each tab has its own
-    ; tab view (ShellTabWindowClass, a child of the window, see _TabOf); Explorer hides the views of the tabs not shown, so the
-    ; shown one is the visible view; with none or several visible, the frontmost (ShellTabWindowClass1). The item whose view that
-    ; is; when no item has it (a tab add-on, a Windows that answers differently), the first item of the window, as before
+    ; tab view (ShellTabWindowClass, a child of the window, see _TabOf), and the view of the tab shown is the frontmost of them
+    ; (CurrentTab). The item whose view that is; when no item has it (a tab add-on, a Windows that answers differently), the
+    ; first item of the window, as before
     static CurrentItem(hwnd) {
         if !hwnd
             return ""
@@ -145,16 +145,10 @@ class ExplorerTabs {
         return first
     }
 
-    ; The tab view handle of the tab shown (see CurrentItem), 0 when the window has no tab view
-    static CurrentTab(hwnd) {
-        frontmost := 0, visible := 0, count := 0, view := 0
-        while (view := DllCall("FindWindowExW", "Ptr", hwnd, "Ptr", view, "Str", "ShellTabWindowClass", "Ptr", 0, "Ptr")) {   ; children in Z-order
-            frontmost := frontmost ? frontmost : view
-            if DllCall("IsWindowVisible", "Ptr", view)
-                visible := view, count += 1
-        }
-        return count = 1 ? visible : frontmost
-    }
+    ; The tab view of the tab shown: the frontmost ShellTabWindowClass child of the window (ShellTabWindowClass1), 0 when it has
+    ; none. Explorer keeps the views of all tabs visible (probed on CI, Windows Server 2025: 7 tabs, 7 visible views) and brings
+    ; the shown one to the top: after a new tab and after switching with Ctrl+1 / Ctrl+2 / Ctrl+4 it was the frontmost
+    static CurrentTab(hwnd) => DllCall("FindWindowExW", "Ptr", hwnd, "Ptr", 0, "Str", "ShellTabWindowClass", "Ptr", 0, "Ptr")
 
     ; [{Tab: tab view handle, Item}] of the window's tabs (Shell.Application.Windows has an item for every tab)
     static _Tabs(hwnd) {

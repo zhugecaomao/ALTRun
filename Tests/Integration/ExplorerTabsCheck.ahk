@@ -221,11 +221,12 @@ ShownPath(hwnd) {
     return ""
 }
 
-; the window's title is the folder's name (Explorer shows the name of the tab shown; "<name> - File Explorer" on some versions)
+; the window's title starts with the folder's name: Explorer shows the name of the tab shown ("<name>", "<name> - File Explorer",
+; "<name> and 6 more tabs - File Explorer" on Windows Server 2025)
 TitleShows(hwnd, folder) {
     SplitPath(RTrim(folder, "\"), &name)
     title := WinGetTitle("ahk_id " hwnd)
-    return title = name || InStr(title, name " - ") = 1
+    return title = name || InStr(title, name " - ") = 1 || InStr(title, name " and ") = 1
 }
 
 ; the window's tab views (ShellTabWindowClass): how many, how many visible, whether the frontmost is the visible one, for a failure's detail
