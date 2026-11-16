@@ -10,6 +10,9 @@
 ; Then the folder panel's ☆ menu: opened with a click on the star, or with Alt+↓ in the panel's search box, and closed with Esc:
 ; the dialog must be in front again within 2 s (so typing goes on in the dialog); a failure prints the windows in front before
 ; and after Esc.
+; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later; opened with Ctrl+T as a user does):
+; switching to the dialog must jump to Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G, sent at
+; send level 1 like a person's keys); the tab is closed again (Ctrl+W) after each round.
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -20,6 +23,7 @@
 #NoTrayIcon
 #Warn All, StdOut
 #Include ..\..\Lib\JSON.ahk
+#Include ..\..\Lib\ExplorerTabs.ahk
 
 global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 5
@@ -33,6 +37,11 @@ try {
     for method in ["activate", "alt+tab", "title click"]
         Loop Rounds
             Round_(method, A_Index)
+    if ExplorerTabs.Supported()
+        Loop Rounds
+            TabRound(A_Index)
+    else
+        Say("SKIP tab shown: no Explorer tabs on Windows " A_OSVersion)
     for how in ["click", "alt+down"]
         Loop Rounds
             MenuRound(how, A_Index)
@@ -49,7 +58,7 @@ Say(text) => FileAppend(text "`n", "*")
 Setup() {
     global AppPid, AppWindow, DialogPid, Explorer, Dialog
     try DirDelete(Demo, true)
-    DirCreate(Demo "\Folder A"), DirCreate(Demo "\Start")
+    DirCreate(Demo "\Folder A"), DirCreate(Demo "\Folder B"), DirCreate(Demo "\Start")
     settings := Map("SchemaVersion", 6
         , "General", Map("Language", "en", "LaunchAtLogin", 0, "CheckForUpdates", 0, "ShowTips", 0, "SaveLog", 1, "SendToMenu", 0, "StartMenuShortcut", 0)
         , "Extensions", Map("QuickSwitch", Map("AutoSwitch", 1)))
@@ -116,6 +125,100 @@ Round_(method, n) {
     if !ShowsFolder("Folder A")
         return Fail(method, n, "the dialog didn't jump to Folder A", logSize)
     Say("PASS " method " " n ": jumped in " (A_TickCount - start) " ms")
+}
+
+; Explorer with a second tab at Folder B, shown (#521): switching to the dialog jumps to Folder B, not to Folder A of the first
+; tab; then the jump hotkey (Ctrl+G) in the dialog does too. The tab is closed again
+TabRound(n) {
+    name := "tab shown"
+    if !BackToStart()
+        return TabFail(name, n, "couldn't send the dialog back to Start")
+    folderB := Demo "\Folder B"
+    ; As a user does it, with Explorer's own keys (this script makes no COM call into Explorer, which could change what is tested):
+    ; Ctrl+T a new tab, Ctrl+L the address bar, the folder, Enter
+    WinActivate(Explorer)
+    if !WinWaitActive(Explorer, , 3)
+        return TabFail(name, n, "Explorer didn't come to the front")
+    Send("^t")
+    Sleep(1000)
+    Send("^l")
+    Sleep(300)
+    SendText(folderB)
+    Send("{Enter}")
+    try {
+        SetTitleMatchMode(2)
+        shown := WinWait("Folder B ahk_id " Explorer, , 5)                  ; the title is the name of the tab shown
+        SetTitleMatchMode(3)
+        if !shown
+            return TabFail(name, n, "Explorer doesn't show Folder B (title '" WinGetTitle(Explorer) "')")
+        WinActivate(Explorer)
+        if !WinWaitActive(Explorer, , 3)
+            return TabFail(name, n, "Explorer didn't come to the front")
+        Sleep(400)                                                          ; ALTRun notes Explorer as the window in front
+        logSize := LogLength()
+        start := A_TickCount
+        WinActivate(Dialog)
+        if !WinWaitActive(Dialog, , 3)
+            return TabFail(name, n, "the dialog didn't come to the front", logSize)
+        while (A_TickCount - start < 5000 && !ShowsFolder("Folder B"))
+            Sleep(20)
+        if !ShowsFolder("Folder B")                                         ; Ctrl+G is tried all the same
+            TabFail(name, n, "the dialog didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
+        else
+            Say("PASS " name " " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
+
+        if !BackToStart()                                                   ; Explorer stays the file manager used last
+            return TabFail(name " ctrl+g", n, "couldn't send the dialog back to Start")
+        logSize := LogLength()
+        start := A_TickCount
+        SendLevel(1)                                                        ; hook hotkeys ignore other scripts' keys at send level 0
+        SendEvent("^g")
+        SendLevel(0)
+        while (A_TickCount - start < 3000 && !ShowsFolder("Folder B"))
+            Sleep(20)
+        if !ShowsFolder("Folder B")
+            return TabFail(name " ctrl+g", n, "Ctrl+G didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
+        Say("PASS " name " ctrl+g " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
+    } finally {
+        WinActivate(Explorer)                                               ; close the Folder B tab (Ctrl+W): Explorer shows Folder A again
+        if WinWaitActive(Explorer, , 3) {
+            SetTitleMatchMode(2)
+            if WinActive("Folder B ahk_id " Explorer)
+                Send("^w")
+            SetTitleMatchMode(3)
+        }
+        Sleep(800)
+    }
+}
+
+; A tab round's failure with what it needs to be told apart: every new line of ALTRun's log (an error isn't a QuickSwitch line),
+; the dialog's address, Explorer's title and tabs, and the windows front to back
+TabFail(name, n, why, logSize := -1) {
+    Fail(name, n, why)
+    if (logSize >= 0)
+        for line in StrSplit(Trim(LogSince(logSize), "`r`n"), "`n", "`r")
+            Say("     log: " line)
+    address := ""
+    try {
+        for ctl in WinGetControls(Dialog)
+            if (InStr(ctl, "ToolbarWindow32") = 1 && InStr(ControlGetText(ctl, Dialog), ":"))
+                address .= (address = "" ? "" : " | ") ControlGetText(ctl, Dialog)
+    }
+    Say("     dialog: " address)
+    tabs := ""
+    for each in ExplorerTabs._Tabs(Explorer)
+        tabs .= (tabs = "" ? "" : " | ") ExplorerTabs._Path(Explorer, each.Tab)
+    shown := ""
+    try shown := ExplorerTabs.CurrentItem(Explorer).Document.Folder.Self.Path
+    Say("     Explorer: '" WinGetTitle(Explorer) "', tabs " tabs ", shown " shown)
+    answered := DllCall("SendMessageTimeoutW", "Ptr", AppWindow, "UInt", 0, "Ptr", 0, "Ptr", 0, "UInt", 2, "UInt", 2000, "Ptr*", 0, "Ptr")   ; WM_NULL, SMTO_ABORTIFHUNG
+    Say("     ALTRun running: " (ProcessExist(AppPid) ? "yes" : "no") ", answers messages: " (answered ? "yes" : "no (busy or hung)")
+        . ", hung: " (DllCall("IsHungAppWindow", "Ptr", AppWindow) ? "yes" : "no"))
+    lines := StrSplit(Trim(LogSince(0), "`r`n"), "`n", "`r")                ; where ALTRun got to: the end of its log
+    Loop Min(25, lines.Length)
+        Say("     log end: " lines[lines.Length - Min(25, lines.Length) + A_Index])
+    for hwnd in WinGetList()
+        try Say("     window: " Describe(hwnd) " | " WinGetTitle(hwnd))
 }
 
 ; The panel's ☆ menu (how: "click" on the star, or "alt+down" in the search box), closed with Esc: the dialog is in front again
@@ -236,7 +339,7 @@ LogLength() => FileExist(LogFile) ? FileGetSize(LogFile) : 0
 
 LogSince(size) {
     try {
-        f := FileOpen(LogFile, "r -w", "UTF-8")                              ; ALTRun keeps it open for writing
+        f := FileOpen(LogFile, "r", "UTF-8")                                 ; shared: ALTRun keeps it open for writing ("-w" would refuse that)
         f.Pos := size
         text := f.Read()
         f.Close()
@@ -246,6 +349,11 @@ LogSince(size) {
 }
 
 TearDown() {
+    if Failures {                                                           ; what ALTRun did up to the end (a check that took long shows as "Perf: slow")
+        lines := StrSplit(Trim(LogSince(0), "`r`n"), "`n", "`r")
+        Loop Min(40, lines.Length)
+            Say("     final log: " lines[lines.Length - Min(40, lines.Length) + A_Index])
+    }
     try WinClose(Dialog)
     if DialogPid && !ProcessWaitClose(DialogPid, 3)
         try ProcessClose(DialogPid)
