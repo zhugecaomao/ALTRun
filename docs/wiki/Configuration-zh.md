@@ -61,7 +61,7 @@
 
 | 键 | 默认 | 说明 |
 |---|---|---|
-| Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Hotkeys-zh#设置热键)) |
+| Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Hotkeys-zh#设置热键)); 留空 = 不用, 只有设了 `SecondaryHotkey` 或 `DoubleTap` 时才可以 (都没设会改回 `!Space`, 保证总能呼出 ALTRun) |
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
 | DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样): 要同一个键按两下, 先按左 Shift 再按右 Shift 不算; `LCtrl` / `RCtrl` / `LShift` / `RShift` = 只用左边或右边的那个键; `LAlt` = 左 Alt (没有右 Alt: 很多键盘上它是 AltGr; 单独按一下 Alt 会打开部分程序的菜单栏, 按第二下又关掉); 空 = 不用 |
 | HotkeySides | 0 | 1 = 在偏好设置里录制的热键记住按的是左边还是右边的 `Ctrl` / `Alt` / `Shift` / `Win` (`<!Space` = 只有左 Alt + 空格), 见 [设置热键](Hotkeys-zh#设置热键); 已经设好的热键不变 |
