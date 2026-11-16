@@ -753,7 +753,7 @@ class I18n {
         s["Prefs.TypeShort.Url"]          := "Link"
         ; General
         s["Prefs.Hotkey"]              := "ALTRun hotkey"
-        s["Prefs.Hotkey.Desc"]         := "Shows or hides the search window. The second hotkey (default Alt+R) is optional. Click a box and press the keys; Backspace clears it (the first one only while the second hotkey or double-tap is set)."
+        s["Prefs.Hotkey.Desc"]         := "Shows or hides the search window. The second hotkey (default Alt+R) is optional. Click a box and press the keys."
         s["Prefs.SecondaryHotkey"]     := "Second hotkey"
         s["Prefs.SecondaryHotkey.Desc"] := "Default Alt+R, a second way to show ALTRun. Backspace in the box turns it off."
         s["Prefs.DoubleTap"]           := "Double-tap"

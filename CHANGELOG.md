@@ -12,7 +12,7 @@
 Test build.
 
 ### 改进
-- 呼出热键 (默认 Alt+Space) 可以清空了: 设了第二个呼出热键或双击呼出 (例如双击 Ctrl, 和 Listary 一样) 时, 在框里按 Backspace 就不再用 Alt+Space。三种都没设时仍改回 Alt+Space, 保证总能呼出 ALTRun。托盘提示和 "已在运行" 提示显示实际能用的呼出方式 (#521)
+- 呼出热键 (默认 Alt+Space) 可以清空了: 设了第二个呼出热键或双击呼出 (例如双击 Ctrl, 和 Listary 一样) 时, 在偏好设置 → 通用的呼出热键框里按 Backspace 就不再用 Alt+Space。三种都没设时仍改回 Alt+Space, 保证总能呼出 ALTRun。托盘提示和 "已在运行" 提示显示实际能用的呼出方式 (#521)
 
 ## [2026.11.13.15]
 
