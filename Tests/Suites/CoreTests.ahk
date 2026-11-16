@@ -235,6 +235,23 @@ class CoreTests {
         for range in AppSettings.NumberRanges
             eq("default " range[1] "." range[2] " exists", PreferencesWindow.GetPath(defaults, range[1] "." range[2]) is Integer, true)
         eq("width low end = MinWindowWidth", AppSettings.NumberRanges[5][2] "|" AppSettings.NumberRanges[5][3], "Width|" PreferencesWindow.MinWindowWidth)
+
+        ; The show hotkey may be empty only while the second hotkey or double-tap shows ALTRun (#521)
+        show := (hotkey, second, tap) => Map("General", Map("Hotkey", hotkey, "SecondaryHotkey", second, "DoubleTap", tap))
+        savedEnabled := Logger.Enabled, Logger.Enabled := false                 ; no warning in the log from the cases below
+        try {
+            data := show("", "", "")
+            eq("show hotkey: none of the three -> Alt+Space", AppSettings.EnsureShowHotkey(data) "|" data["General"]["Hotkey"], "1|!Space")
+            data := show("", "!r", "")
+            eq("show hotkey: empty with a second hotkey", AppSettings.EnsureShowHotkey(data) "|" data["General"]["Hotkey"], "0|")
+            data := show("", "", "Ctrl")
+            eq("show hotkey: empty with double-tap", AppSettings.EnsureShowHotkey(data) "|" data["General"]["Hotkey"], "0|")
+            data := show("^#a", "", "")
+            eq("show hotkey: a hotkey of its own stays", AppSettings.EnsureShowHotkey(data) "|" data["General"]["Hotkey"], "0|^#a")
+            eq("show hotkey: no General section", AppSettings.EnsureShowHotkey(Map()), false)
+            eq("show hotkey: defaults unchanged", AppSettings.EnsureShowHotkey(AppSettings.Defaults()), false)
+        } finally
+            Logger.Enabled := savedEnabled
     }
 
     static Calculator() {

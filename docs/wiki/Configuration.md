@@ -61,7 +61,7 @@ Preferences → General (`SelectionHotkey` is on the "Selection" page).
 
 | Key | Default | Description |
 |---|---|---|
-| Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](Hotkeys#setting-hotkeys)) |
+| Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](Hotkeys#setting-hotkeys)); empty = none, allowed only while `SecondaryHotkey` or `DoubleTap` is set (with neither it becomes `!Space` again, so ALTRun can always be shown) |
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
 | DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary): the same key twice, so left Shift then right Shift doesn't count; `LCtrl` / `RCtrl` / `LShift` / `RShift` = only the left or right one; `LAlt` = the left Alt (not the right one: it is AltGr on many keyboards; a lone Alt press also opens the menu bar of some programs, which the second press closes again); empty = off |
 | HotkeySides | 0 | 1 = hotkeys recorded in Preferences keep the side of `Ctrl` / `Alt` / `Shift` / `Win` you press (`<!Space` = left Alt + Space only), see [Setting hotkeys](Hotkeys#setting-hotkeys); hotkeys already set don't change |

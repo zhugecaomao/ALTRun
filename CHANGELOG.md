@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.16]
+
+测试版。
+
+Test build.
+
+### 改进
+- 呼出热键 (默认 Alt+Space) 可以清空了: 设了第二个呼出热键或双击呼出 (例如双击 Ctrl, 和 Listary 一样) 时, 在框里按 Backspace 就不再用 Alt+Space。三种都没设时仍改回 Alt+Space, 保证总能呼出 ALTRun。托盘提示和 "已在运行" 提示显示实际能用的呼出方式 (#521)
+
 ## [2026.11.13.15]
 
 测试版。
@@ -1552,7 +1561,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.16...HEAD
+[2026.11.13.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.15...2026.11.13.16
 [2026.11.13.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...2026.11.13.15
 [2026.11.13.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...2026.11.13.14
 [2026.11.13.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...2026.11.13.13

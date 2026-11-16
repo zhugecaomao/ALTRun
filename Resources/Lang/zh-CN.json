@@ -508,7 +508,7 @@
   "Prefs.HistorySize.Desc": "Ctrl+↑ / Ctrl+↓ 调出最近的搜索",
   "Prefs.Homepage": "主页",
   "Prefs.Hotkey": "呼出热键",
-  "Prefs.Hotkey.Desc": "显示 / 隐藏搜索窗口; 第二个呼出热键 (默认 Alt+R) 可以不用。点一下框, 按下组合键",
+  "Prefs.Hotkey.Desc": "显示 / 隐藏搜索窗口; 第二个呼出热键 (默认 Alt+R) 可以不用。点一下框, 按下组合键; 按 Backspace 清空 (第一个只有在设了第二个热键或双击呼出时才能清空)",
   "Prefs.BadPattern": "“{2}”页的“{1}”不是有效的正则表达式:\n{3}\n\n改正后再保存。",
   "Script.QuoteInArgument": "这个脚本经由 cmd.exe 运行, 参数里的双引号没法安全传递。请去掉引号。",
   "Prefs.ClipPersistDelete": "剪贴板历史不再保存。要把之前保存在磁盘上的历史也删掉吗 (所有条目, 包括固定的)?",
