@@ -1308,6 +1308,7 @@ class I18n {
         s["Prefs.QSFavorites"] := "Favorite folders"
         s["Prefs.QSFavorites.Desc"] := "In the star menu at the top right of the panel, with their subfolders; the panel's search finds them too. Right-click a folder in the panel to add or remove it; Ctrl+D adds the dialog's current folder (with the caret in the panel: click it or press the hotkey below first)."
         s["Prefs.QSAuto"]              := "Jump automatically when switching from TC / Opus / Explorer"
+        s["Prefs.QSAutoOpen"]          := "Also jump when a dialog opens, to the file manager used last"
         s["Prefs.Section.QSDialogs"]    := "Dialogs"
         s["Prefs.Section.QSAuto"]       := "When a dialog opens"
         s["Prefs.Group.DialogWindows"]  := "Works in"

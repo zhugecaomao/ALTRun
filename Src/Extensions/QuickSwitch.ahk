@@ -3,7 +3,8 @@
 ;-------------------------------------------------------------------------------
 ; Like Listary's "Quick Switch": in an Open / Save dialog, the hotkey (Ctrl+G by default) jumps the dialog to the
 ; folder open in the file manager used last: Total Commander, Directory Opus or File Explorer (see FileManagerFolder).
-; AutoSwitch = 1: switching from one of them to a dialog jumps automatically.
+; AutoSwitch = 1: switching from one of them to a dialog jumps automatically. AutoSwitchOnOpen = 1: a dialog that has just opened
+; jumps too, once, to the folder of the file manager used last (the frontmost one), e.g. Ctrl+O in Word after working in Explorer.
 ; The folder panel (ShowPanel, on by default, like Listary's Quick Switch window): as soon as a dialog appears, a search box +
 ; folder list (favorite folders, both panels of every TC window, Explorer windows, recently used folders) sits below it, as wide as the dialog; one click jumps there, no hotkey to remember;
 ; the search box also searches folders (with PanelSearch = all, files too: choosing a file jumps to its folder). Hidden when the dialog isn't in front,
@@ -15,7 +16,7 @@
 ; the search box finds them too. Right-click a row to add it, or add the dialog's current folder (also Ctrl+D in the panel).
 ;
 ; Settings (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / Favorites (folder paths, environment variables allowed) / RecentFolders / ShowPanel / PanelSearch / AutoSwitch /
+;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / Favorites (folder paths, environment variables allowed) / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / AutoSwitchOnOpen /
 ;   StandardDialogs (ahk_class #32770) / BrowseDialogs / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
@@ -88,6 +89,8 @@ class QuickSwitch {
     static _foregroundHook := 0, _threadHooks := [], _watched := 0, _phase := "", _eventCallback := 0, _dragHook := 0
     static _alwaysPoll := false, _threadPoll := false, _polling := false
     static _foreground := 0, _foregroundAt := 0, _fromManager := false
+    ; AutoSwitchOnOpen: the dialogs seen in front already (each jumps once, when first seen), and the one that is to jump now
+    static _seenDialogs := Map(), _openJump := 0
     ; Clicking a dialog may bring the program that owns it (e.g. Word) to the front for a moment first: when the dialog follows within
     ; OwnerPassMs, the window before the program still counts as the window before the dialog
     static OwnerPassMs := 500
@@ -262,7 +265,13 @@ class QuickSwitch {
         isDialog := FileDialogs._IsFileDialogWindow(active)
         if (Logger.Enabled && active != QuickSwitch._loggedForeground)
             QuickSwitch._LogForeground(active, className, isDialog)
-        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
+        if (isDialog && QuickSwitch.Options.Has("AutoSwitchOnOpen") && QuickSwitch.Options["AutoSwitchOnOpen"] && QuickSwitch._IsNewDialog(active)) {
+            QuickSwitch._openJump := active                                 ; jumps like a switch from the file manager, once
+            if Logger.Enabled
+                Logger.Debug(Format("QuickSwitch: a dialog opened (0x{:X}), jump to the file manager used last", active))
+        }
+        if (isDialog && ((QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager) || QuickSwitch._openJump = active)
+            && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
             QuickSwitch._AutoSwitch(active, switched ? previous : 0)
 
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitchPanel._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
@@ -299,13 +308,26 @@ class QuickSwitch {
             Logger.Debug("QuickSwitch: AutoSwitch from " QuickSwitch.ClassOf(previous) ", jump by " method ", " (A_TickCount - QuickSwitch._foregroundAt) " ms after the switch")
         }
         if (method = "message" || method = "browse" || QuickSwitch._InputSettled(dialog)) {
-            QuickSwitch._fromManager := false                               ; once per switch
+            QuickSwitch._fromManager := false, QuickSwitch._openJump := 0  ; once per switch / per dialog
             return QuickSwitch.SyncFileManagerPath(true)
         }
         if (A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.AutoSwitchWaitMs)
             return SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)   ; the switch is still going on: check again a moment later
-        QuickSwitch._fromManager := false
+        QuickSwitch._fromManager := false, QuickSwitch._openJump := 0
         Logger.Debug("QuickSwitch: AutoSwitch gave up, keys or the mouse still held")
+    }
+
+    ; AutoSwitchOnOpen: whether this dialog is in front for the first time (true once per dialog window). Windows that are gone are
+    ; forgotten when more than 20 are remembered (a new window can get the handle of a closed one)
+    static _IsNewDialog(dialog) {
+        if QuickSwitch._seenDialogs.Has(dialog)
+            return false
+        if (QuickSwitch._seenDialogs.Count > 20)
+            for hwnd in [QuickSwitch._seenDialogs*]
+                if !DllCall("IsWindow", "Ptr", hwnd)
+                    QuickSwitch._seenDialogs.Delete(hwnd)
+        QuickSwitch._seenDialogs[dialog] := true
+        return true
     }
 
     ; A jump that types (see SetDialogPath) needs the switch to be over. The foreground event comes as soon as the dialog is activated, while

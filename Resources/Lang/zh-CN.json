@@ -773,6 +773,7 @@
   "Prefs.Placeholder": "提示文字",
   "Prefs.Placeholder.Desc": "留空 = 显示默认的文字; 输入一个空格 = 什么都不显示",
   "Prefs.QSAuto": "从 TC / Opus / 资源管理器切换过来时自动跳转",
+  "Prefs.QSAutoOpen": "对话框打开时也跳到最近用过的文件管理器的文件夹",
   "Prefs.QSAutoExclude": "不自动跳转的对话框",
   "Prefs.QSAutoExclude.Desc": "这些对话框不自动跳转; 仍然可以按热键跳转",
   "Prefs.QSAutoExclude.Help": "打开时不自动跳转的对话框, 每行一个: ahk_exe 程序.exe、ahk_class 窗口类名, 或者标题的一部分, 例如 ahk_exe acad.exe。\n\n这些对话框里仍然可以按热键跳转, 对话框面板也照常显示。",

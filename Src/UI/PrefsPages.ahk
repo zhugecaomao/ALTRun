@@ -891,6 +891,7 @@ class PrefsPages {
 
         PrefsForm.Section("Prefs.Section.QSAuto")
         PrefsForm.Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
+        PrefsForm.Check(base "AutoSwitchOnOpen", "Prefs.QSAutoOpen")        ; once per dialog, when it opens
         PrefsForm.LinesButton(base "AutoSwitchExclude", "Prefs.QSAutoExclude")
     }
 

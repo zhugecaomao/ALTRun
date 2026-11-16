@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.17]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框跳转: 新选项 "对话框打开时也跳到最近用过的文件管理器的文件夹" (偏好设置 → 对话框跳转, 默认关)。勾上后, 打开 / 另存为对话框刚打开时也会跳一次, 跳到最近用过的 Total Commander / Directory Opus / 资源管理器窗口的文件夹, 例如在资源管理器里看完文件夹再到 Word 里按 Ctrl+O; 原来的自动跳转只在从文件管理器切换到对话框时才跳。会盖掉程序自己记住的文件夹, 所以默认关; "不自动跳转的对话框" 也适用 (#521)
+
 ## [2026.11.13.16]
 
 测试版。
@@ -1561,7 +1570,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.17...HEAD
+[2026.11.13.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.16...2026.11.13.17
 [2026.11.13.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.15...2026.11.13.16
 [2026.11.13.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...2026.11.13.15
 [2026.11.13.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...2026.11.13.14

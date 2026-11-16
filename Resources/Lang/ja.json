@@ -773,6 +773,7 @@
   "Prefs.Placeholder": "プレースホルダー",
   "Prefs.Placeholder.Desc": "空欄で既定の文字を表示します。スペースを 1 つ入力すると何も表示しません。",
   "Prefs.QSAuto": "TC / Opus / エクスプローラーから切り替えたときに自動的に移動",
+  "Prefs.QSAutoOpen": "ダイアログを開いたときも最後に使ったファイルマネージャーへ移動",
   "Prefs.QSAutoExclude": "自動移動しないダイアログ",
   "Prefs.QSAutoExclude.Desc": "これらのダイアログでは自動でジャンプしません。ホットキーは使えます。",
   "Prefs.QSAutoExclude.Help": "開いたときに自動でジャンプしないダイアログ。1 行に 1 つ: ahk_exe プログラム.exe、ahk_class クラス名、またはタイトルの一部 (例: ahk_exe acad.exe)。\n\nこれらのダイアログでもホットキーとダイアログパネルは使えます。",
