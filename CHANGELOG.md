@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.6]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转: 别的程序把对话框调到前面时 (例如用 ALTRun 切换到窗口), Windows 有时不发 "前台窗口变了" 的通知, 对话框要 1.5 s 后才跳, 偶尔不跳; 现在打开着文件对话框时每 0.25 s 对比一次前台窗口, 漏掉的切换也能及时跳
+
 ## [2026.11.16.5]
 
 测试版。
@@ -1534,7 +1543,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...HEAD
+[2026.11.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...2026.11.16.6
 [2026.11.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...2026.11.16.5
 [2026.11.16.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...2026.11.16.4
 [2026.11.16.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...2026.11.16.3
