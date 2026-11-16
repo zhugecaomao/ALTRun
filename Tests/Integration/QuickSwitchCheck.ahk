@@ -99,6 +99,14 @@ Setup() {
         throw Error("the Open dialog didn't open")
     }
     Say("INFO ALTRun pid " AppPid ", Explorer " Format("0x{:X}", Explorer) ", dialog " Format("0x{:X}", Dialog))
+    ; With AutoSwitchOnOpen the new dialog jumps to Folder A by itself. Wait for that jump before the rounds: ALTRun's first look at
+    ; Explorer's folder took 0.7 to 1 s on a fresh runner, and a switch made meanwhile (round 1) wasn't seen as one from Explorer
+    start := A_TickCount
+    while (A_TickCount - start < 10000 && !ShowsFolder("Folder A"))
+        Sleep(20)
+    if !ShowsFolder("Folder A")
+        return Fail("setup", 1, "the new dialog didn't jump to Folder A as it opened (AutoSwitchOnOpen)")
+    Say("PASS setup: the new dialog jumped to Folder A as it opened in " (A_TickCount - start) " ms")
 }
 
 ; One switch from Explorer to the dialog; PASS when the dialog shows Folder A within 5 s
