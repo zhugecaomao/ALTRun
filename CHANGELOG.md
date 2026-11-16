@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.11.16.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 后台脚本 (`@altrun.mode silent` / `output`) 直接启动, 不再经过 cmd 和重定向: `.ahk` `.ps1` `.py` 的参数里可以有双引号和 `& | >` (选中内容也能传给它们了); `.bat` / `.cmd` 仍经过 cmd, 双引号照旧不传
+- 后台脚本也拿到 `ALTRUN_HWND` / `ALTRUN_PID` / `ALTRUN_PROCESS` (之前在前面的窗口)、`ALTRUN_ACTION=run`、`ALTRUN_ARG`、`ALTRUN_KEYWORD`、`ALTRUN_VERSION`, 和实时结果脚本一样
+- silent 脚本失败时 (退出码不是 0、启动不了、超时) 通知显示错误输出的第一行或原因, 不再是错误输出的最后一行; `.ahk` 的语法错误进通知, 不再弹框
+- output 脚本的错误输出空一行接在输出后面; 文字以 UTF-8 打开, 西文系统上 PowerShell / 批处理输出的重音字母等不再乱码
+- 注意: 后台脚本运行超过 2 分钟会被结束 (以前只是不再等, 脚本仍在后台运行); 它启动的程序不受影响。读输入的命令 (`pause` 等) 不再卡住
+
 ## [2026.11.16.4]
 
 测试版。
@@ -1521,7 +1534,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...HEAD
+[2026.11.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...2026.11.16.5
 [2026.11.16.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...2026.11.16.4
 [2026.11.16.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...2026.11.16.3
 [2026.11.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...2026.11.16.2

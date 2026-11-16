@@ -1295,6 +1295,8 @@ class CoreTests {
         eq("empty", ChildProcess.Decode(bytes(0xEF, 0xBB, 0xBF), 3) ChildProcess.Decode(Buffer(1), 0), "")
         gbk := bytes(0xC4, 0xE3, 0xBA, 0xC3)                                ; "你好" in GBK: not UTF-8
         eq("OEM code page", ChildProcess.Decode(gbk, 4), StrGet(gbk, 4, "CP" DllCall("GetOEMCP", "UInt")))
+        eq("code page given (ANSI for AutoHotkey's output)", ChildProcess.Decode(bytes(0x63, 0xE9), 2, false, 1252) "|" ChildProcess.Decode(gbk, 4, false, 0), "c" Chr(0xE9) "|" StrGet(gbk, 4, "CP0"))
+        eq("UTF-8 still first", ChildProcess.Decode(bytes(0x41, 0xE4, 0xB8, 0xAD), 4, false, 1252), "A中")
         eq("cut character dropped", ChildProcess.Decode(bytes(0x41, 0xE4, 0xB8), 3, true), "A")
     }
 

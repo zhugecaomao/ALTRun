@@ -20,10 +20,12 @@
 ;     options      {Dir: working folder, Env: Map(name, value) for the program only, on top of this process's variables (an
 ;                   empty value: the program doesn't get that variable; this process's own variables never change), TimeoutMs (30 s),
 ;                   MaxStdout (512 KB), MaxStderr (8 KB): what is printed beyond them is read and thrown away,
-;                   KeepStarted (false): what the program starts keeps running after it (no job object)}
+;                   KeepStarted (false): what the program starts keeps running after it (no job object),
+;                   Codepage (OEM): how output that isn't UTF-8 is read, e.g. 0 for ANSI (what AutoHotkey writes by default)}
 ;   ChildProcess.Kill(child)      ends a program that hasn't finished, with everything it started: done isn't called
 ;   ChildProcess.Pending          number of programs still running
 ;   ChildProcess.Decode(buf, size) bytes -> text: UTF-8 (BOM removed) if valid, else the OEM code page (a console's default)
+;                                  or the one given
 ;===============================================================================
 
 class ChildProcess {
@@ -37,7 +39,8 @@ class ChildProcess {
         timeoutMs := option("TimeoutMs", ChildProcess.TimeoutMs)
         child := {Done: done, Started: A_TickCount, Deadline: A_TickCount + timeoutMs, Pid: 0, Process: 0, Job: 0
             , OutRead: 0, Out: Buffer(4096), OutSize: 0, OutMax: option("MaxStdout", ChildProcess.MaxStdout)
-            , ErrRead: 0, Err: Buffer(1024), ErrSize: 0, ErrMax: option("MaxStderr", ChildProcess.MaxStderr), Truncated: false}
+            , ErrRead: 0, Err: Buffer(1024), ErrSize: 0, ErrMax: option("MaxStderr", ChildProcess.MaxStderr), Truncated: false
+            , Codepage: option("Codepage", "")}
         try
             ChildProcess._Create(child, commandLine, option("Dir", ""), option("Env", ""), option("KeepStarted", false))
         catch as e {
@@ -66,8 +69,9 @@ class ChildProcess {
     }
 
     ; bytes -> text: UTF-8 when they are valid UTF-8 (a BOM is removed), else the OEM code page, which a console program uses unless
-    ; told otherwise. cut: the bytes were cut off at a limit, so a character may be split at the end: up to 3 bytes are dropped there
-    static Decode(buf, size, cut := false) {
+    ; told otherwise (codepage: another one for that, e.g. 0 for ANSI). cut: the bytes were cut off at a limit, so a character may be
+    ; split at the end: up to 3 bytes are dropped there
+    static Decode(buf, size, cut := false, codepage := "") {
         ptr := buf.Ptr
         if (size >= 3 && NumGet(ptr, 0, "UChar") = 0xEF && NumGet(ptr, 1, "UChar") = 0xBB && NumGet(ptr, 2, "UChar") = 0xBF)
             ptr += 3, size -= 3
@@ -78,7 +82,7 @@ class ChildProcess {
             if DllCall("MultiByteToWideChar", "UInt", 65001, "UInt", 8, "Ptr", ptr, "Int", length, "Ptr", 0, "Int", 0)   ; MB_ERR_INVALID_CHARS
                 return StrGet(ptr, length, "UTF-8")
         }
-        return StrGet(ptr, size, "CP" DllCall("GetOEMCP", "UInt"))
+        return StrGet(ptr, size, "CP" ((codepage != "") ? codepage : DllCall("GetOEMCP", "UInt")))
     }
 
     ; The environment block for a program (CreateProcessW's lpEnvironment, UTF-16): this process's variables with env's on top
@@ -231,8 +235,8 @@ class ChildProcess {
 
     static _Result(child, timedOut, problem := "", code := "") {
         return {ExitCode: code, TimedOut: timedOut, Error: problem, Truncated: child.Truncated, Ms: A_TickCount - child.Started, Pid: child.Pid
-            , Stdout: ChildProcess.Decode(child.Out, child.OutSize, child.Truncated && child.OutSize >= child.OutMax)
-            , Stderr: ChildProcess.Decode(child.Err, child.ErrSize, child.ErrSize >= child.ErrMax)}
+            , Stdout: ChildProcess.Decode(child.Out, child.OutSize, child.Truncated && child.OutSize >= child.OutMax, child.Codepage)
+            , Stderr: ChildProcess.Decode(child.Err, child.ErrSize, child.ErrSize >= child.ErrMax, child.Codepage)}
     }
 
     static _Terminate(child) {
