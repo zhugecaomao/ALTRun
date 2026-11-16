@@ -131,40 +131,41 @@ Round_(method, n) {
 TabRound(n) {
     name := "tab shown"
     if !BackToStart()
-        return Fail(name, n, "couldn't send the dialog back to Start")
+        return TabFail(name, n, "couldn't send the dialog back to Start")
     folderB := Demo "\Folder B"
     if !ExplorerTabs.Open(folderB)                                          ; a new tab of the Explorer window, shown and in front
-        return Fail(name, n, "no new tab at Folder B: " ExplorerTabs.LastError)
+        return TabFail(name, n, "no new tab at Folder B: " ExplorerTabs.LastError)
     try {
         SetTitleMatchMode(2)
         shown := WinWait("Folder B ahk_id " Explorer, , 3)                  ; the title is the name of the tab shown
         SetTitleMatchMode(3)
         if !shown
-            return Fail(name, n, "Explorer doesn't show Folder B (title '" WinGetTitle(Explorer) "')")
+            return TabFail(name, n, "Explorer doesn't show Folder B (title '" WinGetTitle(Explorer) "')")
         WinActivate(Explorer)
         if !WinWaitActive(Explorer, , 3)
-            return Fail(name, n, "Explorer didn't come to the front")
+            return TabFail(name, n, "Explorer didn't come to the front")
         Sleep(400)                                                          ; ALTRun notes Explorer as the window in front
         logSize := LogLength()
         start := A_TickCount
         WinActivate(Dialog)
         if !WinWaitActive(Dialog, , 3)
-            return Fail(name, n, "the dialog didn't come to the front", logSize)
+            return TabFail(name, n, "the dialog didn't come to the front", logSize)
         while (A_TickCount - start < 5000 && !ShowsFolder("Folder B"))
             Sleep(20)
-        if !ShowsFolder("Folder B")
-            return Fail(name, n, "the dialog didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
-        Say("PASS " name " " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
+        if !ShowsFolder("Folder B")                                         ; Ctrl+G is tried all the same
+            TabFail(name, n, "the dialog didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
+        else
+            Say("PASS " name " " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
 
         if !BackToStart()                                                   ; Explorer stays the file manager used last
-            return Fail(name " ctrl+g", n, "couldn't send the dialog back to Start")
+            return TabFail(name " ctrl+g", n, "couldn't send the dialog back to Start")
         logSize := LogLength()
         start := A_TickCount
         Send("^g")
         while (A_TickCount - start < 3000 && !ShowsFolder("Folder B"))
             Sleep(20)
         if !ShowsFolder("Folder B")
-            return Fail(name " ctrl+g", n, "Ctrl+G didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
+            return TabFail(name " ctrl+g", n, "Ctrl+G didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
         Say("PASS " name " ctrl+g " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
     } finally {
         for each in ExplorerTabs._Tabs(Explorer)                            ; close the Folder B tab: Explorer shows Folder A again
@@ -172,6 +173,31 @@ TabRound(n) {
                 try each.Item.Quit()
         Sleep(500)
     }
+}
+
+; A tab round's failure with what it needs to be told apart: every new line of ALTRun's log (an error isn't a QuickSwitch line),
+; the dialog's address, Explorer's title and tabs, and the windows front to back
+TabFail(name, n, why, logSize := -1) {
+    Fail(name, n, why)
+    if (logSize >= 0)
+        for line in StrSplit(Trim(LogSince(logSize), "`r`n"), "`n", "`r")
+            Say("     log: " line)
+    address := ""
+    try {
+        for ctl in WinGetControls(Dialog)
+            if (InStr(ctl, "ToolbarWindow32") = 1 && InStr(ControlGetText(ctl, Dialog), ":"))
+                address .= (address = "" ? "" : " | ") ControlGetText(ctl, Dialog)
+    }
+    Say("     dialog: " address)
+    tabs := ""
+    for each in ExplorerTabs._Tabs(Explorer)
+        tabs .= (tabs = "" ? "" : " | ") ExplorerTabs._Path(Explorer, each.Tab)
+    shown := ""
+    try shown := ExplorerTabs.CurrentItem(Explorer).Document.Folder.Self.Path
+    Say("     Explorer: '" WinGetTitle(Explorer) "', tabs " tabs ", shown " shown)
+    Say("     ALTRun running: " (ProcessExist(AppPid) ? "yes" : "no"))
+    for hwnd in WinGetList()
+        try Say("     window: " Describe(hwnd) " | " WinGetTitle(hwnd))
 }
 
 ; The panel's ☆ menu (how: "click" on the star, or "alt+down" in the search box), closed with Esc: the dialog is in front again
