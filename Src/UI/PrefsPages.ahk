@@ -44,26 +44,25 @@ class PrefsPages {
         PrefsForm.Section("Prefs.Section.EmptyBox")
         placeholder := PrefsForm.InlineField("Window.Placeholder", "Prefs.Placeholder", "M")
         Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; empty shows the default text in gray
-        ; what the empty search box lists: [x] pinned items [Edit...] / [x] the last [N] recently used items [Clear...] (#514)
-        x := PrefsForm.InputX(), buttonX := x + PrefsForm.InputW() - PrefsForm.WidthS
-        pinned := PrefsForm.Check("Window.ShowPinned", "Prefs.ShowPinned", x, , , buttonX - 8 - x)
-        editButton := PrefsPages._RowButton(pinned, buttonX, "Prefs.EditList", (*) => PrefsPages.EditPinned())
+        ; what the empty search box lists (#514): [x] pinned items [Edit...] / [x] recently used items [Clear...] / Number of recent items to show [N];
+        ; the buttons and the number box start at the left edge of the input boxes above
+        x := PrefsForm.InputX()
+        pinned := PrefsForm.Check("Window.ShowPinned", "Prefs.ShowPinned", x)
+        editButton := PrefsPages._RowButton(pinned, x, "Prefs.EditList", (*) => PrefsPages.EditPinned())
         pinned.GetPos(, &pinnedY, , &pinnedH), editButton.GetPos(, , , &buttonH)
-        recentY := Max(PrefsForm._y, pinnedY + buttonH + 4, pinnedY + pinnedH + 7)   ; 4 pixels between the two buttons, and below the check box for the number box
+        recentY := Max(PrefsForm._y, pinnedY + buttonH + 4)                 ; 4 pixels between the two buttons
         PrefsForm._y := recentY
-        showRecent := PrefsForm.Add("Checkbox", "x" x, I18n.T("Prefs.ShowRecent"))              ; as wide as its text: the number follows it
+        showRecent := PrefsForm.Add("Checkbox", "x" x, I18n.T("Prefs.ShowRecent"))              ; its description goes below the number row
         showRecent.Value := PreferencesWindow.GetPath(PreferencesWindow.Working, "Window.ShowRecent") ? 1 : 0
         PrefsForm.Bind("Window.ShowRecent", () => showRecent.Value)
-        showRecent.GetPos(, , &checkW, &checkH)
-        PrefsForm._y := recentY - 3                                         ; the box's text on the check box's line
-        count := PrefsForm.Add("Edit", "x" (x + checkW + 6) " w" PrefsForm.WidthS " r1 -Multi Number"
-            , PreferencesWindow.GetPath(PreferencesWindow.Working, "Window.RecentCount"))
-        PrefsForm.Bind("Window.RecentCount", () => IsInteger(count.Value) ? Integer(count.Value) : 0)
+        clear := PrefsPages._RowButton(showRecent, x, "Prefs.ClearRecent", (*) => PrefsPages.ClearRecent())
+        PrefsForm.Below(6, showRecent, clear)
+        count := PrefsForm.InlineField("Window.RecentCount", "Prefs.RecentCount", "S", "number", true)   ; a sub-option of "Show recently used items"
         PrefsForm.AlignLeft(keepFor, placeholder, count)                    ; the input boxes on this page share one left edge
-        unit := PrefsForm.Unit(count, "Prefs.ShowRecent.Unit")
-        clear := PrefsPages._RowButton(showRecent, buttonX, "Prefs.ClearRecent", (*) => PrefsPages.ClearRecent())
-        PrefsForm._y := recentY
-        PrefsForm.Below(0, showRecent, count, unit, clear)
+        count.GetPos(&left)
+        editButton.Move(left), clear.Move(left)                             ; Edit... / Clear... in the same column
+        pinned.Move(, , left - 8 - x)                                       ; the check box ends before its button
+        PrefsForm._y -= 5                                                   ; the description right below the number row, like other descriptions
         PrefsForm.Desc("Prefs.ShowRecent", x + PrefsForm.CheckIndent)
         update := (*) => (count.Enabled := showRecent.Value = 1)            ; the number only matters while the box is checked
         update()
