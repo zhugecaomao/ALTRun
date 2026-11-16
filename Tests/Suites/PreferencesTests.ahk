@@ -765,24 +765,34 @@ class PreferencesTests {
                             ctrl.GetPos(&labelX)
                     }
                     TestRunner.Equal("PreferencesFit." lang " keep minutes indented", labelX, checkX = "" ? "?" : checkX + PrefsForm.CheckIndent)
-                    ; the empty search box (#514): Edit... / Clear... at the right edge, each on its check box's row, nothing running into them
+                    ; the empty search box (#514): Edit... / Clear... each on its check box's row, in the column of the input boxes (the placeholder
+                    ; box above, the number box below), nothing running into them; the number label indented like "Keep the last search for"
                     found := Map()
                     for ctrl in page.Controls
-                        for key in ["Prefs.ShowPinned", "Prefs.ShowRecent", "Prefs.ShowRecent.Unit", "Prefs.EditList", "Prefs.ClearRecent"]
+                        for key in ["Prefs.ShowPinned", "Prefs.ShowRecent", "Prefs.RecentCount", "Prefs.EditList", "Prefs.ClearRecent"]
                             if (ctrl.Text = I18n.T(key) && !found.Has(key))
                                 found[key] := ctrl
-                    TestRunner.Equal("PreferencesFit." lang " empty box controls", found.Count, 5)
-                    if (found.Count = 5) {
+                    boxes := []
+                    for ctrl in page.Controls
+                        if (ctrl.Type = "Edit")
+                            boxes.Push(ctrl)                                ; keep minutes, placeholder, number of recent items
+                    TestRunner.Equal("PreferencesFit." lang " empty box controls", found.Count "|" boxes.Length, "5|3")
+                    if (found.Count = 5 && boxes.Length = 3) {
                         pos := Map()
                         for key, ctrl in found
                             ctrl.GetPos(&x, &y, &w, &h), pos[key] := {X: x, Y: y, R: x + w, M: y + h / 2}
+                        boxes[2].GetPos(&placeholderX), boxes[3].GetPos(&countX, &countY, , &countH)
                         editPos := pos["Prefs.EditList"], clearPos := pos["Prefs.ClearRecent"]
-                        TestRunner.True("PreferencesFit." lang " empty box buttons at the right edge (" editPos.R " " clearPos.R ")"
-                            , editPos.R = clearPos.R && editPos.R = PrefsForm.ContentX + PrefsForm.ContentW)
+                        TestRunner.True("PreferencesFit." lang " empty box buttons under the placeholder box (" placeholderX " " editPos.X " " clearPos.X " " countX ")"
+                            , editPos.X = placeholderX && clearPos.X = placeholderX && countX = placeholderX)
                         TestRunner.True("PreferencesFit." lang " empty box buttons on their rows"
                             , Abs(editPos.M - pos["Prefs.ShowPinned"].M) <= 2 && Abs(clearPos.M - pos["Prefs.ShowRecent"].M) <= 2)
-                        TestRunner.True("PreferencesFit." lang " empty box: room before the buttons (" pos["Prefs.ShowPinned"].R " " pos["Prefs.ShowRecent.Unit"].R ")"
-                            , pos["Prefs.ShowPinned"].R <= editPos.X && pos["Prefs.ShowRecent.Unit"].R + 4 <= clearPos.X)
+                        TestRunner.True("PreferencesFit." lang " empty box: room before the buttons (" pos["Prefs.ShowPinned"].R " " pos["Prefs.ShowRecent"].R ")"
+                            , pos["Prefs.ShowPinned"].R <= editPos.X && pos["Prefs.ShowRecent"].R + 4 <= clearPos.X)
+                        TestRunner.True("PreferencesFit." lang " empty box: number row below Clear..., label indented ("
+                            pos["Prefs.RecentCount"].X " " pos["Prefs.ShowRecent"].X ")"
+                            , countY >= clearPos.Y + 20 && pos["Prefs.RecentCount"].X = pos["Prefs.ShowRecent"].X + PrefsForm.CheckIndent
+                            && pos["Prefs.RecentCount"].R <= countX && Abs(pos["Prefs.RecentCount"].M - (countY + countH / 2)) <= 3)
                     }
                 }
                 if (page.Key = "Prefs.Page.Window" || page.Key = "Prefs.Page.Keyboard") {   ; the input boxes / drop-downs of these pages share one left edge

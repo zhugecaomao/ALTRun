@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.13.15]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 搜索窗口 → 空搜索框: "编辑..." 和 "清空..." 移到左边, 和上面的提示文字框对齐; 最近使用的个数单独一行 "最近使用的项目显示数量", 数字框和 "清空..." 对齐 (不勾 "显示最近使用的项目" 时变灰) (#514)
+
 ## [2026.11.13.14]
 
 测试版。
@@ -1543,7 +1552,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.15...HEAD
+[2026.11.13.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.14...2026.11.13.15
 [2026.11.13.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.13...2026.11.13.14
 [2026.11.13.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.12...2026.11.13.13
 [2026.11.13.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.13.11...2026.11.13.12
