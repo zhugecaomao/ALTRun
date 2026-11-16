@@ -1247,6 +1247,45 @@ class CoreTests {
         eq("nothing left running", ChildProcess.Pending, 0)
     }
 
+    ; KeepStarted (a script item's run): no job, so what the program started keeps running after it ends, and Kill ends the
+    ; program itself only
+    static ChildProcessKeepStarted() {
+        eq := (n, a, e) => TestRunner.Equal("ChildProcessKeepStarted." n, a, e)
+        dir := CoreTests._ChildDir()
+        grand := CoreTests._ChildScript("keep-grand.ahk", 'FileAppend(ProcessExist(), A_Args[1])`nSleep(60000)`n')
+        parent := CoreTests._ChildScript("keep-parent.ahk"
+            , 'q := Chr(34)`nRun(q A_AhkPath q " " q A_Args[1] q " " q A_Args[2] q)`n'
+            . 'while (!FileExist(A_Args[2]) && A_Index < 400)`n    Sleep(50)`n'
+            . 'FileAppend(ProcessExist(), A_Args[3])`n'
+            . 'if (A_Args[4] = "stay")`n    Sleep(60000)`n')
+        for how in ["kill", "ends"] {
+            pidFiles := [dir "\keep-grand-" how ".pid", dir "\keep-parent-" how ".pid"]
+            for each in pidFiles
+                try FileDelete(each)
+            called := [], pids := []
+            try {
+                child := ChildProcess.Start(CoreTests._AhkLine(parent, grand, pidFiles[1], pidFiles[2], how = "ends" ? "end" : "stay")
+                    , (result) => called.Push(result), {KeepStarted: true})
+                TestRunner.True("ChildProcessKeepStarted." how ": both started", TestUtil.WaitFor(() => FileExist(pidFiles[1]) && FileExist(pidFiles[2]), 20000))
+                for each in pidFiles
+                    try pids.Push(Integer(FileRead(each)))
+                if (how = "kill")
+                    eq("kill: was running", ChildProcess.Kill(child), true)
+                else
+                    TestUtil.WaitFor(() => called.Length, 20000)
+                TestRunner.True("ChildProcessKeepStarted." how ": the program ended", pids.Length = 2 && TestUtil.WaitFor(() => !ProcessExist(pids[2]), 5000))
+                Sleep(300)
+                TestRunner.True("ChildProcessKeepStarted." how ": what it started still runs", pids.Length = 2 && ProcessExist(pids[1]))
+                if (how = "ends")
+                    eq("ends: exit code", called.Length ? called[1].ExitCode : "none", 0)
+            } finally {
+                for pid in pids
+                    try ProcessClose(pid)
+            }
+        }
+        eq("nothing left running", ChildProcess.Pending, 0)
+    }
+
     ; Bytes -> text: UTF-8 (BOM removed), the OEM code page when they aren't UTF-8, a character cut at the end dropped
     static ChildProcessDecode() {
         eq := (n, a, e) => TestRunner.Equal("ChildProcessDecode." n, a, e)

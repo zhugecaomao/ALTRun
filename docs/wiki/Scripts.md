@@ -71,7 +71,7 @@ Type `proj alt`: the folders under `D:\Projects` whose names contain "alt" are l
 | `title` | Required |
 | `subtitle` | The gray line under the title |
 | `arg` | What `Enter` works on; the title when left out |
-| `type` | `file`, `folder`, `url` (opened) or `text` (copied). When left out it follows the target: a web address is `url`, `C:\...` or `\\server\...` is `file` (`folder` when it ends with `\`), anything else `text` |
+| `type` | `file`, `folder`, `url` (opened), `text` (copied) or `script` (runs the script again with `arg`, see below). When left out it follows the target: a web address is `url`, `C:\...` or `\\server\...` is `file` (`folder` when it ends with `\`), anything else `text` |
 | `icon` | A local `.ico` / `.png` / `.exe` / `.dll` file; web addresses aren't used. When left out, the file's own icon for files and folders |
 | `uid` | Lets ALTRun learn which result you choose for what you type, as for other results; without it the script's order is kept |
 | `valid` | `false`: the row can't be run (a hint); with `autocomplete`, `Enter` puts "keyword autocomplete" into the search box |
@@ -82,6 +82,24 @@ Type `proj alt`: the folders under `D:\Projects` whose names contain "alt" are l
 Write UTF-8: in `.ahk` scripts `FileAppend(text, "*", "UTF-8-RAW")`; Python and PowerShell already write UTF-8 when run by ALTRun.
 
 **When it runs**: as soon as you type the keyword and the space, then each time you stop typing for a moment (0.15 s). A run still going is stopped when a new one starts, when you leave the keyword or close the search window, together with any program it started. While it runs, the last results stay; "Running..." shows only when there is nothing yet after 0.3 s. A run can take up to 10 s. Results are kept until the search window closes, so `Backspace` back to a text you already searched shows them at once.
+
+**Results that run the script** (`"type": "script"`): `Enter` closes the search window and runs the same script again in the background, with the result's `arg` as its first argument and in `ALTRUN_ARG` (in `.ps1` scripts `$env:ALTRUN_ARG`). `ALTRUN_ACTION` is then `run` (`filter` while it lists results); the text typed and the window variables are the same. So one script can be a command palette for the program in front: list the commands that fit `ALTRUN_PROCESS`, and run the one chosen on the window `ALTRUN_HWND`:
+```autohotkey
+; @altrun.keyword np
+; @altrun.mode    filter
+if (EnvGet("ALTRUN_ACTION") = "run") {                ; Enter on a result: do it
+    hwnd := EnvGet("ALTRUN_HWND")
+    if (hwnd != "" && A_Args[1] = "upper") {
+        WinActivate("ahk_id " hwnd), A_Clipboard := ""
+        Send("^c"), ClipWait(1), Send("{Text}" StrUpper(A_Clipboard))
+    }
+    FileAppend("Done", "*")                          ; the last line printed is shown as a notification
+    ExitApp
+}
+if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; listing: only for Notepad
+    FileAppend("Selection to upper case`t`tupper`tscript`n", "*", "UTF-8-RAW")
+```
+The window closes first, so the program you came from is in front again. What the script starts (an editor, a folder window) keeps running when it ends. After it ends, the last line it printed, if any, is shown as a notification; when it fails (can't start, ends with an exit code other than 0, or is stopped after 2 minutes) the reason is shown. Arrow `→` on such a result: run it, or copy its `arg` (`Alt+Enter`).
 
 **A list ALTRun filters**: when the list doesn't depend on what you type (your projects, servers, bookmarks of a tool), add `@altrun.filter altrun`. The script then runs once, with an empty text, when you type the keyword and the space; ALTRun keeps what it printed until the search window closes and filters it as you type, the same way it matches other results (fuzzy, pinyin initials too), on `match` or else the title, best match first. Nothing runs while you type, so this suits slow starters such as PowerShell.
 

@@ -15,8 +15,12 @@
 ;   - While it runs, the last results stay; with none yet, the script's own row, after WaitRowMs a "Running..." row
 ;   - Output: JSON {"items": [{title, subtitle, arg, type, icon, uid, valid, autocomplete, match, text: {largetype}}]} (a subset of
 ;     Alfred's, names the same) or one result per line: title<Tab>subtitle<Tab>arg<Tab>type<Tab>icon (all but the title optional).
-;     type: file / folder / url / text, guessed from arg without touching the disk when missing. icon: a local file or an IconCache
+;     type: file / folder / url / text / script, guessed from arg (never script) without touching the disk when missing. icon: a local file or an IconCache
 ;     form, never a web address. uid: the item takes part in learned ranking; without it the script's order is kept
+;   - type script: Enter hides the window and runs the same script again in the background (RunItem), with arg as its first argument
+;     and in ALTRUN_ARG, ALTRUN_ACTION=run (live results get ALTRUN_ACTION=filter), the same text and window variables. What it
+;     starts keeps running (ChildProcess KeepStarted); at most RunTimeoutMs. Then the last line it printed, if any, is shown as a
+;     notification; nothing printed and exit code 0: nothing shown; can't start / another exit code / time-out: the reason (Finished)
 ;   - "@altrun.filter altrun": run once on entering the keyword (with an empty text), then ALTRun filters what it printed while
 ;     typing (fuzzy, on "match" or the title, pinyin initials too) without running it again: for lists that don't depend on the
 ;     text (projects, hosts...) and for slow starters such as PowerShell
@@ -29,13 +33,16 @@
 ;   ScriptFilter.Supports(script)        whether it can give live results (keyword, .ahk / .py / .ps1)
 ;   ScriptFilter.Results(script, text)   the rows to show now; starts a run when needed (ScriptFilter.OnResults is called when it ends)
 ;   ScriptFilter.Leave()                 the search is no longer in a filter script's keyword mode: end the run
-;   ScriptFilter.Stop()                  the window hid: end the run and forget the results
+;   ScriptFilter.Stop()                  the window hid: end the run and forget the results (a script item's run goes on)
+;   ScriptFilter.RunItem(script, arg, text)   Enter on a script item: run the script with arg in the background
 ;===============================================================================
 
 class ScriptFilter {
     static DebounceMs := 150, WaitRowMs := 300, TimeoutMs := 10000, MaxStdout := 524288, MaxItems := 200, CacheSize := 20
+    static RunTimeoutMs := 120000                                            ; a script item's run (as ScriptProvider.TimeoutMs)
     static Extensions := Map("ahk", 1, "py", 1, "ps1", 1)
     static OnResults := () => SearchWindow.LiveResultsArrived()             ; results arrived: search again (replaced in tests)
+    static NotifyFn := (text, ms) => App.Notify(text, ms)
     static StartFn := (line, done, options) => ChildProcess.Start(line, done, options)   ; replaced in tests
     static KillFn := (child) => ChildProcess.Kill(child)
 
@@ -96,19 +103,21 @@ class ScriptFilter {
 
     static Running => ScriptFilter._runningKey != ""
 
-    ; The command line, by the script's type (Supports); text: the typed text, passed as the first argument
-    static CommandLine(script, text) {
+    ; The command line, by the script's type (Supports); text: passed as the first argument, which PowerShell takes from the
+    ; variable named (ALTRUN_QUERY for live results, ALTRUN_ARG for a script item's run), never from the command's text
+    static CommandLine(script, text, variable := "ALTRUN_QUERY") {
         switch script.Ext {
             case "ahk": return '"' A_AhkPath '"' (A_IsCompiled ? " /script" : "") ' /ErrorStdOut "' script.Path '" ' Win.QuoteArg(text)
             case "py":  return 'py "' script.Path '" ' Win.QuoteArg(text)
             case "ps1": return '"' A_WinDir '\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "'
-                . "[Console]::OutputEncoding=[Text.Encoding]::UTF8; & '" StrReplace(script.Path, "'", "''") "' $env:ALTRUN_QUERY; exit $LASTEXITCODE" '"'
+                . "[Console]::OutputEncoding=[Text.Encoding]::UTF8; & '" StrReplace(script.Path, "'", "''") "' $env:" variable "; exit $LASTEXITCODE" '"'
         }
         throw ValueError("not a filter script type: " script.Ext)
     }
 
     static Environment(script, text) {
-        env := Map("ALTRUN_QUERY", text, "ALTRUN_KEYWORD", script.Keyword, "ALTRUN_VERSION", App.Version, "PYTHONIOENCODING", "utf-8")
+        env := Map("ALTRUN_QUERY", text, "ALTRUN_KEYWORD", script.Keyword, "ALTRUN_VERSION", App.Version, "ALTRUN_ACTION", "filter"
+            , "PYTHONIOENCODING", "utf-8")
         for name, value in ScriptFilter.WindowVariables(App.PreviousWindow)
             env[name] := value
         return env
@@ -195,10 +204,10 @@ class ScriptFilter {
             , Uid: Trim(uid), Valid: valid, AutoComplete: autoComplete, Match: match, LargeText: large}
     }
 
-    ; file / folder / url / text: as given, else guessed from arg by its form only (a network path would make a check wait)
+    ; file / folder / url / text / script: as given, else guessed from arg by its form only (a network path would make a check wait)
     static KindOf(type, arg) {
         type := StrLower(Trim(type))
-        if RegExMatch(type, "^(file|folder|url|text)$")
+        if RegExMatch(type, "^(file|folder|url|text|script)$")
             return type
         if RegExMatch(arg, "i)^([a-z][a-z0-9+.\-]*://|mailto:)")
             return "url"
@@ -227,6 +236,8 @@ class ScriptFilter {
                 , Uid: (each.Uid != "") ? ScriptProvider.Uid(script) ":" each.Uid : "", LargeText: each.LargeText}
             if (each.AutoComplete != "")
                 props.AutoComplete := script.Keyword " " each.AutoComplete
+            if (each.Type = "script")
+                props.RunTitle := I18n.T("ScriptFilter.RunIn", script.Title), props.OnRun := ScriptFilter._ItemRunner(script, each.Arg, filterText)
             rows.Push(ResultItem(each.Title, each.Subtitle, props))
         }
         return rows
@@ -244,6 +255,49 @@ class ScriptFilter {
                 found.Push(each), scores.Push(score)
         }
         return found
+    }
+
+    static _ItemRunner(script, arg, text) => (*) => ScriptFilter.RunItem(script, arg, text)   ; each row keeps its own arg
+
+    ; Enter on a script item: the script runs again in the background with arg (first argument, ALTRUN_ARG), ALTRUN_ACTION=run,
+    ; text (what was typed) and the window variables; what it starts keeps running. Hiding the window doesn't end it (not _child)
+    static RunItem(script, arg, text) {
+        SplitPath(script.Path, , &dir)
+        env := ScriptFilter.Environment(script, text)
+        env["ALTRUN_ACTION"] := "run", env["ALTRUN_ARG"] := arg
+        return ScriptFilter.StartFn.Call(ScriptFilter.CommandLine(script, arg, "ALTRUN_ARG"), (result) => ScriptFilter.Finished(script, result)
+            , {Dir: dir, Env: env, TimeoutMs: ScriptFilter.RunTimeoutMs, MaxStdout: 65536, KeepStarted: true})
+    }
+
+    ; A script item's run ended (ChildProcess result): the last line printed as a notification; nothing printed and exit code 0:
+    ; nothing; can't start / another exit code / time-out: "Title: reason" (the first line of standard error when it printed one).
+    ; Returns the text shown ("" for none)
+    static Finished(script, result) {
+        if Logger.Enabled
+            Logger.Debug("Perf: script item " script.Name " " result.Ms " ms, exit " result.ExitCode (result.TimedOut ? ", timed out" : "") (result.Error != "" ? ", can't start" : ""))
+        lastLine(text, last := true) {
+            found := ""
+            Loop Parse, text, "`n", "`r"
+                if ((line := Trim(A_LoopField)) != "") {
+                    found := line
+                    if !last
+                        break
+                }
+            return found
+        }
+        if (result.Error != "")
+            problem := I18n.T("ScriptFilter.CantStart", result.Error)
+        else if result.TimedOut
+            problem := I18n.T("ScriptFilter.TimedOut", Round(ScriptFilter.RunTimeoutMs / 1000))
+        else if (result.ExitCode != 0)
+            problem := ((first := lastLine(result.Stderr, false)) != "") ? first : I18n.T("ScriptFilter.ExitCode", result.ExitCode)
+        else {
+            if ((message := lastLine(result.Stdout)) != "")
+                ScriptFilter.NotifyFn.Call(message, 3000)
+            return message
+        }
+        ScriptFilter.NotifyFn.Call(message := script.Title ": " problem, 4000)
+        return message
     }
 
     static _KindIcon(script, each) {

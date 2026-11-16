@@ -8,7 +8,8 @@
 ; a timeout end the whole tree, and so does ALTRun ending (JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE).
 ;   - Only the two pipes and NUL are inherited (PROC_THREAD_ATTRIBUTE_HANDLE_LIST): no other handle of this process leaks to it
 ;   - Standard input is NUL: a program reading it gets the end at once instead of waiting
-;   - Programs it starts are ended when it ends (the job is closed): not for a command meant to start something that stays
+;   - Programs it starts are ended when it ends (the job is closed), unless KeepStarted: then there is no job, and Kill() and a
+;     timeout end the program itself only (for a script that opens something meant to stay, e.g. an editor)
 ;
 ; Usage:
 ;   child := ChildProcess.Start(commandLine, done, options?)
@@ -18,7 +19,8 @@
 ;                  couldn't start, "" when it ran), Ms (how long it ran), Pid}
 ;     options      {Dir: working folder, Env: Map(name, value) for the program only, on top of this process's variables (an
 ;                   empty value: the program doesn't get that variable; this process's own variables never change), TimeoutMs (30 s),
-;                   MaxStdout (512 KB), MaxStderr (8 KB): what is printed beyond them is read and thrown away}
+;                   MaxStdout (512 KB), MaxStderr (8 KB): what is printed beyond them is read and thrown away,
+;                   KeepStarted (false): what the program starts keeps running after it (no job object)}
 ;   ChildProcess.Kill(child)      ends a program that hasn't finished, with everything it started: done isn't called
 ;   ChildProcess.Pending          number of programs still running
 ;   ChildProcess.Decode(buf, size) bytes -> text: UTF-8 (BOM removed) if valid, else the OEM code page (a console's default)
@@ -37,7 +39,7 @@ class ChildProcess {
             , OutRead: 0, Out: Buffer(4096), OutSize: 0, OutMax: option("MaxStdout", ChildProcess.MaxStdout)
             , ErrRead: 0, Err: Buffer(1024), ErrSize: 0, ErrMax: option("MaxStderr", ChildProcess.MaxStderr), Truncated: false}
         try
-            ChildProcess._Create(child, commandLine, option("Dir", ""), option("Env", ""))
+            ChildProcess._Create(child, commandLine, option("Dir", ""), option("Env", ""), option("KeepStarted", false))
         catch as e {
             ChildProcess._Close(child)
             ChildProcess._Later(done, ChildProcess._Result(child, false, e.Message))
@@ -108,7 +110,7 @@ class ChildProcess {
         return block
     }
 
-    static _Create(child, commandLine, dir, env) {
+    static _Create(child, commandLine, dir, env, keepStarted := false) {
         inherit := Buffer(A_PtrSize * 3, 0)                                 ; SECURITY_ATTRIBUTES with bInheritHandle
         NumPut("UInt", inherit.Size, inherit, 0), NumPut("Int", 1, inherit, A_PtrSize * 2)
         outWrite := 0, errWrite := 0, nul := 0, attributes := ""
@@ -146,7 +148,7 @@ class ChildProcess {
             info := Buffer(A_PtrSize * 2 + 8, 0)                            ; PROCESS_INFORMATION
             line := Buffer(StrPut(commandLine) * 2), StrPut(commandLine, line)   ; CreateProcessW may write to the command line
 
-            ; CREATE_SUSPENDED: into the job before it can start anything; CREATE_NO_WINDOW; EXTENDED_STARTUPINFO_PRESENT;
+            ; CREATE_SUSPENDED: into the job (if any) before it can start anything; CREATE_NO_WINDOW; EXTENDED_STARTUPINFO_PRESENT;
             ; CREATE_UNICODE_ENVIRONMENT with its own variables (else it inherits this process's)
             created := DllCall("CreateProcessW", "Ptr", 0, "Ptr", line, "Ptr", 0, "Ptr", 0, "Int", 1, "UInt", 0x4 | 0x08000000 | 0x80000 | (IsObject(block) ? 0x400 : 0)
                 , "Ptr", IsObject(block) ? block.Ptr : 0, dir != "" ? "Str" : "Ptr", dir != "" ? dir : 0, "Ptr", startup, "Ptr", info)
@@ -161,7 +163,7 @@ class ChildProcess {
                     DllCall("CloseHandle", "Ptr", handle)
         }
         child.Process := NumGet(info, 0, "Ptr"), threadHandle := NumGet(info, A_PtrSize, "Ptr"), child.Pid := NumGet(info, A_PtrSize * 2, "UInt")
-        if (job := DllCall("CreateJobObjectW", "Ptr", 0, "Ptr", 0, "Ptr")) {
+        if (!keepStarted && (job := DllCall("CreateJobObjectW", "Ptr", 0, "Ptr", 0, "Ptr"))) {
             limits := Buffer(x64 ? 144 : 112, 0)                            ; JOBOBJECT_EXTENDED_LIMIT_INFORMATION
             NumPut("UInt", 0x2000, limits, 16)                              ; JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
             if (DllCall("SetInformationJobObject", "Ptr", job, "Int", 9, "Ptr", limits, "UInt", limits.Size)

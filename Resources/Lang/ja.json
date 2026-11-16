@@ -1004,6 +1004,7 @@
   "ScriptFilter.Running": "{1} を実行中…",
   "ScriptFilter.Error": "{1}: エラー",
   "ScriptFilter.EditScript": "スクリプトを編集",
+  "ScriptFilter.RunIn": "{1} で実行",
   "ScriptFilter.NoResults": "結果なし",
   "ScriptFilter.CantStart": "起動できません: {1}",
   "ScriptFilter.TimedOut": "{1} 秒以内に結果がありません",

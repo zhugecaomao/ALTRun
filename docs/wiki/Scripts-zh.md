@@ -71,7 +71,7 @@ FileAppend(out, "*", "UTF-8-RAW")
 | `title` | 必须有 |
 | `subtitle` | 标题下面的灰色一行 |
 | `arg` | `Enter` 作用的对象; 不写就是标题 |
-| `type` | `file`、`folder`、`url` (打开) 或 `text` (复制)。不写时看目标的样子: 网址是 `url`, `C:\...` 或 `\\server\...` 是 `file` (以 `\` 结尾是 `folder`), 其他是 `text` |
+| `type` | `file`、`folder`、`url` (打开)、`text` (复制) 或 `script` (用 `arg` 再运行这个脚本, 见下面)。不写时看目标的样子: 网址是 `url`, `C:\...` 或 `\\server\...` 是 `file` (以 `\` 结尾是 `folder`), 其他是 `text` |
 | `icon` | 本地的 `.ico` / `.png` / `.exe` / `.dll` 文件; 不用网址。不写时文件和文件夹用它自己的图标 |
 | `uid` | 让 ALTRun 像对其他结果一样记住你输入什么时选了哪个; 不写就按脚本给的顺序 |
 | `valid` | `false`: 这一行不能运行 (提示行); 有 `autocomplete` 时 `Enter` 把 "关键字 autocomplete" 填进搜索框 |
@@ -82,6 +82,24 @@ FileAppend(out, "*", "UTF-8-RAW")
 输出用 UTF-8: `.ahk` 脚本写 `FileAppend(text, "*", "UTF-8-RAW")`; Python 和 PowerShell 由 ALTRun 运行时已经输出 UTF-8。
 
 **什么时候运行**: 输入关键字和空格后马上运行一次, 之后每次停下输入一会儿 (0.15 秒) 再运行。新的一次开始、离开关键字、关掉搜索窗口时, 还在运行的那次会连同它启动的程序一起结束。运行期间保留上一次的结果; 0.3 秒后还什么都没有才显示 "正在运行…"。一次最多 10 秒。结果保留到搜索窗口关闭, 退格回到搜过的文字时马上显示。
+
+**运行脚本的结果** (`"type": "script"`): `Enter` 关掉搜索窗口, 在后台再运行这个脚本, 结果的 `arg` 作为第一个参数, 也在 `ALTRUN_ARG` 里 (`.ps1` 用 `$env:ALTRUN_ARG`)。这时 `ALTRUN_ACTION` 是 `run` (列结果时是 `filter`); 输入的文字和窗口变量都一样。所以一个脚本就能做前台程序的命令面板: 按 `ALTRUN_PROCESS` 列出适用的命令, 选中后对 `ALTRUN_HWND` 那个窗口执行:
+```autohotkey
+; @altrun.keyword np
+; @altrun.mode    filter
+if (EnvGet("ALTRUN_ACTION") = "run") {                ; 在结果上按了 Enter: 执行
+    hwnd := EnvGet("ALTRUN_HWND")
+    if (hwnd != "" && A_Args[1] = "upper") {
+        WinActivate("ahk_id " hwnd), A_Clipboard := ""
+        Send("^c"), ClipWait(1), Send("{Text}" StrUpper(A_Clipboard))
+    }
+    FileAppend("Done", "*")                          ; 打印的最后一行显示成通知
+    ExitApp
+}
+if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; 列结果: 只在记事本里
+    FileAppend("选中的文字转大写`t`tupper`tscript`n", "*", "UTF-8-RAW")
+```
+搜索窗口先关掉, 所以原来的程序又回到前台。脚本启动的东西 (编辑器、文件夹窗口) 在脚本结束后照常运行。脚本结束后, 有输出就把最后一行显示成通知; 失败时 (启动不了、退出码不是 0、2 分钟后还没结束被停掉) 显示原因。在这种结果上按 `→`: 运行, 或复制它的 `arg` (`Alt+Enter`)。
 
 **由 ALTRun 过滤的列表**: 列表和输入的文字无关时 (自己的项目、服务器、某个工具的书签), 加一行 `@altrun.filter altrun`。这样输入关键字和空格时脚本只运行一次 (文字为空), ALTRun 把输出留到搜索窗口关闭, 边输入边过滤, 匹配方式和其他结果一样 (模糊匹配, 也认拼音首字母), 用 `match`, 没有就用标题, 最匹配的排前面。输入时不再运行脚本, 所以适合 PowerShell 这种启动慢的。
 
