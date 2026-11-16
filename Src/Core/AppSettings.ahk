@@ -197,6 +197,8 @@ class AppSettings {
             changed := true
         if AppSettings.ClampNumbers(data)
             changed := true
+        if AppSettings.EnsureShowHotkey(data)
+            changed := true
         if AppSettings.EnsureIds(data)
             changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
@@ -545,6 +547,20 @@ class AppSettings {
         ["Features.Sync"          , "KeepLogDays"         , 0, 3650],      ; 0 = kept
         ["Extensions.QuickSwitch" , "RecentFolders"       , 0, 100]
     ]
+
+    ; The hotkey that shows ALTRun (General.Hotkey) may be empty only while another way shows it: the second hotkey or double-tap.
+    ; With none of the three it becomes Alt+Space again, so ALTRun can always be brought up. Returns whether it changed
+    static EnsureShowHotkey(data) {
+        if !(data.Has("General") && data["General"] is Map)
+            return false
+        general := data["General"]
+        value(key) => general.Has(key) ? Trim(general[key]) : ""
+        if (value("Hotkey") != "" || value("SecondaryHotkey") != "" || value("DoubleTap") != "")
+            return false
+        general["Hotkey"] := "!Space"
+        Logger.Warn("AppSettings: no hotkey and no double-tap shows ALTRun, so General.Hotkey is Alt+Space again")
+        return true
+    }
 
     ; Puts the number settings of data in range (see NumberRanges), writing each change to the log. Whole numbers only: "700" and 7.6
     ; become 700 and 8. Sections that are missing or not Maps are skipped (_MergeDefaults fills them in first). Returns whether anything changed

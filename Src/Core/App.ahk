@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.13.16"
+    static Version := "2026.11.13.17"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -472,8 +472,13 @@ class App {
         A_IconHidden := false
     }
 
+    ; How to show ALTRun, for the tray tip and the "already running" note: the hotkey, else the second hotkey, else the double-tap key
     static _HotkeyText() {
-        return Win.HotkeyLabel(AppSettings.General["Hotkey"])
+        for key in ["Hotkey", "SecondaryHotkey"]
+            if (AppSettings.General.Has(key) && AppSettings.General[key] != "")
+                return Win.HotkeyLabel(AppSettings.General[key])
+        tap := AppSettings.General.Has("DoubleTap") ? AppSettings.General["DoubleTap"] : ""
+        return (tap != "") ? I18n.T("Prefs.DoubleTap." tap) " ×2" : ""
     }
 
     static _RegisterHotkeys() {

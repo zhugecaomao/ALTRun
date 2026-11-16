@@ -476,8 +476,7 @@ class PreferencesWindow {
         general := PreferencesWindow.Working["General"]
         appearance := PreferencesWindow.Working["Appearance"]
         AppSettings.ClampNumbers(PreferencesWindow.Working)                 ; e.g. an empty number box (0) or a width narrower than the status bar
-        if (general["Hotkey"] = "")
-            general["Hotkey"] := "!Space"
+        AppSettings.EnsureShowHotkey(PreferencesWindow.Working)             ; empty only with the second hotkey or double-tap set
         if IsObject(bad := PreferencesWindow.BadPattern(PreferencesWindow.Working)) {     ; nothing is saved: a bad pattern would only be ignored later
             PreferencesWindow._SelectRow(bad.Page)
             MsgBox(I18n.T("Prefs.BadPattern", bad.Label, I18n.T(PreferencesWindow.PageKeys[bad.Page]), bad.Error), I18n.T("Prefs.Title"), "Icon! Owner" PreferencesWindow.Gui.Hwnd)
