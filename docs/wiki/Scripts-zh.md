@@ -106,3 +106,108 @@ if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; 列结果: 只在记事�
 **出错时**: 显示一行原因 (脚本写到错误输出的第一行、退出码、JSON 的问题或超时)。在这一行上 `Enter` 编辑脚本, `Ctrl+L` 显示全部错误输出。什么都没输出时显示 "没有结果"。
 
 **速度**: `.ahk` 和 `.py` 脚本启动很快; Windows PowerShell 启动明显慢, 所以 `.ps1` 脚本会感觉慢一些: 能用 `@altrun.filter altrun` 就用。给实时结果脚本设的热键会打开搜索窗口, 填好关键字和选中的那一行文字。实时结果脚本不出现在选中内容的操作面板里。
+
+### 例子: 实时翻译
+输入 `fy` 和文字, 边打字边显示译文 (中文 → 英文, 其他语言 → 中文); `Enter` 复制, `Ctrl+Enter` 粘贴到原来的窗口。用的是 [DeepL](https://www.deepl.com/pro-api) 和你自己的 API key (免费版每月 50 万字符, 够用)。**`fy` 后面输入的文字会在打字时发给 DeepL**; ALTRun 自己不发送任何东西。
+
+1. 在 DeepL 申请 API key (Account → API Keys), 加成用户环境变量 `DEEPL_AUTH_KEY` (Windows 搜索 "编辑账户的环境变量")。脚本会去那里读, 不用重启 ALTRun。
+2. 把下面的脚本存成 `Scripts\` 文件夹 (偏好设置 → 脚本 → 打开脚本文件夹) 里的 `Translate.ahk`, 编码 UTF-8。
+3. 可以给它设热键: 偏好设置 → 热键 里加一个, 动作选 "在 ALTRun 中搜索", 搜索内容填 `fy {selection}`: 在任何程序里选中文字, 按热键就能看到译文。
+
+```autohotkey
+; @altrun.title   Translate (DeepL)
+; @altrun.keyword fy
+; @altrun.mode    filter
+; Live translation with DeepL: "fy text" shows the translation (Chinese -> English, anything else -> Chinese).
+; Enter copies it, Ctrl+Enter pastes it into the window you came from. The text typed after "fy" is sent to DeepL.
+; Needs your own DeepL API key (the free plan is enough) in the user environment variable DEEPL_AUTH_KEY.
+#Requires AutoHotkey v2.0
+#NoTrayIcon
+
+text := A_Args.Length ? Trim(A_Args[1]) : ""
+key := EnvGet("DEEPL_AUTH_KEY")
+if (key = "")                                       ; set after ALTRun started: read it where Windows keeps it
+    try key := RegRead("HKCU\Environment", "DEEPL_AUTH_KEY")
+if (key = "")
+    Show("Set DEEPL_AUTH_KEY first", "Your DeepL API key, as a user environment variable", false)
+if (text = "")
+    Show("Type the text to translate", "Chinese -> English, other languages -> Chinese", false)
+
+target := RegExMatch(text, "[\x{3400}-\x{9FFF}]") ? "EN-US" : "ZH-HANS"
+host := (SubStr(key, -3) = ":fx") ? "api-free.deepl.com" : "api.deepl.com"   ; free plan keys end with :fx
+try {
+    request := ComObject("WinHttp.WinHttpRequest.5.1")
+    request.SetTimeouts(3000, 3000, 3000, 5000)
+    request.Open("POST", "https://" host "/v2/translate", false)
+    request.SetRequestHeader("Authorization", "DeepL-Auth-Key " key)
+    request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded")
+    request.Send("text=" UrlEncode(text) "&target_lang=" target)
+} catch as e                                        ; offline, proxy, time-out: an error row instead of an error dialog
+    Fail("Can't reach DeepL: " Trim(e.Message, " `r`n"))
+switch request.Status {
+    case 200:
+    case 403: Fail("DeepL didn't accept the key in DEEPL_AUTH_KEY")
+    case 456: Fail("DeepL: this month's characters are used up")
+    default:  Fail("DeepL answered " request.Status " " request.StatusText)
+}
+body := Utf8(request.ResponseBody)
+if !RegExMatch(body, '"text"\s*:\s*"((?:[^"\\]|\\.)*)"', &m)
+    Fail("Unexpected answer from DeepL")
+from := RegExMatch(body, '"detected_source_language"\s*:\s*"(\w+)"', &source) ? source[1] " → " : ""
+Show(Unescape(m[1]), "DeepL · " from target)
+
+; One result (or a hint that can't be chosen, valid = false) as JSON, then end
+Show(title, subtitle, valid := true) {
+    FileAppend('{"items": [{"title": "' Escape(title) '", "subtitle": "' Escape(subtitle) '", "arg": "' Escape(title)
+        . '", "type": "text", "valid": ' (valid ? "true" : "false") '}]}', "*", "UTF-8-RAW")
+    ExitApp
+}
+
+Fail(message) {                                     ; ALTRun shows the first line of standard error as an error row
+    FileAppend(message "`n", "**", "UTF-8-RAW")
+    ExitApp(1)
+}
+
+UrlEncode(s) {
+    size := StrPut(s, "UTF-8"), bytes := Buffer(size), StrPut(s, bytes, "UTF-8"), out := ""
+    Loop size - 1 {
+        b := NumGet(bytes, A_Index - 1, "UChar")
+        out .= (b >= 0x30 && b <= 0x39 || b >= 0x41 && b <= 0x5A || b >= 0x61 && b <= 0x7A || b = 0x2D || b = 0x2E || b = 0x5F || b = 0x7E)
+            ? Chr(b) : Format("%{:02X}", b)
+    }
+    return out
+}
+
+Utf8(safeArray) {                                   ; the answer's bytes as UTF-8 text (ResponseText guesses the code page)
+    return StrGet(NumGet(ComObjValue(safeArray), 8 + A_PtrSize, "Ptr"), safeArray.MaxIndex() + 1, "UTF-8")
+}
+
+Escape(s) {                                         ; text -> inside a JSON string
+    s := StrReplace(StrReplace(s, "\", "\\"), '"', '\"')
+    return StrReplace(StrReplace(StrReplace(s, "`r", "\r"), "`n", "\n"), "`t", "\t")
+}
+
+Unescape(s) {                                       ; inside a JSON string -> text
+    out := "", i := 1
+    while (i <= StrLen(s)) {
+        c := SubStr(s, i, 1)
+        if (c != "\") {
+            out .= c, i += 1
+            continue
+        }
+        n := SubStr(s, i + 1, 1)
+        switch n {
+            case "n": out .= "`n"
+            case "r": out .= "`r"
+            case "t": out .= "`t"
+            case "b": out .= "`b"
+            case "f": out .= "`f"
+            case "u": out .= Chr(Integer("0x" SubStr(s, i + 2, 4))), i += 4
+            default:  out .= n
+        }
+        i += 2
+    }
+    return out
+}
+```
+没有 key 或还没输入时, 那一行会提示该做什么; key 不被接受、本月额度用完、连不上 DeepL 时显示一行错误。要译成别的语言, 改 `target` (DeepL 的代码, 例如 `JA`、`DE`、`EN-GB`)。
