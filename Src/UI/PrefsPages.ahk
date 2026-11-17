@@ -768,7 +768,7 @@ class PrefsPages {
             , ["Prefs.ScriptLibrary", (*) => ActionCatalog.OpenUrl(App.Website "#scripts")])
         PrefsForm.Field("Features.Scripts.Keyword", "Prefs.ScriptKeyword", "S")
         PrefsForm.Section("Prefs.Section.ScriptList")
-        listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h140 -Multi NoSort Grid ReadOnly"
+        listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h170 -Multi NoSort Grid ReadOnly"
             , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.ScriptTypes"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
         for index, width in [105, 60, 80, 80, 130, 80]   ; the last one (File) fills the rest
             listView.ModifyCol(index, width)
@@ -780,7 +780,7 @@ class PrefsPages {
         PrefsPages._scriptList := listView
         PrefsPages._FillScripts()
         PrefsForm.Below(6, listView)
-        PrefsPages._scriptDetail := PrefsForm.Add("Text", "x" PrefsForm.ContentX " w" PrefsForm.ContentW " r2 cGray 0x80")   ; SS_NOPREFIX: & in a description shows as it is
+        PrefsPages._scriptDetail := PrefsForm.Add("Text", "x" PrefsForm.ContentX " w" PrefsForm.ContentW " r3 cGray 0x80")   ; three lines: a long "Needs" wraps; SS_NOPREFIX: & shows as it is
         PrefsForm.Below(6, PrefsPages._scriptDetail)
         PrefsForm.Note("Prefs.ScriptsNote")
     }
