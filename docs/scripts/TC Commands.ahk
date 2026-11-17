@@ -1,7 +1,12 @@
-; @altrun.title   Total Commander Commands
-; @altrun.keyword tc
-; @altrun.mode    filter
-; @altrun.filter  altrun
+; @altrun.title          Total Commander Commands
+; @altrun.keyword        tc
+; @altrun.mode           filter
+; @altrun.filter         altrun
+; @altrun.description    A command palette for Total Commander: find its commands and your own (em_) by name, Enter runs them
+; @altrun.description_zh Total Commander 命令面板: 按名字找 TC 的命令和你自己的命令 (em_), 回车执行
+; @altrun.requires       Total Commander; ALTRun 2026.11.16.4 or later
+; @altrun.requires_zh    Total Commander; ALTRun 2026.11.16.4 或更新
+; @altrun.network        none
 ;
 ; A command palette for Total Commander in ALTRun: type "tc " and part of a command's name (in English or in the language
 ; Total Commander uses, pinyin initials too), then Enter runs it in Total Commander.
