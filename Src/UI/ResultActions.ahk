@@ -19,6 +19,13 @@
 ;===============================================================================
 
 class ResultActions {
+    ; "Open with Typora": a program of General.OpenWith; when it isn't there the item says so (and running it shows the same message)
+    static _OpenWithAction(list, rule, target) {
+        exe := ActionCatalog.OpenWithExe(rule)
+        list.Push(ResultItem(I18n.T("Action.OpenWithProgram", rule.Name), exe = "" ? I18n.T("Action.OpenWithMissing", rule.Program) : ""
+            , {Icon: exe != "" ? exe : "res:shell32.dll,-3", OnRun: (*) => ActionCatalog.OpenWithProgram(rule, Path.Resolve(target))}))
+    }
+
     ; The actions panel: the user's commands for a selection (LeadActions) first, then the default action, the general actions for this kind of result, and the result's own actions
     static ListFor(item) {
         list := []
@@ -37,6 +44,9 @@ class ResultActions {
         switch item.Kind {
             case "file":
                 add("Action.Open", target, (*) => (filled := ActionCatalog.ForWindow(item), ActionCatalog.OpenFile(filled.Arg, filled.Arguments)), enter)
+                if (item.Arguments = "")                                    ; General.OpenWith: every program set for this extension, the first one is Enter's
+                    for rule in ActionCatalog.OpenWithFor(target)
+                        ResultActions._OpenWithAction(list, rule, target)
                 if ActionCatalog.CanRunAsAdmin(target)
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => (filled := ActionCatalog.ForWindow(item), ActionCatalog.RunAsAdmin(filled.Arg, filled.Arguments)), "Ctrl+Shift+Enter")
                 if IsObject(editor := ActionCatalog.EditorFor(target))      ; the file type has an "Edit" verb (e.g. .ahk opens in an editor)

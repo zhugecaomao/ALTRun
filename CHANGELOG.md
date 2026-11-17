@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.18]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 通用 → "打开文件的程序": 按扩展名指定打开文件的程序 (例如 `md = ..\Typora\Typora.exe`), 适合 Windows 没有关联的便携环境; 同一个扩展名可以写几行, 第一行是回车用的程序, 每一行都在操作面板里显示为 "用 Typora 打开"; 程序可以写相对 ALTRun 文件夹的路径和环境变量, `%1` 是文件。程序找不到时提示, 不再弹出 Windows 的 "选择应用"
+
 ## [2026.11.16.17]
 
 测试版。
@@ -1648,7 +1657,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...HEAD
+[2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
 [2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
 [2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16
 [2026.11.16.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...2026.11.16.15

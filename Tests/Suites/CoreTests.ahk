@@ -2485,6 +2485,92 @@ Func | PTTools | PT Tools (AHK)=99
         }
     }
 
+    ; General.OpenWith: "ext ext = program [parameters]" rules; the first rule for an extension opens it with Enter, every rule is
+    ; "Open with <program>" in the actions panel; programs and shortcuts are left alone; a missing program is an error, not the
+    ; Windows association (the "choose an app" box)
+    static OpenWith() {
+        eq := (n, a, e) => TestRunner.Equal("OpenWith." n, a, e)
+        root := A_Temp "\ALTRun-openwith-test"
+        nearby := A_ScriptDir "\ALTRun-openwith-test"                       ; a portable program next to ALTRun: a relative path
+        try DirDelete(root, true)
+        try DirDelete(nearby, true)
+        DirCreate(root "\My Apps")
+        DirCreate(nearby)
+        FileAppend("", root "\My Apps\Typora.exe")
+        FileAppend("", nearby "\Editor.exe")
+        FileAppend("", root "\a.md")
+        FileAppend("", root "\b.TXT")
+        EnvSet("ALTRUN_OW", root)
+        saved := AppSettings.General["OpenWith"]
+        try {
+            r := ActionCatalog.ParseOpenWith('  *.MD .markdown md, mkd = "%ALTRUN_OW%\My Apps\Typora.exe" --x "%1"  ')
+            eq("parse", r.ExtList "|" r.Program "|" r.Args "|" r.Name, 'md markdown mkd|%ALTRUN_OW%\My Apps\Typora.exe|--x "%1"|Typora')
+            r := ActionCatalog.ParseOpenWith("txt = %ALTRUN_OW%\My Apps\Typora.exe")
+            eq("parse: unquoted up to .exe", r.Program "|" r.Args, "%ALTRUN_OW%\My Apps\Typora.exe|")
+            eq("parse: no program", ActionCatalog.ParseOpenWith("md = "), "")
+            eq("parse: no extension", ActionCatalog.ParseOpenWith(" = notepad.exe"), "")
+            eq("parse: no =", ActionCatalog.ParseOpenWith("md notepad.exe"), "")
+            eq("parse: only programs and shortcuts", ActionCatalog.ParseOpenWith("exe lnk = notepad.exe"), "")
+            eq("parse: programs dropped", ActionCatalog.ParseOpenWith("exe ahk = notepad.exe").ExtList, "ahk")
+
+            eq("command line: %1", ActionCatalog.OpenWithCommandLine("C:\e.exe", '--x "%1" -y', "D:\a b.md"), '"C:\e.exe" --x "D:\a b.md" -y')
+            eq("command line: added at the end", ActionCatalog.OpenWithCommandLine("C:\e.exe", "--x", "D:\a b.md"), '"C:\e.exe" --x "D:\a b.md"')
+            eq("command line: no parameters", ActionCatalog.OpenWithCommandLine("C:\e.exe", "", "D:\a.md"), '"C:\e.exe" "D:\a.md"')
+
+            AppSettings.General["OpenWith"] := ["md = %ALTRUN_OW%\My Apps\Typora.exe", "bad line", "txt md = ALTRun-openwith-test\Editor.exe"
+                , "md = %ALTRUN_OW%\gone.exe"]
+            names(rules) {
+                text := ""
+                for rule in rules
+                    text .= rule.Name "|"
+                return text
+            }
+            eq("rules", ActionCatalog.OpenWithRules().Length, 3)
+            eq("for .md: in order", names(ActionCatalog.OpenWithFor(root "\a.md")), "Typora|Editor|gone|")
+            eq("for .TXT: any case", names(ActionCatalog.OpenWithFor(root "\b.TXT")), "Editor|")
+            eq("no rule", names(ActionCatalog.OpenWithFor(root "\c.pdf")), "")
+            eq("no extension", names(ActionCatalog.OpenWithFor(root "\README")), "")
+            rules := ActionCatalog.OpenWithFor(root "\a.md")
+            eq("exe: environment variable", ActionCatalog.OpenWithExe(rules[1]), root "\My Apps\Typora.exe")
+            eq("exe: relative to ALTRun", ActionCatalog.OpenWithExe(rules[2]), nearby "\Editor.exe")
+            eq("exe: missing", ActionCatalog.OpenWithExe(rules[3]), "")
+            thrown := ""
+            try ActionCatalog.OpenWithProgram(rules[3], root "\a.md")
+            catch as e
+                thrown := e.Message
+            eq("missing program: an error", thrown, I18n.T("Action.OpenWithMissing", "%ALTRUN_OW%\gone.exe"))
+
+            titles(list) {
+                text := ""
+                for action in list
+                    text .= action.Title "|"
+                return text
+            }
+            panel := titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md"})))
+            expected := I18n.T("Action.Open") "|" I18n.T("Action.OpenWithProgram", "Typora") "|" I18n.T("Action.OpenWithProgram", "Editor")
+                . "|" I18n.T("Action.OpenWithProgram", "gone") "|"
+            eq("panel: after Open, in order", InStr(panel, expected) = 1, true)
+            missing := ""
+            for action in ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md"}))
+                if (action.Title = I18n.T("Action.OpenWithProgram", "gone"))
+                    missing := action.Subtitle
+            eq("panel: missing program says so", missing, I18n.T("Action.OpenWithMissing", "%ALTRUN_OW%\gone.exe"))
+            eq("panel: other types unchanged", InStr(titles(ResultActions.ListFor(ResultItem("c", "", {Kind: "file", Arg: root "\c.pdf"})))
+                , I18n.T("Action.OpenWithProgram", "Editor")), 0)
+            eq("panel: command with parameters unchanged", InStr(titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", Arguments: "-x"})))
+                , I18n.T("Action.OpenWithProgram", "Typora")), 0)
+            eq("summary", PrefsPages.OpenWithSummary(AppSettings.General["OpenWith"]), "md → Typora, txt md → Editor, md → gone")
+
+            AppSettings.General["OpenWith"] := []
+            eq("empty: no rules", ActionCatalog.OpenWithFor(root "\a.md").Length, 0)
+        } finally {
+            AppSettings.General["OpenWith"] := saved
+            EnvSet("ALTRUN_OW")
+            try DirDelete(root, true)
+            try DirDelete(nearby, true)
+        }
+    }
+
     ; The Browser setting: program with %variables% and parameters; the default browser when empty or missing. The command
     ; line keeps the address one argument; "url:" icons show the browser's
     static BrowserCommand() {

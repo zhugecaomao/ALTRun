@@ -26,6 +26,8 @@ class PrefsPages {
         PrefsForm.Check("General.FolderNewTab", "Prefs.FolderNewTab")
         browser := PrefsForm.Field("General.Browser", "Prefs.Browser", "L", "file")
         Win.SetCueBanner(browser.Hwnd, I18n.T("Prefs.Browser.Empty"))          ; empty = the default browser (the parameters are explained in the wiki)
+        openWith := PrefsForm.LinesButton("General.OpenWith", "Prefs.OpenWith", {Summary: (lines) => PrefsPages.OpenWithSummary(lines)})
+        Win.SetCueBanner(openWith.Hwnd, I18n.T("Prefs.OpenWith.Empty"))        ; empty = Windows' associations (the rules are explained in the list's help)
     }
 
     ; Search window behavior (the Window group of the settings)
@@ -1371,6 +1373,15 @@ class PrefsPages {
     static _OpenFolder(folder) {
         DirCreate(folder)
         ActionCatalog.OpenFolder(folder)                                    ; the file manager in the settings (e.g. Total Commander)
+    }
+
+    ; Open files with: "md markdown → Typora, txt → Notepad3"
+    static OpenWithSummary(lines) {
+        items := []
+        for line in lines
+            if IsObject(rule := ActionCatalog.ParseOpenWith(line))
+                items.Push(rule.ExtList " → " rule.Name)
+        return TextTools.JoinList(items)
     }
 
     ; File types: just the keywords ("doc, pic, video, ...")

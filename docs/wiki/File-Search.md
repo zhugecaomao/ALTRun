@@ -36,6 +36,13 @@ Folders you use often work better as [custom commands](Custom-Commands): custom 
 
 `Enter` opens, `Ctrl+Enter` reveals in the file manager, `Alt+Enter` copies the path, `→` shows more actions (Open With, copy / cut the file, copy / move to the current folder in TC, Open Terminal Here, Properties, Move to Recycle Bin...), see the [action panel](Usage#action-panel).
 
+**Opening files with a program of your choice**: `Enter` opens a file with the program Windows associates with its type. For a portable setup where Windows doesn't know a type (for example `.md` files opened by a portable editor, or by Total Commander's internal associations), set the programs in Preferences → General → "Open files with", one rule per line:
+```
+md markdown = ..\Typora\Typora.exe
+md = %LocalAppData%\Programs\Microsoft VS Code\Code.exe --reuse-window "%1"
+```
+The first line for an extension opens it with `Enter`; every line is in the action panel (`→`) as "Open with Typora", "Open with Code". `%1` is the file (added at the end when missing); a relative path starts from ALTRun's folder, so it still works when the USB drive letter changes. See [OpenWith](Configuration#general).
+
 ## Browsing folders
 Type a path in the search box to list what's in that folder (folders first); the last part of the path filters the list:
 
