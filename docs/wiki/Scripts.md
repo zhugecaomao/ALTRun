@@ -110,11 +110,11 @@ The window closes first, so the program you came from is in front again. What th
 **Speed**: an `.ahk` or `.py` script starts in a fraction of a second; Windows PowerShell takes noticeably longer to start, so a `.ps1` script feels slower: use `@altrun.filter altrun` when you can. A hotkey for a live results script opens the search window with its keyword and the selected line of text. Live results scripts aren't offered for selected content.
 
 ### Example: live translation
-Type `fy` and some text: the translation appears as you type (Chinese → English, other languages → Chinese); `Enter` copies it, `Ctrl+Enter` pastes it into the window you came from. It uses [DeepL](https://www.deepl.com/pro-api) with your own API key (the free plan, 500,000 characters a month, is enough for this). **The text you type after `fy` is sent to DeepL** while you type; ALTRun itself sends nothing.
+Type `fy` and some text: the translation appears as you type (Chinese → English, other languages → Chinese); `Enter` copies it, `Ctrl+Enter` pastes it into the window you came from. It uses [DeepL](https://www.deepl.com/pro-api) with your own API key (the free plan, 500,000 characters a month, is enough for this). **The text you type after `fy` is sent to DeepL** while you type; ALTRun itself sends nothing. DeepL counts the characters of every request, and each pause in typing sends the whole text again, so a sentence typed letter by letter can count several times its length; the hotkey below sends it once.
 
 1. Get a DeepL API key (Account → API Keys), and add it as a user environment variable named `DEEPL_AUTH_KEY` (Windows search: "Edit environment variables for your account"). The script reads it there, so ALTRun doesn't need to restart.
 2. Save the script below as `Translate.ahk` in the `Scripts\` folder (Preferences → Scripts → Open Scripts Folder), as UTF-8.
-3. Optionally give it a hotkey: Preferences → Hotkeys with the action "Search in ALTRun" and the search text `fy {selection}`: select some text in any program and press it to see the translation.
+3. Optionally give it a hotkey: Preferences → Hotkeys with the action "Search in ALTRun" and the search text `fy {selection}`: select some text in any program and press it to see the translation. The selection is put on one line, and only its first 100 characters are used.
 
 ```autohotkey
 ; @altrun.title   Translate (DeepL)
@@ -139,7 +139,7 @@ target := RegExMatch(text, "[\x{3400}-\x{9FFF}]") ? "EN-US" : "ZH-HANS"
 host := (SubStr(key, -3) = ":fx") ? "api-free.deepl.com" : "api.deepl.com"   ; free plan keys end with :fx
 try {
     request := ComObject("WinHttp.WinHttpRequest.5.1")
-    request.SetTimeouts(3000, 3000, 3000, 5000)
+    request.SetTimeouts(2000, 2000, 2000, 3500)      ; together under ALTRun's 10 s, so a slow network shows the error below
     request.Open("POST", "https://" host "/v2/translate", false)
     request.SetRequestHeader("Authorization", "DeepL-Auth-Key " key)
     request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded")
@@ -186,7 +186,10 @@ Utf8(safeArray) {                                   ; the answer's bytes as UTF-
 
 Escape(s) {                                         ; text -> inside a JSON string
     s := StrReplace(StrReplace(s, "\", "\\"), '"', '\"')
-    return StrReplace(StrReplace(StrReplace(s, "`r", "\r"), "`n", "\n"), "`t", "\t")
+    s := StrReplace(StrReplace(StrReplace(s, "`r", "\r"), "`n", "\n"), "`t", "\t")
+    while RegExMatch(s, "[\x01-\x1F]", &c)            ; other control characters, which JSON doesn't allow as they are
+        s := StrReplace(s, c[0], Format("\u{:04X}", Ord(c[0])))
+    return s
 }
 
 Unescape(s) {                                       ; inside a JSON string -> text

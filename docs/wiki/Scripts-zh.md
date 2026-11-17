@@ -110,11 +110,11 @@ if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; 列结果: 只在记事�
 **速度**: `.ahk` 和 `.py` 脚本启动很快; Windows PowerShell 启动明显慢, 所以 `.ps1` 脚本会感觉慢一些: 能用 `@altrun.filter altrun` 就用。给实时结果脚本设的热键会打开搜索窗口, 填好关键字和选中的那一行文字。实时结果脚本不出现在选中内容的操作面板里。
 
 ### 例子: 实时翻译
-输入 `fy` 和文字, 边打字边显示译文 (中文 → 英文, 其他语言 → 中文); `Enter` 复制, `Ctrl+Enter` 粘贴到原来的窗口。用的是 [DeepL](https://www.deepl.com/pro-api) 和你自己的 API key (免费版每月 50 万字符, 够用)。**`fy` 后面输入的文字会在打字时发给 DeepL**; ALTRun 自己不发送任何东西。
+输入 `fy` 和文字, 边打字边显示译文 (中文 → 英文, 其他语言 → 中文); `Enter` 复制, `Ctrl+Enter` 粘贴到原来的窗口。用的是 [DeepL](https://www.deepl.com/pro-api) 和你自己的 API key (免费版每月 50 万字符, 够用)。**`fy` 后面输入的文字会在打字时发给 DeepL**; ALTRun 自己不发送任何东西。DeepL 按每次请求的字符数计费, 打字时每停顿一下就会把整段文字再发一次, 所以逐个字母打一句英文, 计费可能是它长度的好几倍; 用下面的热键只发一次。
 
 1. 在 DeepL 申请 API key (Account → API Keys), 加成用户环境变量 `DEEPL_AUTH_KEY` (Windows 搜索 "编辑账户的环境变量")。脚本会去那里读, 不用重启 ALTRun。
 2. 把下面的脚本存成 `Scripts\` 文件夹 (偏好设置 → 脚本 → 打开脚本文件夹) 里的 `Translate.ahk`, 编码 UTF-8。
-3. 可以给它设热键: 偏好设置 → 热键 里加一个, 动作选 "在 ALTRun 中搜索", 搜索内容填 `fy {selection}`: 在任何程序里选中文字, 按热键就能看到译文。
+3. 可以给它设热键: 偏好设置 → 热键 里加一个, 动作选 "在 ALTRun 中搜索", 搜索内容填 `fy {selection}`: 在任何程序里选中文字, 按热键就能看到译文。选中的文字会合成一行, 最多取前 100 个字。
 
 ```autohotkey
 ; @altrun.title   Translate (DeepL)
@@ -139,7 +139,7 @@ target := RegExMatch(text, "[\x{3400}-\x{9FFF}]") ? "EN-US" : "ZH-HANS"
 host := (SubStr(key, -3) = ":fx") ? "api-free.deepl.com" : "api.deepl.com"   ; free plan keys end with :fx
 try {
     request := ComObject("WinHttp.WinHttpRequest.5.1")
-    request.SetTimeouts(3000, 3000, 3000, 5000)
+    request.SetTimeouts(2000, 2000, 2000, 3500)      ; together under ALTRun's 10 s, so a slow network shows the error below
     request.Open("POST", "https://" host "/v2/translate", false)
     request.SetRequestHeader("Authorization", "DeepL-Auth-Key " key)
     request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded")
@@ -186,7 +186,10 @@ Utf8(safeArray) {                                   ; the answer's bytes as UTF-
 
 Escape(s) {                                         ; text -> inside a JSON string
     s := StrReplace(StrReplace(s, "\", "\\"), '"', '\"')
-    return StrReplace(StrReplace(StrReplace(s, "`r", "\r"), "`n", "\n"), "`t", "\t")
+    s := StrReplace(StrReplace(StrReplace(s, "`r", "\r"), "`n", "\n"), "`t", "\t")
+    while RegExMatch(s, "[\x01-\x1F]", &c)            ; other control characters, which JSON doesn't allow as they are
+        s := StrReplace(s, c[0], Format("\u{:04X}", Ord(c[0])))
+    return s
 }
 
 Unescape(s) {                                       ; inside a JSON string -> text
