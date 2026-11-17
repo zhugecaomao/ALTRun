@@ -1308,12 +1308,17 @@ class Shots {
     ; Preferences → Scripts with the script library's Translate script selected: its description and details below the list
     static PrefsScripts() {
         hwnd := Shots.Preferences()
-        for ctrl in WinGetControlsHwnd(hwnd)
+        list := 0, listX := -1
+        for ctrl in WinGetControlsHwnd(hwnd)                                ; the scripts list: the visible list furthest right (the page list is a ListView too)
             if (WinGetClass(ctrl) = "SysListView32" && DllCall("IsWindowVisible", "Ptr", ctrl)) {
-                ControlFocus(ctrl)
-                ControlSend("{Home}Translate", ctrl)                           ; the list's type-ahead selects the row starting with it
-                break
+                ControlGetPos(&x, , , , ctrl)
+                if (x > listX)
+                    list := ctrl, listX := x
             }
+        if !list
+            throw Error("scripts list not found")
+        ControlFocus(list)
+        ControlSend("{Home}Translate", list)                                ; the list's type-ahead selects the row starting with it
         Sleep(500)
         return hwnd
     }
