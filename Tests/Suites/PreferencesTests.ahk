@@ -45,7 +45,26 @@ class PreferencesTests {
             eq("help: " key, I18n.Strings.Has(key ".Help"), true)
     }
 
-    ; "Add Examples" / "Add Built-ins" on the list pages: only the defaults missing from the list are added, the rest are counted as skipped
+    ; The right-click menu of a Preferences list (PrefsForm.ListMenuEntries): on a row Edit (default) and Delete first, then Add,
+    ; then the page's actions after a separator, keeping their own separators, check marks and buttons; on no row only Add and the actions
+    static ListMenu() {
+        eq := (n, a, e) => TestRunner.Equal("ListMenu." n, a, e)
+        show(entries) {
+            text := ""
+            for entry in entries
+                text .= IsObject(entry) ? entry.Kind ":" entry.Label (entry.Default ? "*" : "") (entry.Checked ? "+" : "") (entry.Button != "" ? "@" entry.Button : "") " " : "- "
+            return Trim(text)
+        }
+        fn := (*) => ""
+        page := [{Label: "Check", Click: fn, Button: "b1"}, "-", {Label: "Import", Click: fn, Button: "b2", Checked: true}]
+        editText := I18n.T("Prefs.Edit"), deleteText := I18n.T("Prefs.Delete"), addText := I18n.T("Prefs.Add")
+        eq("on a row", show(PrefsForm.ListMenuEntries(true, page)), "Edit:" editText "* Delete:" deleteText " - Add:" addText " - Page:Check@b1 - Page:Import+@b2")
+        eq("no row", show(PrefsForm.ListMenuEntries(false, page)), "Add:" addText " - Page:Check@b1 - Page:Import+@b2")
+        eq("no page actions", show(PrefsForm.ListMenuEntries(false, [])), "Add:" addText)
+        entries := PrefsForm.ListMenuEntries(true, page)
+        eq("page click kept", entries[entries.Length].Click = fn, true)
+    }
+
     ; Preferences → Scripts, below the list: the selected script's description, then what it needs, where it connects and its path
     ; (PrefsPages.ScriptDetail); the Chinese description for a Chinese UI; a script without library lines shows its path only
     static ScriptDetail() {
@@ -67,6 +86,7 @@ class PreferencesTests {
             I18n.Init(saved)
     }
 
+    ; "Add Examples" / "Add Built-ins" on the list pages: only the defaults missing from the list are added, the rest are counted as skipped
     static ListExamples() {
         eq := (n, a, e) => TestRunner.Equal("ListExamples." n, a, e)
         pages := [["Hotkeys", (item) => PrefsPages.HotkeyKeys(item)], ["CustomCommands", (item) => PrefsPages.CommandKeys(item)]

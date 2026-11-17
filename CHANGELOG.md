@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.13]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置里可以编辑的列表 (自定义命令、内容类型、文字片段、网页搜索引擎、热键、延迟启动、同步任务) 都有右键菜单: 在一行上右键是 编辑 (同双击) / 删除, 然后是 添加 和这一页自己的按钮 (例如 检查路径、导入 / 导出、添加示例); 菜单键或 `Shift+F10` 也能打开
+
 ## [2026.11.16.12]
 
 测试版。
@@ -1597,7 +1606,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...HEAD
+[2026.11.16.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...2026.11.16.13
 [2026.11.16.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...2026.11.16.12
 [2026.11.16.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...2026.11.16.11
 [2026.11.16.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...2026.11.16.10
