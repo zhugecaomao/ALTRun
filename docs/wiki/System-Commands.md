@@ -27,7 +27,6 @@ Type the name in the search box (English, Chinese or the Id all work); they can 
 | `MediaPlayPause` `MediaNext` `MediaPrev` `MediaStop` | Play / Pause, Next Track, Previous Track, Stop Media (music and video players) |
 | `ShowIP` | Show IP Address |
 | `TerminalHere` | Open a terminal in the current folder (Explorer / Total Commander) |
-| `ListProcesses` `ListServices` | List running processes / services |
 | **Clipboard text** (converted and put back on the clipboard) | |
 | `TextUpper` `TextLower` `TextTitle` | UPPERCASE / lowercase / Title Case |
 | `TextSortAsc` `TextSortDesc` | Sort lines |
@@ -39,6 +38,8 @@ Type the name in the search box (English, Chinese or the Id all work); they can 
 | | Task Manager, Control Panel, Windows Settings, Device Manager, Services, Registry Editor, Event Viewer, Disk Management, Computer Management, Task Scheduler, Programs and Features, System Properties, Network Connections, Windows Defender Firewall, Resource Monitor, Disk Cleanup, System Configuration, Group Policy Editor, Command Prompt, PowerShell, File Explorer, Recycle Bin, This PC, Devices and Printers, Notepad, Calculator, Paint, About Windows |
 
 The confirmation for shut down, restart and similar commands can be turned off with `Features.System.ConfirmActions = 0`.
+
+`ListProcesses` and `ListServices` (a text list of running processes / services) were removed in 2026.11: custom hotkeys that use them now open Task Manager / Services. For a searchable list of running programs that can also end them, use the Kill Process script (`kill`) from the [script library](https://zhugecaomao.github.io/ALTRun/#scripts).
 
 ## Terminal
 Type `>command` to run it in a terminal that stays open, for example `>ipconfig /all` or `>ping 8.8.8.8`. "Open Terminal Here" in the action panel opens a terminal in the file's folder.

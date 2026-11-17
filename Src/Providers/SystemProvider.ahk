@@ -22,12 +22,13 @@ class SystemProvider {
         "Update", "CheckUpdate", "TurnMonitorOff", "MonitorOff", "MuteVolume", "Mute",
         "IncreaseVolume", "VolumeUp", "DecreaseVolume", "VolumeDown", "ShutdownMachine", "Shutdown",
         "RestartMachine", "Restart", "HibernateMachine", "Hibernate", "OpenTerminalHere", "TerminalHere",
-        "ListProcess", "ListProcesses", "ListService", "ListServices", "ClipUpper", "TextUpper",
+        "ListProcess", "TaskManager", "ListService", "Services", "ClipUpper", "TextUpper",
         "ClipLower", "TextLower", "ClipTitleCase", "TextTitle", "ClipReverse", "TextReverse",
         "ClipSortAsc", "TextSortAsc", "ClipSortDesc", "TextSortDesc", "ClipTrimLines", "TextTrimLines",
         "ClipRemoveBlankLines", "TextRemoveBlank", "ClipDedupeLines", "TextDedupe",
         "ClipToTraditional", "TextToTraditional", "ClipToSimplified", "TextToSimplified", "UrlEncode", "TextUrlEncode",
-        "Activate", "Show"
+        "Activate", "Show",
+        "ListProcesses", "TaskManager", "ListServices", "Services"                ; removed in 2026.11 (a text dump of tasklist / net start)
     )
 
     ; A custom hotkey's search text with {selection} (any case) replaced by the text selected in the program in front: on one line
@@ -202,8 +203,6 @@ class SystemProvider {
         add("PastePlain"  , "Sys.PastePlain"  , ClipboardProvider.Icon, () => SystemProvider.PastePlainText())
         add("ScriptsFolder", "Sys.ScriptsFolder", "res:imageres.dll,-5323", () => ScriptProvider.OpenFolder())
         add("TerminalHere", "Sys.TerminalHere", "res:imageres.dll,-5323", () => TerminalProvider.OpenAtCurrentFolder())
-        add("ListProcesses", "Sys.ListProcesses", system32 "taskmgr.exe", () => SystemProvider._ShowCommandOutput("tasklist", "ALTRun.Processes.txt"))
-        add("ListServices", "Sys.ListServices", system32 "services.msc", () => SystemProvider._ShowCommandOutput("net start", "ALTRun.Services.txt"))
 
         ; --- Clipboard text tools ---
         text("TextUpper"        , "Text.Upper"        , (s) => TextTools.Upper(s))
@@ -320,13 +319,5 @@ class SystemProvider {
             return MsgBox(I18n.T("Sys.NoIP"), App.Name, 48)
         A_Clipboard := StrSplit(addresses, "`n")[1]
         MsgBox(addresses, I18n.T("Sys.IPCopied"), 64)
-    }
-
-    ; Runs a console command and opens its output, written to a temporary file, with the default program for .txt (usually Notepad)
-    static _ShowCommandOutput(command, fileName) {
-        outFile := A_Temp "\" fileName
-        try FileDelete(outFile)
-        RunWait(A_ComSpec ' /c ' command ' > "' outFile '"', A_Temp, "Hide")
-        Path.OpenText(outFile)
     }
 }

@@ -1132,8 +1132,6 @@
   "Sys.EmptyRecycle": "清空回收站",
   "Sys.Hibernate": "休眠",
   "Sys.IPCopied": "IP 地址 (第一个已复制)",
-  "Sys.ListProcesses": "列出运行中的进程",
-  "Sys.ListServices": "列出运行中的服务",
   "Sys.Lock": "锁定屏幕",
   "Sys.Log": "打开 ALTRun 日志",
   "Sys.Logoff": "注销",

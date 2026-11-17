@@ -1412,6 +1412,26 @@ class ProviderTests {
         try FileDelete(A_Temp "\ALTRunTest.json")
     }
 
+    ; Old command Ids (2.x names and removed commands) lead to an existing command: in hotkeys and in recent / pinned items
+    static SystemCommandAliases() {
+        eq := (n, a, e) => TestRunner.Equal("SystemCommandAliases." n, a, e)
+        ids := Map(), ids.CaseSense := "Off"
+        for command in SystemProvider.Commands()
+            ids[command["Id"]] := true
+        missing := ""
+        for old, id in SystemProvider.Aliases {
+            if (id != "Show" && !ids.Has(id))                               ; Show: only for hotkeys, handled in RunCommand
+                missing .= old " -> " id "|"
+            if ids.Has(old)
+                missing .= old " is still a command|"
+        }
+        eq("every alias leads to a command", missing, "")
+        eq("removed: list processes", ids.Has("ListProcesses") "|" ids.Has("ListServices"), "0|0")
+        eq("hotkey", HotkeyEditor.Normalize(Map("Key", "^!p", "Action", "ListProcesses"))["Action"], "TaskManager")
+        item := RecentProvider.ItemFor(Map("Uid", "System:ListServices", "System", "ListServices"), true)
+        eq("pinned item", IsObject(item) ? item.Title : "", I18n.T("Tool.Services"))
+    }
+
     ; Every folder written with A_ variables in the default settings must resolve to a real path (otherwise that folder would never be indexed)
     static DefaultFolders() {
         defaults := AppSettings.Defaults()
