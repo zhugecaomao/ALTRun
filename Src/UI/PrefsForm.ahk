@@ -683,6 +683,32 @@ class PrefsForm {
         }
 
         listView.OnEvent("DoubleClick", EditItem)
+        ; Right-click (also the Menu key / Shift+F10): the same commands as the buttons below the list. On a row: Edit (the default,
+        ; like double-click) and Delete; then Add and the page's own buttons and actions (each given the button it belongs to)
+        ShowContextMenu(ctrl, row, isRightClick, x, y) {
+            if row
+                listView.Modify(row, "Select Focus")
+            pageActions := []
+            for extra in extraButtons
+                pageActions.Push({Label: extra[1].Label, Click: extra[1].Click, Button: extra[2]})
+            for action in (actions is Array ? actions : actions.Call())
+                pageActions.Push(IsObject(action) ? {Label: action.Label, Click: action.Click, Button: actionButton, Checked: action.HasOwnProp("Checked") && action.Checked} : "-")
+            popup := Menu()
+            for entry in PrefsForm.ListMenuEntries(row > 0, pageActions) {
+                if !IsObject(entry) {
+                    popup.Add()
+                    continue
+                }
+                popup.Add(entry.Label, ((entry, *) => (entry.Kind = "Edit") ? EditItem() : (entry.Kind = "Delete") ? DeleteItem()
+                    : (entry.Kind = "Add") ? AddItem() : entry.Click.Call(list, entry.Button)).Bind(entry))
+                if entry.Default
+                    popup.Default := entry.Label
+                if entry.Checked
+                    popup.Check(entry.Label)
+            }
+            popup.Show(x, y)
+        }
+        listView.OnEvent("ContextMenu", ShowContextMenu)
         if Option("RowColor")
             listView.OnNotify(-12, (ctrl, lParam) => RowDraw(lParam))       ; NM_CUSTOMDRAW
         Refresh()
@@ -698,7 +724,7 @@ class PrefsForm {
         PrefsForm.Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)
         PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
-        actions := []                                                       ; Check paths, the page's menu, Add examples: one button, or "More" with a menu
+        actions := [], actionButton := "", extraButtons := []               ; Check paths, the page's menu, Add examples: one button, or "More" with a menu
         if IsObject(check)
             actions.Push({Label: I18n.T("Prefs.CheckTargets"), Click: (list, button) => CheckItems(button)})
         if IsObject(menu)
@@ -714,11 +740,12 @@ class PrefsForm {
             actionButton.Move(, , Max(80, Win.TextExtent(actionButton.Hwnd, action.Label) + 24))
             actionButton.OnEvent("Click", (button, *) => action.Click.Call(list, button))
         } else if actions.Length {
-            PrefsForm.MenuButton(PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.More")), actions, list)
+            PrefsForm.MenuButton(actionButton := PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.More")), actions, list)
         }
         if IsObject(buttons)                                                ; the page's own buttons: [{Label, Width, Click: (list, button) => ..., Gap}]
             for extra in buttons                                            ; Gap: the space before it (default 8: one row with Add / Edit / Delete)
-                PrefsForm.Add("Button", "x+" (extra.HasOwnProp("Gap") ? extra.Gap : 8) " yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
+                extraButtons.Push([extra, PrefsForm.Add("Button", "x+" (extra.HasOwnProp("Gap") ? extra.Gap : 8) " yp w" extra.Width, extra.Label)])
+                , extraButtons[-1][2].OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
         if withFilter {
             listView.GetPos(&listX, , &listW)
             filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; not Add: filtering doesn't change the settings
@@ -728,6 +755,22 @@ class PrefsForm {
         }
         PrefsForm._y += 38
         return list
+    }
+
+    ; The right-click menu of a PrefsForm.List: onRow -> Edit (default) and Delete first; then Add; then pageActions
+    ; ([{Label, Click, Button[, Checked]} or "-"]), after a separator. Entries: {Kind: Edit / Delete / Add / Page, Label, Default, Checked, Click, Button} or "-"
+    static ListMenuEntries(onRow, pageActions) {
+        entry(kind, label, action := "") => {Kind: kind, Label: label, Default: kind = "Edit", Checked: IsObject(action) && action.HasOwnProp("Checked") && action.Checked
+            , Click: IsObject(action) ? action.Click : "", Button: IsObject(action) && action.HasOwnProp("Button") ? action.Button : ""}
+        entries := []
+        if onRow
+            entries.Push(entry("Edit", I18n.T("Prefs.Edit")), entry("Delete", I18n.T("Prefs.Delete")), "-")
+        entries.Push(entry("Add", I18n.T("Prefs.Add")))
+        if pageActions.Length
+            entries.Push("-")
+        for action in pageActions
+            entries.Push(IsObject(action) ? entry("Page", action.Label, action) : "-")
+        return entries
     }
 
     ; A button that opens a menu below it: a split button (BS_SPLITBUTTON), Windows draws the drop-down arrow and the line before it.
