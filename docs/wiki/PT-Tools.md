@@ -2,7 +2,9 @@
 
 # PT Tools
 
-Two small tools for post-tensioning and structural design: **PT Tools** (rebar and mesh areas, bars required, a calculator) and **SPF2M** (tendon profile heights). Open them by typing `PTTools` or `SPF2M` in the search window, or give them a [custom hotkey](Hotkeys) (action `PTTools` / `SPF2M`). Both windows stay on top, remember their position, and save their inputs when closed.
+Two small tools for post-tensioning and structural design: **PT Tools** (rebar and mesh areas, bars required, a calculator) and **SPF2M** (tendon profile heights). They are two [scripts](Scripts) in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts): download `PT Tools.ahk` and / or `SPF2M.ahk` into the `Scripts\` folder, then type `pttools` or `spf2m` in the search window (or give the script a [custom hotkey](Hotkeys)). No AutoHotkey installation is needed: ALTRun runs them. Both windows stay on top, remember their position, and save their inputs when closed, in `PT Tools.ini` / `SPF2M.ini` next to the script.
+
+Until version 2026.11.16.14 they were built into ALTRun as the system commands `PTTools` / `SPF2M`. Inputs saved by the old version aren't carried over, and a custom hotkey with the action `PTTools` or `SPF2M` has to be set again to run the script.
 
 In both windows `Enter` moves to the next field (like `Tab`) and `F1` opens this page.
 
@@ -21,13 +23,13 @@ Every input is a combo box: pick a common value from its list or type your own. 
 
 Lists to pick from: span widths 3000 / 5700 / 6000 / 7200; bar diameters 10 to 40; bar spacings 100 to 1000; areas 3500 to 12000; meshes A6 to E12; safety factors 1.1 / 1.2 / 1.25 / 1.5.
 
-Only the inputs are saved (`Extensions.PTTools` in [ALTRun.json](Configuration)); the results are calculated again each time the window opens.
+Only the inputs are saved; the results are calculated again each time the window opens.
 
 ## SPF2M
 
 ![SPF2M](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/spf2m.png)
 
-The SPF2M Post-Tensioning Tendon Profile Calculator, calculated directly in ALTRun (no DOSBox needed any more). Pick the profile and the strand type, enter the levels and the horizontal distance, and the table on the right immediately gives the height at every support.
+The SPF2M Post-Tensioning Tendon Profile Calculator, calculated directly by the script (no DOSBox needed any more). Pick the profile and the strand type, enter the levels and the horizontal distance, and the table on the right immediately gives the height at every support.
 
 | Input | Notes |
 |---|---|

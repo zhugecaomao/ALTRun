@@ -125,8 +125,6 @@
 #Include Src\Extensions\AutoDate.ahk
 #Include Src\Extensions\CapsLockSwitch.ahk
 #Include Src\Extensions\AdminHelper.ahk
-#Include Src\Extensions\TendonProfile.ahk
-#Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\DelayedStart.ahk
 #Include Src\Extensions\RoboSync.ahk
 #Include Src\Extensions\SyncProgress.ahk

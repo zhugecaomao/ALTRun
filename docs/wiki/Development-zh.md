@@ -31,12 +31,12 @@ Src\UI\             SearchWindow (+ SearchSession、SearchKeys 键盘、ResultRo
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框; + QuickSwitchPanel、QuickSwitchFavorites、
                     FileDialogs、FileManagers), AutoDate, CapsLockSwitch,
-                    AdminHelper (helper for administrator windows), SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
+                    AdminHelper (helper for administrator windows), SelectionActions, CurrencyRates, UpdateChecker,
                     DelayedStart, RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  单元测试的入口: 载入程序代码 (设置只在内存里), 运行所有测试类
-Tests\Suites\       单元测试, 每个方面一个类 (Core, Provider, SearchWindow, Preferences, Extension, Project)
-Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
+Tests\Suites\       单元测试, 每个方面一个类 (Core, Provider, SearchWindow, Preferences, Extension, PTTools, Project)
+Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据 (脚本库的 SPF2M.ahk 用)
 Tests\Screenshots\  自动截图
 Tests\Bench\       性能测试: 在 Windows 上模拟日常操作, 比较两个版本 (见下面 "性能测试")
 Tests\Tools\SPF2M\  生成 SPF2M 对照数据的 Python 脚本 (在 DOSBox 里运行原来的 SPF2M.EXE, 见其中的 README)
@@ -271,6 +271,7 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 
 - `Tests\RunTests.ahk`: 覆盖匹配、查询解析、设置迁移、排序、剪贴板和索引等纯逻辑; 不等于完整的手动 UI 测试。
 - 测试就是 `Tests\Suites\` 里各个类的静态方法, 名字不以 `_` 开头 (`_` 开头的是辅助函数); 不用另外登记就会运行。测试改了设置、界面语言或日志开关要改回去, 否则算失败, 所以测试之间不依赖先后顺序。程序读到的每个设置都要在 `AppSettings.Defaults()` 里有默认值 (`SettingsKeys` 检查)。
+- 脚本库里有值得测试的代码的脚本 (`docs\scripts\PT Tools.ahk`、`SPF2M.ahk`) 仍是一个独立文件, 只在 `if (A_LineFile = A_ScriptFullPath)` 时打开窗口, 这样 `Tests\RunTests.ahk` 可以 `#Include` 它、测试里面的类 (`PTToolsTests`)。类名不能和 ALTRun 的重名 (用 `PTCalc`, 不用 `Calc`); 从 ALTRun 复制过去的代码由测试和原来的对比。
 - Windows CI: 运行单元测试、语法检查和重名检查 (`Tests\Tools\NameCheck.ahk`, 见下面的 "避免重名"), 并检查偏好设置布局、Wiki 页面配对和文档链接。
 - CI 通过 `Tests\Tools\RunAhk.ps1` 运行 AutoHotkey 脚本, 每个脚本都有时间上限 (单元测试 10 分钟, 每个语法检查 2 分钟, 截图 25 分钟)。脚本卡在没人关的对话框上时 (例如类初始化时出错, 弹出了错误窗口) 会被停止, 日志里打出它的窗口标题和文字, 从对话框的内容就能看出哪里出错。每个任务另外还有 `timeout-minutes` 兜底。
 - 截图测试: 检查主要窗口在不同语言 / 主题下的显示; 不验证所有交互流程。

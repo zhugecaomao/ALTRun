@@ -13,7 +13,7 @@ Features outside the search window. These have their own pages, which `F1` on th
 | [Calculator](Calculator) | Expressions, unit and currency conversion, structural calculations |
 | [Scripts](Scripts) | Turn your own scripts into commands in the search results |
 | [System commands and terminal](System-Commands) | The full list of system commands (lock, shut down, empty the Recycle Bin...); `>` runs a command in the terminal |
-| [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles (`F1` in their windows opens it) |
+| [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles: two scripts in the script library (`F1` in their windows opens it) |
 
 ## System commands
 See [System commands and terminal](System-Commands#system-commands).

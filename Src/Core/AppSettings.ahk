@@ -14,7 +14,7 @@
 ;   "Keyboard"      : { Caps Lock / English input / Space and Tab keys / search history (Preferences → Keyboard) },
 ;   "Appearance"    : { theme / window width / visible rows },
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
-;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
+;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...} },
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys. Action: a built-in command Id (Search, ToggleWindow,
 ;                     a system command), "custom:<Id>" = the user's custom command with that Id or "script:<file name>" = a script (SearchText, optional: what Search types into the search box)
 ;   "CustomCommands": [ { "Id", "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
@@ -122,7 +122,7 @@ class AppSettings {
 
     ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
     static KeptOnReset := [["CustomCommands"], ["SelectionTypes"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
-        , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["Extensions", "PTTools"], ["DataLocation"]]
+        , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["DataLocation"]]
 
     ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
     static ResetData(current) {
@@ -816,8 +816,7 @@ class AppSettings {
                     "Hotkey"       , "^d",                                  ; one hotkey: the window decides between renaming and appending
                     "RenameWindows", ["ahk_class CabinetWClass", "ahk_class Progman", "ahk_class WorkerW", "ahk_class #32770", "ahk_class TTOTAL_CMD", "ahk_class TSTDTREEDLG", "ahk_class TCOMBOINPUT"],   ; TC: main window, dialogs, rename box
                     "AppendWindows", ["ahk_class TCmtEditForm", "ahk_exe Notepad4.exe"]
-                ),
-                "PTTools", Map()                                            ; PTToolsWindow fills in its own defaults
+                )
             ),
             "Hotkeys", [                                                    ; examples: global, only in one program, only in ALTRun
                 Map("Key", "^!#v", "Action", "PastePlain", "WinTitle", ""),                         ; same key as PowerToys "Paste as plain text"

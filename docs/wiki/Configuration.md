@@ -256,7 +256,6 @@ See [Extensions](Extensions).
 |---|---|
 | QuickSwitch | See [Quick Switch](Quick-Switch) and [Dialog Folder Panel](Quick-Switch-Panel) |
 | AutoDate | See [Date Stamp](Date-Stamp) |
-| PTTools | Inputs and window positions saved by PT Tools itself |
 
 ## Lists
 ```jsonc

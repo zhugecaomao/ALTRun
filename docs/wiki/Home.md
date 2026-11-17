@@ -40,7 +40,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Delayed start](Delayed-Start) | Start programs such as OneDrive a few minutes after signing in |
 | [Folder sync](Sync-Tasks) | Keep folders in step with robocopy: run from the search, previews before mirrors, logs |
 | [Extensions](Extensions) | Links to the extension pages |
-| [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles |
+| [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles (two scripts in the script library) |
 | [Settings reference](Configuration) | Every ALTRun.json setting and its default value |
 | [Data files](Data-Files) | Where the data folder is, what each file is, backups and moving to another PC |
 | [Privacy and network access](Privacy) | When ALTRun goes online, where to, and what is stored on your PC |

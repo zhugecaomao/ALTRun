@@ -256,7 +256,6 @@
 |---|---|
 | QuickSwitch | 见 [对话框快速跳转](Quick-Switch-zh) 和 [对话框文件夹面板](Quick-Switch-Panel-zh) |
 | AutoDate | 见 [一键加日期](Date-Stamp-zh) |
-| PTTools | PT 工具箱自己保存的输入和窗口位置 |
 
 ## 列表
 ```jsonc

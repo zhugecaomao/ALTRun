@@ -28,7 +28,6 @@
 | `ShowIP` | 显示 IP 地址 |
 | `TerminalHere` | 在当前文件夹 (资源管理器 / Total Commander) 打开终端 |
 | `ListProcesses` `ListServices` | 列出运行中的进程 / 服务 |
-| `PTTools` `SPF2M` | PT 工具箱 / SPF2M |
 | **剪贴板文字** (处理后放回剪贴板) | |
 | `TextUpper` `TextLower` `TextTitle` | 大写 / 小写 / 首字母大写 |
 | `TextSortAsc` `TextSortDesc` | 按行排序 |

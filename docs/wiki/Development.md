@@ -31,12 +31,12 @@ Src\UI\             SearchWindow (+ SearchSession, SearchKeys, ResultRows, Searc
 Src\Providers\      Search features, one class per feature
 Src\Extensions\     Features outside the search window: SnippetExpander, QuickSwitch (file dialogs; + QuickSwitchPanel, QuickSwitchFavorites,
                     FileDialogs, FileManagers), AutoDate, CapsLockSwitch,
-                    AdminHelper (helper for administrator windows), SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
+                    AdminHelper (helper for administrator windows), SelectionActions, CurrencyRates, UpdateChecker,
                     DelayedStart, RoboSync + SyncJobs + SyncProgress (folder sync with robocopy)
 Resources\          Data shipped with the program (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  Unit test runner: loads the code with in-memory settings and runs every suite
-Tests\Suites\       Unit tests, one class per area (Core, Provider, SearchWindow, Preferences, Extension, Project)
-Tests\Fixtures\     Test data: an old ALTRun.ini, SPF2M reference data
+Tests\Suites\       Unit tests, one class per area (Core, Provider, SearchWindow, Preferences, Extension, PTTools, Project)
+Tests\Fixtures\     Test data: an old ALTRun.ini, SPF2M reference data (for the script library's SPF2M.ahk)
 Tests\Screenshots\  Automatic screenshots
 Tests\Bench\       Benchmark: simulates daily use on Windows and compares two versions (see "Benchmark" below)
 Tests\Tools\SPF2M\  Python scripts that generate the SPF2M reference data (run the original SPF2M.EXE in DOSBox; see the README there)
@@ -272,6 +272,7 @@ GitHub → Actions → **Delayed start** checks delayed start against the real W
 
 - `Tests\RunTests.ahk` covers pure logic such as matching, query parsing, settings migration, ranking, clipboard and indexes; it is not a full manual UI test.
 - A test is a static method of a class in `Tests\Suites\` whose name doesn't start with `_` (those are helpers); it runs without being registered anywhere. A test must put back the settings, UI language and logging switches it changes, or it fails, so tests don't depend on their order. Every setting the code reads must have a default in `AppSettings.Defaults()` (checked by `SettingsKeys`).
+- A script library script with code worth testing (`docs\scripts\PT Tools.ahk`, `SPF2M.ahk`) stays one self-contained file and starts its window only `if (A_LineFile = A_ScriptFullPath)`, so `Tests\RunTests.ahk` can `#Include` it and test its classes (`PTToolsTests`). Its class names must not clash with ALTRun's (`PTCalc`, not `Calc`); what it copies from ALTRun is compared with the original by a test.
 - Windows CI runs unit tests, syntax checks and the name check (`Tests\Tools\NameCheck.ahk`, see "Avoid name clashes" below), and checks Preferences layout, Wiki page pairs and documentation links.
 - CI runs AutoHotkey scripts through `Tests\Tools\RunAhk.ps1`, which gives each one a time limit (unit tests 10 minutes, each syntax check 2 minutes, screenshots 25 minutes). A script stuck on a dialog nobody closes (for example an error shown in a window while a class is set up) is stopped, and the title and text of its windows are printed in the log, so the dialog's message shows what went wrong. The jobs also have `timeout-minutes` as a last resort.
 - Screenshot tests check major windows across languages and themes; they do not verify every interaction.

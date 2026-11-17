@@ -204,8 +204,6 @@ class SystemProvider {
         add("TerminalHere", "Sys.TerminalHere", "res:imageres.dll,-5323", () => TerminalProvider.OpenAtCurrentFolder())
         add("ListProcesses", "Sys.ListProcesses", system32 "taskmgr.exe", () => SystemProvider._ShowCommandOutput("tasklist", "ALTRun.Processes.txt"))
         add("ListServices", "Sys.ListServices", system32 "services.msc", () => SystemProvider._ShowCommandOutput("net start", "ALTRun.Services.txt"))
-        add("PTTools"     , "Sys.PTTools"     , IconCache.Own("Calculator", "res:imageres.dll,-182"), () => PTToolsWindow.Show())
-        add("SPF2M"       , "Sys.SPF2M"       , IconCache.Own("Calculator", "res:imageres.dll,-182"), () => PTToolsWindow.ShowSpf2m())
 
         ; --- Clipboard text tools ---
         text("TextUpper"        , "Text.Upper"        , (s) => TextTools.Upper(s))

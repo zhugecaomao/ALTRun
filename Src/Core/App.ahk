@@ -77,7 +77,6 @@ class App {
         SnippetExpander.Init()
         QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))
         AutoDate.Init(AppSettings.Extension("AutoDate"))
-        PTToolsWindow.Load(AppSettings.Extension("PTTools"))
         Logger.Time("startup: snippets, extensions", phase), phase := Logger.Ms()
         App._UpdateShellShortcuts(AppSettings.FirstRun)                    ; a new installation: the start-up shortcut waits for the answer (AskLaunchAtLogin)
         OnExit((reason, *) => App._OnExit(reason))
