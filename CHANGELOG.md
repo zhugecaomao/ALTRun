@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.10]
+
+测试版。
+
+Test build.
+
+### 改进
+- 第一次打开脚本文件夹时不再自动放 4 个示例脚本: 其中 3 个 (端口占用、IP 地址、环境变量) 放进了网站的 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts), 需要时下载; "今天的日期" 留在 Wiki 当写法示例。还没有脚本时, 偏好设置 → 脚本 的列表显示 "还没有脚本: 双击浏览脚本库"。已经生成的示例不受影响 (#544)
+
 ## [2026.11.16.9]
 
 测试版。
@@ -1570,7 +1579,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...HEAD
+[2026.11.16.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...2026.11.16.10
 [2026.11.16.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...2026.11.16.9
 [2026.11.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...2026.11.16.8
 [2026.11.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...2026.11.16.7
