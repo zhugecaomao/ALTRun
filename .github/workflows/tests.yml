@@ -86,7 +86,8 @@ jobs:
         shell: pwsh
         run: |
           foreach ($script in Get-ChildItem docs\scripts\*.ahk) {
-            & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', '/validate', $script.FullName `
+            # quoted: Start-Process joins the arguments with spaces, and "TC Commands.ahk" has one
+            & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', '/validate', "`"$($script.FullName)`"" `
               -Out validate.log -Err validate.err -TimeoutSeconds 120
             $code = $LASTEXITCODE
             $output = (Get-Content validate.log, validate.err -Raw) -join ""
