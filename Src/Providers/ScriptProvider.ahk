@@ -376,10 +376,10 @@ class ScriptProvider {
         SplitPath(path, &name, , &ext, &baseName)
         meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window", "selection", "", "filter", "")
         try {
-            Loop Read, path {
+            for line in StrSplit(ScriptProvider.HeadText(path), "`n", "`r") {
                 if (A_Index > 30)
                     break
-                if RegExMatch(A_LoopReadLine, "i)^\s*(?:;|#|//|::|rem\b)\s*@altrun\.(\w+)\s+(.*?)\s*$", &m)
+                if RegExMatch(line, "i)^\s*(?:;|#|//|::|rem\b)\s*@altrun\.(\w+)\s+(.*?)\s*$", &m)
                     meta[StrLower(m[1])] := m[2]
             }
         } catch
@@ -396,6 +396,27 @@ class ScriptProvider {
         return {Path: path, Name: name, Ext: StrLower(ext), Title: title, Keyword: keyword, Argument: Trim(meta["argument"]), Mode: mode, Selection: types
               , FilterBy: (StrLower(Trim(meta["filter"])) = "altrun") ? "altrun" : "script"
               , Keys: [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]}
+    }
+
+    ; The start of a script file (up to 8 KB, ending at a line break) as text: UTF-8 with or without a byte order mark (Notepad saves
+    ; UTF-8 without one), UTF-16 with one; text that isn't valid UTF-8 is read in the ANSI code page (CP0, e.g. GBK on Chinese Windows).
+    ; Throws when the file can't be read
+    static HeadText(path) {
+        static MaxBytes := 8192, CP_UTF8 := 65001, MB_ERR_INVALID_CHARS := 0x8
+        handle := FileOpen(path, "r")
+        size := Min(handle.Length, MaxBytes), bytes := Buffer(Max(size, 1), 0)
+        handle.Pos := 0                                                     ; FileOpen skips a byte order mark: read it too
+        got := handle.RawRead(bytes, size), handle.Close()
+        byte(i) => (i < got) ? NumGet(bytes, i, "UChar") : -1
+        if (byte(0) = 0xEF && byte(1) = 0xBB && byte(2) = 0xBF)
+            return StrGet(bytes.Ptr + 3, got - 3, "UTF-8")
+        if (byte(0) = 0xFF && byte(1) = 0xFE)
+            return StrGet(bytes.Ptr + 2, (got - 2) // 2, "UTF-16")
+        if (got = MaxBytes)                                                 ; cut off: end at the last line break, not inside a character
+            while (got > 0 && byte(got - 1) != 0x0A)
+                got -= 1
+        valid := !got || DllCall("MultiByteToWideChar", "UInt", CP_UTF8, "UInt", MB_ERR_INVALID_CHARS, "Ptr", bytes, "Int", got, "Ptr", 0, "Int", 0)
+        return StrGet(bytes, got, valid ? "UTF-8" : "CP0")
     }
 
     ; the modified times of the folder and each file in it joined: read again when it changes
