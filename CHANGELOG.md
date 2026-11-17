@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.7]
+
+测试版。
+
+Test build.
+
+### 修复
+- Quick Switch: 文件管理器里开着一个服务器已离线的网络文件夹时, 跳转会让 ALTRun 卡住约 20 秒; 管理员程序的对话框里, 后台助手也会卡住同样长的时间, 期间 Caps Lock 和热键都不响应。现在网络文件夹 0.5 秒内没有响应就不跳转
+
 ## [2026.11.16.6]
 
 测试版。
@@ -1543,7 +1552,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...HEAD
+[2026.11.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...2026.11.16.7
 [2026.11.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...2026.11.16.6
 [2026.11.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...2026.11.16.5
 [2026.11.16.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...2026.11.16.4
