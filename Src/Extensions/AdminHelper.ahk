@@ -407,10 +407,10 @@ class AdminHelper {
     ; The task that starts this ALTRun (the exe, or the interpreter with this script) as the helper
     static OwnTaskXml() {
         if A_IsCompiled
-            command := App.ExePath, arguments := AdminHelper.Arg
+            command := A_ScriptFullPath, arguments := AdminHelper.Arg
         else
             command := A_AhkPath, arguments := '"' A_ScriptFullPath '" ' AdminHelper.Arg
-        return AdminHelper.TaskXml(command, arguments, App.ExeDir, AdminHelper.UserId())
+        return AdminHelper.TaskXml(command, arguments, A_ScriptDir, AdminHelper.UserId())
     }
 
     ; In the helper started by the old task (so already with administrator rights, no UAC prompt): the same task under the new name, starting
@@ -451,13 +451,12 @@ class AdminHelper {
 
     ; A folder holding what the task runs as administrator that programs with normal rights can change, "" if none: such a program could
     ; replace ALTRun there and start the task (schtasks /run needs no confirmation), getting administrator rights. Running as administrator
-    ; every folder looks writable, so nothing is checked then; nor for the Store package, whose files are protected (the task starts it
-    ; through its execution alias)
+    ; every folder looks writable, so nothing is checked then
     static WritableFolder(isWritable := (dir) => Path.IsWritable(dir), admin := A_IsAdmin) {
-        if (App.PackageFamily != "" || admin)
+        if admin
             return ""
         SplitPath(A_AhkPath, , &ahkDir)
-        for dir in (A_IsCompiled ? [App.ExeDir] : [A_ScriptDir, ahkDir])
+        for dir in (A_IsCompiled ? [A_ScriptDir] : [A_ScriptDir, ahkDir])
             if isWritable(dir)
                 return dir
         return ""
