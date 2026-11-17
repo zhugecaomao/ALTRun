@@ -894,8 +894,6 @@ class PreferencesTests {
                     ctrl.GetPos(&x, &y, &w, &h)
                     bottom := Max(bottom, y + h), right := Max(right, x + w)
                 }
-                if (page.Key = "Prefs.Page.General" || page.Key = "Prefs.Page.FileSearch")       ; PROBE (temporary): bottoms on Windows
-                    FileAppend("NOTE PreferencesFit probe " lang " " page.Key " bottom " bottom " limit " limit "`n", "*")
                 TestRunner.True("PreferencesFit." lang " page " index " (bottom " bottom ", limit " limit ")", bottom <= limit)
                 TestRunner.True("PreferencesFit." lang " page " index " (right " right ", limit " rightLimit ")", right <= rightLimit)
             }

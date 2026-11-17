@@ -21,6 +21,7 @@
 #Include %A_ScriptDir%\..\Lib\Everything.ahk
 #Include %A_ScriptDir%\..\Lib\Units.ahk
 #Include %A_ScriptDir%\..\Lib\ClipboardData.ahk
+#Include %A_ScriptDir%\..\Lib\FileDrag.ahk
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Lib\HttpGet.ahk
 #Include %A_ScriptDir%\..\Lib\ChildProcess.ahk

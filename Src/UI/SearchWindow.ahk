@@ -33,7 +33,8 @@
 ;   Esc                              close the actions panel / hide the window
 ; Mouse: click selects, double-click runs, right-click shows the result's action menu (the same as the actions panel), Shift+right-click
 ;   the Windows context menu of a file / folder (as Explorer's Shift+right-click, with the extended items);
-;        dragging the blank area around the input box moves the window
+;        dragging the blank area around the input box moves the window;
+;        dragging a file / folder result (or one of the marked ones: all of them) out to another program copies it there (FileDrag; never moves it)
 ;
 ; Position: Appearance.ShowOn decides the screen (Mouse = under the mouse / Primary = primary screen /
 ; Active = the active window's). By default centered horizontally, 20% from the top; with Appearance.RememberPosition,
@@ -114,6 +115,7 @@ class SearchWindow {
         list.OnEvent("Click", (ctrl, row) => SearchWindow._OnRowClick(row))
         list.OnEvent("DoubleClick", (ctrl, row) => SearchWindow._OnRowDoubleClick(row))
         list.OnEvent("ContextMenu", (ctrl, row, isRightClick, x, y) => SearchWindow._OnRowContextMenu(row, x, y))
+        list.OnNotify(-109, (ctrl, lParam) => SearchWindow._OnBeginDrag(lParam))  ; LVN_BEGINDRAG
 
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
@@ -1254,6 +1256,50 @@ class SearchWindow {
             SearchWindow._Repaint()
         }
         SearchWindow.Input.Focus()
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Dragging a result out (mouse)
+    ;---------------------------------------------------------------------------
+    ; The file / folder paths dragging this result takes: all marked ones when it is marked, else its own path; [] when it isn't a
+    ; local or network file / folder (Store apps, URLs, text, custom commands with {hwnd})
+    static DragPaths(item) {
+        if (!SearchSession.CanMark(item) || item.WindowArgs || !RegExMatch(item.Arg, "^([A-Za-z]:\\|\\\\)"))
+            return []
+        return SearchWindow.Session.IsMarked(item) ? SearchWindow.Session.MarkedPaths() : [item.Arg]
+    }
+
+    ; LVN_BEGINDRAG: the drag starts from a timer right after, not inside the notification, so the list can still paint itself (its
+    ; custom draw runs in AHK threads) while the drag waits for the drop
+    static _OnBeginDrag(lParam) {
+        row := NumGet(lParam, 3 * A_PtrSize, "Int") + 1                      ; NMLISTVIEW.iItem (0-based) after NMHDR
+        index := SearchWindow.Session.Offset + row
+        if (row < 1 || index > SearchWindow.Session.Results.Length || SearchWindow.Session.Mode != "results")
+            return 0
+        item := SearchWindow.Session.Results[index]
+        if !(paths := SearchWindow.DragPaths(item)).Length
+            return 0
+        SearchWindow.Session.Selected := index
+        SearchWindow._Repaint()
+        SetTimer(() => SearchWindow._DragOut(paths), -1)
+        return 0
+    }
+
+    static _DragOut(paths) {
+        primary := DllCall("GetSystemMetrics", "Int", 23) ? "RButton" : "LButton"   ; SM_SWAPBUTTON: the primary button is the right one
+        if (!SearchWindow.IsVisible() || !GetKeyState(primary))              ; let go before the timer ran: a click, not a drag
+            return
+        SearchWindow._keepOpen := true, effect := 0                         ; the program dropped on may take the focus: the window decides after
+        try effect := FileDrag.Start(SearchWindow.Gui.Hwnd, paths)           ; dropped back on the window (it accepts no drops): nothing happens
+        finally SearchWindow._keepOpen := false
+        if effect {
+            SearchWindow.Hide("dragged out")
+            return
+        }
+        if SearchWindow.IsVisible()                                         ; cancelled (Esc, or dropped where it can't go)
+            SearchWindow.AfterMenu()                                        ; still the front window: keep the focus in the box; else hide as on any focus loss
+        if WinActive("ahk_id " SearchWindow.Gui.Hwnd)
+            SearchWindow.Input.Focus()
     }
 
     static _OnRowDoubleClick(row) {

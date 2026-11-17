@@ -121,7 +121,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Esc` | Close the action panel / hide the window |
 | `Ctrl+Alt+C` (global) | Clipboard history |
 
-Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu, `Shift`+right-click on a file or folder opens the Windows context menu (when it is turned on, see below).
+Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu, `Shift`+right-click on a file or folder opens the Windows context menu (when it is turned on, see below). Drag a file or folder result to another program (WeChat, an email, an Explorer folder, the desktop) to copy it there; the original never moves, and the window hides once it's dropped (`Esc` while dragging cancels). Marked files (`Insert`) are dragged together.
 
 ## Action panel
 Select a result and press `→` (or right-click) to list everything you can do with it; keep typing to filter (pinyin initials work too, e.g. `bd` → 用 百度 搜索, and so do the keywords of search engines, custom commands and scripts):
@@ -130,7 +130,7 @@ Select a result and press `→` (or right-click) to list everything you can do w
 
 | Result type | Actions |
 |---|---|
-| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open with <program> (set in Preferences → File Search → "Open files with"), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
+| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
 | Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Windows Context Menu, Properties, Move to Recycle Bin |
 | URL | Open, Copy URL |
 | Text | Copy to Clipboard, Paste to Front Window |

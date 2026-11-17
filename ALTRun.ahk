@@ -42,6 +42,7 @@
 #Include Lib\Everything.ahk
 #Include Lib\Units.ahk
 #Include Lib\ClipboardData.ahk
+#Include Lib\FileDrag.ahk
 #Include Lib\Dialogs.ahk
 #Include Lib\HttpGet.ahk
 #Include Lib\ChildProcess.ahk
