@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.16.15]
+
+测试版。
+
+Test build.
+
+### 新增
+- 脚本库加了两个脚本: `PT Tools.ahk` (钢筋和钢筋网面积、所需钢筋根数、计算器; 关键字 `pttools`) 和 `SPF2M.ahk` (后张预应力束线型计算; 关键字 `spf2m`)。功能和计算结果和原来内置的一样 (139 组 SPF2M 对照数据照旧逐个比对); 输入和窗口位置存在脚本旁边的 `PT Tools.ini` / `SPF2M.ini`
+
+### 移除
+- 内置的 PT 工具箱和 SPF2M (系统命令 `PTTools` / `SPF2M`) 移到了脚本库, 需要的话从 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 下载到 `Scripts\` 文件夹, 用上面的关键字打开。上次的输入和窗口位置不会带过来 (恢复成默认值); 动作是 `PTTools` / `SPF2M` 的自定义热键不再起作用, 要在热键编辑窗口里改成运行脚本。ALTRun.json 里旧的 `Extensions.PTTools` 不再使用, 留着无害 
+
 ## [2026.11.16.14]
 
 测试版。
@@ -1615,7 +1627,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...HEAD
+[2026.11.16.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...2026.11.16.15
 [2026.11.16.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...2026.11.16.14
 [2026.11.16.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...2026.11.16.13
 [2026.11.16.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...2026.11.16.12
