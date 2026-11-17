@@ -34,8 +34,7 @@
 ; Mouse: click selects, double-click runs, right-click shows the result's action menu (the same as the actions panel), Shift+right-click
 ;   the Windows context menu of a file / folder (as Explorer's Shift+right-click, with the extended items);
 ;        dragging the blank area around the input box moves the window;
-;        dragging a file / folder result (or one of the marked ones: all of them) out to another program copies it there (FileDrag; never moves it);
-;        files dropped on the window are pinned to the empty search box (at most DropPinLimit at a time)
+;        dragging a file / folder result (or one of the marked ones: all of them) out to another program copies it there (FileDrag; never moves it)
 ;
 ; Position: Appearance.ShowOn decides the screen (Mouse = under the mouse / Primary = primary screen /
 ; Active = the active window's). By default centered horizontally, 20% from the top; with Appearance.RememberPosition,
@@ -117,7 +116,6 @@ class SearchWindow {
         list.OnEvent("DoubleClick", (ctrl, row) => SearchWindow._OnRowDoubleClick(row))
         list.OnEvent("ContextMenu", (ctrl, row, isRightClick, x, y) => SearchWindow._OnRowContextMenu(row, x, y))
         list.OnNotify(-109, (ctrl, lParam) => SearchWindow._OnBeginDrag(lParam))  ; LVN_BEGINDRAG
-        g.OnEvent("DropFiles", (gui, ctrl, files, *) => SearchWindow._OnDropFiles(files))
 
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
@@ -1261,7 +1259,7 @@ class SearchWindow {
     }
 
     ;---------------------------------------------------------------------------
-    ; Dragging a result out / files in (mouse)
+    ; Dragging a result out (mouse)
     ;---------------------------------------------------------------------------
     ; The file / folder paths dragging this result takes: all marked ones when it is marked, else its own path; [] when it isn't a
     ; local or network file / folder (Store apps, URLs, text, custom commands with {hwnd})
@@ -1291,14 +1289,9 @@ class SearchWindow {
         primary := DllCall("GetSystemMetrics", "Int", 23) ? "RButton" : "LButton"   ; SM_SWAPBUTTON: the primary button is the right one
         if (!SearchWindow.IsVisible() || !GetKeyState(primary))              ; let go before the timer ran: a click, not a drag
             return
-        hwnd := SearchWindow.Gui.Hwnd, effect := 0
-        SearchWindow._keepOpen := true                                      ; the program dropped on may take the focus: the window decides after
-        DllCall("shell32\DragAcceptFiles", "Ptr", hwnd, "Int", false)      ; dropped back on the window: nothing happens (not pinned, window stays)
-        try effect := FileDrag.Start(hwnd, paths)
-        finally {
-            SearchWindow._keepOpen := false
-            DllCall("shell32\DragAcceptFiles", "Ptr", hwnd, "Int", true)
-        }
+        SearchWindow._keepOpen := true, effect := 0                         ; the program dropped on may take the focus: the window decides after
+        try effect := FileDrag.Start(SearchWindow.Gui.Hwnd, paths)           ; dropped back on the window (it accepts no drops): nothing happens
+        finally SearchWindow._keepOpen := false
         if effect {
             SearchWindow.Hide("dragged out")
             return
@@ -1307,18 +1300,6 @@ class SearchWindow {
             SearchWindow.AfterMenu()                                        ; still the front window: keep the focus in the box; else hide as on any focus loss
         if WinActive("ahk_id " SearchWindow.Gui.Hwnd)
             SearchWindow.Input.Focus()
-    }
-
-    ; Files / folders dropped on the window (from Explorer, the desktop, a file manager): pinned to the empty search box, which then
-    ; shows them when nothing is typed
-    static DropPinLimit := 20
-
-    static _OnDropFiles(files) {
-        pinned := RecentProvider.PinPaths(files, SearchWindow.DropPinLimit)
-        if (pinned && SearchWindow.IsVisible() && SearchWindow.Session.Mode = "results" && SearchWindow._CurrentQuery() = "")
-            SearchWindow._RunSearch()
-        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
-            try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)                ; dropping doesn't activate the window: Esc and typing work right after
     }
 
     static _OnRowDoubleClick(row) {

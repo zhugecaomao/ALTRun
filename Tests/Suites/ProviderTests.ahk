@@ -2238,33 +2238,6 @@ class ProviderTests {
         try FileDelete(A_Temp "\ALTRun-recent-settings.json")
     }
 
-    ; Files / folders dropped on the search window: pinned once each, missing paths skipped, at most limit at a time, saved
-    static RecentDropPin() {
-        eq := (n, a, e) => TestRunner.Equal("RecentDropPin." n, a, e)
-        root := A_Temp "\ALTRun-drop-pin-test"
-        try DirDelete(root, true)
-        DirCreate(root "\Folder")
-        Loop 3
-            FileAppend("x", root "\f" A_Index ".txt")
-        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedFile := AppSettings.File
-        options["Pinned"] := [], AppSettings.File := root "\settings.json"
-        try {
-            eq("pinned", RecentProvider.PinPaths([root "\f1.txt", root "\Folder", root "\missing.txt"]), 2)
-            first := options["Pinned"][1], second := options["Pinned"][2]
-            eq("entries", first["Kind"] "|" first["Title"] "|" first["Arg"] "|" second["Kind"] "|" second["Title"]
-                , "file|f1.txt|" root "\f1.txt|folder|Folder")
-            eq("uid", first["Uid"], "file:" StrLower(root "\f1.txt"))
-            eq("shown in the empty box", RecentProvider.EmptyResults()[1].Title, "f1.txt")
-            eq("again: nothing new", RecentProvider.PinPaths([root "\f1.txt"]), 0)
-            eq("limit", RecentProvider.PinPaths([root "\f2.txt", root "\f3.txt"], 1) "|" options["Pinned"].Length, "1|3")
-            eq("saved", InStr(FileRead(AppSettings.File, "UTF-8"), "f2.txt") > 0, true)
-            eq("nothing", RecentProvider.PinPaths([]), 0)
-        } finally {
-            options["Pinned"] := savedPinned, AppSettings.File := savedFile
-            try DirDelete(root, true)
-        }
-    }
-
     ; Where the clipboard is stored (LocalFiles): 1 = the Clipboard folder moves to this PC, ClipboardHistory.json stays in Data (syncs as usual);
     ; 2 = the json moves to this PC too; 0 = everything back to Data; nothing overwritten when both exist; all in Data without a local folder
     static ClipboardLocal() {

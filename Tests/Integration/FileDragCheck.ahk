@@ -1,14 +1,11 @@
 ;===============================================================================
-; FileDragCheck.ahk - dragging files out of the search window and dropping files on it, with the real mouse on a Windows desktop
-; (AutoHotkey v2)
+; FileDragCheck.ahk - dragging files out of the search window with the real mouse on a Windows desktop (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Run by .github/workflows/file-drag.yml; also works on your own PC (it takes over the mouse and keyboard for about a minute and
 ; starts its own copy of ALTRun from <appDir> with settings of its own: one pinned file, so the empty search box lists it):
 ;   drag-out    Alt+Space, drag the pinned file (row 1) onto an Explorer window of another folder: the file is copied there, the
 ;               original stays (never moved), and the search window hides
 ;   cancel      the same drag, Esc before letting go: nothing is copied, the search window is still shown
-;   drop-pin    start dragging a file from a window of this script, press Alt+Space while dragging (a helper process moves the mouse),
-;               drop it on the search window: it is pinned (Data\ALTRun.json lists it) and the search window is still shown
 ; Each is tried Rounds times. Prints one line per round (PASS / FAIL) and ALTRun's log on failure; the exit code is the number of
 ; failed rounds.
 ;
@@ -19,13 +16,12 @@
 #NoTrayIcon
 #Warn All, StdOut
 #Include ..\..\Lib\JSON.ahk
-#Include ..\..\Lib\FileDrag.ahk
 
 global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 3
 global Work := "C:\FileDragCheck\work", LogFile := A_Temp "\ALTRun.log"
 global SourceDir := Work "\Source", TargetDir := Work "\Target", DragFile := Work "\Source\drag-me.txt"
-global Failures := 0, AppPid := 0, Explorer := 0, Holder := "", MoverPid := 0
+global Failures := 0, AppPid := 0, Explorer := 0
 CoordMode("Mouse", "Screen")
 OnError(Crashed)
 
@@ -35,8 +31,6 @@ try {
         DragOut(A_Index)
     Loop Rounds
         DragCancel(A_Index)
-    Loop Rounds
-        DropPin(A_Index)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -47,12 +41,6 @@ ExitApp(Failures)
 
 Say(text) => FileAppend(text "`n", "*")
 
-; FileDrag (Lib) logs through ALTRun's Logger; in this script its lines are printed
-class Logger {
-    static Debug(msg) => Say("INFO source: " msg)
-    static Warn(msg) => Say("INFO source: " msg)
-}
-
 ; An error anywhere: one FAIL line and out, never a message box that would hold the runner until its time limit
 Crashed(e, *) {
     Say("FAIL error: " e.Message " (line " e.Line ")")
@@ -61,7 +49,7 @@ Crashed(e, *) {
 }
 
 Setup() {
-    global AppPid, Explorer, Holder
+    global AppPid, Explorer
     try DirDelete(Work, true)
     DirCreate(SourceDir), DirCreate(TargetDir)
     FileAppend("drag me", DragFile, "UTF-8")
@@ -80,10 +68,6 @@ Setup() {
     if !(Explorer := WinWait("Target ahk_class CabinetWClass", , 30))       ; the first Explorer window on a fresh runner takes a while
         throw Error("the Explorer window didn't open")
     WinMove(0, 0, A_ScreenWidth, A_ScreenHeight - 60, Explorer)
-
-    Holder := Gui("+AlwaysOnTop -Caption +ToolWindow", "FileDragCheck holder")   ; where drop-pin's drag starts
-    Holder.BackColor := "3366CC"
-    Holder.Show("x20 y" (A_ScreenHeight - 200) " w120 h80 NoActivate")
 
     Run('"' A_AhkPath '" "' AppDir '\ALTRun.ahk" -Startup', AppDir, , &AppPid)   ; -Startup: no search window
     DetectHiddenWindows(true)
@@ -182,69 +166,6 @@ DragCancel(n) {
     Result("cancel", n, none && shown, !none ? "the file was copied although Esc cancelled the drag" : !shown ? "nothing copied, but the search window hid" : "nothing copied, window still shown", offset)
 }
 
-DropPin(n) {
-    global MoverPid
-    pinFile := SourceDir "\pin-me-" n ".txt"
-    FileAppend("pin me", pinFile, "UTF-8")
-    offset := LogLength()
-    WinActivate(Explorer), WinWaitActive(Explorer, , 3)
-    Holder.GetPos(&hx, &hy, &hw, &hh)
-    MouseMove(hx + hw // 2, hy + hh // 2, 0), Sleep(150)
-    ; the helper moves the mouse past the drag threshold, presses Alt+Space, glides over the search window and lets go; this script
-    ; waits in the drag meanwhile
-    mover := Work "\mover.ahk"
-    try FileDelete(mover)
-    FileAppend(MoverScript(), mover, "UTF-8")
-    Run('"' A_AhkPath '" "' mover '" ' AppPid, Work, , &MoverPid)
-    Click("Down")
-    effect := FileDrag.Start(Holder.Hwnd, [pinFile])
-    ProcessWaitClose(MoverPid, 10)
-    moverCode := ProcessExist(MoverPid) ? "running" : "done"
-    MoverPid := 0
-    start := A_TickCount, pinned := false
-    while (!pinned && A_TickCount - start < 5000) {
-        Sleep(200)
-        try pinned := InStr(FileRead(AppDir "\Data\ALTRun.json", "UTF-8"), StrReplace(pinFile, "\", "\\")) > 0
-    }
-    win := WinExist(SearchTitle())
-    shown := win && DllCall("IsWindowVisible", "Ptr", win)
-    if win
-        WinActivate(win), SendEvent("{Esc}"), WinWaitClose(win, , 3)
-    Result("drop-pin", n, pinned && shown, "effect " effect ", helper " moverCode ": "
-        . (!pinned ? "not pinned in 5 s" : !shown ? "pinned, but the search window hid" : "pinned, window still shown"), offset)
-}
-
-MoverScript() {
-    return '
-    (
-#NoTrayIcon
-CoordMode("Mouse", "Screen")
-pid := A_Args[1]
-Sleep(300)
-MouseGetPos(&x, &y)
-Loop 6 {
-    MouseMove(x + A_Index * 6, y - A_Index * 6, 0)
-    Sleep(30)
-}
-Sleep(300)
-SendLevel(1), SendEvent("!{Space}"), SendLevel(0)
-win := WinWait("ALTRun ahk_class AutoHotkeyGUI ahk_pid " pid, , 5)
-Sleep(400)
-if win {
-    WinGetPos(&wx, &wy, &ww, &wh, win)
-    tx := wx + ww // 2, ty := wy + wh // 2
-    MouseGetPos(&mx, &my)
-    Loop 20 {
-        MouseMove(mx + (tx - mx) * A_Index // 20, my + (ty - my) * A_Index // 20, 0)
-        Sleep(25)
-    }
-    Sleep(400)
-}
-Click("Up")
-ExitApp(win ? 0 : 1)
-    )'
-}
-
 Result(name, n, ok, detail, offset := 0) {
     global Failures
     Say((ok ? "PASS " : "FAIL ") name " " n ": " detail)
@@ -268,10 +189,7 @@ LogSince(offset) {
 }
 
 TearDown() {
-    global AppPid, MoverPid
-    if MoverPid
-        try ProcessClose(MoverPid)
-    try Holder.Destroy()
+    global AppPid
     try WinClose(Explorer)
     if AppPid {
         DetectHiddenWindows(true)

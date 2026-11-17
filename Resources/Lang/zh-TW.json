@@ -996,7 +996,6 @@
   "Recent.ConfirmForget": "從最近使用裡移除 '{1}' 嗎?",
   "Recent.ConfirmUnpin": "取消釘選 '{1}' 嗎?",
   "Recent.PinnedHint": "已釘選: 搜尋框空白時顯示 {1}",
-  "Recent.PinnedMany": "已釘選 {1} 個項目: 搜尋框空白時顯示",
   "Script.Done": "{1}: 完成",
   "Script.TimedOut": "已停止: 執行超過 {1} 秒",
   "Script.OutputCut": "(輸出太多, 只顯示前 {1} MB)",

@@ -121,7 +121,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Esc` | Close the action panel / hide the window |
 | `Ctrl+Alt+C` (global) | Clipboard history |
 
-Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu, `Shift`+right-click on a file or folder opens the Windows context menu (when it is turned on, see below). Drag a file or folder result to another program (WeChat, an email, an Explorer folder, the desktop) to copy it there; the original never moves, and the window hides once it's dropped (`Esc` while dragging cancels). Marked files (`Insert`) are dragged together. Dropping files on the search window pins them, see [Pinned and recent items](Recent).
+Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu, `Shift`+right-click on a file or folder opens the Windows context menu (when it is turned on, see below). Drag a file or folder result to another program (WeChat, an email, an Explorer folder, the desktop) to copy it there; the original never moves, and the window hides once it's dropped (`Esc` while dragging cancels). Marked files (`Insert`) are dragged together.
 
 ## Action panel
 Select a result and press `→` (or right-click) to list everything you can do with it; keep typing to filter (pinyin initials work too, e.g. `bd` → 用 百度 搜索, and so do the keywords of search engines, custom commands and scripts):

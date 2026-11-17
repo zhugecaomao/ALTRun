@@ -1,6 +1,5 @@
-# Dragging a file / folder result out of the search window and dropping files on it to pin them, with the real mouse on a Windows
-# desktop (Tests\Integration\FileDragCheck.ahk): drag to an Explorer window copies (never moves) and hides the window, Esc cancels,
-# a file dropped on the window is pinned. On pull requests that change these, on main, or run by hand
+# Dragging a file / folder result out of the search window with the real mouse on a Windows desktop (Tests\Integration\FileDragCheck.ahk):
+# drag to an Explorer window copies (never moves) and hides the window, Esc cancels. On pull requests that change these, on main, or run by hand
 name: File Drag
 
 on:
@@ -8,7 +7,6 @@ on:
     paths:
       - Lib/FileDrag.ahk
       - Src/UI/SearchWindow.ahk
-      - Src/Providers/RecentProvider.ahk
       - Tests/Integration/FileDragCheck.ahk
       - .github/workflows/file-drag.yml
       - .github/actions/setup-ahk/**
@@ -17,7 +15,6 @@ on:
     paths:
       - Lib/FileDrag.ahk
       - Src/UI/SearchWindow.ahk
-      - Src/Providers/RecentProvider.ahk
       - Tests/Integration/FileDragCheck.ahk
       - .github/workflows/file-drag.yml
       - .github/actions/setup-ahk/**
