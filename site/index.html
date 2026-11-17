@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ALTRun — A lightweight launcher for Windows</title>
-<meta name="description" content="ALTRun: a lightweight, open-source Alfred-style launcher for Windows. Apps, files, clipboard history, snippets and Quick Switch for Open / Save dialogs; about 2.5 MB, no installation. 轻量、开源的 Windows 启动器。">
+<meta name="description" content="ALTRun: a lightweight, open-source Alfred-style launcher for Windows. Apps, files, clipboard history, snippets and Quick Switch for Open / Save dialogs; about 2.5 MB, no installation, with a script library (plugins) for translation, Total Commander commands and more. 轻量、开源的 Windows 启动器, 附带脚本库 (插件)。">
 <link rel="canonical" href="{{SITE_URL}}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALTRun">
@@ -43,6 +43,7 @@
       <a href="#features"><span lang="zh">功能</span><span lang="en">Features</span></a>
       <a href="#screens"><span lang="zh">截图</span><span lang="en">Screenshots</span></a>
       <a href="#themes"><span lang="zh">主题</span><span lang="en">Themes</span></a>
+      <a href="#scripts"><span lang="zh">脚本库</span><span lang="en">Scripts</span></a>
       <a href="#download"><span lang="zh">下载</span><span lang="en">Download</span></a>
       <a lang="zh" href="https://github.com/{{REPO}}/wiki">文档</a>
       <a lang="en" href="https://github.com/{{REPO}}/wiki/Home">Docs</a>
@@ -183,7 +184,20 @@
   </div>
 </section>
 
-<section id="download" class="section alt">
+<section id="scripts" class="section alt">
+  <div class="wrap">
+    <h2><span lang="zh">脚本库</span><span lang="en">Script library</span></h2>
+    <p class="sub"><span lang="zh">用脚本给 ALTRun 加功能（类似插件）：下载到 <code>Scripts\</code> 文件夹（偏好设置 → 脚本 → 打开脚本文件夹），输入关键字就能用。每个脚本都是文本文件，用之前可以先看源码；会联网的写明了连到哪里。</span>
+       <span lang="en">Add features to ALTRun with scripts (like plugins): download one into the <code>Scripts\</code> folder (Preferences → Scripts → Open Scripts Folder) and type its keyword. Each script is a text file — read the source before you use it; the ones that go online say where.</span></p>
+    <div class="grid install scripts">
+{{SCRIPTS}}
+    </div>
+    <p class="note center"><span lang="zh">“下载”打开的是文本，按 <kbd>Ctrl</kbd>+<kbd>S</kbd> 保存（或在链接上右键 → 链接另存为）。第一次打开脚本文件夹时还会自带 4 个示例。想自己写，见<a href="https://github.com/{{REPO}}/wiki/Scripts-zh">脚本文档</a>。</span>
+       <span lang="en">“Download” opens the text: press <kbd>Ctrl</kbd>+<kbd>S</kbd> to save it (or right-click the link → Save link as). The Scripts folder also comes with 4 examples the first time you open it. To write your own, see the <a href="https://github.com/{{REPO}}/wiki/Scripts">scripts docs</a>.</span></p>
+  </div>
+</section>
+
+<section id="download" class="section">
   <div class="wrap">
     <h2><span lang="zh">下载与安装</span><span lang="en">Download and install</span></h2>
     <div class="grid install">
@@ -223,7 +237,7 @@ scoop install altrun</code></pre>
   </div>
 </section>
 
-<section id="changes" class="section">
+<section id="changes" class="section alt">
   <div class="wrap narrow">
     <h2><span lang="zh">最新版本 {{CHANGES_VERSION}}</span><span lang="en">What's new in {{CHANGES_VERSION}}</span></h2>
     <div class="changes">
