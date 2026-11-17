@@ -135,7 +135,7 @@ jobs:
           $items = Get-Items (Invoke-Library 'Unix Timestamp.ahk' '') 'Unix Timestamp' 3
           if ($items[0].title -notmatch '^\d{10}$') { throw "Unix Timestamp: now isn't 10 digits: $($items[0].title)" }
           $items = Get-Items (Invoke-Library 'Unix Timestamp.ahk' '1794933000') 'Unix Timestamp' 3
-          if ($items[1].title -ne '2026-11-17 08:30:00 UTC') { throw "Unix Timestamp: 1794933000 is $($items[1].title)" }
+          if ($items[1].title -ne '2026-11-17 16:30:00 UTC') { throw "Unix Timestamp: 1794933000 is $($items[1].title)" }
           $items = Get-Items (Invoke-Library 'Unix Timestamp.ahk' '2026-02-30') 'Unix Timestamp' 1
           if ($items[0].valid -ne $false) { throw "Unix Timestamp: 2026-02-30 wasn't refused" }
           # World Clock: every city found in Windows' time zones; Tokyo has no summer time
