@@ -105,6 +105,13 @@ class SearchSessionTests {
         eq("pinyin: fz", filter("fz"), "复制|")
         eq("pinyin: the title still matches", filter("goo"), "用 Google 搜索|")
         eq("pinyin: no match", filter("xyz"), "")
+        ; the keyword of what a row runs: a search engine's, a command's (several, comma-separated, found while typed)
+        s.OpenActions(ResultItem("text"), [ResultItem("Search Baidu", "", {Keyword: "bd, bs"}), ResultItem("Search Google", "", {Keyword: "g"})
+            , ResultItem("Copy to Clipboard")], "")
+        eq("keyword: bd", filter("bd"), "Search Baidu|")
+        eq("keyword: the second one", filter("bs"), "Search Baidu|")
+        eq("keyword: g also matches titles with a g", filter("g"), "Search Google|")
+        eq("keyword: title still works", filter("copy"), "Copy to Clipboard|")
     }
 
     static _Titles(actions) {

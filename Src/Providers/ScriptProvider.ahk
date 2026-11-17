@@ -125,7 +125,7 @@ class ScriptProvider {
             if (script.Mode = "filter" || !(ScriptProvider.ForTypes(script, info.Types) && SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script))))
                 continue
             actions.Push(ResultItem(script.Title, I18n.T("Script.Subtitle", script.Name)
-                , {Icon: ScriptProvider.IconOf(script), OnRun: ScriptProvider._Runner(script, ScriptProvider.SelectionArgument(info))}))
+                , {Icon: ScriptProvider.IconOf(script), OnRun: ScriptProvider._Runner(script, ScriptProvider.SelectionArgument(info)), Keyword: script.Keyword}))
         }
         return actions
     }

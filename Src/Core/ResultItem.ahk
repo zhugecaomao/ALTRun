@@ -66,6 +66,7 @@ class ResultItem {
         this.WaitKeysUp   := false
         this.Source       := ""
         this.Provider     := ""
+        this.Keyword      := ""             ; a row of an action panel: the keyword(s) of what it runs (search engine, command, script), matched when filtering
         if IsObject(props) {
             for name, value in props.OwnProps()
                 this.%name% := value
