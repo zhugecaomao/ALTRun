@@ -5,7 +5,7 @@
 ## 1. 安装和启动
 从 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest) 下载 `ALTRun_v<版本>.zip`, 解压到任意文件夹 (例如 `D:\Tools\ALTRun`), 运行 `ALTRun.exe`。不需要安装, 也不需要管理员权限; 用 winget / Scoop 安装见 [安装与升级](Installation-zh)。
 
-第一次运行会弹出搜索窗口, 托盘里出现 ALTRun 的图标。默认开机自动启动 (偏好设置 → 通用 可以关掉)。
+第一次运行会弹出搜索窗口, 托盘里出现 ALTRun 的图标。新安装第一次启动时会问是否开机自动启动 (以后在 偏好设置 → 通用 里更改)。
 
 ## 2. 呼出搜索窗口
 按 `Alt+Space` (或者 `Alt+R`)。再按一次、按 `Esc` 或点别处就隐藏。热键在 偏好设置 → 通用 里改; 也可以设成双击 `Ctrl` 呼出。

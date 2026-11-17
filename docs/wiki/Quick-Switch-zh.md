@@ -40,6 +40,8 @@ Windows 不让普通权限的程序控制以管理员身份运行的窗口, 所�
 - **Directory Opus**: 用 Opus 自带的 `dopusrt.exe /info …,paths`, 它列出每个 Opus 窗口的标签页 (在正在运行的 `dopus.exe` 旁边找到, 不用设置)。只在开着 Opus 窗口、真正需要文件夹时运行 (按热键、自动跳转, 或对话框出现时的面板; 面板先显示其它文件夹, Opus 的稍后补上), 1.5 秒内的结果直接复用。打开调试日志时会记下每次读取的耗时 (`Perf: Directory Opus paths … ms`)
 - **资源管理器**: Shell 窗口列表
 
+网络文件夹 (`\\server\share`、映射的网络驱动器) 要在 0.5 秒内有响应, 否则不跳转: 服务器离线时不这样做 ALTRun 会卡住约 20 秒。打开调试日志时会记下是哪个文件夹没有响应。
+
 ## 相关设置
 
 ![偏好设置 → 对话框跳转](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-quickswitch.png)

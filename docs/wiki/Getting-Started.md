@@ -5,7 +5,7 @@
 ## 1. Install and start
 Download `ALTRun_v<version>.zip` from [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder (for example `D:\Tools\ALTRun`) and run `ALTRun.exe`. Nothing to install and no administrator rights needed; for winget / Scoop see [Installation and upgrades](Installation).
 
-The first run opens the search window and puts the ALTRun icon in the notification area. ALTRun starts with Windows by default (turn it off in Preferences → General).
+The first run opens the search window and puts the ALTRun icon in the notification area. The first start of a new installation asks whether to start ALTRun when you sign in to Windows (change it later in Preferences → General).
 
 ## 2. Open the search window
 Press `Alt+Space` (or `Alt+R`). Press it again, press `Esc` or click elsewhere to hide it. Change the hotkey in Preferences → General; double-tapping `Ctrl` works too if you turn it on.
