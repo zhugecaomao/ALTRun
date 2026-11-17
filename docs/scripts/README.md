@@ -17,6 +17,6 @@ Besides the `@altrun.xxx` lines ALTRun reads (title, keyword, mode...), a librar
 | `@altrun.network` | The hosts it connects to, separated by commas, or `none` / 会连接的网站 (逗号分隔), 不联网写 `none` |
 | `@altrun.requires`, `@altrun.requires_zh` | Optional: what it needs (a program, an API key, an ALTRun version) / 可选: 需要什么 (程序、API key、ALTRun 版本) |
 
-Checked by the tests (`ProjectTests.ScriptLibrary`, and syntax in the Tests workflow): only `.ahk` and `.ps1`; a script that makes web requests names its hosts; no API key or token is written in a script (keys go in the user's environment variables); a `.ps1` with non-ASCII text is saved with a UTF-8 byte order mark (Windows PowerShell 5 reads files without one as ANSI).
+Checked by the tests (`ProjectTests.ScriptLibrary`, and syntax in the Tests workflow): only `.ahk`, `.ps1`, `.bat` and `.cmd`; a script that makes web requests names its hosts; no API key or token is written in a script (keys go in the user's environment variables); a `.ps1` with non-ASCII text is saved with a UTF-8 byte order mark (Windows PowerShell 5 reads files without one as ANSI); a `.bat` / `.cmd` has no byte order mark and non-ASCII text only on `rem` lines (cmd reads it in the console's code page).
 
-由测试检查 (`ProjectTests.ScriptLibrary`, 语法在 Tests workflow 里检查): 只收 `.ahk` 和 `.ps1`; 联网的脚本要写明网站; 脚本里不写 API key 或 token (key 放用户的环境变量); 含非 ASCII 文字的 `.ps1` 存成带 BOM 的 UTF-8 (Windows PowerShell 5 把没有 BOM 的文件当 ANSI 读)。
+由测试检查 (`ProjectTests.ScriptLibrary`, 语法在 Tests workflow 里检查): 只收 `.ahk`、`.ps1`、`.bat` 和 `.cmd`; 联网的脚本要写明网站; 脚本里不写 API key 或 token (key 放用户的环境变量); 含非 ASCII 文字的 `.ps1` 存成带 BOM 的 UTF-8 (Windows PowerShell 5 把没有 BOM 的文件当 ANSI 读); `.bat` / `.cmd` 不带 BOM, 非 ASCII 文字只能在 `rem` 行 (cmd 按控制台代码页读)。

@@ -774,7 +774,8 @@ class PrefsPages {
             , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.ScriptTypes"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
         for index, width in [105, 60, 80, 80, 130, 80]   ; the last one (File) fills the rest
             listView.ModifyCol(index, width)
-        listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"') : "")
+        listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"')
+            : (row && !ScriptProvider.Scripts.Length) ? ActionCatalog.OpenUrl(App.Website "#scripts") : "")   ; the "no scripts yet" row: the script library
         listView.OnNotify(-12, (ctrl, lParam) => PrefsPages._ScriptRowDraw(lParam))   ; NM_CUSTOMDRAW: a filter script that can't run is red
         PrefsPages._scriptList := listView
         PrefsPages._FillScripts()

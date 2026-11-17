@@ -2438,7 +2438,8 @@ class ProviderTests {
         ScriptProvider._checked := 0                                         ; the folder changed: read again at the next search
         eq("refresh", titles("new one"), "New One")
         ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
-        ; Opening the Scripts folder the first time: three examples (one form each) are created and all can be read; an existing folder is left alone
+        ; Opening the Scripts folder the first time creates it empty (ready-made scripts are in the script library, docs\scripts);
+        ; the library's scripts read as their headers say
         examples := A_Temp "\ALTRunScriptExamples"
         try DirDelete(examples, true)
         savedOpen := ActionCatalog.GetOwnPropDesc("OpenFolder"), opened := ""
@@ -2446,31 +2447,30 @@ class ProviderTests {
         ScriptProvider.Folder := examples
         try {
             ScriptProvider.OpenFolder()
-            eq("examples: folder opened", opened, examples)
+            eq("open folder: created and opened", opened "|" DirExist(examples), examples "|D")
+            ScriptProvider.Load()
+            eq("open folder: empty", ScriptProvider.Scripts.Length, 0)
+            Loop Files, A_ScriptDir "\..\docs\scripts\*.*", "F"
+                if (A_LoopFileExt != "md")
+                    FileCopy(A_LoopFileFullPath, examples "\" A_LoopFileName)
             ScriptProvider.Load()
             found := Map()
             for script in ScriptProvider.Scripts
                 found[script.Name] := script.Title "|" script.Mode "|" script.Keyword "|" script.Argument
-            eq("examples: count", found.Count, 4)
-            eq("example filter", found.Get("Environment Variables.ahk", ""), "Example: Environment Variables|filter|envvar|part of a name")
-            eq("example ahk", found.Get("Today.ahk", ""), "Example: Today's Date|silent||")
-            eq("example bat", found.Get("Port.bat", ""), "Example: Who Uses a Port|window|port|a port number")
-            eq("example ps1", found.Get("IP Addresses.ps1", ""), "Example: IP Addresses|output||")
-            bom := FileOpen(examples "\Port.bat", "r", "CP0"), first := bom.RawRead(head := Buffer(3), 3) ? NumGet(head, 0, "UChar") : 0, bom.Close()
-            eq("example bat has no BOM", first, Ord("@"))
-            for name, text in ScriptProvider.ExampleScripts()
-                TestRunner.True("Scripts.example ASCII only " name, !RegExMatch(text, "[^\x00-\x7F]"))
+            eq("library filter", found.Get("Environment Variables.ahk", ""), "Environment Variables|filter|envvar|part of a name")
+            eq("library bat", found.Get("Who Uses a Port.bat", ""), "Who Uses a Port|window|port|a port number")
+            eq("library ps1", found.Get("IP Addresses.ps1", ""), "IP Addresses|output||")
+            eq("library ps1 with BOM", found.Get("File Hash.ps1", ""), "File Hash|output|hash|file path")
             ; While waiting for an argument the subtitle says what to type next (scripts, custom commands, web searches)
             port := ScriptProvider.Search(SearchQuery("port"))
-            eq("waiting hint: script", port.Length ? port[1].Subtitle : "", I18n.T("Search.TypeArgAfter", "port", "a port number") " · " I18n.T("Script.Subtitle", "Port.bat"))
+            eq("waiting hint: script", port.Length ? port[1].Subtitle : "", I18n.T("Search.TypeArgAfter", "port", "a port number") " · " I18n.T("Script.Subtitle", "Who Uses a Port.bat"))
             eq("waiting: script autocompletes", port.Length ? port[1].Valid "|" port[1].AutoComplete : "", "0|port ")
             ping := Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping")
             TestRunner.True("Scripts.waiting hint: custom command", InStr(CustomCommandProvider._ToItem(ping, 100).Subtitle, I18n.T("Search.TypeAfter", "ping") " · ") = 1)
             TestRunner.True("Scripts.with argument: no hint", !InStr(CustomCommandProvider._ToItem(ping, 100, "8.8.8.8").Subtitle, I18n.T("Search.TypeAfter", "ping")))
             eq("waiting hint: web search", WebSearchProvider.ItemFor(Map("Title", "Google", "Keyword", "g", "Url", "https://example.com/?q={query}"), "").Subtitle, I18n.T("Search.TypeAfter", "g"))
-            FileDelete(examples "\Today.ahk")
             ScriptProvider.OpenFolder()
-            eq("examples: existing folder untouched", FileExist(examples "\Today.ahk"), "")
+            eq("open folder: existing folder untouched", FileExist(examples "\Who Uses a Port.bat") ? 1 : 0, 1)
         } finally {
             ActionCatalog.DefineProp("OpenFolder", savedOpen)
             ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]

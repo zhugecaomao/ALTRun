@@ -257,12 +257,23 @@ class ProjectTests {
         dir := A_ScriptDir "\..\docs\scripts\"
         count := 0, problems := ""
         Loop Files, dir "*.*", "F" {
-            if (A_LoopFileExt = "ahk" || A_LoopFileExt = "ps1")
-                count += 1, problems .= ProjectTests._ScriptProblems(A_LoopFileName, FileRead(A_LoopFileFullPath, "UTF-8"))
-            else if (A_LoopFileName != "README.md")
-                problems .= A_LoopFileName ": not .ahk or .ps1; "
+            if !RegExMatch(A_LoopFileExt, "i)^(ahk|ps1|bat|cmd)$") {
+                if (A_LoopFileName != "README.md")
+                    problems .= A_LoopFileName ": not .ahk, .ps1, .bat or .cmd; "
+                continue
+            }
+            count += 1, text := FileRead(A_LoopFileFullPath, "UTF-8")
+            problems .= ProjectTests._ScriptProblems(A_LoopFileName, text)
+            if (A_LoopFileExt = "bat" || A_LoopFileExt = "cmd") {         ; cmd takes a byte order mark as part of the first command, and reads the file in the console's code page
+                handle := FileOpen(A_LoopFileFullPath, "r", "CP0"), head := Buffer(3, 0), handle.RawRead(head, 3), handle.Close()
+                if (NumGet(head, 0, "UChar") = 0xEF)
+                    problems .= A_LoopFileName ": has a byte order mark; "
+                for line in StrSplit(text, "`n", "`r")
+                    if RegExMatch(line, "[^\x00-\x7F]") && !RegExMatch(line, "i)^\s*(rem\b|::)")
+                        problems .= A_LoopFileName ": non-ASCII text outside a rem line; "
+            }
         }
-        TestRunner.True("ScriptLibrary.has scripts (" count ")", count >= 3)
+        TestRunner.True("ScriptLibrary.has scripts (" count ")", count >= 6)
         TestRunner.Equal("ScriptLibrary.problems", problems, "")
         ; the checks themselves, on made-up scripts
         head := "; @altrun.title T`n; @altrun.description D`n; @altrun.description_zh 说明`n"

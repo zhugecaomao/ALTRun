@@ -185,16 +185,16 @@ def script_meta(path):
 
 
 def script_library():
-    """docs/scripts/*.ahk, *.ps1 -> (count, cards): title, keyword, description, what it needs and connects to, download links"""
+    """docs/scripts/*.ahk, *.ps1, *.bat, *.cmd -> (count, cards): title, keyword, description, what it needs and connects to, download links"""
     folder = os.path.join(ROOT, "docs", "scripts")
     cards = []
     for name in sorted(os.listdir(folder), key=str.lower):
-        if not name.lower().endswith((".ahk", ".ps1")):
+        if not name.lower().endswith((".ahk", ".ps1", ".bat", ".cmd")):
             continue
         meta = script_meta(os.path.join(folder, name))
         esc = lambda key, default="": html.escape(meta.get(key, default))   # noqa: E731
         path = "docs/scripts/" + urllib.parse.quote(name)
-        kind = "AutoHotkey v2" if name.lower().endswith(".ahk") else "PowerShell"
+        kind = {".ahk": "AutoHotkey v2", ".ps1": "PowerShell"}.get(os.path.splitext(name)[1].lower(), "Batch (cmd)")
         keyword = f' <code>{esc("keyword")}</code>' if meta.get("keyword") else ""
         hosts = meta.get("network", "none").strip()
         network = (('<li><span lang="zh">不联网</span><span lang="en">No network</span></li>') if hosts.lower() == "none" else
