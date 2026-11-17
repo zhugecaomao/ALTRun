@@ -82,6 +82,28 @@ jobs:
             if ($code -ne 0 -or $output.Trim()) { throw "Validation of $script failed (exit code $code)" }
           }
 
+      - name: Validate the script library (docs/scripts; its headers are checked by ProjectTests.ScriptLibrary)
+        shell: pwsh
+        run: |
+          foreach ($script in Get-ChildItem docs\scripts\*.ahk) {
+            # quoted: Start-Process joins the arguments with spaces, and "TC Commands.ahk" has one
+            & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', '/validate', "`"$($script.FullName)`"" `
+              -Out validate.log -Err validate.err -TimeoutSeconds 120
+            $code = $LASTEXITCODE
+            $output = (Get-Content validate.log, validate.err -Raw) -join ""
+            Write-Host "$($script.Name): $output"
+            if ($code -ne 0 -or $output.Trim()) { throw "Validation of $($script.Name) failed (exit code $code)" }
+          }
+          foreach ($script in Get-ChildItem docs\scripts\*.ps1) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($script.FullName, [ref]$null, [ref]$errors) | Out-Null
+            Write-Host "$($script.Name): $($errors.Count) parse errors"
+            if ($errors) { $errors | ForEach-Object { Write-Host "::error::$($script.Name): $_" }; throw "Parsing $($script.Name) failed" }
+            # Windows PowerShell 5 reads a file without a byte order mark as ANSI: non-ASCII text needs one
+            $bytes = [IO.File]::ReadAllBytes($script.FullName)
+            $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+            if (-not $bom -and ($bytes | Where-Object { $_ -gt 127 })) { throw "$($script.Name) has non-ASCII text but no UTF-8 byte order mark" }
+          }
       - name: Unit tests
         shell: pwsh
         run: |

@@ -250,6 +250,69 @@ class ProjectTests {
         TestRunner.Equal("WikiPages.help pages exist in both languages", missing, "")
     }
 
+    ; The script library (docs\scripts, listed on the website by site\build.py): each script has in its first 30 lines (where ALTRun reads
+    ; @altrun.xxx) a title, a description in English and Chinese and @altrun.network (the hosts it connects to, or "none"); a script that
+    ; makes web requests names its hosts, each host named appears in the script, and no API key or token is written in it
+    static ScriptLibrary() {
+        dir := A_ScriptDir "\..\docs\scripts\"
+        count := 0, problems := ""
+        Loop Files, dir "*.*", "F" {
+            if (A_LoopFileExt = "ahk" || A_LoopFileExt = "ps1")
+                count += 1, problems .= ProjectTests._ScriptProblems(A_LoopFileName, FileRead(A_LoopFileFullPath, "UTF-8"))
+            else if (A_LoopFileName != "README.md")
+                problems .= A_LoopFileName ": not .ahk or .ps1; "
+        }
+        TestRunner.True("ScriptLibrary.has scripts (" count ")", count >= 3)
+        TestRunner.Equal("ScriptLibrary.problems", problems, "")
+        ; the checks themselves, on made-up scripts
+        head := "; @altrun.title T`n; @altrun.description D`n; @altrun.description_zh 说明`n"
+        TestRunner.Equal("ScriptLibrary.check: good", ProjectTests._ScriptProblems("a", head "; @altrun.network example.com`nurl := `"https://example.com`"`nr := ComObject(`"WinHttp.WinHttpRequest.5.1`")"), "")
+        TestRunner.Equal("ScriptLibrary.check: web, network none", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nr := ComObject(`"WinHttp.WinHttpRequest.5.1`")"), "a: makes web requests but @altrun.network is none; ")
+        TestRunner.Equal("ScriptLibrary.check: host not used", ProjectTests._ScriptProblems("a", head "; @altrun.network example.org`n"), "a: network host example.org isn't used in the script; ")
+        TestRunner.Equal("ScriptLibrary.check: key written", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nkey := `"sk-abcdefghijklmnopqrstuvwxyz`""), "a: looks like a key or token is written in it (sk-abc...); ")
+        TestRunner.Equal("ScriptLibrary.check: no description", ProjectTests._ScriptProblems("a", "# @altrun.title T`n# @altrun.network none`n"), "a: no @altrun.description; a: no @altrun.description_zh; ")
+        TestRunner.Equal("ScriptLibrary.check: description after line 30", ProjectTests._ScriptProblems("a", "; @altrun.title T`n; @altrun.network none`n" StrReplace(Format("{:30}", ""), " ", "`n") "; @altrun.description D`n; @altrun.description_zh 说明`n"), "a: no @altrun.description; a: no @altrun.description_zh; ")
+    }
+
+    ; What a library script (name, text) lacks or does wrong, as "name: problem; " for each, or ""
+    static _ScriptProblems(name, text) {
+        meta := ProjectTests._ScriptMeta(text), problems := ""
+        for key in ["title", "description", "description_zh", "network"]
+            if !meta.Has(key) || meta[key] = ""
+                problems .= name ": no @altrun." key "; "
+        if (meta.Has("description_zh") && !RegExMatch(meta["description_zh"], "[\x{4E00}-\x{9FFF}]"))
+            problems .= name ": description_zh isn't Chinese; "
+        if (meta.Has("requires") != meta.Has("requires_zh"))
+            problems .= name ": requires and requires_zh go together; "
+        network := meta.Has("network") ? Trim(meta["network"]) : ""
+        web := RegExMatch(text, "i)WinHttp|XMLHTTP|\bDownload\(|Invoke-WebRequest|Invoke-RestMethod|Net\.WebClient|HttpClient|\bcurl(\.exe)?\s")
+        if (web > 0 && network = "none")
+            problems .= name ": makes web requests but @altrun.network is none; "
+        if (network != "" && network != "none") {
+            rest := RegExReplace(text, "im)^.*@altrun\.network\b.*$", "")           ; the script without its network line
+            for host in StrSplit(network, ",", " `t")
+                if !RegExMatch(host, "^[a-z0-9-]+(\.[a-z0-9-]+)+$")
+                    problems .= name ": network host " host " isn't a host name; "
+                else if !InStr(rest, host)
+                    problems .= name ": network host " host " isn't used in the script; "
+        }
+        if RegExMatch(text, "i)\b(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::fx)?|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,})", &key)
+            problems .= name ": looks like a key or token is written in it (" SubStr(key[0], 1, 6) "...); "
+        return problems
+    }
+
+    ; @altrun.xxx values in the first 30 lines, as ScriptProvider.ReadScript reads them (keys in lower case)
+    static _ScriptMeta(text) {
+        meta := Map()
+        for line in StrSplit(text, "`n", "`r") {
+            if (A_Index > 30)
+                break
+            if RegExMatch(line, "i)^\s*(?:;|#|//|::|rem\b)\s*@altrun\.(\w+)\s+(.*?)\s*$", &m)
+                meta[StrLower(m[1])] := m[2]
+        }
+        return meta
+    }
+
     ; Every version heading in CHANGELOG.md has a link ([version]: URL at the end of the file), and "未发布" compares against the latest release
     static ChangelogLinks() {
         text := FileRead(A_ScriptDir "\..\CHANGELOG.md", "UTF-8")
