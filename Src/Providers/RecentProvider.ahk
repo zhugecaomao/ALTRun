@@ -130,8 +130,9 @@ class RecentProvider {
             return ""
         extra := {Source: entry, Uid: entry["Uid"], Pinned: pinned}
         if entry.Has("System") {
+            id := SystemProvider.Aliases.Get(entry["System"], entry["System"])   ; a removed command saved by an older version (ListProcesses -> TaskManager)
             for command in SystemProvider.Commands() {
-                if (command["Id"] = entry["System"]) {
+                if (command["Id"] = id) {
                     extra.Icon := command["Icon"], extra.OnRun := SystemProvider._Runner(command["Id"])
                     return RecentProvider._Item(command["Title"], command["Subtitle"], extra, pinned)
                 }

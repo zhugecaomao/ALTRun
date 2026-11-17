@@ -5,8 +5,17 @@
 
 ## [未发布]
 
+## [2026.11.16.17]
+
+测试版。
+
+Test build.
+
 ### 新增
 - [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 新增 5 个脚本 (下载到 `Scripts\` 文件夹就能用): Kill Process (`kill`, 列出正在运行的程序和内存, 回车结束)、World Clock (`tz`, 60 个城市的当地时间和时差)、Unix Timestamp (`ts`, 时间戳和日期互转)、Dark Mode (`dark`, 切换 Windows 深浅色)、Quick Note (`note`, 把一行笔记追加到 `文档\Notes.md`)
+
+### 移除
+- 系统命令 "列出运行中的进程" / "列出运行中的服务" (`ListProcesses` / `ListServices`, 把 tasklist / net start 的输出用记事本打开): 用到它们的自定义热键、置顶和最近使用改为打开任务管理器 / 服务; 想搜索正在运行的程序并结束它, 用脚本库的 Kill Process (`kill`)
 
 ## [2026.11.16.16]
 
@@ -1639,7 +1648,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...HEAD
+[2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
 [2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16
 [2026.11.16.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...2026.11.16.15
 [2026.11.16.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...2026.11.16.14

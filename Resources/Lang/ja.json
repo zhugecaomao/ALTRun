@@ -1132,8 +1132,6 @@
   "Sys.EmptyRecycle": "ごみ箱を空にする",
   "Sys.Hibernate": "休止状態",
   "Sys.IPCopied": "IP アドレス (先頭のものをコピーしました)",
-  "Sys.ListProcesses": "実行中のプロセス一覧",
-  "Sys.ListServices": "実行中のサービス一覧",
   "Sys.Lock": "画面をロック",
   "Sys.Log": "ALTRun ログを開く",
   "Sys.Logoff": "サインアウト",

@@ -1133,8 +1133,6 @@
   "Sys.EmptyRecycle": "清空資源回收筒",
   "Sys.Hibernate": "休眠",
   "Sys.IPCopied": "IP 位址 (第一個已複製)",
-  "Sys.ListProcesses": "列出執行中的處理程序",
-  "Sys.ListServices": "列出執行中的服務",
   "Sys.Lock": "鎖定螢幕",
   "Sys.Log": "開啟 ALTRun 記錄檔",
   "Sys.Logoff": "登出",

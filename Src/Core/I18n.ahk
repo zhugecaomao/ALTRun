@@ -415,8 +415,6 @@ class I18n {
         s["Sys.ScriptsFolder"]         := "Open Scripts Folder"
         s["Sys.PastePlainEmpty"]       := "There is no text in the clipboard"
         s["Sys.TerminalHere"]          := "Open Terminal at Current Folder"
-        s["Sys.ListProcesses"]         := "List Running Processes"
-        s["Sys.ListServices"]          := "List Running Services"
         s["Sys.Subtitle"]              := "System command"
         s["Sys.ConfirmTitle"]          := "{1}?"
         s["Sys.ConfirmHide"]           := "Remove '{1}' from search results?`n`nYou can restore it in Preferences > Features."
