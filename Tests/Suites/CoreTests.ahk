@@ -926,24 +926,6 @@ class CoreTests {
         eq("Preferences: off in Task Manager shows off", working["General"]["LaunchAtLogin"], 0)
     }
 
-    ; From the Microsoft Store (App.PackageFamily set): shortcuts and the Caps Lock task start the execution alias, which stays the same
-    ; across updates; the Store updates it, so no background checks and checking opens its Store page
-    static StorePackage() {
-        eq := (n, a, e) => TestRunner.Equal("StorePackage." n, a, e)
-        eq("not packaged here", App._PackageFamily() "|" (App.ExePath = A_ScriptFullPath) "|" (App.ExeDir = A_ScriptDir), "|1|1")
-        eq("no such function (Windows 7): not packaged", App._PackageFamily("NoSuchFunctionInAnyDll"), "")
-        saved := App.PackageFamily, savedTimer := UpdateChecker._timer
-        try {
-            App.PackageFamily := "zhugecaomao.ALTRun_6dpjkjyg02fec", UpdateChecker._timer := ""
-            aliases := EnvGet("LOCALAPPDATA") "\Microsoft\WindowsApps"
-            eq("alias", App.ExePath "|" App.ExeDir, aliases "\altrun.exe|" aliases)
-            eq("store page", UpdateChecker.StoreUrl(), "ms-windows-store://pdp/?PFN=zhugecaomao.ALTRun_6dpjkjyg02fec")
-            eq("no background checks", UpdateChecker.Schedule() "|" UpdateChecker._timer, "0|")
-        } finally {
-            App.PackageFamily := saved, UpdateChecker._timer := savedTimer
-        }
-    }
-
     ; Errors nothing caught after start-up: logged even with the log off, with the place and stack; handled (no dialog) unless they end the
     ; script. Also for real: an error thrown in a timer is caught by the installed handler, logged, and the test run goes on
     static UncaughtErrors() {

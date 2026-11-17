@@ -1,4 +1,4 @@
-# Scoop / winget / Microsoft Store 安装包
+# Scoop / winget 安装包
 
 | 文件 | 说明 |
 |---|---|
@@ -6,10 +6,6 @@
 | `winget/*.yaml` | winget 清单 (zip 里的便携版 ALTRun.exe)。2026-11 已收录到 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs): `winget install zhugecaomao.ALTRun` |
 | `Update-Manifests.ps1` | 把两个清单更新到新版本 (版本号、下载地址、SHA256) |
 | `Submit-Winget.ps1` | 向 winget-pkgs 提交新版本: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR |
-
-| `msix/AppxManifest.xml` | Microsoft Store 包 (MSIX) 的清单: 标识 (`zhugecaomao.ALTRun`、发布者) 来自 Partner Center 的 "产品标识" 页; 关掉了文件和注册表的写重定向 (设置照样放在 `%APPDATA%\ALTRun`, 延迟启动能改启动项), 带执行别名 `altrun` |
-| `msix/Make-Msix.ps1` | 用发布目录打 MSIX 包 (makeappx): 版本号 `2026.11.03` → `2026.11.3.0`, 测试版 `2026.11.03.9` → `2026.11.3.9` |
-| `msix/Assets/*.png` | 包里的图标, 由 `icon/make_store_assets.py` 生成 (和程序图标同一套图形) |
 
 ## 发布新版本时
 创建 GitHub Release 之前, Release 工作流先把要发布的 `ALTRun.exe` 上传到 VirusTotal 扫描 (`Scan-VirusTotal.ps1`)。有引擎报恶意 (malicious), 或 15 分钟内没有结果, 就停下, 不建 Release、不更新清单; 报告链接和报毒的引擎在运行摘要里。确认是误报后, 勾选 `allow_detections` 重新运行。只报 "可疑" (suspicious) 的不拦。测试版勾选 `virustotal` 也会扫。
@@ -22,13 +18,6 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 3. 提交失败时 (日志里会写原因): 在 Actions 里运行 **Submit to winget** 工作流重新提交 (版本号留空 = 最新的 Release)。如果日志说 fork 同步不了 (自动丢弃 fork 的提交也失败了), 先在 GitHub 上打开你的 winget-pkgs fork → Sync fork → Discard commits, 或者直接删掉这个 fork (下次会重新创建), 再运行
 
 `WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, winget 用户就收不到新版本, 需要每次手动运行 `wingetcreate update` (见下文)。
-
-## Microsoft Store (MSIX)
-正式版的版本号 (`YYYY.MM.DD`, 三段: Release PR 上的构建和 publish = true) 运行 Release 工作流时会生成 MSIX 包, 放在运行页面底部的 Artifacts 里 (`ALTRun_v<版本>_msix`); 测试版 (四段版本号) 不打包, 构建快一些。包没有签名, 发布到 Store 时由 Store 签名; 所以不能直接双击安装。工作流会用临时证书签一份测试用的副本, 装上后通过 `altrun` 别名启动 ALTRun, 检查它在包里运行、设置写在 `%APPDATA%\ALTRun`、开机启动的快捷方式指向别名, 再跑 Windows App Certification Kit (可选项只报告, 必需项失败就算失败)。
-
-提交新版本 (正式版发布后): Partner Center → 应用和游戏 → ALTRun → 新建提交 → 程序包, 上传正式版那次运行的 `.msix`, 保存后提交认证。只有正式版 (版本号最后一位是 0) 能提交。
-
-商店版和其它版本的区别 (见 `App.PackageFamily`): 由 Store 更新 ("检查更新" 打开 Store 页面, 不在后台检查); 开机启动、"发送到" 和 CapsLock 辅助的计划任务用 `altrun` 别名启动 (包的安装目录每次更新都会变); 不另建开始菜单快捷方式。
 
 ## 代码签名 (SignPath)
 ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用 / 未知发布者", 部分杀毒软件也更容易误报。

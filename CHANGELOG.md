@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.11]
+
+测试版。
+
+Test build.
+
+### 移除
+- 不再提供 Microsoft Store 版 (没有上架): 去掉 MSIX 打包和商店版专用的代码 (更新检查打开商店页、执行别名启动、开始菜单快捷方式和检查更新选项变灰)。便携版、winget、Scoop 不受影响; 搜索里索引 Microsoft Store 应用照旧
+
 ## [2026.11.16.10]
 
 测试版。
@@ -1579,7 +1588,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...HEAD
+[2026.11.16.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...2026.11.16.11
 [2026.11.16.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...2026.11.16.10
 [2026.11.16.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...2026.11.16.9
 [2026.11.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...2026.11.16.8
