@@ -469,6 +469,7 @@ class I18n {
 
         ; --- Windows Settings pages ---
         s["Recent.PinnedHint"]         := "Pinned: {1} is shown when the search box is empty"
+        s["Recent.PinnedMany"]         := "Pinned {1} items: they are shown when the search box is empty"
         s["Recent.ConfirmUnpin"]       := "Unpin '{1}'?"
         s["Recent.ConfirmForget"]      := "Remove '{1}' from the recent items?"
         s["Script.Subtitle"]           := "Script · {1}"

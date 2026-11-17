@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.16.18]
+
+测试版。
+
+Test build.
+
+### 新增
+- 搜索窗口里的文件 / 文件夹结果可以用鼠标拖到别的程序 (微信、邮件、资源管理器的文件夹、桌面), 就是复制过去, 原文件不会被移走; 放下后窗口自动隐藏, 拖动中按 Esc 取消; 用 Insert 标记的几个文件一起拖
+- 把文件或文件夹拖到搜索窗口上就是置顶到空搜索框 (一次最多 20 个); 窗口没打开时可以先按住鼠标开始拖, 再按呼出热键, 放到窗口上
+
 ## [2026.11.16.17]
 
 测试版。
@@ -1648,7 +1658,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...HEAD
+[2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
 [2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
 [2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16
 [2026.11.16.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...2026.11.16.15

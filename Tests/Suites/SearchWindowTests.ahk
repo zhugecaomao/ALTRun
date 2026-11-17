@@ -16,6 +16,29 @@ class SearchWindowTests {
                 , SearchKeys.EnterModifier(SubStr(combo, 1, 1) = "1", SubStr(combo, 2, 1) = "1", SubStr(combo, 3, 1) = "1"), expected)
     }
 
+    ; What dragging a result out takes: a local / network file or folder path; all marked ones when it is marked; nothing for
+    ; URLs, text, Store apps (shell:) or custom commands with {hwnd} / {pid}
+    static DragPaths() {
+        eq := (n, a, e) => TestRunner.Equal("DragPaths." n, a, e)
+        saved := SearchWindow.Session
+        try {
+            SearchWindow.Session := s := SearchSession()
+            fileItem := ResultItem("a.txt", "", {Kind: "file", Arg: "C:\Work\a.txt"})
+            folder := ResultItem("Work", "", {Kind: "folder", Arg: "C:\Work"})
+            unc := ResultItem("b.txt", "", {Kind: "file", Arg: "\\server\share\b.txt"})
+            eq("file", TextTools.JoinList(SearchWindow.DragPaths(fileItem), ";"), "C:\Work\a.txt")
+            eq("network", TextTools.JoinList(SearchWindow.DragPaths(unc), ";"), "\\server\share\b.txt")
+            eq("url", SearchWindow.DragPaths(ResultItem("Site", "", {Kind: "url", Arg: "https://example.com"})).Length, 0)
+            eq("text", SearchWindow.DragPaths(ResultItem("Hi", "", {Kind: "text", Arg: "Hi"})).Length, 0)
+            eq("store app", SearchWindow.DragPaths(ResultItem("App", "", {Kind: "file", Arg: "shell:AppsFolder\Some.App"})).Length, 0)
+            eq("window placeholders", SearchWindow.DragPaths(ResultItem("Cmd", "", {Kind: "file", Arg: "C:\Tools\x.exe", WindowArgs: true})).Length, 0)
+            s.ToggleMark(fileItem), s.ToggleMark(folder)
+            eq("marked: all marked", TextTools.JoinList(SearchWindow.DragPaths(fileItem), ";"), "C:\Work;C:\Work\a.txt")
+            eq("not marked: its own", TextTools.JoinList(SearchWindow.DragPaths(unc), ";"), "\\server\share\b.txt")
+        } finally
+            SearchWindow.Session := saved
+    }
+
     static EditAction() {
         eq := (n, a, e) => TestRunner.Equal("EditAction." n, a, e)
         root := A_Temp "\ALTRun-test-edit"

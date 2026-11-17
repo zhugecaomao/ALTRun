@@ -995,6 +995,7 @@
   "Recent.ConfirmForget": "从最近使用里去掉 '{1}' 吗?",
   "Recent.ConfirmUnpin": "取消置顶 '{1}' 吗?",
   "Recent.PinnedHint": "已置顶: 搜索框为空时显示 {1}",
+  "Recent.PinnedMany": "已置顶 {1} 个项目: 搜索框为空时显示",
   "Script.Done": "{1}: 完成",
   "Script.TimedOut": "已停止: 运行超过 {1} 秒",
   "Script.OutputCut": "(输出太多, 只显示前 {1} MB)",

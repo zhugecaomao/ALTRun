@@ -262,6 +262,8 @@ GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.
 
 ### 热键
 GitHub → Actions → **Hotkeys** 用 `Tests\Integration\HotkeyCheck.ahk` 在真实的 Windows 桌面上按运行自定义命令 (`custom:<Id>`) 的自定义热键。它启动一份 ALTRun 副本, 设两条用 `cmd.exe` 写标记文件的命令和三个热键: 一个运行没有 `{query}` 的命令 (标记文件必须写出来), 一个在检查自己的编辑框里选中文字时运行带 `{query}` 的命令 (标记文件里必须是这段文字, 剪贴板必须还是原来的内容), 一个指向不存在的命令 (什么都不运行, ALTRun 的日志里有说明)。每个试 3 次; 失败的那次打印 ALTRun 的日志。修改 `App.ahk`、`CustomCommandProvider.ahk`、`SelectionActions.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑 (会占用键盘半分钟左右): `HotkeyCheck.ahk <仓库副本> [次数]`。
+### 拖放文件
+GitHub → Actions → **File Drag** 用 `Tests\Integration\FileDragCheck.ahk` 在真实的 Windows 桌面上用鼠标拖放。它启动一份置顶了一个文件的 ALTRun 副本, 检查三种情况: 把这个文件 (空搜索框的第 1 行) 拖到资源管理器窗口上, 文件复制过去、原文件还在 (`FileDrag` 只提供复制和链接, 从不移动)、搜索窗口隐藏; 拖动中按 Esc, 什么都不复制, 窗口还在; 从检查自己的窗口开始拖一个文件, 拖着的时候按 Alt+Space (由一个辅助进程移动鼠标), 放到搜索窗口上, 文件被置顶 (`Data\ALTRun.json` 里有它), 窗口还在。改了 `Lib\FileDrag.ahk`、`SearchWindow.ahk`、`RecentProvider.ahk` 或这个检查的 PR、main 上, 或手动运行。
 ### 首次启动
 GitHub → Actions → **First run** 用 `Tests\Integration\FirstRunCheck.ahk` 对真实的 "启动" 文件夹检查新安装第一次启动时的询问 (`App.AskLaunchAtLogin`): 没有 Data 文件夹时会问, 等回答时 "启动" 文件夹里没有快捷方式、`ALTRun.json` 里已经是 `LaunchAtLogin` 0; 点 "否" 保持关闭; 下次启动不再问; 按 Enter ("是", 默认按钮) 建开机启动快捷方式; 旧版本的 `ALTRun.json` 和从 `ALTRun.ini` 升级都不问。修改 `App.ahk`、`AppSettings.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑, 原来的 "启动" / "发送到" / 开始菜单 `ALTRun.lnk` 会放回去: `FirstRunCheck.ahk <仓库副本>`。
 ### 延迟启动

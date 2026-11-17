@@ -5,7 +5,7 @@
 ;   1. pinned items (Window.ShowPinned): "Pin to empty search box" in the actions panel (→), stored in ALTRun.json (Features.Recent.Pinned),
 ;      so they go with the settings; reordered / removed in Preferences → Search Window → Edit... (PrefsPages.EditPinned)
 ;   2. recently opened items (Window.ShowRecent, at most RecentCount), stored in Data\Knowledge.json (Knowledge.Recent); Clear... in Preferences
-; Ctrl+Del: unpin / remove from the recently used.
+; Ctrl+Del: unpin / remove from the recently used. Files / folders dropped on the search window are pinned too (PinPaths).
 ; Only results that can be opened again are kept: files, folders, programs, URLs (path saved) and system commands (Id saved, shown with the name in the current language);
 ; clipboard history, calculation results, snippets, web searches, windows and others that depend on the input or the moment aren't.
 ;
@@ -96,6 +96,32 @@ class RecentProvider {
             pinned.Push(A_Index = 1 ? entry : entry.Clone())
         App.Notify(I18n.T("Recent.PinnedHint", item.Title))
         return AppSettings.Save()
+    }
+
+    ; Files / folders dropped on the search window: pins the first limit of them that exist and aren't pinned yet, saving once;
+    ; returns how many were pinned
+    static PinPaths(paths, limit := 20) {
+        count := 0, last := ""
+        for filePath in paths {
+            if (count >= limit)
+                break
+            if ((attributes := FileExist(filePath)) = "")
+                continue
+            isFolder := InStr(attributes, "D") > 0
+            name := Path.Leaf(RTrim(filePath, "\"))
+            item := ResultItem((name != "") ? name : filePath, filePath, {Kind: isFolder ? "folder" : "file", Arg: filePath
+                , Icon: isFolder ? IconCache.FolderIcon(filePath) : filePath, Provider: "Drop"})
+            if (!IsObject(entry := RecentProvider.Snapshot(item)) || RecentProvider.IsPinned(item))
+                continue
+            for pinned in RecentProvider._PinnedLists()
+                pinned.Push(A_Index = 1 ? entry : entry.Clone())
+            count++, last := item.Title
+        }
+        if !count
+            return 0
+        App.Notify(count = 1 ? I18n.T("Recent.PinnedHint", last) : I18n.T("Recent.PinnedMany", count))
+        AppSettings.Save()
+        return count
     }
 
     static Unpin(uid) {
