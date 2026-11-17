@@ -40,6 +40,8 @@ None of them go through the clipboard, so the paths don't appear in Windows clip
 - **Directory Opus**: Opus's own `dopusrt.exe /info …,paths`, which lists the tabs of every Opus window (found next to the running `dopus.exe`, nothing to set up). It runs only while an Opus window is open, when a folder is actually needed (the hotkey, auto switch, or the panel when a dialog opens; the panel shows the other folders first and adds Opus's a moment later), and a result is reused for 1.5 s. With logging on, the log shows how long each read took (`Perf: Directory Opus paths … ms`)
 - **File Explorer**: the Shell windows list
 
+A network folder (`\\server\share`, a mapped drive) must answer within 0.5 s, or the dialog isn't jumped there: a server that is offline would otherwise keep ALTRun waiting about 20 s. With logging on, the log says which folder didn't answer.
+
 ## Settings
 
 ![Preferences → Quick Switch](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-quickswitch.png)
