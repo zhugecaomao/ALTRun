@@ -413,59 +413,11 @@ class ScriptProvider {
             ScriptProvider.Load()
     }
 
-    ; Example scripts, each showing one form: background with a notification (ahk, silent), a keyword with an argument (bat, window; the keyword mustn't clash with the default commands),
-    ; all output in Notepad (ps1, output), live results (ahk, filter; one result per line). ASCII only: Windows PowerShell 5 reads files without BOM as ANSI
-    static ExampleScripts() {
-        return Map(
-            "Environment Variables.ahk",
-                "; @altrun.title     Example: Environment Variables`r`n"
-              . "; @altrun.keyword   envvar`r`n"
-              . "; @altrun.mode      filter`r`n"
-              . "; @altrun.argument  part of a name`r`n"
-              . '; Live results: type "envvar path" in ALTRun. While you type, ALTRun runs this script with the text (A_Args[1]) and shows' "`r`n"
-              . "; what it prints: one result per line, title<Tab>subtitle<Tab>arg<Tab>type (or JSON, see the Scripts page in the wiki).`r`n"
-              . "; Type text: Enter copies the value.`r`n"
-              . 'query := A_Args.Length ? A_Args[1] : ""' "`r`n"
-              . 'block := DllCall("GetEnvironmentStringsW", "Ptr"), at := block, out := ""' "`r`n"
-              . 'while ((entry := StrGet(at, "UTF-16")) != "") {' "`r`n"
-              . '    at += (StrLen(entry) + 1) * 2' "`r`n"
-              . '    split := InStr(entry, "=", , 2)' "`r`n"
-              . '    name := SubStr(entry, 1, split - 1), value := StrReplace(SubStr(entry, split + 1), "``t", " ")' "`r`n"
-              . '    if (split > 1 && SubStr(name, 1, 7) != "ALTRUN_" && (query = "" || InStr(name, query)))' "`r`n"
-              . '        out .= name "``t" value "``t" value "``ttext``n"' "`r`n"
-              . '}' "`r`n"
-              . 'DllCall("FreeEnvironmentStringsW", "Ptr", block)' "`r`n"
-              . 'FileAppend(out, "*", "UTF-8-RAW")' "`r`n",
-            "Today.ahk",
-                "; @altrun.title  Example: Today's Date`r`n"
-              . "; @altrun.mode   silent`r`n"
-              . "; Runs in the background; the last line it prints is shown as a notification.`r`n"
-              . "; Change the mode to output to read everything it prints in your text editor, or remove it to run normally.`r`n"
-              . 'FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")' "`r`n",
-            "Port.bat",
-                "@echo off`r`n"
-              . "rem @altrun.title     Example: Who Uses a Port`r`n"
-              . "rem @altrun.keyword   port`r`n"
-              . "rem @altrun.argument  a port number`r`n"
-              . 'rem Type "port 8080" in ALTRun: the text after the keyword is passed to the script as %1.' "`r`n"
-              . "rem No mode line: it runs normally in its own window.`r`n"
-              . 'netstat -ano | findstr /c:":%~1 "' "`r`n"
-              . "pause`r`n",
-            "IP Addresses.ps1",
-                "# @altrun.title  Example: IP Addresses`r`n"
-              . "# @altrun.mode   output`r`n"
-              . "# Runs in the background, then opens everything it prints in your text editor.`r`n"
-              . "Get-NetIPAddress -AddressFamily IPv4 | Where-Object IPAddress -ne '127.0.0.1' | Format-Table InterfaceAlias, IPAddress -AutoSize`r`n")
-    }
-
-    ; Opens the Scripts folder; creates a few example scripts first if it doesn't exist yet (ExampleScripts)
+    ; Opens the Scripts folder, created first if it doesn't exist yet (empty: ready-made scripts are in the script library on the website)
     static OpenFolder() {
         dir := ScriptProvider.Dir
-        if !DirExist(dir) {
+        if !DirExist(dir)
             DirCreate(dir)
-            for name, text in ScriptProvider.ExampleScripts()
-                FileAppend(text, dir "\" name, "UTF-8-RAW")                 ; no BOM: cmd would take a BOM as part of a command on the first line and fail
-        }
         ActionCatalog.OpenFolder(dir)                                       ; the file manager in the settings (e.g. Total Commander)
     }
 }

@@ -104,6 +104,13 @@ jobs:
             $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
             if (-not $bom -and ($bytes | Where-Object { $_ -gt 127 })) { throw "$($script.Name) has non-ASCII text but no UTF-8 byte order mark" }
           }
+      - name: Run the library's batch script under a Chinese code page (its Chinese text is on rem lines only)
+        shell: cmd
+        run: |
+          chcp 936 >nul
+          echo.| call "docs\scripts\Who Uses a Port.bat" 135 > port.log 2>&1
+          type port.log
+          findstr /c:":135 " port.log >nul || (echo ::error::Who Uses a Port.bat didn't list port 135 & exit /b 1)
       - name: Unit tests
         shell: pwsh
         run: |
