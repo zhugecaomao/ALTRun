@@ -92,7 +92,7 @@ class Shots {
             ["prefs-selection",  "Light", "-Preferences Selection", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
             ["prefs-snippets",   "Light", "-Preferences Snippets", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences Calculator", () => Shots.Preferences()],
-            ["prefs-scripts",    "Light", "-Preferences Scripts", () => Shots.Preferences()],
+            ["prefs-scripts",    "Light", "-Preferences Scripts", () => Shots.PrefsScripts()],
             ["prefs-filesearch", "Light", "-Preferences FileSearch", () => Shots.Preferences(), () => Shots.FilesInNormalResults()],   ; Wiki: file search (files in normal results)
             ["prefs-searchsources", "Light", "-Preferences FileIndex", () => Shots.Preferences()],   ; Wiki: file search
             ["prefs-keyboard",   "Light", "-Preferences Keyboard", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
@@ -213,8 +213,9 @@ class Shots {
         FileCopy(Shots.RepoDir "\ALTRun.ahk", Shots.AppDir "\ALTRun.ahk")
         for folder in ["Lib", "Src", "Resources"]
             DirCopy(Shots.RepoDir "\" folder, Shots.AppDir "\" folder)
-        ; examples for the Scripts extension (the list in Preferences → Scripts)
+        ; examples for the Scripts extension (the list in Preferences → Scripts), and one from the script library (its description shows when selected)
         DirCreate(Shots.AppDir "\Scripts")
+        FileCopy(Shots.RepoDir "\docs\scripts\Translate.ahk", Shots.AppDir "\Scripts\Translate.ahk")
         FileAppend("; @altrun.title    Ping host`n; @altrun.keyword  ping`n; @altrun.argument host name`n; @altrun.mode     output`n"
             . "RunWait('ping ' A_Args[1])`n", Shots.AppDir "\Scripts\Ping.ahk", "UTF-8")
         FileAppend("# @altrun.title     Merge PDFs`n# @altrun.selection PDF, Files`n# @altrun.mode      silent`n& 'C:\Tools\PdfTool\PdfTool.exe' merge $args`n"
@@ -1302,6 +1303,24 @@ class Shots {
     static DemoOneDrive() {
         DirCreate(Shots.DemoDir "\OneDrive")
         EnvSet("OneDrive", Shots.DemoDir "\OneDrive")
+    }
+
+    ; Preferences → Scripts with the script library's Translate script selected: its description and details below the list
+    static PrefsScripts() {
+        hwnd := Shots.Preferences()
+        list := 0, listX := -1
+        for ctrl in WinGetControlsHwnd(hwnd)                                ; the scripts list: the visible list furthest right (the page list is a ListView too)
+            if (WinGetClass(ctrl) = "SysListView32" && DllCall("IsWindowVisible", "Ptr", ctrl)) {
+                ControlGetPos(&x, , , , ctrl)
+                if (x > listX)
+                    list := ctrl, listX := x
+            }
+        if !list
+            throw Error("scripts list not found")
+        ControlFocus(list)
+        ControlSend("{Home}Translate", list)                                ; the list's type-ahead selects the row starting with it
+        Sleep(500)
+        return hwnd
     }
 
     static Preferences() {

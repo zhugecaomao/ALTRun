@@ -962,6 +962,9 @@ class I18n {
         s["Prefs.ScriptKeyword"]        := "Search keyword"
         s["Prefs.ScriptKeyword.Desc"]   := '"script backup" searches only your scripts; "script " lists them all.'
         s["Prefs.Section.ScriptList"]   := "Scripts found"
+        s["Prefs.ScriptNeeds"]          := "Needs: {1}"
+        s["Prefs.ScriptNetwork"]        := "Connects to: {1}"
+        s["Prefs.ScriptNoNetwork"]      := "No network"
         s["Prefs.NoScripts"]            := "(no scripts yet: double-click to browse the script library)"
         s["Prefs.ScriptsNote"]          := "Optional comments at the top of a script (; # REM :: // all work): @altrun.title name, @altrun.keyword ping, @altrun.argument host name (asks for text after the keyword), @altrun.mode window | silent | output | filter (live results while typing after the keyword), @altrun.selection Text, PDF (offered for such a selection, passed as the argument). Double-click a script to edit it; F1 for details and examples."
         s["Script.Mode.Window"]         := "Window"
