@@ -765,7 +765,9 @@ class PrefsPages {
         folder := PrefsForm.Info("Prefs.Group.ScriptsFolder", ScriptProvider.Dir, " r1 cGray 0x8100")            ; like the data folder on the Advanced page: an ellipsis in the middle when too long
         Win.AddTooltip(folder.Hwnd, ScriptProvider.Dir)
         PrefsForm._y += 4
-        PrefsForm.Button("Prefs.ScriptsFolder", (*) => (ScriptProvider.OpenFolder(), PrefsPages._FillScripts()))
+        PrefsForm.Buttons(""                                                ; the script library: the website's list of ready-made scripts
+            , ["Prefs.ScriptsFolder", (*) => (ScriptProvider.OpenFolder(), PrefsPages._FillScripts())]
+            , ["Prefs.ScriptLibrary", (*) => ActionCatalog.OpenUrl(App.Website "#scripts")])
         PrefsForm.Field("Features.Scripts.Keyword", "Prefs.ScriptKeyword", "S")
         PrefsForm.Section("Prefs.Section.ScriptList")
         listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h170 -Multi NoSort Grid ReadOnly"
