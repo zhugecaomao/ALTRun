@@ -19,6 +19,19 @@
 ;===============================================================================
 
 class ResultActions {
+    ; The rows of the commands and scripts for a search result's content types (SelectionActions.ForResult); .Default: the first row is
+    ; its file type's default command
+    static _TypeRows(item) {
+        rows := []
+        rows.Default := false
+        if !IsObject(info := SelectionActions.ForResult(item))
+            return rows
+        for row in SelectionActions.CommandActions(info)
+            rows.Push(row)
+        rows.Default := rows.Length && IsObject(command := SelectionActions.DefaultCommand(info)) && rows[1].Title = command["Title"]
+        return rows
+    }
+
     ; The actions panel: the user's commands for a selection (LeadActions) first, then the default action, the general actions for this kind of result, and the result's own actions
     static ListFor(item) {
         list := []
@@ -34,9 +47,19 @@ class ResultActions {
             enter := ""
         }
 
+        ; files and folders in the search results: the commands and scripts for their content types, as for a selection (Ctrl+Alt+\);
+        ; a file type's default command (DefaultCommand) comes first and has Enter, as Enter on the result runs it
+        typeRows := item.LeadActions.Length ? [] : ResultActions._TypeRows(item), typeDefault := typeRows.Length && typeRows.Default
         switch item.Kind {
             case "file":
+                if typeDefault {
+                    list.Push(typeRows[1])
+                    enter := ""
+                }
                 add("Action.Open", target, (*) => (filled := ActionCatalog.ForWindow(item), ActionCatalog.OpenFile(filled.Arg, filled.Arguments)), enter)
+                for row in typeRows
+                    if !(typeDefault && A_Index = 1)
+                        list.Push(row)
                 if ActionCatalog.CanRunAsAdmin(target)
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => (filled := ActionCatalog.ForWindow(item), ActionCatalog.RunAsAdmin(filled.Arg, filled.Arguments)), "Ctrl+Shift+Enter")
                 if IsObject(editor := ActionCatalog.EditorFor(target))      ; the file type has an "Edit" verb (e.g. .ahk opens in an editor)
@@ -56,6 +79,8 @@ class ResultActions {
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "folder":
                 add("Action.Open", target, (*) => ActionCatalog.OpenFolder(target), enter)
+                for row in typeRows
+                    list.Push(row)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(target))
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")

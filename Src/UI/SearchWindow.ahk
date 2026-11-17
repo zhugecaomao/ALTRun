@@ -810,9 +810,16 @@ class SearchWindow {
                                                                             ; (under the usual 500 ms before a held key repeats)
         SearchWindow.Hide("run")
         if (modifier = "")
-            SearchWindow._SafeRun(() => ActionCatalog.RunDefault(item))
+            SearchWindow._SafeRun(() => SearchWindow._RunEnter(item))
         else
             SearchWindow._SafeRun(() => ActionCatalog.RunModifier(item, modifier))
+    }
+
+    ; Enter: a file whose content type has a default command runs that command (SelectionActions.DefaultActionFor), anything else its default action
+    static _RunEnter(item) {
+        if IsObject(typeDefault := SelectionActions.DefaultActionFor(item))
+            return typeDefault.OnRun.Call(typeDefault)
+        ActionCatalog.RunDefault(item)
     }
 
     static _SafeRun(fn) {

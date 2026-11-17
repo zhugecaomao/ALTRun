@@ -167,7 +167,7 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
    ```jsonc
    "SelectionTypes": [
      { "Name": "PO",  "Kind": "Text", "Pattern": "^PO\\d{8}$" },
-     { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
+     { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "DefaultCommand": "k3x9a2mq" }
    ]
    ```
 2. In a custom command's edit dialog, choose the types it is for in **Selection types**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"Selection"`:
@@ -178,6 +178,11 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
    `{query}` becomes the selected text or path (encoded in a `Url`); several files become `"a" "b"` (each quoted). A `File` / `Command` without `{query}` gets the selection added as its last argument, in quotes.
 
 Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword). [Scripts](Scripts) can be offered for content types too (`@altrun.selection PO` at the top of the script): they come after the custom commands, and the selection is passed as their first argument.
+
+**Files in the search results**: press `→` on a file or folder found by a search (or a pinned or recent item, or one in a folder you are browsing) and the commands and scripts for its content types come right after Open, as with `Ctrl+Alt+\`. To open a type of file with one of them on `Enter`, choose it in the type's **Enter opens with** (the type's edit dialog; it offers the commands that have this type in their Selection types; `DefaultCommand` in `ALTRun.json` is the command's `Id`). That command then runs on `Enter` in the search results and comes first in the action panel; Open there still uses Windows' association. This is for portable setups where Windows doesn't know a type, for example `.md` files opened by Total Commander's internal associations:
+1. Preferences → Selection → Content types → Add: name `Markdown`, kind `File (extensions)`, pattern `md, markdown`
+2. Preferences → Custom Commands → Add: name `Typora`, type File, target `A_ScriptDir\..\Typora\Typora.exe` (a path next to ALTRun's folder, which still works when the USB drive letter changes), Selection types `Markdown`
+3. Edit the `Markdown` type again and choose `Typora` in **Enter opens with**
 
 **Starting from a selection**: when no command or script is set for the selection's types, the panel ends with **Add a Command for This Content...** (the command edit dialog with "Selection types" filled in: your own type when the selection has one, otherwise the built-in one such as `Text` or `File`). When none of your types match, **Make a Content Type from It...** comes too: the type edit dialog with a pattern guessed from the selection (digits `^\d{8}$`; letters then digits `^PO\d+$`; an email address; a link by its site, `^https?://(www\.)?github\.com(/|$)`; other text exactly as it is; files by their extension), and a line saying whether the selection matches while you edit it. After OK the command dialog for the new type opens; cancel it to keep only the type. Type to find them in the panel (for example `content`).
 

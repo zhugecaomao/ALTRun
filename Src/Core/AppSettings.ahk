@@ -18,7 +18,8 @@
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys. Action: a built-in command Id (Search, ToggleWindow,
 ;                     a system command), "custom:<Id>" = the user's custom command with that Id or "script:<file name>" = a script (SearchText, optional: what Search types into the search box)
 ;   "CustomCommands": [ { "Id", "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
-;   "SelectionTypes": [ { "Name", "Kind", "Pattern" } ],   the user's content types of a selection (Kind Text: regular expression / File: extensions), see SelectionActions
+;   "SelectionTypes": [ { "Name", "Kind", "Pattern", "DefaultCommand" } ],   the user's content types of a selection (Kind Text: regular expression /
+;                    File: extensions; DefaultCommand, optional, File types: the Id of the custom command Enter opens such files with), see SelectionActions
 ;   "Snippets"      : [ { "Id", "Name", "Keyword", "Text", "AutoExpand" } ],
 ;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
 ;   "SyncTasks"     : [ { "Id", "Name", "Source", "Destination", "Mode", ... } ],    folder sync tasks run with robocopy (see RoboSync)

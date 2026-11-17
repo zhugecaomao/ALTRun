@@ -36,6 +36,8 @@ Folders you use often work better as [custom commands](Custom-Commands): custom 
 
 `Enter` opens, `Ctrl+Enter` reveals in the file manager, `Alt+Enter` copies the path, `→` shows more actions (Open With, copy / cut the file, copy / move to the current folder in TC, Open Terminal Here, Properties, Move to Recycle Bin...), see the [action panel](Usage#action-panel).
 
+Custom commands set for a file's content type (for example `Markdown` = `md, markdown`) come right after Open in its action panel, and the type can open its files with one of them on `Enter`: useful when Windows doesn't know the type, as in a portable setup. See [Your own actions for a selection](Usage#your-own-actions-for-a-selection).
+
 ## Browsing folders
 Type a path in the search box to list what's in that folder (folders first); the last part of the path filters the list:
 

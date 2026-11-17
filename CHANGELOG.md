@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.16.19]
+
+测试版。
+
+Test build.
+
+### 新增
+- 搜索结果里的文件和文件夹 (也包括置顶、最近使用、浏览文件夹) 按 → 时, 它的内容类型的自定义命令和脚本排在 "打开" 后面, 和 Ctrl+Alt+\ 一样
+- 内容类型 (文件) 加 "回车时打开用": 选一条用于这个类型的命令, 在搜索结果里按回车时就用它打开这类文件 (也排在操作面板最前面), 适合 Windows 不认识这类文件的便携环境 (例如用 TC 内部关联打开的 .md); 设置里存命令的 Id (`DefaultCommand`)
+
 ## [2026.11.16.18]
 
 测试版。
@@ -1657,7 +1667,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...HEAD
+[2026.11.16.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...2026.11.16.19
 [2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
 [2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
 [2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16

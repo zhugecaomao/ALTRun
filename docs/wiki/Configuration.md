@@ -273,7 +273,7 @@ See [Extensions](Extensions).
 ],
 "SelectionTypes": [
   { "Name": "PO", "Kind": "Text", "Pattern": "^PO\\d{8}$" },
-  { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
+  { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "DefaultCommand": "k3x9a2mq" }
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
