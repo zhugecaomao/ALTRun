@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.19]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 脚本: 列表的类型列标题改回 "选中内容类型", 意思更清楚 (列窄时标题显示不全)
+
 ## [2026.11.16.18]
 
 测试版。
@@ -1657,7 +1666,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...HEAD
+[2026.11.16.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...2026.11.16.19
 [2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
 [2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
 [2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16
