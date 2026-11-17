@@ -140,6 +140,14 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
   border-radius: 8px; padding: 4px 12px; font: inherit; font-size: 0.85rem; cursor: pointer;
 }
 
+/* 脚本库: 卡片和安装区一样, 链接排在卡片底部 */
+.scripts article { display: flex; flex-direction: column; }
+.scripts h3 code { font-size: 0.8em; margin-left: 6px; font-weight: 400; }
+.facts { margin: 4px 0 12px; padding-left: 1.2em; color: var(--muted); font-size: 0.88rem; }
+.facts li { margin-bottom: 2px; overflow-wrap: anywhere; }
+.scripts .get { margin: auto 0 0; }
+.note.center { text-align: center; margin-top: 24px; }
+
 /* 更新内容 */
 .changes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 26px 18px; margin-bottom: 16px; }
 .changes h4 { margin: 18px 0 6px; }

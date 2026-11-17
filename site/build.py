@@ -7,6 +7,7 @@ Filled in automatically:
   - the latest version's changes (the section of CHANGELOG.md for the version being downloaded; the English page shows its English
     summary, with the English and Chinese details in a section that can be expanded)
   - the width and height of the front page animation demo.png (APNG)
+  - the script library (docs/scripts: the @altrun.xxx lines at the top of each script, see docs/scripts/README.md)
 
 Python standard library only. Local preview:
   python3 site/build.py && python3 -m http.server -d _site
@@ -19,6 +20,7 @@ import os
 import re
 import shutil
 import struct
+import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +29,7 @@ SHOTS = os.path.join(ROOT, "docs", "images", "screenshots")
 OUT = os.path.join(ROOT, os.environ.get("SITE_OUT", "_site"))
 REPO = os.environ.get("GITHUB_REPOSITORY", "zhugecaomao/ALTRun")
 SITE_URL = os.environ.get("SITE_URL", "https://zhugecaomao.github.io/ALTRun/").rstrip("/") + "/"
+GITEE_REPO = os.environ.get("GITEE_REPO", "zhugecaomao/ALTRun")            # the mirror (.github/workflows/gitee.yml), a day behind at most
 
 
 def read(*parts):
@@ -165,10 +168,55 @@ def theme_gallery():
     return len(cards), "\n".join(cards)
 
 
+HEADER = re.compile(r"^\s*(?:;|#|//|::|rem\b)\s*@altrun\.(\w+)\s+(.*?)\s*$", re.I)
+
+
+def script_meta(path):
+    """@altrun.xxx in the first 30 lines, read as ScriptProvider.ReadScript reads them (keys in lower case)"""
+    meta = {}
+    with open(path, encoding="utf-8-sig") as f:
+        for number, line in enumerate(f):
+            if number >= 30:
+                break
+            match = HEADER.match(line)
+            if match:
+                meta[match.group(1).lower()] = match.group(2)
+    return meta
+
+
+def script_library():
+    """docs/scripts/*.ahk, *.ps1 -> (count, cards): title, keyword, description, what it needs and connects to, download links"""
+    folder = os.path.join(ROOT, "docs", "scripts")
+    cards = []
+    for name in sorted(os.listdir(folder), key=str.lower):
+        if not name.lower().endswith((".ahk", ".ps1")):
+            continue
+        meta = script_meta(os.path.join(folder, name))
+        esc = lambda key, default="": html.escape(meta.get(key, default))   # noqa: E731
+        path = "docs/scripts/" + urllib.parse.quote(name)
+        kind = "AutoHotkey v2" if name.lower().endswith(".ahk") else "PowerShell"
+        keyword = f' <code>{esc("keyword")}</code>' if meta.get("keyword") else ""
+        hosts = meta.get("network", "none").strip()
+        network = (('<li><span lang="zh">不联网</span><span lang="en">No network</span></li>') if hosts.lower() == "none" else
+                   f'<li><span lang="zh">联网: {html.escape(hosts)}</span><span lang="en">Connects to: {html.escape(hosts)}</span></li>')
+        requires = (f'<li><span lang="zh">需要: {esc("requires_zh")}</span><span lang="en">Needs: {esc("requires")}</span></li>'
+                    if meta.get("requires") else "")
+        cards.append(
+            f'<article>\n<h3>{esc("title", name)}{keyword}</h3>\n'
+            f'<p><span lang="zh">{esc("description_zh")}</span><span lang="en">{esc("description")}</span></p>\n'
+            f'<ul class="facts">{requires}{network}<li>{kind}</li></ul>\n'
+            f'<p class="get"><a href="https://raw.githubusercontent.com/{REPO}/main/{path}"><span lang="zh">下载</span><span lang="en">Download</span></a>'
+            f' · <a href="https://github.com/{REPO}/blob/main/{path}"><span lang="zh">源码</span><span lang="en">Source</span></a>'
+            f' · <a href="https://gitee.com/{GITEE_REPO}/blob/main/{path}"><span lang="zh">Gitee 镜像</span><span lang="en">Gitee mirror</span></a></p>\n'
+            f'</article>')
+    return len(cards), "\n".join(cards)
+
+
 def main():
     info = release_info()
     changes_version, changes = latest_changes(info["version"])
     theme_count, themes = theme_gallery()
+    script_count, scripts = script_library()
     demo_w, demo_h = png_size(os.path.join(SHOTS, "demo.png"))
     values = {
         "DEMO_W": str(demo_w),
@@ -180,6 +228,7 @@ def main():
         "DOWNLOADS": info["downloads"] or "—",
         "THEME_COUNT": str(theme_count),
         "THEMES": themes,
+        "SCRIPTS": scripts,
         "CHANGES_VERSION": changes_version,
         "CHANGES": changes,
         "REPO": REPO,
@@ -199,7 +248,7 @@ def main():
             shutil.copy(os.path.join(SHOTS, name), os.path.join(OUT, "images", name))
     shutil.copy(os.path.join(ROOT, "docs", "images", "logo.png"), os.path.join(OUT, "images", "logo.png"))
     shutil.copy(os.path.join(ROOT, "Resources", "ALTRun.ico"), os.path.join(OUT, "favicon.ico"))
-    print(f"Built {OUT}: {info['version']} ({info['size'] or 'size unknown'}), {theme_count} themes, changes {changes_version}")
+    print(f"Built {OUT}: {info['version']} ({info['size'] or 'size unknown'}), {theme_count} themes, {script_count} scripts, changes {changes_version}")
 
 
 if __name__ == "__main__":
