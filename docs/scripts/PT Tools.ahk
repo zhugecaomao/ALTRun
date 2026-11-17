@@ -490,6 +490,4 @@ class PTCalc {
         ch := SubStr(state.Text, state.Pos, 1)
         return (ch != "" && InStr(chars, ch)) ? ch : ""
     }
-
-    ; Thousands separators (negative numbers too): -1234567.5 -> -1,234,567.5
 }

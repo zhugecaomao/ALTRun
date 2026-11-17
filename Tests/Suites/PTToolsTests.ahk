@@ -1,5 +1,5 @@
 ﻿;===============================================================================
-; PTToolsTests.ahk - the script library's PT Tools.ahk and SPF2M.ahk (docs\scripts): settings in their .ini file, help pages,
+; PTToolsTests.ahk - the script library's PT Tools.ahk and SPF2M.ahk (docs\scripts): settings in their .ini iniFile, help pages,
 ;   the two windows, the tendon profile calculation against the original SPF2M.EXE, PTCalc against ALTRun's Calc
 ;-------------------------------------------------------------------------------
 ; Included by Tests\RunTests.ahk, which also #Includes both scripts: they open their window only when run as a program.
@@ -10,21 +10,21 @@ class PTToolsTests {
     ; keys no longer used are ignored. F1 opens the tool's section on the Wiki, the Chinese page on a Chinese system
     static PTToolsSettings() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsSettings." n, a, e)
-        file := A_Temp "\ALTRun-pttools-test.ini"
+        iniFile := A_Temp "\ALTRun-pttools-test.ini"
         saved := [PTToolsWindow.Settings, Spf2mWindow.Settings]
         try {
             eq("ini next to the script", RegExMatch(PTToolsWindow.IniFile, "i)\\docs\\scripts\\PT Tools\.ini$") > 0 && RegExMatch(Spf2mWindow.IniFile, "i)\\docs\\scripts\\SPF2M\.ini$") > 0, true)
             eq("not run as a program when included", PTToolsWindow.ExitOnClose || Spf2mWindow.ExitOnClose, false)
-            try FileDelete(file)
-            S := PTToolsWindow.Load(file)
+            try FileDelete(iniFile)
+            S := PTToolsWindow.Load(iniFile)
             eq("defaults without a file", S["RebarSpanWidth"] "|" S["MeshTopMark"] "|" S["SafetyFactorEnabled"] "|" S["WinLeft"], "3000|A7|0|500")
-            IniWrite("5700", file, "Settings", "RebarSpanWidth"), IniWrite("3800", file, "Settings", "BrcSpanWidth")
-            S := PTToolsWindow.Load(file)
+            IniWrite("5700", iniFile, "Settings", "RebarSpanWidth"), IniWrite("3800", iniFile, "Settings", "BrcSpanWidth")
+            S := PTToolsWindow.Load(iniFile)
             eq("saved value read", S["RebarSpanWidth"], "5700")
             eq("key no longer used ignored", S.Has("BrcSpanWidth"), false)
             S["ExprInput"] := "2^10", S["WinLeft"] := 123
-            PTToolsWindow.WriteIni(file)
-            S := PTToolsWindow.Load(file)
+            PTToolsWindow.WriteIni(iniFile)
+            S := PTToolsWindow.Load(iniFile)
             eq("round trip", S["ExprInput"] "|" S["WinLeft"] "|" S["RebarSpanWidth"], "2^10|123|5700")
             stray := ""
             for name in PTToolsWindow.FieldNames
@@ -33,12 +33,12 @@ class PTToolsTests {
                 stray .= Spf2mWindow.Defaults.Has(name) ? "" : name " "
             eq("every saved field has a default", stray, "")
 
-            try FileDelete(file)                                            ; SPF2M: optional fields stay empty, a duct diameter per strand type
-            S := Spf2mWindow.Load(file)
+            try FileDelete(iniFile)                                            ; SPF2M: optional fields stay empty, a duct diameter per strand type
+            S := Spf2mWindow.Load(iniFile)
             eq("SPF2M defaults", S["TendonType"] "|" S["MinRadius"] "|" S["DuctDia12s"] "|" S["WinLeft"], "3|||550")
             S["MinRadius"] := 4500, S["DuctDia12s"] := 80
-            Spf2mWindow.WriteIni(file)
-            S := Spf2mWindow.Load(file)
+            Spf2mWindow.WriteIni(iniFile)
+            S := Spf2mWindow.Load(iniFile)
             eq("SPF2M round trip", S["MinRadius"] "|" S["DuctDia12s"] "|" S["DuctDia7s"], "4500|80|")
 
             eq("help: English page", PTToolsWindow.HelpUrl("0409"), HelpProvider.WikiUrl "PT-Tools#pt-tools")
@@ -50,7 +50,7 @@ class PTToolsTests {
             }
         } finally {
             PTToolsWindow.Settings := saved[1], Spf2mWindow.Settings := saved[2]
-            try FileDelete(file)
+            try FileDelete(iniFile)
         }
     }
 
