@@ -130,7 +130,7 @@ Select a result and press `→` (or right-click) to list everything you can do w
 
 | Result type | Actions |
 |---|---|
-| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open with <program> (set in Preferences → General → "Open files with"), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
+| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open with <program> (set in Preferences → File Search → "Open files with"), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
 | Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Windows Context Menu, Properties, Move to Recycle Bin |
 | URL | Open, Copy URL |
 | Text | Copy to Clipboard, Paste to Front Window |

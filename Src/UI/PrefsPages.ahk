@@ -26,8 +26,6 @@ class PrefsPages {
         PrefsForm.Check("General.FolderNewTab", "Prefs.FolderNewTab")
         browser := PrefsForm.Field("General.Browser", "Prefs.Browser", "L", "file")
         Win.SetCueBanner(browser.Hwnd, I18n.T("Prefs.Browser.Empty"))          ; empty = the default browser (the parameters are explained in the wiki)
-        openWith := PrefsForm.LinesButton("General.OpenWith", "Prefs.OpenWith", {Summary: (lines) => PrefsPages.OpenWithSummary(lines)})
-        Win.SetCueBanner(openWith.Hwnd, I18n.T("Prefs.OpenWith.Empty"))        ; empty = Windows' associations (the rules are explained in the list's help)
     }
 
     ; Search window behavior (the Window group of the settings)
@@ -449,6 +447,10 @@ class PrefsPages {
         update := (*) => (when.First.Enabled := when.Second.Enabled := counts.Second.Enabled := inNormal.Value = 1)   ; only used with files in normal results
         update()
         inNormal.OnEvent("Click", update)
+        ; General.OpenWith applies to every file result (pinned, recent, commands too), but this page is where opening found files is set;
+        ; the General page has no room for another row
+        openWith := PrefsForm.LinesButton("General.OpenWith", "Prefs.OpenWith", {Summary: (lines) => PrefsPages.OpenWithSummary(lines), AlignPairs: true})
+        Win.SetCueBanner(openWith.Hwnd, I18n.T("Prefs.OpenWith.Empty"))        ; empty = Windows' associations (the rules are explained in the list's help)
         PrefsForm.Section("Prefs.Section.Browse")                           ; browsing folders is always available: one line and a link to the Wiki section
         browseHelp := HelpProvider.WikiPage("File-Search") (SubStr(I18n.Lang, 1, 2) = "zh" ? "#浏览文件夹" : "#browsing-folders")
         PrefsForm.LinkDesc(I18n.T("Prefs.BrowseFolders", browseHelp), PrefsForm.ContentX)

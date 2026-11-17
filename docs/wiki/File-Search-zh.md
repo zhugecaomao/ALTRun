@@ -36,7 +36,7 @@ Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空�
 
 `Enter` 打开, `Ctrl+Enter` 在文件管理器中显示, `Alt+Enter` 复制路径, `→` 更多操作 (打开方式、复制 / 剪切文件、复制 / 移动到 TC 当前的文件夹、在此处打开终端、属性、移到回收站...), 见 [操作面板](Usage-zh#操作面板)。
 
-**用指定的程序打开文件**: `Enter` 按 Windows 给这类文件关联的程序打开。便携环境里 Windows 不认识的类型 (例如用便携编辑器或 Total Commander 内部关联打开的 `.md`), 可以在偏好设置 → 通用 → "打开文件的程序" 里设置, 每行一条:
+**用指定的程序打开文件**: `Enter` 按 Windows 给这类文件关联的程序打开。便携环境里 Windows 不认识的类型 (例如用便携编辑器或 Total Commander 内部关联打开的 `.md`), 可以在偏好设置 → 文件搜索 → "打开文件的程序" 里设置, 每行一条:
 ```
 md markdown = ..\Typora\Typora.exe
 md = %LocalAppData%\Programs\Microsoft VS Code\Code.exe --reuse-window "%1"
