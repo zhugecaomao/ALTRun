@@ -28,7 +28,6 @@ Type the name in the search box (English, Chinese or the Id all work); they can 
 | `ShowIP` | Show IP Address |
 | `TerminalHere` | Open a terminal in the current folder (Explorer / Total Commander) |
 | `ListProcesses` `ListServices` | List running processes / services |
-| `PTTools` `SPF2M` | PT Tools / SPF2M |
 | **Clipboard text** (converted and put back on the clipboard) | |
 | `TextUpper` `TextLower` `TextTitle` | UPPERCASE / lowercase / Title Case |
 | `TextSortAsc` `TextSortDesc` | Sort lines |

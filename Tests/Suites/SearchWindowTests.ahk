@@ -1498,7 +1498,7 @@ class SearchWindowTests {
     ; Reinstalling the keyboard hook after waking, unlocking or a monitor change: once for several events in a row; the mouse hook too when there are mouse hotkeys
     static WakeHooks() {
         eq := (n, a, e) => TestRunner.Equal("WakeHooks." n, a, e)
-        eq("mouse hotkeys", App.UsesMouseHotkeys([Map("Key", "~MButton", "Action", "PTTools")]), true)
+        eq("mouse hotkeys", App.UsesMouseHotkeys([Map("Key", "~MButton", "Action", "Search")]), true)
         eq("wheel", App.UsesMouseHotkeys([Map("Key", "^WheelUp", "Action", "x")]), true)
         eq("keyboard only", App.UsesMouseHotkeys([Map("Key", "^!t", "Action", "x"), "bad"]), false)
         eq("none", App.UsesMouseHotkeys([]), false)

@@ -96,8 +96,6 @@
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CapsLockSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AdminHelper.ahk
-#Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
-#Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\DelayedStart.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\RoboSync.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SyncProgress.ahk
@@ -118,6 +116,9 @@
 #Include %A_ScriptDir%\Suites\SearchSessionTests.ahk
 #Include %A_ScriptDir%\Suites\PreferencesTests.ahk
 #Include %A_ScriptDir%\Suites\ExtensionTests.ahk
+#Include %A_ScriptDir%\Suites\PTToolsTests.ahk
+#Include "%A_ScriptDir%\..\docs\scripts\PT Tools.ahk"           ; script library scripts: they open their window only when run as a program
+#Include %A_ScriptDir%\..\docs\scripts\SPF2M.ahk
 #Include %A_ScriptDir%\Suites\ProjectTests.ahk
 
 OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; on a runtime error, print it and exit instead of hanging on a dialog
@@ -149,7 +150,7 @@ class TestRunner {
         return DllCall("GetLongPathNameW", "WStr", shortPath, "Ptr", buf, "UInt", 32767, "UInt") ? StrGet(buf) : shortPath
     }
 
-    static Suites := [CoreTests, EverythingTests, ProviderTests, SearchWindowTests, SearchSessionTests, PreferencesTests, ExtensionTests, ProjectTests]
+    static Suites := [CoreTests, EverythingTests, ProviderTests, SearchWindowTests, SearchSessionTests, PreferencesTests, ExtensionTests, PTToolsTests, ProjectTests]
 
     ; Runs every test of every suite: a test is a static method whose name doesn't start with "_".
     ; Within a suite the tests run in name order (OwnProps lists them that way).

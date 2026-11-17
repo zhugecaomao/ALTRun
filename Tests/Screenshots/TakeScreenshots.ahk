@@ -74,8 +74,8 @@ class Shots {
             ["quickswitch-favorites", "Light", "", () => Shots.QuickSwitchFavorites(), () => Shots.WriteRecentFolders()],   ; Wiki: the panel's star menu
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
-            ["pttools",     "Light", "", () => Shots.ToolWindow("PTTools", "PT Tools")],          ; Wiki: extensions
-            ["spf2m",       "Light", "", () => Shots.ToolWindow("SPF2M", "SPF2M")],
+            ["pttools",     "Light", "", () => Shots.ToolWindow("PT Tools.ahk", "PT Tools")],      ; Wiki: PT Tools (script library)
+            ["spf2m",       "Light", "", () => Shots.ToolWindow("SPF2M.ahk", "SPF2M")],
             ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
             ["demo-quickswitch", "Light", "", () => Shots.DemoQuickSwitch(), () => Shots.WriteRecentFolders()],   ; feature animations (README, site, Wiki)
             ["demo-clipboard",   "Light", "", () => Shots.DemoClipboard(), () => Shots.WriteClipboard()],
@@ -670,12 +670,15 @@ class Shots {
         return windows
     }
 
-    ; PT Tools / SPF2M: the system command opens the window (its default inputs), at the top left so it fits the screen
-    static ToolWindow(command, title) {
-        hwnd := Shots.SearchWindow()
-        Shots.SetQuery(hwnd, command)
-        ControlSend("{Enter}", "Edit1", hwnd)
-        if !(window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 5))
+    ; PT Tools / SPF2M: the script library's script run on its own, with its default inputs (a copy in the temporary folder, so no
+    ; .ini is left next to the original), at the top left so it fits the screen
+    static ToolWindow(file, title) {
+        copy := A_Temp "\ALTRun-shots-" file
+        FileCopy(Shots.RepoDir "\docs\scripts\" file, copy, true)
+        try FileDelete(RegExReplace(copy, "\.ahk$", ".ini"))
+        Run('"' A_AhkPath '" "' copy '"', , , &pid)
+        Shots.SamplePids.Push(pid)
+        if !(window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " pid, , 10))
             throw Error(title " not shown")
         WinMove(Round(40 * Shots.Scale), Round(40 * Shots.Scale), , , window)
         Sleep(800)

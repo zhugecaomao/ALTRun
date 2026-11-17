@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.16.14"
+    static Version := "2026.11.16.15"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -77,7 +77,6 @@ class App {
         SnippetExpander.Init()
         QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))
         AutoDate.Init(AppSettings.Extension("AutoDate"))
-        PTToolsWindow.Load(AppSettings.Extension("PTTools"))
         Logger.Time("startup: snippets, extensions", phase), phase := Logger.Ms()
         App._UpdateShellShortcuts(AppSettings.FirstRun)                    ; a new installation: the start-up shortcut waits for the answer (AskLaunchAtLogin)
         OnExit((reason, *) => App._OnExit(reason))
@@ -585,7 +584,7 @@ class App {
         Logger.Debug("App: keyboard hook reinstalled (" reason ")")
     }
 
-    ; reinstall the mouse hook too when custom hotkeys use mouse buttons (e.g. ~MButton for PT Tools)
+    ; reinstall the mouse hook too when custom hotkeys use mouse buttons (e.g. ~MButton)
     static UsesMouseHotkeys(hotkeys) {
         for entry in hotkeys
             if (entry is Map && entry.Has("Key") && RegExMatch(entry["Key"], "i)(Button|Wheel)"))

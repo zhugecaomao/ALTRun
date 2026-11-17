@@ -12,7 +12,7 @@
 ;   Src\Providers\  Search features: clipboard history, applications, custom commands,
 ;                   snippets, system commands, calculator, web search, file search, terminal
 ;   Src\Extensions\ Features outside the search window: snippet auto-expansion,
-;                   dialog quick switch, Ctrl+D date, PT Tools, update checker
+;                   dialog quick switch, Ctrl+D date, update checker
 ;   Resources\      Data files shipped with ALTRun (Kanji.txt, Pinyin.txt, built-in themes, Lang\ translations, Icons\, ALTRun.ico)
 ;   Themes\         Optional custom themes (<Name>.json)
 ;   Data\           Generated at runtime: app index, learned ranking, clipboard history
@@ -20,7 +20,7 @@
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun
 ;@Ahk2Exe-Set Comments, An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.11.16.14
+;@Ahk2Exe-SetVersion 2026.11.16.15
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.exe
 ;@Ahk2Exe-SetMainIcon Resources\ALTRun.ico
@@ -125,8 +125,6 @@
 #Include Src\Extensions\AutoDate.ahk
 #Include Src\Extensions\CapsLockSwitch.ahk
 #Include Src\Extensions\AdminHelper.ahk
-#Include Src\Extensions\TendonProfile.ahk
-#Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\DelayedStart.ahk
 #Include Src\Extensions\RoboSync.ahk
 #Include Src\Extensions\SyncProgress.ahk

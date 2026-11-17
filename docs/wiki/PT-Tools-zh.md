@@ -2,7 +2,9 @@
 
 # PT 工具箱
 
-两个预应力 / 结构设计用的小工具: **PT Tools** (钢筋和网片面积、所需钢筋根数、计算器) 和 **SPF2M** (预应力束线型高度)。在搜索窗口输入 `PTTools` 或 `SPF2M` 打开, 也可以设成 [自定义热键](Hotkeys-zh) (动作 `PTTools` / `SPF2M`)。两个窗口都总在最前面, 记住窗口位置, 关闭时保存输入。
+两个预应力 / 结构设计用的小工具: **PT Tools** (钢筋和网片面积、所需钢筋根数、计算器) 和 **SPF2M** (预应力束线型高度)。它们是 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 里的两个 [脚本](Scripts-zh): 把 `PT Tools.ahk` 和 / 或 `SPF2M.ahk` 下载到 `Scripts\` 文件夹, 在搜索窗口输入 `pttools` 或 `spf2m` 打开 (也可以给脚本设 [自定义热键](Hotkeys-zh))。不用安装 AutoHotkey, 由 ALTRun 运行。两个窗口都总在最前面, 记住窗口位置, 关闭时保存输入, 存在脚本旁边的 `PT Tools.ini` / `SPF2M.ini`。
+
+2026.11.16.14 及以前的版本里它们是 ALTRun 内置的系统命令 `PTTools` / `SPF2M`。旧版本保存的输入不会带过来; 动作是 `PTTools` 或 `SPF2M` 的自定义热键要重新设成运行脚本。
 
 两个窗口里按 `Enter` 跳到下一个输入框 (和 `Tab` 一样), 按 `F1` 打开这个页面。
 
@@ -21,13 +23,13 @@
 
 列表里的常用值: 跨度 3000 / 5700 / 6000 / 7200; 钢筋直径 10 ~ 40; 钢筋间距 100 ~ 1000; 面积 3500 ~ 12000; 网片 A6 ~ E12; 安全系数 1.1 / 1.2 / 1.25 / 1.5。
 
-只保存输入值 ([ALTRun.json](Configuration-zh) 里的 `Extensions.PTTools`), 计算结果每次打开窗口时重新算。
+只保存输入值, 计算结果每次打开窗口时重新算。
 
 ## SPF2M
 
 ![SPF2M](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/spf2m.png)
 
-SPF2M 预应力束线型计算 (SPF2M Post-Tensioning Tendon Profile Calculator), 直接在 ALTRun 里计算, 不再需要 DOSBox。选择线型和钢绞线类型, 输入标高和水平距离, 右边的表格立即给出每个支架处的高度。
+SPF2M 预应力束线型计算 (SPF2M Post-Tensioning Tendon Profile Calculator), 由脚本直接计算, 不再需要 DOSBox。选择线型和钢绞线类型, 输入标高和水平距离, 右边的表格立即给出每个支架处的高度。
 
 | 输入 | 说明 |
 |---|---|

@@ -417,8 +417,6 @@ class I18n {
         s["Sys.TerminalHere"]          := "Open Terminal at Current Folder"
         s["Sys.ListProcesses"]         := "List Running Processes"
         s["Sys.ListServices"]          := "List Running Services"
-        s["Sys.PTTools"]               := "PT Tools (Rebar / BRC Calculator)"
-        s["Sys.SPF2M"]                 := "SPF2M Post-Tensioning Tendon Profile Calculator"
         s["Sys.Subtitle"]              := "System command"
         s["Sys.ConfirmTitle"]          := "{1}?"
         s["Sys.ConfirmHide"]           := "Remove '{1}' from search results?`n`nYou can restore it in Preferences > Features."

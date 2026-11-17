@@ -40,7 +40,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [延迟启动](Delayed-Start-zh) | 登录几分钟后再启动 OneDrive 等程序 |
 | [文件夹同步](Sync-Tasks-zh) | 用 robocopy 同步文件夹: 在搜索里运行、镜像前预览、日志 |
 | [扩展功能](Extensions-zh) | 各扩展页面的入口 |
-| [PT 工具箱](PT-Tools-zh) | 钢筋和网片面积、所需钢筋根数、计算器; SPF2M 束线型计算 |
+| [PT 工具箱](PT-Tools-zh) | 钢筋和网片面积、所需钢筋根数、计算器; SPF2M 束线型计算 (脚本库里的两个脚本) |
 | [设置文件参考](Configuration-zh) | ALTRun.json 每一项的含义和默认值 |
 | [数据文件](Data-Files-zh) | 数据文件夹在哪里、每个文件是什么、怎样备份和换电脑 |
 | [隐私与网络访问](Privacy-zh) | ALTRun 什么时候联网、访问哪里、本机保存了什么 |

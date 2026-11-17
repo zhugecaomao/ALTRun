@@ -1,6 +1,6 @@
 # SPF2M 参考数据生成工具
 
-`Tests/Fixtures/SPF2M-Reference.json` 是 PT 工具箱里束线型计算 (`Src/Extensions/TendonProfile.ahk`) 的对照数据：把 139 组参数输入公司原来的 SPF2M.EXE（1993 年的 16 位 DOS 程序），读出它算出来的结果。单元测试 `TendonProfileVsSpf2m` 用 ALTRun 算同样的参数，逐个数值比对。
+`Tests/Fixtures/SPF2M-Reference.json` 是脚本库 SPF2M 脚本里束线型计算 (`docs/scripts/SPF2M.ahk` 的 `TendonProfile`) 的对照数据：把 139 组参数输入公司原来的 SPF2M.EXE（1993 年的 16 位 DOS 程序），读出它算出来的结果。单元测试 `PTToolsTests.TendonProfileVsSpf2m` 用这个脚本算同样的参数，逐个数值比对。
 
 这里的脚本就是用来生成这份数据的。只有要增加对照用例时才需要运行，平时开发和发布都用不到。
 
