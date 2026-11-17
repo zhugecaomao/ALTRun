@@ -111,6 +111,57 @@ jobs:
           echo.| call "docs\scripts\Who Uses a Port.bat" 135 > port.log 2>&1
           type port.log
           findstr /c:":135 " port.log >nul || (echo ::error::Who Uses a Port.bat didn't list port 135 & exit /b 1)
+      - name: Run the library's live results and background scripts with sample input (what they print, as ALTRun reads it)
+        shell: pwsh
+        run: |
+          function Invoke-Library([string]$name, [string]$arg, [hashtable]$vars = @{}) {
+            foreach ($key in $vars.Keys) { Set-Item "env:$key" $vars[$key] }
+            & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Out run.log -Err run.err -TimeoutSeconds 60 `
+              -Arguments '/ErrorStdOut', "`"$((Resolve-Path "docs\scripts\$name").Path)`"", "`"$($arg -replace '"', '\"')`""   # \" : a quote inside the argument
+            $code = $LASTEXITCODE
+            foreach ($key in $vars.Keys) { Remove-Item "env:$key" }
+            $out = "$(Get-Content run.log -Raw -Encoding utf8)"; $err = "$(Get-Content run.err -Raw -Encoding utf8)"
+            Write-Host "--- $name [$arg] exit $code`n$out$err"
+            if ($code -ne 0) { throw "$name [$arg] ended with exit code $code" }
+            return $out
+          }
+          function Get-Items([string]$out, [string]$name, [int]$least) {
+            $items = @(($out | ConvertFrom-Json).items)
+            if ($items.Count -lt $least) { throw "$name listed $($items.Count) results, at least $least expected" }
+            if ($items | Where-Object { -not $_.title }) { throw "$name printed a result without a title" }
+            return $items
+          }
+          # Unix Timestamp: now, a timestamp in seconds, a date that doesn't exist
+          $items = Get-Items (Invoke-Library 'Unix Timestamp.ahk' '') 'Unix Timestamp' 3
+          if ($items[0].title -notmatch '^\d{10}$') { throw "Unix Timestamp: now isn't 10 digits: $($items[0].title)" }
+          $items = Get-Items (Invoke-Library 'Unix Timestamp.ahk' '1794933000') 'Unix Timestamp' 3
+          if ($items[1].title -ne '2026-11-17 16:30:00 UTC') { throw "Unix Timestamp: 1794933000 is $($items[1].title)" }
+          $items = Get-Items (Invoke-Library 'Unix Timestamp.ahk' '2026-02-30') 'Unix Timestamp' 1
+          if ($items[0].valid -ne $false) { throw "Unix Timestamp: 2026-02-30 wasn't refused" }
+          # World Clock: every city found in Windows' time zones; Tokyo has no summer time
+          $items = Get-Items (Invoke-Library 'World Clock.ahk' '') 'World Clock' 60
+          $tokyo = $items | Where-Object { $_.uid -eq 'Tokyo' }
+          if ($tokyo.subtitle -notmatch 'UTC\+9 ') { throw "World Clock: Tokyo is $($tokyo.subtitle)" }
+          # Kill Process: lists programs; ends a ping started here
+          $null = Get-Items (Invoke-Library 'Kill Process.ahk' '') 'Kill Process' 1
+          $ping = Start-Process ping.exe -ArgumentList '-n', '120', '127.0.0.1' -WindowStyle Hidden -PassThru
+          Start-Sleep -Seconds 1
+          $items = Get-Items (Invoke-Library 'Kill Process.ahk' '') 'Kill Process' 2
+          if (-not ($items | Where-Object { $_.arg -eq 'PING.EXE' -and $_.type -eq 'script' })) { throw "Kill Process didn't list PING.EXE" }
+          $out = Invoke-Library 'Kill Process.ahk' 'PING.EXE' @{ ALTRUN_ACTION = 'run' }
+          Start-Sleep -Milliseconds 500
+          if (-not $ping.HasExited -or $out -notmatch '^Ended PING.EXE') { throw "Kill Process didn't end ping: $out" }
+          # Quick Note: Chinese text and quotes reach the file as they were typed
+          $notes = Join-Path $env:RUNNER_TEMP 'Notes.md'
+          $out = Invoke-Library 'Quick Note.ahk' '给客户回电 "tomorrow"' @{ QUICKNOTE_FILE = $notes }
+          $line = Get-Content $notes -Encoding utf8
+          if ($line -notmatch '^- \d{4}-\d\d-\d\d \d\d:\d\d 给客户回电 "tomorrow"$') { throw "Quick Note wrote: $line" }
+          # Dark Mode: sets the mode it is given, switches without one (on this runner only)
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+          $null = Invoke-Library 'Dark Mode.ahk' 'dark'
+          if ((Get-ItemProperty $key).AppsUseLightTheme -ne 0) { throw "Dark Mode: still light" }
+          $null = Invoke-Library 'Dark Mode.ahk' ''
+          if ((Get-ItemProperty $key).AppsUseLightTheme -ne 1 -or (Get-ItemProperty $key).SystemUsesLightTheme -ne 1) { throw "Dark Mode: didn't switch back to light" }
       - name: Unit tests
         shell: pwsh
         run: |
