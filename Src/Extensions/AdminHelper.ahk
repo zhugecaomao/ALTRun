@@ -16,7 +16,8 @@
 ;   - Quick Switch: ALTRun can't jump a dialog of a program running as administrator (the messages and keys are blocked, its process can't be
 ;     opened), so it hands "-Jump <dialog> <folder>" to the helper (Jump). Any program with normal rights can send the helper that message,
 ;     so the helper checks it itself before doing anything (CheckJump): the window is the foreground window, a #32770 open / save or Browse for
-;     Folder dialog (by its controls), of a program running as administrator, and the folder is a full path to a folder that exists. It then only
+;     Folder dialog (by its controls), of a program running as administrator, and the folder is a full path to a folder that exists (a network
+;     folder must answer within ExplorerTabs.NetworkTimeout, or the helper would hang on an offline server). It then only
 ;     jumps the dialog there (the folder with a trailing backslash, so it can't be taken for a file to open or save) and presses nothing else
 ;   - Quick Switch's hotkeys (Hotkey, MenuHotkey; read from the settings file like the rest): the helper registers them too, but only for
 ;     such a dialog in front (HotkeyDialog), where ALTRun's keyboard hook gets no keys; any other window's keys go on to ALTRun's own hotkeys,
@@ -242,8 +243,10 @@ class AdminHelper {
         else if (facts.Class = "#32770" && controls.Length && FileDialogs.LooksLikeFileDialog(facts.Class, controls))
             facts.Kind := "file"
         try facts.Elevated := Win.IsElevated(WinGetPID(target))
+        ; seen as administrator: no mapped network drives (the program wouldn't see them either). A network folder must answer within
+        ; ExplorerTabs.NetworkTimeout (Reachable): asking an offline server here would hang the helper ~21 s, Caps Lock and hotkeys too
         if (facts.Kind != "" && facts.Elevated && AdminHelper.IsFolderPath(folder))
-            facts.Exists := DirExist(folder) != ""                          ; seen as administrator: no mapped network drives (the program wouldn't see them either)
+            facts.Exists := ExplorerTabs.Reachable(folder) && DirExist(folder) != ""
         return facts
     }
 

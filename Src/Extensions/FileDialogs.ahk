@@ -164,8 +164,13 @@ class FileDialogs {
 
     ; dialog: the dialog to jump in (the current window by default). A dialog of a program running as administrator, with ALTRun not
     ; running as one, is jumped by the helper with administrator rights (AdminHelper.Jump): Windows blocks ALTRun's messages and keys there
+    ; A network folder must answer within ExplorerTabs.NetworkTimeout: asking an offline server waits ~21 s on this thread
     static SetDialogPath(folder, dialog := 0) {
-        if (folder = "" || !FileExist(folder))
+        if (folder = "")
+            return
+        if !ExplorerTabs.Reachable(folder)
+            return Logger.Debug("QuickSwitch: the network folder [" folder "] didn't answer within " ExplorerTabs.NetworkTimeout " ms")
+        if !FileExist(folder)
             return
         if !dialog
             dialog := WinExist("A")

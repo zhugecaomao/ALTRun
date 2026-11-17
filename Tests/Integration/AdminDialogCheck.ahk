@@ -73,7 +73,7 @@ class AdminDialogCheck {
                 Sleep(100)
             AdminDialogCheck.Check("the helper started", AdminHelper.Window() != 0, "its process " (ProcessExist(helperPid) ? "runs, without its window" : "has ended"))
             AdminDialogCheck.Front(dialog), AdminDialogCheck.Signal(io "\go2.txt")
-            AdminDialogCheck.WaitFor(io "\done2.txt", 20)
+            AdminDialogCheck.WaitFor(io "\done2.txt", 60)                     ; the offline share takes ~25 s when it isn't checked in time
             deadline := A_TickCount + 5000
             while (!((folder := FileDialogs.DialogFolder(dialog)) ~= "\\Target$") && A_TickCount < deadline)
                 Sleep(100)
@@ -83,6 +83,13 @@ class AdminDialogCheck {
             AdminDialogCheck.Check("refused: a folder that doesn't exist", InStr(answers, "missing refused: folder not found") > 0, answers)
             AdminDialogCheck.Check("refused: a window that isn't a dialog in front", InStr(answers, "own window refused: not in front") > 0, answers)
             AdminDialogCheck.Check("refused: bringing another program's window to the front", InStr(answers, "front of another program's window refused: not ALTRun's window") > 0, answers)
+            AdminDialogCheck.Log("INFO offline share: ALTRun " AdminDialogCheck.Ms(answers, "set path offline") " ms, helper "
+                . AdminDialogCheck.Ms(answers, "helper offline") " ms, the helper's next answer " AdminDialogCheck.Ms(answers, "helper after offline") " ms")
+            AdminDialogCheck.Check("offline share: ALTRun gives up within 1 s", AdminDialogCheck.Ms(answers, "set path offline") < 1000, answers)
+            AdminDialogCheck.Check("offline share: the helper answers 'folder not found' within 1 s"
+                , InStr(answers, "helper offline refused: folder not found") > 0 && AdminDialogCheck.Ms(answers, "helper offline") < 1000, answers)
+            AdminDialogCheck.Check("offline share: the helper's next answer comes at once"
+                , InStr(answers, "helper after offline refused: folder not found") > 0 && AdminDialogCheck.Ms(answers, "helper after offline") < 1000, answers)
 
             ; 3. the hotkeys
             FileDialogs.Jump(demo "\Start\", dialog)                       ; this side runs as administrator: it can
@@ -143,6 +150,18 @@ class AdminDialogCheck {
             answers .= "own window " AdminHelper.ReplyText(reply) "`n"
             App.SendArgs(helper, ["-Front", dialog], &reply)                ; only ALTRun's own windows
             answers .= "front of another program's window " AdminHelper.ReplyText(reply, "activating") "`n"
+            ; a share on a server that doesn't answer (192.0.2.x is reserved for documentation): Windows waits ~21 s for it, so both sides
+            ; must give up within NetworkTimeout, and the helper must answer the next request at once. Each side gets an address of its
+            ; own: after one attempt failed, Windows answered the next at once on CI (the helper 0 ms after ALTRun's 21 s)
+            start := A_TickCount
+            App.SendArgs(helper, ["-Jump", dialog, "\\192.0.2.2\share\"], &reply)
+            answers .= "helper offline " AdminHelper.ReplyText(reply) " (" (A_TickCount - start) " ms)`n"
+            start := A_TickCount
+            App.SendArgs(helper, ["-Jump", dialog, AdminDialogCheck.Root "\demo\Missing\"], &reply)
+            answers .= "helper after offline " AdminHelper.ReplyText(reply) " (" (A_TickCount - start) " ms)`n"
+            start := A_TickCount
+            try FileDialogs.SetDialogPath("\\192.0.2.1\share\", dialog)
+            answers .= "set path offline " (A_TickCount - start) " ms`n"
         } else
             answers .= "no helper window`n"
         AdminDialogCheck.Signal(io "\done2.txt", answers)
@@ -166,6 +185,9 @@ class AdminDialogCheck {
         Sleep(30000)                                                        ; stays the "ALTRun" the helper looks for, until closed
         return 0
     }
+
+    ; The milliseconds on the client's answer line that starts with prefix; 99999 when there is none
+    static Ms(answers, prefix) => RegExMatch(answers, "m)^" prefix "\D*(\d+) ms", &m) ? Integer(m[1]) : 99999
 
     ; As QuickSwitch.FocusPanel brings the panel to the front, over the dialog in front
     static Activate(hwnd, front) {
