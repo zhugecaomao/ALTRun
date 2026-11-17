@@ -2372,6 +2372,46 @@ class ProviderTests {
     }
 
     ; Scripts extension: @altrun.xxx read from the leading comments, found by name / keyword, arguments, command lines, output of background runs
+    ; Script headers in each encoding a script can be saved in: UTF-8 without a byte order mark (Notepad's default) and with one,
+    ; UTF-16 with one, and the ANSI code page (bytes that aren't valid UTF-8, read as CP0); a long first part is cut at a line break
+    static ScriptHeaderEncoding() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptHeaderEncoding." n, a, e)
+        dir := A_Temp "\ALTRun-script-encoding"
+        try DirDelete(dir, true)
+        DirCreate(dir)
+        try {
+            write(name, bytes*) {
+                handle := FileOpen(dir "\" name, "w"), buf := Buffer(bytes.Length)
+                for b in bytes
+                    NumPut("UChar", b, buf, A_Index - 1)
+                handle.RawWrite(buf), handle.Close()
+                return dir "\" name
+            }
+            utf8(text) {                                                    ; text -> its UTF-8 bytes, as an array
+                buf := Buffer(StrPut(text, "UTF-8")), StrPut(text, buf, "UTF-8"), out := []
+                Loop buf.Size - 1
+                    out.Push(NumGet(buf, A_Index - 1, "UChar"))
+                return out
+            }
+            head := "; @altrun.title 今天的日期`r`n; @altrun.keyword jt`r`n"
+            eq("UTF-8 without BOM", ScriptProvider.ReadScript(write("a.ahk", utf8(head)*)).Title, "今天的日期")
+            eq("UTF-8 with BOM", ScriptProvider.ReadScript(write("b.ahk", 0xEF, 0xBB, 0xBF, utf8(head)*)).Title, "今天的日期")
+            utf16 := [0xFF, 0xFE]
+            Loop Parse, head
+                code := Ord(A_LoopField), utf16.Push(code & 0xFF, code >> 8)
+            script := ScriptProvider.ReadScript(write("c.ahk", utf16*))
+            eq("UTF-16 with BOM", script.Title "|" script.Keyword, "今天的日期|jt")
+            gbk := [0x3B, 0x20, 0x40, 0x61, 0x6C, 0x74, 0x72, 0x75, 0x6E, 0x2E, 0x74, 0x69, 0x74, 0x6C, 0x65, 0x20, 0xBD, 0xF1, 0xCC, 0xEC, 0x0D, 0x0A]   ; "; @altrun.title 今天" in GBK
+            ansi := Buffer(2), NumPut("UChar", 0xBD, "UChar", 0xF1, ansi), expected := StrGet(ansi, 2, "CP0")
+            NumPut("UChar", 0xCC, "UChar", 0xEC, ansi), expected .= StrGet(ansi, 2, "CP0")
+            eq("ANSI code page", ScriptProvider.ReadScript(write("d.ahk", gbk*)).Title, expected)
+            long := utf8("; @altrun.title 长`n" StrReplace(Format("{:9000}", ""), " ", "x") "`n")    ; past 8 KB: still read up to the last line break
+            eq("long file", ScriptProvider.ReadScript(write("e.ahk", long*)).Title, "长")
+            eq("missing file", ScriptProvider.ReadScript(dir "\none.ahk"), "")
+        } finally
+            try DirDelete(dir, true)
+    }
+
     static Scripts() {
         eq := (n, a, e) => TestRunner.Equal("Scripts." n, a, e)
         root := A_Temp "\ALTRun-scripts-test"
