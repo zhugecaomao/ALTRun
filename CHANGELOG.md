@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.9]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 脚本 多了 **浏览脚本库** 按钮: 打开网站上的脚本库, 里面是现成的脚本 (翻译、Total Commander 命令面板、文件哈希), 下载到 `Scripts\` 文件夹就能用 (#544)
+
 ## [2026.11.16.8]
 
 测试版。
@@ -1561,7 +1570,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...HEAD
+[2026.11.16.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...2026.11.16.9
 [2026.11.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...2026.11.16.8
 [2026.11.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...2026.11.16.7
 [2026.11.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...2026.11.16.6
