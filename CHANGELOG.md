@@ -5,6 +5,9 @@
 
 ## [未发布]
 
+### 新增
+- [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 新增 5 个脚本 (下载到 `Scripts\` 文件夹就能用): Kill Process (`kill`, 列出正在运行的程序和内存, 回车结束)、World Clock (`tz`, 60 个城市的当地时间和时差)、Unix Timestamp (`ts`, 时间戳和日期互转)、Dark Mode (`dark`, 切换 Windows 深浅色)、Quick Note (`note`, 把一行笔记追加到 `文档\Notes.md`)
+
 ## [2026.11.16.16]
 
 测试版。
