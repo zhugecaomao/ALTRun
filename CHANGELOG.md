@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.14]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 脚本: 选中一个脚本, 列表下面显示它的说明 (脚本库的脚本有中英文说明)、需要什么、会不会联网和文件路径; 右键菜单有 编辑 / 运行 / 在文件管理器中显示 / 复制路径; 双击编辑改用 Windows 给这种文件登记的编辑程序 (和搜索窗口里按 `F3` 一样), 没有登记的才用记事本
+
 ## [2026.11.16.13]
 
 测试版。
@@ -1606,7 +1615,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...HEAD
+[2026.11.16.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...2026.11.16.14
 [2026.11.16.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...2026.11.16.13
 [2026.11.16.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...2026.11.16.12
 [2026.11.16.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...2026.11.16.11
