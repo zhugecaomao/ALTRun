@@ -97,6 +97,21 @@ class SearchSessionTests {
             titles .= action.Title "|"
         eq("filtered", titles, "Properties|")
         eq("closed", s.CloseActions() "|" s.Mode, "budget|results")
+        ; pinyin initials, as in the results (#541)
+        s.OpenActions(ResultItem("text"), [ResultItem("用 百度 搜索"), ResultItem("用 Google 搜索"), ResultItem("复制")], "")
+        filter := (needle) => SearchSessionTests._Titles(s.FilterActions(needle))
+        eq("pinyin: bd", filter("bd"), "用 百度 搜索|")
+        eq("pinyin: BD (any case)", filter("BD"), "用 百度 搜索|")
+        eq("pinyin: fz", filter("fz"), "复制|")
+        eq("pinyin: the title still matches", filter("goo"), "用 Google 搜索|")
+        eq("pinyin: no match", filter("xyz"), "")
+    }
+
+    static _Titles(actions) {
+        titles := ""
+        for action in actions
+            titles .= action.Title "|"
+        return titles
     }
 
     ; Marks: files and folders only, by path in any case; listed by path (a Map keeps its keys sorted)

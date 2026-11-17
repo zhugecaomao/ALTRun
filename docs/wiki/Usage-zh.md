@@ -124,7 +124,7 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
 鼠标: 单击选择, 双击执行, 滚轮移动选择, 右键弹出操作菜单, 在文件或文件夹上按住 `Shift` 右键弹出 Windows 右键菜单 (需要打开, 见下文)。
 
 ## 操作面板
-选中一项按 `→` (或鼠标右键) 列出它的全部操作, 可以继续输入文字过滤:
+选中一项按 `→` (或鼠标右键) 列出它的全部操作, 可以继续输入文字过滤 (拼音首字母也可以, 例如 `bd` → 用 百度 搜索):
 
 ![操作面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions.png)
 

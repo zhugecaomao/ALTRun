@@ -124,7 +124,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu, `Shift`+right-click on a file or folder opens the Windows context menu (when it is turned on, see below).
 
 ## Action panel
-Select a result and press `→` (or right-click) to list everything you can do with it; keep typing to filter:
+Select a result and press `→` (or right-click) to list everything you can do with it; keep typing to filter (pinyin initials work too, e.g. `bd` → 用 百度 搜索):
 
 ![Action panel](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions.png)
 
