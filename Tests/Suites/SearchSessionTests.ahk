@@ -97,6 +97,28 @@ class SearchSessionTests {
             titles .= action.Title "|"
         eq("filtered", titles, "Properties|")
         eq("closed", s.CloseActions() "|" s.Mode, "budget|results")
+        ; pinyin initials, as in the results (#541)
+        s.OpenActions(ResultItem("text"), [ResultItem("用 百度 搜索"), ResultItem("用 Google 搜索"), ResultItem("复制")], "")
+        filter := (needle) => SearchSessionTests._Titles(s.FilterActions(needle))
+        eq("pinyin: bd", filter("bd"), "用 百度 搜索|")
+        eq("pinyin: BD (any case)", filter("BD"), "用 百度 搜索|")
+        eq("pinyin: fz", filter("fz"), "复制|")
+        eq("pinyin: the title still matches", filter("goo"), "用 Google 搜索|")
+        eq("pinyin: no match", filter("xyz"), "")
+        ; the keyword of what a row runs: a search engine's, a command's (several, comma-separated, found while typed)
+        s.OpenActions(ResultItem("text"), [ResultItem("Search Baidu", "", {Keyword: "bd, bs"}), ResultItem("Search Google", "", {Keyword: "g"})
+            , ResultItem("Copy to Clipboard")], "")
+        eq("keyword: bd", filter("bd"), "Search Baidu|")
+        eq("keyword: the second one", filter("bs"), "Search Baidu|")
+        eq("keyword: g also matches titles with a g", filter("g"), "Search Google|")
+        eq("keyword: title still works", filter("copy"), "Copy to Clipboard|")
+    }
+
+    static _Titles(actions) {
+        titles := ""
+        for action in actions
+            titles .= action.Title "|"
+        return titles
     }
 
     ; Marks: files and folders only, by path in any case; listed by path (a Map keeps its keys sorted)

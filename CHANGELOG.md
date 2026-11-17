@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.8]
+
+测试版。
+
+Test build.
+
+### 改进
+- 操作面板 (`→`、选中内容的操作) 输入文字过滤时也认拼音首字母, 以及搜索引擎、自定义命令、脚本的关键字: 例如 `bd` → 用 百度 搜索; 想用 `bs`, 给百度加上关键字 `bs` (#541)
+
 ## [2026.11.16.7]
 
 测试版。
@@ -1552,7 +1561,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...HEAD
+[2026.11.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...2026.11.16.8
 [2026.11.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...2026.11.16.7
 [2026.11.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...2026.11.16.6
 [2026.11.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...2026.11.16.5

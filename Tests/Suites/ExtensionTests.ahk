@@ -2254,6 +2254,11 @@ class ExtensionTests {
         list := titles(item)
         ok("text: copy first", InStr(list, "Copy to Clipboard|") = 1)
         ok("text: search engines", InStr(list, "Search Google|") && InStr(list, "Search GitHub|"))
+        googleKeyword := "(no row)"
+        for action in ResultActions.ListFor(item)
+            if (action.Title = "Search Google")
+                googleKeyword := action.Keyword
+        eq("text: an engine's row has its keyword (the panel finds it by it, #541)", googleKeyword, "g")
         ok("text: save as snippet", InStr(list, "Save as Snippet...|"))
         ok("text: replace with uppercase", InStr(list, "Replace with: UPPERCASE|"))
         ok("text: no calculation", !InStr(list, "= "))
@@ -2483,6 +2488,10 @@ class ExtensionTests {
             eq("url filled", erp.Kind "|" erp.Arg, "url|https://erp.example.com/o?id=PO12345678")
             eq("title without the term", erp.Title, "ERP")
             ok("runs through OnRun", IsObject(erp.OnRun))
+            eq("no keyword", erp.Keyword, "")
+            AppSettings.Data["CustomCommands"][1]["Keyword"] := "erp, dd"
+            eq("the command's keyword (the panel finds it by it)", SelectionActions.ItemFor({Text: "PO12345678"}).LeadActions[1].Keyword, "erp, dd")
+            AppSettings.Data["CustomCommands"][1]["Keyword"] := ""
             list := ResultActions.ListFor(item)
             eq("panel: commands first", list[1].Title "|" list[2].Title "|" list[5].Title, "ERP|WMS|Copy to Clipboard")
             eq("panel: Enter hint moves to the first row", list[5].Subtitle, "")

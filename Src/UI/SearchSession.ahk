@@ -140,15 +140,35 @@ class SearchSession {
         return this.SavedQuery
     }
 
-    ; The panel's actions matching what is typed (all of them for an empty box)
+    ; The panel's actions matching what is typed (all of them for an empty box): by the title, its pinyin initials as in the results
+    ; (bd -> 用 百度 搜索), or the keyword of what the row runs (a search engine's "bd", a command's or a script's keyword).
+    ; The keyword is matched like a title, so it is found while still being typed
     FilterActions(text) {
-        if (Trim(text) = "")
+        needle := StrLower(Trim(text))
+        if (needle = "")
             return this.AllActions
         filtered := []
         for action in this.AllActions
-            if (FuzzyMatcher.Score(text, action.Title) > 0)
+            if (FuzzyMatcher.BestKey(needle, SearchSession.ActionKeys(action.Title, action.HasOwnProp("Keyword") ? action.Keyword : "")) > 0)
                 filtered.Push(action)
         return filtered
+    }
+
+    ; Search keys of an action: its title, with Chinese in it its pinyin initials, and each of its keywords (comma-separated, as in
+    ; the settings); cached by title and keyword (the same rows come up for every panel)
+    static ActionKeys(title, keyword := "") {
+        static cache := Map()
+        cacheKey := title "|" keyword
+        if !cache.Has(cacheKey) {
+            if (cache.Count > 500)
+                cache := Map()
+            pinyinText := Pinyin.Initials(title)
+            keys := [FuzzyMatcher.Key(title), (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
+            for each in SearchQuery.Keywords(keyword)
+                keys.Push(FuzzyMatcher.Key(each))
+            cache[cacheKey] := keys
+        }
+        return cache[cacheKey]
     }
 
     ;---------------------------------------------------------------------------

@@ -544,6 +544,7 @@ class SelectionActions {
         }
         item := CustomCommandProvider._ToItem(command, 0, takesQuery ? info.Term : "")
         item.Title := command["Title"]
+        item.Keyword := command.Has("Keyword") ? command["Keyword"] : ""     ; found by it when typing in the panel
         item.AutoComplete := ""
         if appends {
             item.Arguments := Trim(item.Arguments " " info.Quoted)
@@ -648,7 +649,8 @@ class SelectionActions {
             return actions
         for engine in AppSettings.Feature("WebSearch")["Engines"] {
             searchUrl := WebSearchProvider.Fill(engine["Url"], query)
-            actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: WebSearchProvider.IconFor(engine), OnRun: SelectionActions._Opener(searchUrl)}))
+            actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: WebSearchProvider.IconFor(engine), OnRun: SelectionActions._Opener(searchUrl)
+                , Keyword: engine.Has("Keyword") ? engine["Keyword"] : ""}))
         }
         return actions
     }
