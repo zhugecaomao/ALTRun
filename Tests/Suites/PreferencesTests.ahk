@@ -46,6 +46,27 @@ class PreferencesTests {
     }
 
     ; "Add Examples" / "Add Built-ins" on the list pages: only the defaults missing from the list are added, the rest are counted as skipped
+    ; Preferences → Scripts, below the list: the selected script's description, then what it needs, where it connects and its path
+    ; (PrefsPages.ScriptDetail); the Chinese description for a Chinese UI; a script without library lines shows its path only
+    static ScriptDetail() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptDetail." n, a, e)
+        meta := Map("description", "Live translation", "description_zh", "边打字边翻译", "requires", "A DeepL key", "requires_zh", "DeepL key",
+            "network", "api.deepl.com")
+        script := {Path: "C:\S\Translate.ahk", Meta: meta}
+        saved := I18n.Lang
+        try {
+            I18n.Init("en")
+            eq("english", PrefsPages.ScriptDetail(script), "Live translation`nNeeds: A DeepL key · Connects to: api.deepl.com · C:\S\Translate.ahk")
+            I18n.Init("zh-CN")
+            eq("chinese", PrefsPages.ScriptDetail(script), "边打字边翻译`n需要: DeepL key · 联网: api.deepl.com · C:\S\Translate.ahk")
+            I18n.Init("en")
+            eq("no network", PrefsPages.ScriptDetail({Path: "C:\S\a.bat", Meta: Map("network", "none")}), "No network · C:\S\a.bat")
+            eq("plain script", PrefsPages.ScriptDetail({Path: "C:\S\b.ahk", Meta: Map("title", "B")}), "C:\S\b.ahk")
+            eq("no meta", PrefsPages.ScriptDetail({Path: "C:\S\c.ahk"}), "C:\S\c.ahk")
+        } finally
+            I18n.Init(saved)
+    }
+
     static ListExamples() {
         eq := (n, a, e) => TestRunner.Equal("ListExamples." n, a, e)
         pages := [["Hotkeys", (item) => PrefsPages.HotkeyKeys(item)], ["CustomCommands", (item) => PrefsPages.CommandKeys(item)]

@@ -371,7 +371,7 @@ class ScriptProvider {
         ScriptProvider._checked := A_TickCount
     }
 
-    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Selection: [type names], FilterBy: script / altrun, Keys}; reads @altrun.xxx in the first 30 lines
+    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Selection: [type names], FilterBy: script / altrun, Keys, Meta}; reads @altrun.xxx in the first 30 lines
     static ReadScript(path) {
         SplitPath(path, &name, , &ext, &baseName)
         meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window", "selection", "", "filter", "")
@@ -395,7 +395,8 @@ class ScriptProvider {
         pinyinText := Pinyin.Initials(title)
         return {Path: path, Name: name, Ext: StrLower(ext), Title: title, Keyword: keyword, Argument: Trim(meta["argument"]), Mode: mode, Selection: types
               , FilterBy: (StrLower(Trim(meta["filter"])) = "altrun") ? "altrun" : "script"
-              , Keys: [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]}
+              , Keys: [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
+              , Meta: meta}                                                 ; every @altrun.xxx line, e.g. the script library's description (Preferences → Scripts)
     }
 
     ; The start of a script file (up to 8 KB, ending at a line break) as text: UTF-8 with or without a byte order mark (Notepad saves

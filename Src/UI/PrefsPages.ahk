@@ -768,20 +768,73 @@ class PrefsPages {
             , ["Prefs.ScriptLibrary", (*) => ActionCatalog.OpenUrl(App.Website "#scripts")])
         PrefsForm.Field("Features.Scripts.Keyword", "Prefs.ScriptKeyword", "S")
         PrefsForm.Section("Prefs.Section.ScriptList")
-        listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h170 -Multi NoSort Grid ReadOnly"
+        listView := PrefsForm.Add("ListView", "w" PrefsForm.ContentW " h140 -Multi NoSort Grid ReadOnly"
             , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.ScriptTypes"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
         for index, width in [105, 60, 80, 80, 130, 80]   ; the last one (File) fills the rest
             listView.ModifyCol(index, width)
-        listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"')
+        listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? PrefsPages.EditScript(ScriptProvider.Scripts[row].Path)
             : (row && !ScriptProvider.Scripts.Length) ? ActionCatalog.OpenUrl(App.Website "#scripts") : "")   ; the "no scripts yet" row: the script library
+        listView.OnEvent("ItemSelect", (ctrl, row, selected) => PrefsPages._ShowScriptDetail(selected ? row : 0))
+        listView.OnEvent("ContextMenu", (ctrl, row, isRightClick, x, y) => PrefsPages._ScriptMenu(row, x, y))
         listView.OnNotify(-12, (ctrl, lParam) => PrefsPages._ScriptRowDraw(lParam))   ; NM_CUSTOMDRAW: a filter script that can't run is red
         PrefsPages._scriptList := listView
         PrefsPages._FillScripts()
         PrefsForm.Below(6, listView)
+        PrefsPages._scriptDetail := PrefsForm.Add("Text", "x" PrefsForm.ContentX " w" PrefsForm.ContentW " r2 cGray 0x80")   ; SS_NOPREFIX: & in a description shows as it is
+        PrefsForm.Below(6, PrefsPages._scriptDetail)
         PrefsForm.Note("Prefs.ScriptsNote")
     }
 
-    static _scriptList := ""
+    static _scriptList := "", _scriptDetail := ""
+
+    ; Below the list: what the selected script is (the script library's @altrun.description, in Chinese for a Chinese UI), what it
+    ; needs and where it connects, then its path; nothing selected: empty
+    static ScriptDetail(script) {
+        meta := script.HasOwnProp("Meta") ? script.Meta : Map()
+        zh := SubStr(I18n.Lang, 1, 2) = "zh"
+        get(key) => (zh && meta.Has(key "_zh") && meta[key "_zh"] != "") ? meta[key "_zh"] : meta.Has(key) ? meta[key] : ""
+        facts := []
+        if ((needs := get("requires")) != "")
+            facts.Push(I18n.T("Prefs.ScriptNeeds", needs))
+        if meta.Has("network")
+            facts.Push((Trim(meta["network"]) = "none") ? I18n.T("Prefs.ScriptNoNetwork") : I18n.T("Prefs.ScriptNetwork", Trim(meta["network"])))
+        facts.Push(script.Path)
+        line := ""
+        for fact in facts
+            line .= (line = "" ? "" : " · ") fact
+        description := get("description")
+        return (description != "") ? description "`n" line : line
+    }
+
+    static _ShowScriptDetail(row) {
+        if IsObject(PrefsPages._scriptDetail)
+            PrefsPages._scriptDetail.Value := (row && row <= ScriptProvider.Scripts.Length) ? PrefsPages.ScriptDetail(ScriptProvider.Scripts[row]) : ""
+    }
+
+    ; Edits a script like F3 in the search window: with the program Windows has for "Edit" on its file type, else Notepad
+    static EditScript(path) {
+        if IsObject(ActionCatalog.EditorFor(path))
+            try return ActionCatalog.EditFile(path)
+        Run('notepad.exe "' path '"')
+    }
+
+    ; Right-click on a script (also the Menu key / Shift+F10): Edit (the default, as double-click), Run, Reveal in File Manager, Copy Path.
+    ; Run: one that takes text after its keyword opens the search window with the keyword typed, as from the search box
+    static _ScriptMenu(row, x, y) {
+        if !(row && row <= ScriptProvider.Scripts.Length)
+            return
+        script := ScriptProvider.Scripts[row]
+        PrefsPages._scriptList.Modify(row, "Select Focus")
+        popup := Menu()
+        popup.Add(I18n.T("Action.EditFile"), (*) => PrefsPages.EditScript(script.Path))
+        popup.Default := I18n.T("Action.EditFile")
+        popup.Add(I18n.T("Action.Run"), (*) => (script.Argument != "" && script.Keyword != "" && script.Mode != "filter")
+            ? SearchWindow.Show(script.Keyword " ") : ScriptProvider.Run(script))
+        popup.Add()
+        popup.Add(I18n.T("Action.Reveal"), (*) => ActionCatalog.Reveal(script.Path))
+        popup.Add(I18n.T("Action.CopyPath"), (*) => (A_Clipboard := script.Path))
+        popup.Show(x, y)
+    }
 
     static JoinNames(names) {                                               ; ["Text", "PDF"] -> "Text, PDF"
         text := ""
