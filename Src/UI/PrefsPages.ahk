@@ -777,7 +777,7 @@ class PrefsPages {
         listView.OnEvent("ItemSelect", (ctrl, row, selected) => PrefsPages._ShowScriptDetail(selected ? row : 0))
         listView.OnEvent("ContextMenu", (ctrl, row, isRightClick, x, y) => PrefsPages._ScriptMenu(row, x, y))
         listView.OnNotify(-12, (ctrl, lParam) => PrefsPages._ScriptRowDraw(lParam))   ; NM_CUSTOMDRAW: a filter script that can't run is red
-        PrefsPages._scriptList := listView
+        PrefsPages._scriptList := listView, PrefsPages._scriptDetail := ""   ; created below: not the control of a window closed before
         PrefsPages._FillScripts()
         PrefsForm.Below(6, listView)
         PrefsPages._scriptDetail := PrefsForm.Add("Text", "x" PrefsForm.ContentX " w" PrefsForm.ContentW " r3 cGray 0x80")   ; three lines: a long "Needs" wraps; SS_NOPREFIX: & shows as it is
@@ -858,6 +858,7 @@ class PrefsPages {
         if !ScriptProvider.Scripts.Length
             listView.Add(, I18n.T("Prefs.NoScripts"))
         PrefsForm.FitColumns(listView)
+        PrefsPages._ShowScriptDetail(0)                                     ; the rows were refilled, none is selected: no details of the old one
     }
 
     ; The Scripts list: rows of filter scripts with a problem (ScriptFilter.Problem) in the red of a broken hotkey
