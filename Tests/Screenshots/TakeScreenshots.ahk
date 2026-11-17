@@ -35,7 +35,7 @@ class Shots {
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
-                         , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor"
+                         , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor", "selection-type-editor-file"
                          , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list", "first-run"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -57,6 +57,8 @@ class Shots {
             ["selection-new-type", "Light", "", () => Shots.SelectionPanel("PO12345678", "content")],   ; text of none of the user's types: "Add a Command..." and "Make a Content Type..." (filtered to them)
             ["selection-add-command", "Light", "", () => Shots.SelectionPanel("INV-2026-0042", "content"), () => Shots.TypeWithoutCommand()],   ; a type of the user's without commands: only "Add a Command..."
             ["selection-type-editor", "Light", "", () => Shots.SelectionTypeEditor("PO12345678")],   ; "Make a Content Type from It...": the guess and the sample line
+            ["selection-type-editor-file", "Light", "-Preferences Selection", () => Shots.FileTypeEditor(), () => Shots.MarkdownType()],   ; Wiki: a File type's "Enter opens with" (drop-down open)
+            ["actions-file-type", "Light", "", () => Shots.Actions(Shots.NotesDir "\Meeting"), () => Shots.MarkdownType()],   ; Wiki: a .md file in the results: its type's default command first, Open, its other command
             ["shellmenu",   "Light", "", () => Shots.ShellMenu(), () => Shots.EnableContextMenu()],   ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
@@ -553,6 +555,37 @@ class Shots {
         if !window
             throw Error("content type edit window not shown")
         WinSetAlwaysOnTop(1, window)
+        Sleep(800)
+        return window
+    }
+
+    ; A File type "Markdown" whose Enter opens with Typora, two commands set for it (made up), and a .md file outside the demo folders
+    ; (so the other scenes' results don't change)
+    static NotesDir := "C:\Demo Notes"
+    static MarkdownType() {
+        try DirDelete(Shots.NotesDir, true)
+        DirCreate(Shots.NotesDir)
+        FileAppend("# Meeting notes`n", Shots.NotesDir "\Meeting Notes.md", "UTF-8")
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["SelectionTypes"] := [Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "DefaultCommand", "typora01")]
+        settings["CustomCommands"].Push(Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_ScriptDir\..\Typora\Typora.exe", "Arguments", "", "Keyword", "", "Selection", "Markdown"))
+        settings["CustomCommands"].Push(Map("Id", "vscode01", "Title", "VS Code", "Type", "File", "Target", "%LocalAppData%\Programs\Microsoft VS Code\Code.exe", "Arguments", "--reuse-window", "Keyword", "", "Selection", "Markdown"))
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; Preferences → Selection → the Markdown type's edit window, with "Enter opens with" dropped down
+    static FileTypeEditor() {
+        window := Shots.SyncWindow("Edit...", "Selection", 1)
+        combo := 0
+        for ctrl in WinGetControlsHwnd(window)
+            if (WinGetClass(ctrl) = "ComboBox" && ControlGetText(ctrl) = "Typora")
+                combo := ctrl
+        if !combo
+            throw Error("type edit window: the Enter opens with box not found")
+        ControlFocus(combo)
+        PostMessage(0x14F, 1, 0, combo)                                     ; CB_SHOWDROPDOWN
         Sleep(800)
         return window
     }
