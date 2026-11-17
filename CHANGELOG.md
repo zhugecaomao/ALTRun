@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.12]
+
+测试版。
+
+Test build.
+
+### 修复
+- 脚本开头的中文标题、关键字等 (`@altrun.title` 之类) 在记事本默认的 UTF-8 (不带 BOM) 文件里显示成乱码: 现在按 UTF-8 读, 带 BOM 的 UTF-8 / UTF-16 也认; 不是 UTF-8 的文件 (例如 GBK) 仍按系统编码读
+
 ## [2026.11.16.11]
 
 测试版。
@@ -1588,7 +1597,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...HEAD
+[2026.11.16.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...2026.11.16.12
 [2026.11.16.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...2026.11.16.11
 [2026.11.16.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...2026.11.16.10
 [2026.11.16.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...2026.11.16.9
