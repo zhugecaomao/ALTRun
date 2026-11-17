@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.16]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置 → 脚本: 点 "打开脚本文件夹" 后列表重新读一遍, 没有选中的行, 下面却还显示刚才选中的脚本的说明和路径; 现在会清空 
+
 ## [2026.11.16.15]
 
 测试版。
@@ -1627,7 +1636,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...HEAD
+[2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16
 [2026.11.16.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...2026.11.16.15
 [2026.11.16.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...2026.11.16.14
 [2026.11.16.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...2026.11.16.13

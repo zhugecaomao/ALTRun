@@ -84,6 +84,17 @@ class PreferencesTests {
             eq("no meta", PrefsPages.ScriptDetail({Path: "C:\S\c.ahk"}), "C:\S\c.ahk")
         } finally
             I18n.Init(saved)
+        ; refilling the list ("Open Scripts Folder") leaves no row selected: the details of the one selected before are cleared
+        savedControls := [PrefsPages._scriptList, PrefsPages._scriptDetail], window := Gui()
+        try {
+            PrefsPages._scriptList := window.AddListView("w300 h100", ["Name", "Keyword", "Argument", "Types", "Mode", "File"])
+            PrefsPages._scriptDetail := window.AddText("w300 r3", "Live translation")
+            PrefsPages._FillScripts()
+            eq("cleared on refill", PrefsPages._scriptDetail.Value, "")
+        } finally {
+            PrefsPages._scriptList := savedControls[1], PrefsPages._scriptDetail := savedControls[2]
+            window.Destroy()
+        }
     }
 
     ; "Add Examples" / "Add Built-ins" on the list pages: only the defaults missing from the list are added, the rest are counted as skipped
