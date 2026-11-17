@@ -584,7 +584,7 @@ class App {
         Logger.Debug("App: keyboard hook reinstalled (" reason ")")
     }
 
-    ; reinstall the mouse hook too when custom hotkeys use mouse buttons (e.g. ~MButton for PT Tools)
+    ; reinstall the mouse hook too when custom hotkeys use mouse buttons (e.g. ~MButton)
     static UsesMouseHotkeys(hotkeys) {
         for entry in hotkeys
             if (entry is Map && entry.Has("Key") && RegExMatch(entry["Key"], "i)(Button|Wheel)"))

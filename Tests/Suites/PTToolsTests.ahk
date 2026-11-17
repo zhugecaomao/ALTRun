@@ -73,8 +73,9 @@ class PTToolsTests {
     ; inputs are combo boxes with their common values, the span width follows into the mesh area
     static PTToolsWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
-        saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
+        saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"], PTToolsWindow.IniFile]
         PTToolsWindow.Settings["WinLeft"] := -3000, PTToolsWindow.Settings["WinTop"] := -3000
+        PTToolsWindow.IniFile := A_Temp "\ALTRun-pttools-ui.ini"               ; closing the window saves: never next to the library's file
         PTToolsWindow.Show()
         g := PTToolsWindow.G
         tabbed := "", oldUnit := ""
@@ -132,14 +133,15 @@ class PTToolsTests {
             TestRunner.True("PTToolsWindowUi.diameter text on the right (first char at " firstX " of " ew ")", firstX > ew // 2)
         }
         g.Destroy(), PTToolsWindow.G := ""
-        PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2]
+        PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2], PTToolsWindow.IniFile := saved[3]
     }
 
     ; SPF2M window: the same margins as PT Tools; the table's columns leave room for a vertical scroll bar, no horizontal one
     static Spf2mWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("Spf2mWindowUi." n, a, e)
-        saved := [Spf2mWindow.Settings["WinLeft"], Spf2mWindow.Settings["WinTop"]]
+        saved := [Spf2mWindow.Settings["WinLeft"], Spf2mWindow.Settings["WinTop"], Spf2mWindow.IniFile]
         Spf2mWindow.Settings["WinLeft"] := -3000, Spf2mWindow.Settings["WinTop"] := -3000
+        Spf2mWindow.IniFile := A_Temp "\ALTRun-spf2m-ui.ini"                   ; closing the window saves: never next to the library's file
         Spf2mWindow.Show()
         eq("even margins", PTToolsTests._EvenMargins(Spf2mWindow.G), true)
         eq("table filled on opening", Spf2mWindow.G["ResultList"].GetCount() > 0, true)
@@ -149,7 +151,7 @@ class PTToolsTests {
         rect := Buffer(16, 0), DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
         eq("table fits", columns <= NumGet(rect, 8, "Int") && !(ControlGetStyle(list) & 0x100000), true)   ; WS_HSCROLL
         Spf2mWindow.G.Destroy(), Spf2mWindow.G := ""
-        Spf2mWindow.Settings["WinLeft"] := saved[1], Spf2mWindow.Settings["WinTop"] := saved[2]
+        Spf2mWindow.Settings["WinLeft"] := saved[1], Spf2mWindow.Settings["WinTop"] := saved[2], Spf2mWindow.IniFile := saved[3]
     }
 
     ; The same margin left, right and below the group boxes (the title bar is above)

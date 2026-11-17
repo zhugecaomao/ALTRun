@@ -12,7 +12,7 @@
 ;   Src\Providers\  Search features: clipboard history, applications, custom commands,
 ;                   snippets, system commands, calculator, web search, file search, terminal
 ;   Src\Extensions\ Features outside the search window: snippet auto-expansion,
-;                   dialog quick switch, Ctrl+D date, PT Tools, update checker
+;                   dialog quick switch, Ctrl+D date, update checker
 ;   Resources\      Data files shipped with ALTRun (Kanji.txt, Pinyin.txt, built-in themes, Lang\ translations, Icons\, ALTRun.ico)
 ;   Themes\         Optional custom themes (<Name>.json)
 ;   Data\           Generated at runtime: app index, learned ranking, clipboard history
