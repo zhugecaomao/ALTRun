@@ -322,7 +322,6 @@ class PrefsForm {
         button.OnEvent("Click", (*) => PrefsForm.EditLines(labelKey, state, box, summarize))
         PrefsForm.Bind(path, () => state.Lines)
         PrefsForm.BelowInput(labelKey, label, box, button)
-        return box
     }
 
     static EditLines(labelKey, state, box, summarize) {

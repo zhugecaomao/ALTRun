@@ -472,7 +472,6 @@
   "Prefs.Browser": "ブラウザー",
   "Prefs.Browser.Empty": "既定のブラウザー",
   "Prefs.OpenWith": "ファイルを開くプログラム",
-  "Prefs.OpenWith.Empty": "Windows の関連付け",
   "Prefs.OpenWith.Help": "1 行に 1 つ: 拡張子 = プログラムとパラメーター。例:\n    md markdown = D:\\Tools\\Typora\\Typora.exe\n    md = %LocalAppData%\\Programs\\Microsoft VS Code\\Code.exe --reuse-window \"%1\"\n\n%1 はファイルです。%1 がなければファイルは最後に追加されます。同じ拡張子に複数の行がある場合: 最初の行が Enter で使われ、すべての行が操作パネル (→) に「<プログラム> で開く」として表示されます。\n\n変数を使えます: %OneDrive% などの環境変数と A_ 変数。相対パスは ALTRun のフォルダーから数えるので、同じ USB ドライブ上のプログラムはドライブ文字が変わっても見つかります (例: ..\\Typora\\Typora.exe)。他の種類のファイル、プログラムとショートカット (.exe .lnk など) はこれまでどおり開きます。",
   "Prefs.FileMaxResults": "ファイル検索の結果数",
   "Prefs.FileMaxResults.Desc": "ファイル検索 (先に Space、またはキーワード) の最大結果数と、通常の結果に表示するファイルの最大数。",

@@ -845,7 +845,6 @@ class I18n {
         s["Prefs.Browser"]             := "Browser"
         s["Prefs.Browser.Empty"]     := "Default browser"
         s["Prefs.OpenWith"]            := "Open files with"
-        s["Prefs.OpenWith.Empty"]      := "Windows associations"
         s["Prefs.OpenWith.Help"]       := "One rule per line: file extensions = the program and its parameters, e.g.`n    md markdown = D:\Tools\Typora\Typora.exe`n    md = %LocalAppData%\Programs\Microsoft VS Code\Code.exe --reuse-window `"%1`"`n`n%1 is the file; without it the file is added at the end. An extension with several lines: the first opens it with Enter, and every one is in the actions panel (→) as `"Open with <program>`".`n`nVariables work: environment variables such as %OneDrive%, and A_ variables. A relative path starts from ALTRun's folder, so a program on the same USB drive is still found when the drive letter changes (e.g. ..\Typora\Typora.exe). Other file types, and programs and shortcuts (.exe .lnk ...), open as before."
         s["Prefs.HistorySize"]         := "Search history size"
         s["Prefs.HistorySize.Desc"]    := "Ctrl+↑ / Ctrl+↓ bring back recent searches."
