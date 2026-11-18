@@ -2260,7 +2260,7 @@ class ExtensionTests {
             ]
             AppSettings.Data["CustomCommands"] := [
                 Map("Id", "code0001", "Title", "Code", "Type", "File", "Target", "C:\Tools\Code.exe", "Arguments", "--reuse-window", "Selection", "Markdown, Notes"),
-                Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "C:\Tools\Sub\..\Typora\Typora.exe", "Arguments", ""),   ; no Selection: the open command counts anyway
+                Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_Temp\Sub\..\Typora\Typora.exe", "Arguments", ""),   ; no Selection: the open command counts anyway; a portable path
                 Map("Id", "web00001", "Title", "Web", "Type", "Url", "Target", "https://example.com/?q={query}", "Selection", "Logs"),
                 Map("Id", "other001", "Title", "Other", "Type", "File", "Target", "C:\Tools\Other.exe", "Arguments", "", "Selection", "PO")
             ]
@@ -2287,8 +2287,8 @@ class ExtensionTests {
 
             item := ResultItem("a.md", root, {Kind: "file", Arg: root "\a.md"})
             action := SelectionActions.OpenActionFor(item)
-            eq("Enter: the open command's row, its path tidied", action.Title "|" action.Arg "|" action.Arguments, 'Typora|C:\Tools\Typora\Typora.exe|"' root '\a.md"')
-            eq("Enter: the subtitle tidied too", InStr(action.Subtitle, "\..\"), 0)
+            eq("Enter: the open command's row, its path tidied", action.Title "|" action.Arg "|" action.Arguments, "Typora|" A_Temp '\Typora\Typora.exe|"' root '\a.md"')
+            eq("Enter: the subtitle tidied too", InStr(action.Subtitle, "\..\") "|" InStr(action.Subtitle, A_Temp "\Typora\Typora.exe") , "0|1")
             eq("Enter: other files open as usual", SelectionActions.OpenActionFor(ResultItem("b", "", {Kind: "file", Arg: A_WinDir "\win.ini"})), "")
             eq("Enter: programs open as usual", SelectionActions.OpenActionFor(ResultItem("t", "", {Kind: "file", Arg: root "\tool.exe"})), "")
             eq("Enter: a command with parameters", SelectionActions.OpenActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", Arguments: "-x"})), "")
@@ -2310,7 +2310,7 @@ class ExtensionTests {
                 ActionCatalog.DefineProp("RunDefault", savedRun)
                 ActionCatalog.DefineProp("OpenMany", savedMany)
             }
-            eq("Enter in the search window: the command, else as usual", ran.Length "|" ran[1] "|" ran[2], '4|C:\Tools\Typora\Typora.exe|"' root '\a.md"|' A_WinDir '\win.ini|')
+            eq("Enter in the search window: the command, else as usual", ran.Length "|" ran[1] "|" ran[2], "4|" A_Temp '\Typora\Typora.exe|"' root '\a.md"|' A_WinDir '\win.ini|')
             eq("Open All: each file by its type", ran[3] "|" ran[4], 'C:\Tools\Code.exe|--reuse-window "' root '\b.txt"|open ' root '\tool.exe')
 
             panel := names(ResultActions.ListFor(item))

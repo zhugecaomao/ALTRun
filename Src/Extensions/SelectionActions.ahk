@@ -654,9 +654,12 @@ class SelectionActions {
         item := CustomCommandProvider._ToItem(command, 0, takesQuery ? info.Term : "")
         item.Title := command["Title"]
         item.CommandId := command.Has("Id") ? command["Id"] : ""            ; which command the row runs (the open command is found by it)
-        if RegExMatch(item.Arg, "\\\.\.?\\") && RegExMatch(item.Arg, "^(?:[A-Za-z]:\\|\\\\)") {   ; A_ScriptDir\..\Typora\Typora.exe: shown and run as C:\Typora\Typora.exe
-            full := Path.Full(item.Arg)
-            item.Subtitle := StrReplace(item.Subtitle, item.Arg, full), item.Arg := full
+        if RegExMatch(item.Arg, "\\\.\.?\\") {                            ; A_ScriptDir\..\Typora\Typora.exe: shown and run as C:\Typora\Typora.exe
+            shown := CustomCommandProvider._Resolve(item.Arg)               ; what the subtitle shows (A_ and %variables% expanded)
+            if RegExMatch(shown, "^(?:[A-Za-z]:\\|\\\\)") {
+                full := Path.Full(shown)
+                item.Subtitle := StrReplace(item.Subtitle, shown, full), item.Arg := full
+            }
         }
         item.Keyword := command.Has("Keyword") ? command["Keyword"] : ""     ; found by it when typing in the panel
         item.AutoComplete := ""
