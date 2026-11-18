@@ -220,7 +220,7 @@ class I18n {
         s["Selection.Link"]            := "Selected link"
         s["Selection.Files"]           := "{1} files"
         s["Selection.AddCommand"] := "Add a Command for This Content..."
-        s["Selection.AddCommand.Sub"] := "Selection types: {1}"
+        s["Selection.AddCommand.Sub"] := "Content types: {1}"
         s["Selection.NewType"] := "Make a Content Type from It..."
 
         ; --- Providers ---
@@ -669,7 +669,7 @@ class I18n {
         s["Prefs.Page.Commands"]       := "Custom Commands"
         s["Prefs.Page.Selection"]       := "Content Types"
         s["Prefs.Section.ContentTypes"] := "Content types"
-        s["Prefs.Section.ContentTypes.Desc"] := '1. Add a content type: Text matches the selected text with a regular expression, File matches selected files by extension.`n2. In a custom command, choose the types it is for ("Selection types"); {query} becomes the selected text or path.`n3. Select something in any program and press the hotkey: the commands for its types come first. <a href="{1}">More</a>'
+        s["Prefs.Section.ContentTypes.Desc"] := '1. Add a content type: Text matches the selected text with a regular expression, File matches selected files by extension.`n2. In a custom command, choose the types it is for ("Content types"); {query} becomes the selected text or path.`n3. Select something in any program and press the hotkey: the commands for its types come first. <a href="{1}">More</a>'
         s["Prefs.Col.Kind"]             := "Kind"
         s["Prefs.Col.Pattern"]          := "Pattern"
         s["Prefs.Col.UsedBy"]           := "Used by commands"

@@ -420,9 +420,18 @@ class SelectionActions {
     ; Programs and shortcuts: never opened with a type's open command, so a type can't take over starting programs
     static ProgramTypes := Map("exe", 1, "com", 1, "lnk", 1, "url", 1, "msc", 1, "cpl", 1, "scr", 1, "pif", 1, "appref-ms", 1)
 
-    ; Commands a type can open its files with: custom commands that run a program (File or Command) and have an Id
-    static IsProgramCommand(command) => command is Map && command.Has("Id") && command["Id"] != ""
-        && (!command.Has("Type") || command["Type"] = "File" || command["Type"] = "Command")
+    ; Commands a type can open its files with: custom commands that run a program and have an Id: a Command, or a File whose target is a
+    ; program, script or shortcut (or a bare name such as notepad); not a File that opens a document (Budget.xlsx), a folder or a web page
+    static IsProgramCommand(command) {
+        if !(command is Map && command.Has("Id") && command["Id"] != "")
+            return false
+        commandType := command.Has("Type") ? command["Type"] : "File"
+        if (commandType = "Command")
+            return true
+        target := Trim(command.Has("Target") ? command["Target"] : "", '" ')
+        SplitPath(target, &name, , &ext)
+        return commandType = "File" && (ext = "" || RegExMatch(ext, "i)^(exe|com|bat|cmd|ps1|lnk|ahk|py|pyw|vbs|js)$"))
+    }
 
     ; The custom command that opens a file of this selection (Classify's result) with Enter: the OpenCommand of the first of the
     ; user's File types it has, when that command exists and runs a program; "" otherwise, for programs and shortcuts, or with

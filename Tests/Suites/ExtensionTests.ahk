@@ -2262,7 +2262,9 @@ class ExtensionTests {
                 Map("Id", "code0001", "Title", "Code", "Type", "File", "Target", "C:\Tools\Code.exe", "Arguments", "--reuse-window", "Selection", "Markdown, Notes"),
                 Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_Temp\Sub\..\Typora\Typora.exe", "Arguments", ""),   ; no Selection: the open command counts anyway; a portable path
                 Map("Id", "web00001", "Title", "Web", "Type", "Url", "Target", "https://example.com/?q={query}", "Selection", "Logs"),
-                Map("Id", "other001", "Title", "Other", "Type", "File", "Target", "C:\Tools\Other.exe", "Arguments", "", "Selection", "PO")
+                Map("Id", "other001", "Title", "Other", "Type", "File", "Target", "C:\Tools\Other.exe", "Arguments", "", "Selection", "PO"),
+                Map("Id", "budget01", "Title", "Budget", "Type", "File", "Target", "C:\Docs\Budget.xlsx", "Arguments", ""),   ; a document: not a program
+                Map("Id", "cmd00001", "Title", "Shell", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k")
             ]
             names(rows) {
                 text := ""
@@ -2339,8 +2341,12 @@ class ExtensionTests {
             for each in choice.Choices
                 labels .= each[1] ":" each[2] "|"
             eq("editor: Windows, the type's commands, then the other programs (no Url)", choice.Key "|" labels
-                , "OpenCommand|:" I18n.T("SelType.OpenCommand.None") "|code0001:Code|typora01:Typora|other001:Other|folder01:Folder tool|")
-            eq("editor: a new type gets every program", SelectionActions.TypeEditorFields().Get(4).Choices.Length, 5)
+                , "OpenCommand|:" I18n.T("SelType.OpenCommand.None") "|code0001:Code|typora01:Typora|other001:Other|cmd00001:Shell|folder01:Folder tool|")
+            eq("editor: a new type gets every program", SelectionActions.TypeEditorFields().Get(4).Choices.Length, 6)
+            eq("program commands", SelectionActions.IsProgramCommand(Map("Id", "a", "Type", "File", "Target", "notepad")) "|"
+                . SelectionActions.IsProgramCommand(Map("Id", "a", "Type", "File", "Target", '"C:\My Tools\Run.ahk"')) "|"
+                . SelectionActions.IsProgramCommand(Map("Id", "a", "Type", "Folder", "Target", "C:\x")) "|"
+                . SelectionActions.IsProgramCommand(Map("Type", "File", "Target", "C:\x.exe")), "1|1|0|0")
             eq("editor: empty is not saved", choice.OmitEmpty, true)
             eq("editor: a Text type warns", choice.Check.Call("typora01", Map("Kind", "Text")) != "", true)
             eq("editor: a File type is fine", choice.Check.Call("typora01", Map("Kind", "File")), "")
