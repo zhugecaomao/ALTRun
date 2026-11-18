@@ -44,7 +44,8 @@ Preferences → Snippets → "Don't expand in" (`Features.Snippets.ExpandExclude
   - `ahk_exe program.exe`: every window of that program (Task Manager → Details shows the program name)
   - `ahk_class ClassName`: windows of that class
   - part of the window title (case-sensitive), for example `Remote Desktop Connection`
-- Default: Remote Desktop (`mstsc.exe`), KeePass, KeePassXC
+- Default: the remote desktop programs Remote Desktop (`mstsc.exe`), ToDesk, Sunlogin (`SunloginClient.exe`), AnyDesk, TeamViewer and RustDesk, and the password managers KeePass and KeePassXC
+- Remote desktops: what you type in a remote desktop window passes through this PC first, so the ALTRun here would expand it too, and the result reaches the remote PC broken (for example only a `v`, or nothing): the ALTRun on the remote PC should expand it. For a remote desktop in the browser (Chrome Remote Desktop), add part of its window title (usually the remote PC's name) together with the browser, for example `OFFICE-PC ahk_exe msedge.exe` (Chrome: `ahk_exe chrome.exe`); other browser windows still expand
 - Whatever is listed here, snippets never expand in ALTRun's own search window or in Windows password boxes
 - To keep a single snippet from expanding, untick "Expand automatically when typed" in its edit window instead
 
