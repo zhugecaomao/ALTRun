@@ -1263,6 +1263,27 @@ class ExtensionTests {
         eq("maximized, caret in the panel: the list opens down", panelAt(0, 0, 1040, 8, true), "0,0,8")
         eq("search box below, caret in it: the list opens up", panelAt(100, 50, 930, 8, true), "100,820,8")
         eq("rows fit: the caret changes nothing", panelAt(100, 100, 800, 8, true), "100,900,4")
+        ; #567: the dialog's frame in ALTRun's coordinates. Same scale: DWM's frame as it is; ALTRun at 150% and the dialog on a
+        ; 100% monitor (Windows gives ALTRun 1.5 times the physical size): the 8 px border and the size scaled by 1.5
+        frameOf := (window, physical, frame) => (r := QuickSwitchPanel.LogicalFrame(window, physical, frame), r.X "," r.Y "," r.W "," r.H)
+        eq("frame, same scale", frameOf({X: 100, Y: 50, W: 816, H: 608}, {Left: 100, Top: 50, Right: 916, Bottom: 658}
+            , {Left: 108, Top: 50, Right: 908, Bottom: 650}), "108,50,800,600")
+        eq("frame, dialog on a monitor with a lower scale", frameOf({X: 3600, Y: 150, W: 1800, H: 1200}, {Left: 2400, Top: 100, Right: 3600, Bottom: 900}
+            , {Left: 2408, Top: 100, Right: 3592, Bottom: 892}), "3612,150,1776,1188")
+        eq("frame, no physical size", frameOf({X: 1, Y: 2, W: 3, H: 4}, {Left: 0, Top: 0, Right: 0, Bottom: 0}, {Left: 0, Top: 0, Right: 9, Bottom: 9}), "1,2,3,4")
+        frameGui := Gui("+Resize", "ALTRun frame test")
+        frameGui.Show("NA x120 y140 w400 h300")
+        try {
+            WinGetPos(&fx, &fy, &fw, &fh, "ahk_id " frameGui.Hwnd)
+            real := QuickSwitchPanel._FrameRect(frameGui.Hwnd)
+            ; one monitor, one scale: inside the window rectangle (the invisible border, if DWM gives one, is left out)
+            eq("frame of a real window inside its rectangle", IsObject(real) && real.X >= fx && real.Y >= fy
+                && real.X + real.W <= fx + fw && real.Y + real.H <= fy + fh && real.W > 0 && real.H > 0, true)
+            physical := Win.PhysicalWindowRect(frameGui.Hwnd)
+            if IsObject(physical)                                               ; Windows 10 1607+: the same as WinGetPos at one scale
+                eq("physical rectangle at one scale", physical.Left "," physical.Top "," (physical.Right - physical.Left) "," (physical.Bottom - physical.Top)
+                    , fx "," fy "," fw "," fh)
+        } finally frameGui.Destroy()
         eq("folder name", QuickSwitchPanel.FolderName("D:\Projects\Tower A\"), "Tower A")
         eq("drive name", QuickSwitchPanel.FolderName("D:\"), "D:\")
         ; File dialogs: #32770 needs Explorer's file view; the main window of "System Information" (msinfo32) only has a plain list and doesn't count
