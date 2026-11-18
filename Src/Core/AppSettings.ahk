@@ -616,6 +616,12 @@ class AppSettings {
         return changed
     }
 
+    ; Windows where snippets don't expand by default. Remote desktop clients: keys typed in them pass through this PC first, so
+    ; this ALTRun would expand them too, and the result reaches the remote PC broken (its Ctrl+V pastes this PC's clipboard,
+    ; typed Unicode characters don't get through); the ALTRun on the remote PC expands them instead (#572). Then password managers
+    static DefaultExpandExclude := ["ahk_exe mstsc.exe", "ahk_exe ToDesk.exe", "ahk_exe SunloginClient.exe", "ahk_exe AnyDesk.exe"
+        , "ahk_exe TeamViewer.exe", "ahk_exe rustdesk.exe", "ahk_exe KeePass.exe", "ahk_exe KeePassXC.exe"]
+
     ; a new copy on each call: callers may change the result freely
     static Defaults() {
         return Map(
@@ -688,7 +694,7 @@ class AppSettings {
                     "PasteDelay"  , 300,
                     "AutoExpand"  , 1,                                      ; typing prefix + keyword in any program expands it
                     "ExpandPrefix", ";",
-                    "ExpandExclude", ["ahk_exe mstsc.exe", "ahk_exe KeePass.exe", "ahk_exe KeePassXC.exe"]   ; no expansion in these windows
+                    "ExpandExclude", AppSettings.DefaultExpandExclude.Clone()                 ; no expansion in these windows
                 ),
                 "Clipboard", Map(
                     "Enabled"      , 1,

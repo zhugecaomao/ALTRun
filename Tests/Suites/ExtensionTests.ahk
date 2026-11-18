@@ -329,6 +329,12 @@ class ExtensionTests {
         SnippetExpander.Refresh()
         eq("exclude list", SnippetExpander._exclude.Length "|" SnippetExpander._exclude[2], "2|ahk_class KeePass")
         eq("default exclude", AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"].Length > 0, true)
+        ; remote desktop clients: the remote PC's ALTRun expands, not this one (#572); each call gives its own copy
+        defaultExclude := AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"]
+        for exe in ["mstsc.exe", "ToDesk.exe", "SunloginClient.exe", "AnyDesk.exe", "TeamViewer.exe", "rustdesk.exe", "KeePass.exe", "KeePassXC.exe"]
+            eq("default exclude " exe, TextTools.JoinList(defaultExclude, "|") ~= "i)(^|\|)ahk_exe \Q" exe "\E(\||$)" ? 1 : 0, 1)
+        defaultExclude.Push("x")
+        eq("default exclude is a copy", AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"].Length, AppSettings.DefaultExpandExclude.Length)
         options["ExpandExclude"] := saved
         SnippetExpander.Refresh()
     }

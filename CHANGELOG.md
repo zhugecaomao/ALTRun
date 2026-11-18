@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文字片段默认不在常见远程桌面程序里自动展开 (ToDesk、向日葵、AnyDesk、TeamViewer、RustDesk, 原来已有 Windows 远程桌面): 在远程桌面窗口里打字时, 本机的 ALTRun 也会展开, 传到远程电脑时只剩一个 `v` 或者什么都没有, 应该由远程电脑上的 ALTRun 展开。只对新安装和恢复默认设置生效; 已有的设置在 偏好设置 → 文字片段 → 不展开的窗口 里自己加; 浏览器里的 Chrome 远程桌面用 "远程电脑名 ahk_exe msedge.exe" 这样的写法 (见 Wiki 文字片段) (#572)
+
 ## [2026.11.16.22]
 
 测试版。
@@ -1697,7 +1706,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...HEAD
+[2026.11.16.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...2026.11.16.23
 [2026.11.16.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...2026.11.16.22
 [2026.11.16.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...2026.11.16.21
 [2026.11.16.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...2026.11.16.20

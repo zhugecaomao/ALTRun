@@ -44,7 +44,8 @@
   - `ahk_exe 程序名.exe`: 这个程序的所有窗口 (程序名在任务管理器 → 详细信息里可以看到)
   - `ahk_class 窗口类名`: 这一类窗口
   - 窗口标题里的一段文字 (区分大小写), 例如 `远程桌面连接`
-- 默认: 远程桌面 (`mstsc.exe`)、KeePass、KeePassXC
+- 默认: 远程桌面程序 Windows 远程桌面 (`mstsc.exe`)、ToDesk、向日葵 (`SunloginClient.exe`)、AnyDesk、TeamViewer、RustDesk, 和密码管理器 KeePass、KeePassXC
+- 远程桌面: 在远程桌面窗口里打的字先经过这台电脑, 这里的 ALTRun 也会展开, 传到远程电脑时结果就不对了 (例如只剩一个 `v`, 或者什么都没有); 应该由远程电脑上的 ALTRun 展开。在浏览器里用的远程桌面 (Chrome 远程桌面): 填窗口标题里的一部分 (一般是远程电脑的名字) 加上浏览器, 例如 `OFFICE-PC ahk_exe msedge.exe` (Chrome 是 `ahk_exe chrome.exe`), 其他浏览器窗口照常展开
 - 不管这里怎么设, ALTRun 自己的搜索窗口和 Windows 的密码输入框里都不会展开
 - 只想让某一个片段不展开时, 在它的编辑窗口里取消 "自动展开" 即可, 不用加到这里
 
