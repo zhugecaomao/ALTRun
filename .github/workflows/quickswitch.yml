@@ -83,6 +83,8 @@ jobs:
           $root = "C:\Users\Public\altrun-admin-check"
           New-Item -ItemType Directory $root -Force | Out-Null
           Copy-Item ALTRun.ahk, Lib, Src, Resources, Tests, tools -Destination $root -Recurse -Force
+          New-Item -ItemType Directory "$root\docs" -Force | Out-Null
+          Copy-Item docs\scripts -Destination "$root\docs" -Recurse -Force   # Tests\RunTests.ahk includes script library scripts (PT Tools, SPF2M)
           $name = "altrunqs"
           $password = "Aa1!" + [guid]::NewGuid().ToString("N").Substring(0, 10)   # a throwaway account on a throwaway runner; at most 14 characters
           net user $name $password /add
