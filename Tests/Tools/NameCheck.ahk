@@ -6,9 +6,15 @@
 ;                                             ("Property is read-only"), so the program (or the test run) never starts
 ;   - in a method   this._tick := ...         fails when the line runs ("Property is read-only")
 ;                   ClassName._tick := ...
+;
 ; /validate and #Warn don't report either, and a test can't: the first kind stops the script before any test runs.
 ; This reads the source files (it doesn't include them) and reports each such value. Methods inherited from another class
 ; in the checked files count too.
+;
+; It also reports a parameter named like a built-in class or function that the same method (or a function nested in it) calls:
+;   static List(path, ..., menu := "") { ... popup := Menu() ... }    Menu() calls the parameter (a string), not the class:
+; "This value of type String has no method named Call", only when that line runs (#552's right-click menu). #Warn sees locals
+; that hide a global, not parameters.
 ;
 ;   AutoHotkey64.exe /ErrorStdOut Tests\Tools\NameCheck.ahk [folder...]   ; default: Src, Lib, Tests
 ; Prints one line per problem; the exit code is the number of problems.
@@ -34,6 +40,8 @@ class NameCheck {
                 NameCheck.Scan(A_LoopFileFullPath, InStr(A_LoopFileFullPath, root "\") = 1 ? SubStr(A_LoopFileFullPath, StrLen(root) + 2) : A_LoopFileFullPath, classes)
         }
         problems := NameCheck.Problems(classes)
+        for line in NameCheck.Shadowed
+            problems.Push(line)
         for line in problems
             FileAppend(line "`n", "*")
         return problems.Length
@@ -41,9 +49,22 @@ class NameCheck {
 
     ; Each class's methods and the values it sets: classes[name] = {Name, Parent, Methods: {Static, Instance}, Values: [...]}
     ; Methods: lowercase name -> {Name, Where}; a value: {Name, Static, Where, How}
+    ; Built-in classes and functions a parameter must not be named like when the method calls them (names are case-insensitive)
+    static BuiltIns := NameCheck._BuiltIns()
+    static _BuiltIns() {
+        names := Map(), names.CaseSense := false
+        for name in ["Array", "Buffer", "ComObject", "Error", "Gui", "InputHook", "Map", "Menu", "Object", "OSError", "ValueError"
+                   , "DirExist", "FileAppend", "FileDelete", "FileExist", "FileRead", "Format", "InStr", "IsObject", "Max", "Min"
+                   , "MsgBox", "RegExMatch", "RegExReplace", "Run", "RunWait", "Send", "SetTimer", "Sleep", "SplitPath", "StrLen"
+                   , "StrLower", "StrReplace", "StrSplit", "StrUpper", "SubStr", "ToolTip", "Trim", "Type", "WinActivate", "WinExist"]
+            names[name] := true
+        return names
+    }
+    static Shadowed := []                                                   ; the problems found: parameters that hide a built-in
+
     static Scan(filePath, shown, classes) {
         stack := []                                                         ; the classes this line is in: {Info, Indent}
-        member := {Static: false}                                           ; the class member this line is in
+        member := {Static: false, Params: Map()}                            ; the class member this line is in (Params: its built-in-named parameters)
         for lineNo, raw in StrSplit(FileRead(filePath, "UTF-8"), "`n", "`r") {
             code := NameCheck.Code(raw)
             if (Trim(code) = "")
@@ -67,7 +88,7 @@ class NameCheck {
             if (indent = stack[-1].Indent + 4) {                            ; a class member
                 isStatic := RegExMatch(text, "i)^static\s+")
                 body := RegExReplace(text, "i)^static\s+")
-                member := {Static: isStatic}
+                member := {Static: isStatic, Params: NameCheck._ShadowingParams(body, where)}
                 if RegExMatch(body, "^(\w+)\s*\(", &m)                      ; a method: Name(...) {, Name(...) => ...
                     NameCheck._Method(info, isStatic, m[1], where)
                 else if RegExMatch(body, "^(\w+)\s*(?:\[[^\]]*\])?\s*=>", &m)   ; a property with only a getter: read-only
@@ -78,6 +99,13 @@ class NameCheck {
                             info.Values.Push({Name: m[1], Static: isStatic, Where: where, How: (isStatic ? "static " : "") m[1] " :="})
                 continue
             }
+            ; inside a member: a function nested in it adds its parameters; a call of a parameter named like a built-in
+            for name, at in NameCheck._ShadowingParams(text, where)
+                member.Params[name] := at
+            for name, at in member.Params
+                if RegExMatch(code, "i)(?<![\w.])" name "\(")
+                    NameCheck.Shadowed.Push(where ": parameter " name " (" at ") hides the built-in " name "(), which this line calls: "
+                        . "names are case-insensitive; rename the parameter")
             ; inside a member: this.name := ... (the member's own kind), ClassName.name := ... (static)
             pos := 1
             while (pos := RegExMatch(code, "(?<![\w.])(\w+)\.(\w+)\s*:=(?!=)", &m, pos)) {
@@ -88,6 +116,17 @@ class NameCheck {
                     info.Values.Push({Name: m[2], Static: true, Where: where, How: m[1] "." m[2] " :="})
             }
         }
+    }
+
+    ; The parameters named like a built-in in a definition "Name(a, b := 1, &c, d*) {" / "=> ...": lowercase name -> where
+    static _ShadowingParams(text, where) {
+        found := Map(), found.CaseSense := false
+        if !RegExMatch(text, "^(\w+)\s*\(([^()]*)\)\s*(?:\{|=>)", &m)   ; only parameters without brackets in their defaults
+            return found
+        for part in StrSplit(m[2], ",")
+            if (RegExMatch(part, "^\s*&?(\w+)", &p) && NameCheck.BuiltIns.Has(p[1]))
+                found[p[1]] := where
+        return found
     }
 
     static Problems(classes) {

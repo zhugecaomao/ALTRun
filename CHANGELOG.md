@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.20]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置里的列表 (自定义命令、热键等) 右键菜单打不开, 报错 "This value of type String has no method named Call" (测试版 2026.11.16.13 起)
+
 ## [2026.11.16.19]
 
 测试版。
@@ -1666,7 +1675,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...HEAD
+[2026.11.16.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...2026.11.16.20
 [2026.11.16.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...2026.11.16.19
 [2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
 [2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
