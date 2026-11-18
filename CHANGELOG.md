@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.11.16.21]
+
+测试版。
+
+Test build.
+
+### 新增
+- 文件类型的 "打开 (回车)" (类似 Total Commander 的内部关联): 选一条运行程序的自定义命令, 在搜索结果里的这类文件上按回车就用它打开, 它也排在操作面板最前面; 适合 Windows 不认识这类文件的便携环境 (例如 .md)。两步设好: 自定义命令里加程序, 内容类型里选 "打开 (回车)"。程序和快捷方式 (.exe .lnk 等) 不受影响; 标记多个文件后 "全部打开" 也按类型
+- 搜索结果里的文件和文件夹 (也包括置顶、最近使用、浏览文件夹) 按 → 时, 它的内容类型的自定义命令和脚本排在 "打开" 后面, 和 Ctrl+Alt+\ 一样
+
+### 改进
+- 偏好设置页 "选中内容" 改名 "内容类型", 命令编辑窗口的 "选中内容类型" 改名 "内容类型"; 类型列表加 "打开 (回车)" 一列, 命令编辑窗口的 "触发方式" 也显示它
+
 ## [2026.11.16.20]
 
 测试版。
@@ -1675,7 +1688,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...HEAD
+[2026.11.16.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...2026.11.16.21
 [2026.11.16.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...2026.11.16.20
 [2026.11.16.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...2026.11.16.19
 [2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
