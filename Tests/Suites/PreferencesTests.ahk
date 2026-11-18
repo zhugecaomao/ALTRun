@@ -179,7 +179,7 @@ class PreferencesTests {
             tagMenu[1].Click.Call("", "")
             eq("menu click adds", box.Value, "po, Files, Text")
             eq("known types: no warning", SelectionActions.UnknownTypesWarning("text, PO"), "")
-            eq("unknown type warned", SelectionActions.UnknownTypesWarning("PO, Invoice, PDFs"), "Not a content type: Invoice, PDFs. Add it in Preferences → Selection, or the command won't be shown for it.")
+            eq("unknown type warned", SelectionActions.UnknownTypesWarning("PO, Invoice, PDFs"), "Not a content type: Invoice, PDFs. Add it in Preferences → Content Types, or the command won't be shown for it.")
             ; the dialog itself: what is typed is tidied, and an empty box leaves no "Selection" key
             edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "Selection", "IP"), "Text ,po,")
             eq("shown in the box", shown, "IP")
@@ -221,7 +221,7 @@ class PreferencesTests {
         I18n.Init("en")
         hk(key, id := "pg7k2m4x", winTitle := "") => Map("Key", key, "Action", "custom:" id, "SearchText", "", "WinTitle", winTitle)
         eq("all three", CustomCommandProvider.TriggerText(Map("Keyword", "ping, pg", "Selection", "IP,Text files"), [hk("^!p"), hk("~#p", , "ahk_exe x.exe")])
-            , "Keyword ping, pg · Selection IP, Text files · Hotkey Ctrl+Alt+P, Win+P")
+            , "Keyword ping, pg · Content types IP, Text files · Hotkey Ctrl+Alt+P, Win+P")
         eq("hotkey only", CustomCommandProvider.TriggerText(Map("Keyword", " "), [hk("^!p")]), "Hotkey Ctrl+Alt+P")
         eq("none", CustomCommandProvider.TriggerText(Map("Title", "x"), [hk("")]), "Only found by its name in the search")
 
@@ -257,7 +257,7 @@ class PreferencesTests {
             existing := Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP")
             settings.Hotkeys.Push(hk("^!p"))
             eq("cancelled", Dialog(existing, false), "")
-            eq("existing: its hotkey on the line", seen.Text, "Keyword ping · Selection IP · Hotkey Ctrl+Alt+P")
+            eq("existing: its hotkey on the line", seen.Text, "Keyword ping · Content types IP · Hotkey Ctrl+Alt+P")
             for language in I18n.Languages() {                                  ; the line and its button inside the window in every language
                 I18n.Init(language[1])
                 Dialog(existing, false)
@@ -1079,8 +1079,8 @@ class PreferencesTests {
             ui := PrefsPages._selection
             eq("types listed", ui.List.View.GetCount(), 2)
             eq("kind shown", ui.List.View.GetText(2, 2), "File (extensions)")
-            eq("commands of a type", ui.List.View.GetText(1, 4), "ERP, WMS")
-            eq("unused type", ui.List.View.GetText(2, 4), "")
+            eq("commands of a type", ui.List.View.GetText(1, 5), "ERP, WMS")
+            eq("unused type", ui.List.View.GetText(2, 5), "")
             hotkeyHere := false
             for ctrl in PreferencesWindow.Pages[index].Controls
                 hotkeyHere := hotkeyHere || (ctrl.Type = "Text" && ctrl.Text = "Selection hotkey")

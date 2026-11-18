@@ -2236,29 +2236,32 @@ class ExtensionTests {
         eq("panel: the trail rows come last", ResultActions.ListFor(item)[-1].Title, "Trail")
     }
 
-    ; A File type's DefaultCommand (a command Id): Enter on such a file in the search results runs that command, and the actions panel of
-    ; files and folders in the search results lists their types' commands, the default first (also for a selection, Ctrl+Alt+\)
-    static SelectionDefaultCommand() {
-        eq := (n, a, e) => TestRunner.Equal("SelectionDefaultCommand." n, a, e)
-        root := A_Temp "\ALTRun-default-command-test"
+    ; A File type's OpenCommand (a command Id, like an "Open" of Total Commander's internal associations): Enter on such a file in the
+    ; search results runs that command, and the actions panel of files and folders in the search results lists their types' commands,
+    ; the open command first (also for a selection, Ctrl+Alt+\); programs and shortcuts are never taken over
+    static SelectionOpenCommand() {
+        eq := (n, a, e) => TestRunner.Equal("SelectionOpenCommand." n, a, e)
+        root := A_Temp "\ALTRun-open-command-test"
         try DirDelete(root, true)
         DirCreate(root "\notes.md")                                         ; a folder named like a file
-        FileAppend("", root "\a.md")
-        FileAppend("", root "\b.txt")
+        for name in ["a.md", "b.txt", "tool.exe", "c.log"]
+            FileAppend("", root "\" name)
         savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
         savedCommands := AppSettings.Data["CustomCommands"], custom := AppSettings.Feature("CustomCommands"), savedEnabled := custom["Enabled"]
         scripts := AppSettings.Feature("Scripts"), savedScripts := scripts["Enabled"]
         try {
             custom["Enabled"] := 1, scripts["Enabled"] := 0                  ; no scripts from the test PC's Scripts folder
             AppSettings.Data["SelectionTypes"] := [
-                Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "DefaultCommand", "typora01"),
-                Map("Name", "Notes", "Kind", "File", "Pattern", "md txt", "DefaultCommand", "code0001"),
-                Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$", "DefaultCommand", "typora01"),   ; a Text type: ignored
-                Map("Name", "Gone", "Kind", "File", "Pattern", "log", "DefaultCommand", "missing1")
+                Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "OpenCommand", "typora01"),
+                Map("Name", "Notes", "Kind", "File", "Pattern", "md txt", "OpenCommand", "code0001"),
+                Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$", "OpenCommand", "typora01"),   ; a Text type: ignored
+                Map("Name", "Logs", "Kind", "File", "Pattern", "log", "OpenCommand", "web00001"),      ; a Url command: not a program
+                Map("Name", "Programs", "Kind", "File", "Pattern", "exe", "OpenCommand", "typora01")   ; programs are never taken over
             ]
             AppSettings.Data["CustomCommands"] := [
                 Map("Id", "code0001", "Title", "Code", "Type", "File", "Target", "C:\Tools\Code.exe", "Arguments", "--reuse-window", "Selection", "Markdown, Notes"),
-                Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "C:\Tools\Typora.exe", "Arguments", "", "Selection", "markdown"),
+                Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "C:\Tools\Sub\..\Typora\Typora.exe", "Arguments", ""),   ; no Selection: the open command counts anyway
+                Map("Id", "web00001", "Title", "Web", "Type", "Url", "Target", "https://example.com/?q={query}", "Selection", "Logs"),
                 Map("Id", "other001", "Title", "Other", "Type", "File", "Target", "C:\Tools\Other.exe", "Arguments", "", "Selection", "PO")
             ]
             names(rows) {
@@ -2268,50 +2271,62 @@ class ExtensionTests {
                 return text
             }
             types := SelectionActions.UserTypes()
-            eq("user types: the default command of File types only", types[1].DefaultCommand "|" types[3].DefaultCommand, "typora01|")
+            eq("user types: the open command of File types only", types[1].OpenCommand "|" types[3].OpenCommand, "typora01|")
 
             md := SelectionActions.Classify({Files: [root "\a.md"]})
-            eq("default: the first type with one", SelectionActions.DefaultCommand(md)["Title"], "Typora")
-            eq("commands: the default first", names(SelectionActions.CommandActions(md)), "Typora|Code|")
+            eq("open command: the first type with one, set for it or not", SelectionActions.OpenCommand(md)["Title"], "Typora")
+            eq("commands: the open command first", names(SelectionActions.CommandActions(md)), "Typora|Code|")
+            eq("commands: the row knows its command", SelectionActions.CommandActions(md)[1].CommandId, "typora01")
             txt := SelectionActions.Classify({Files: [root "\b.txt"]})
-            eq("default: another type", SelectionActions.DefaultCommand(txt)["Title"], "Code")
-            eq("default: none for other files", SelectionActions.DefaultCommand(SelectionActions.Classify({Files: [A_WinDir "\win.ini"]})), "")
-            eq("default: a command that is gone", SelectionActions.DefaultCommand({Kind: "file", Types: ["File", "Gone"]}), "")
-            eq("default: not for folders", SelectionActions.DefaultCommand({Kind: "folder", Types: ["Folder", "Markdown"]}), "")
-            AppSettings.Data["CustomCommands"][2]["Selection"] := "Notes"
-            eq("default: only a command set for the type", SelectionActions.DefaultCommand(md), "")
-            AppSettings.Data["CustomCommands"][2]["Selection"] := "markdown"
+            eq("open command: another type", SelectionActions.OpenCommand(txt)["Title"], "Code")
+            eq("open command: none for other files", SelectionActions.OpenCommand(SelectionActions.Classify({Files: [A_WinDir "\win.ini"]})), "")
+            eq("open command: a command that is gone", SelectionActions.OpenCommand({Kind: "file", Types: ["File", "Notes"], Path: root "\x.txt"}, , []), "")
+            eq("open command: not a Url command", SelectionActions.OpenCommand(SelectionActions.Classify({Files: [root "\c.log"]})), "")
+            eq("open command: not for programs", SelectionActions.OpenCommand(SelectionActions.Classify({Files: [root "\tool.exe"]})), "")
+            eq("open command: not for folders", SelectionActions.OpenCommand({Kind: "folder", Types: ["Folder", "Markdown"], Path: root "\notes.md"}), "")
 
             item := ResultItem("a.md", root, {Kind: "file", Arg: root "\a.md"})
-            action := SelectionActions.DefaultActionFor(item)
-            eq("Enter: the default command's row", action.Title "|" action.Arg "|" action.Arguments, 'Typora|C:\Tools\Typora.exe|"' root '\a.md"')
-            eq("Enter: other files open as usual", SelectionActions.DefaultActionFor(ResultItem("b", "", {Kind: "file", Arg: A_WinDir "\win.ini"})), "")
-            eq("Enter: a command with parameters", SelectionActions.DefaultActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", Arguments: "-x"})), "")
-            eq("Enter: a result with its own action", SelectionActions.DefaultActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", OnRun: (*) => 0})), "")
-            eq("Enter: a selected file", SelectionActions.DefaultActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", Provider: "Selection"})), "")
-            eq("Enter: a missing file", SelectionActions.DefaultActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\gone.md"})), "")
-            eq("Enter: a folder named like a file", SelectionActions.DefaultActionFor(ResultItem("n", "", {Kind: "folder", Arg: root "\notes.md"})), "")
+            action := SelectionActions.OpenActionFor(item)
+            eq("Enter: the open command's row, its path tidied", action.Title "|" action.Arg "|" action.Arguments, 'Typora|C:\Tools\Typora\Typora.exe|"' root '\a.md"')
+            eq("Enter: the subtitle tidied too", InStr(action.Subtitle, "\..\"), 0)
+            eq("Enter: other files open as usual", SelectionActions.OpenActionFor(ResultItem("b", "", {Kind: "file", Arg: A_WinDir "\win.ini"})), "")
+            eq("Enter: programs open as usual", SelectionActions.OpenActionFor(ResultItem("t", "", {Kind: "file", Arg: root "\tool.exe"})), "")
+            eq("Enter: a command with parameters", SelectionActions.OpenActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", Arguments: "-x"})), "")
+            eq("Enter: a result with its own action", SelectionActions.OpenActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", OnRun: (*) => 0})), "")
+            eq("Enter: a selected file", SelectionActions.OpenActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.md", Provider: "Selection"})), "")
+            eq("Enter: a missing file", SelectionActions.OpenActionFor(ResultItem("a", "", {Kind: "file", Arg: root "\gone.md"})), "")
+            eq("Enter: a folder named like a file", SelectionActions.OpenActionFor(ResultItem("n", "", {Kind: "folder", Arg: root "\notes.md"})), "")
             custom["Enabled"] := 0
-            eq("Enter: custom commands off", SelectionActions.DefaultActionFor(item), "")
+            eq("Enter: custom commands off", SelectionActions.OpenActionFor(item), "")
             custom["Enabled"] := 1
-            savedRun := ActionCatalog.GetOwnPropDesc("RunDefault"), ran := []
+            savedRun := ActionCatalog.GetOwnPropDesc("RunDefault"), savedMany := ActionCatalog.GetOwnPropDesc("OpenMany"), ran := []
             ActionCatalog.DefineProp("RunDefault", {Call: (this, runItem) => ran.Push(runItem.Arg "|" runItem.Arguments)})
+            ActionCatalog.DefineProp("OpenMany", {Call: (this, paths) => ran.Push("open " paths[1])})
             try {
                 SearchWindow._RunEnter(item)
                 SearchWindow._RunEnter(ResultItem("win.ini", "", {Kind: "file", Arg: A_WinDir "\win.ini"}))
-            } finally
+                ResultActions.OpenAll([root "\b.txt", root "\tool.exe"])
+            } finally {
                 ActionCatalog.DefineProp("RunDefault", savedRun)
-            eq("Enter in the search window: the command, else as usual", ran.Length "|" ran[1] "|" ran[2], '2|C:\Tools\Typora.exe|"' root '\a.md"|' A_WinDir '\win.ini|')
+                ActionCatalog.DefineProp("OpenMany", savedMany)
+            }
+            eq("Enter in the search window: the command, else as usual", ran.Length "|" ran[1] "|" ran[2], '4|C:\Tools\Typora\Typora.exe|"' root '\a.md"|' A_WinDir '\win.ini|')
+            eq("Open All: each file by its type", ran[3] "|" ran[4], 'C:\Tools\Code.exe|--reuse-window "' root '\b.txt"|open ' root '\tool.exe')
 
             panel := names(ResultActions.ListFor(item))
-            eq("panel: the default first, then Open, then the other commands", InStr(panel, "Typora|" I18n.T("Action.Open") "|Code|") = 1, true)
+            eq("panel: the open command first, then Open, then the other commands", InStr(panel, "Typora|" I18n.T("Action.Open") "|Code|") = 1, true)
             panel := names(ResultActions.ListFor(ResultItem("b.txt", root, {Kind: "file", Arg: root "\b.txt"})))
-            eq("panel: Code is the default for .txt", InStr(panel, "Code|" I18n.T("Action.Open") "|") = 1, true)
-            AppSettings.Data["SelectionTypes"][1].Delete("DefaultCommand"), AppSettings.Data["SelectionTypes"][2].Delete("DefaultCommand")
+            eq("panel: Code opens .txt", InStr(panel, "Code|" I18n.T("Action.Open") "|") = 1, true)
+            AppSettings.Data["CustomCommands"].InsertAt(1, Map("Id", "same0001", "Title", "Typora", "Type", "File", "Target", "C:\Tools\Copy.exe", "Selection", "Markdown"))
+            rows := ResultActions._TypeRows(item)
+            eq("panel: the open command found by its Id, not its title", rows.Open "|" rows.Rows[1].CommandId, "1|typora01")
+            AppSettings.Data["CustomCommands"].RemoveAt(1)
+            AppSettings.Data["SelectionTypes"][1].Delete("OpenCommand"), AppSettings.Data["SelectionTypes"][2].Delete("OpenCommand")
             panel := names(ResultActions.ListFor(item))
-            eq("panel without a default: Open (Enter) first, then the commands", InStr(panel, I18n.T("Action.Open") "|Code|Typora|") = 1, true)
-            eq("panel without a default: Open has Enter", ResultActions.ListFor(item)[1].Subtitle, "Enter")
-            eq("Enter without a default: as usual", SelectionActions.DefaultActionFor(item), "")
+            eq("panel without an open command: Open (Enter) first, then the type's commands", InStr(panel, I18n.T("Action.Open") "|Code|" I18n.T("Action.OpenWith")) = 1, true)
+            eq("panel without an open command: Open has Enter", ResultActions.ListFor(item)[1].Subtitle, "Enter")
+            eq("Enter without an open command: as usual", SelectionActions.OpenActionFor(item), "")
+            AppSettings.Data["SelectionTypes"][1]["OpenCommand"] := "typora01"
             AppSettings.Data["CustomCommands"].Push(Map("Id", "folder01", "Title", "Folder tool", "Type", "File", "Target", "C:\Tools\F.exe", "Selection", "Folder"))
             panel := names(ResultActions.ListFor(ResultItem("notes.md", root, {Kind: "folder", Arg: root "\notes.md"})))
             eq("panel: a folder's commands after Open", InStr(panel, I18n.T("Action.Open") "|Folder tool|") = 1, true)
@@ -2323,11 +2338,16 @@ class ExtensionTests {
             choice := fields[4], labels := ""
             for each in choice.Choices
                 labels .= each[1] ":" each[2] "|"
-            eq("editor: Windows, then the type's commands", choice.Key "|" labels, "DefaultCommand|:" I18n.T("SelType.DefaultCommand.None") "|code0001:Code|typora01:Typora|")
-            eq("editor: a new type has none yet", SelectionActions.TypeEditorFields().Get(4).Choices.Length, 1)
+            eq("editor: Windows, the type's commands, then the other programs (no Url)", choice.Key "|" labels
+                , "OpenCommand|:" I18n.T("SelType.OpenCommand.None") "|code0001:Code|typora01:Typora|other001:Other|folder01:Folder tool|")
+            eq("editor: a new type gets every program", SelectionActions.TypeEditorFields().Get(4).Choices.Length, 5)
             eq("editor: empty is not saved", choice.OmitEmpty, true)
             eq("editor: a Text type warns", choice.Check.Call("typora01", Map("Kind", "Text")) != "", true)
             eq("editor: a File type is fine", choice.Check.Call("typora01", Map("Kind", "File")), "")
+            eq("list column: the command's title", SelectionActions.CommandTitle("typora01", AppSettings.Data["CustomCommands"]) "|"
+                . SelectionActions.CommandTitle("gone0001", AppSettings.Data["CustomCommands"]) "|" SelectionActions.CommandTitle("", []), "Typora||")
+            eq("command editor: how it is run", InStr(CustomCommandProvider.TriggerText(AppSettings.Data["CustomCommands"][2], []), I18n.T("Cmd.Triggers.Open", "Markdown")) > 0, true)
+            eq("command editor: not for another command", InStr(CustomCommandProvider.TriggerText(AppSettings.Data["CustomCommands"][1], []), I18n.T("Cmd.Triggers.Open", "Markdown")), 0)
         } finally {
             AppSettings.Data["SelectionTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands, custom["Enabled"] := savedEnabled, scripts["Enabled"] := savedScripts

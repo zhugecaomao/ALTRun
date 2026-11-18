@@ -57,8 +57,8 @@ class Shots {
             ["selection-new-type", "Light", "", () => Shots.SelectionPanel("PO12345678", "content")],   ; text of none of the user's types: "Add a Command..." and "Make a Content Type..." (filtered to them)
             ["selection-add-command", "Light", "", () => Shots.SelectionPanel("INV-2026-0042", "content"), () => Shots.TypeWithoutCommand()],   ; a type of the user's without commands: only "Add a Command..."
             ["selection-type-editor", "Light", "", () => Shots.SelectionTypeEditor("PO12345678")],   ; "Make a Content Type from It...": the guess and the sample line
-            ["selection-type-editor-file", "Light", "-Preferences Selection", () => Shots.FileTypeEditor(), () => Shots.MarkdownType()],   ; Wiki: a File type's "Enter opens with" (drop-down open)
-            ["actions-file-type", "Light", "", () => Shots.Actions(Shots.NotesDir "\Meeting"), () => Shots.MarkdownType()],   ; Wiki: a .md file in the results: its type's default command first, Open, its other command
+            ["selection-type-editor-file", "Light", "-Preferences Selection", () => Shots.FileTypeEditor(), () => Shots.MarkdownType()],   ; Wiki: a File type's "Open (Enter)" (drop-down open)
+            ["actions-file-type", "Light", "", () => Shots.Actions(Shots.NotesDir "\Meeting"), () => Shots.MarkdownType()],   ; Wiki: a .md file in the results: its type's open command first, Open, its other command
             ["shellmenu",   "Light", "", () => Shots.ShellMenu(), () => Shots.EnableContextMenu()],   ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
@@ -551,7 +551,7 @@ class Shots {
     static SelectionTypeEditor(text) {
         hwnd := Shots.SelectionPanel(text, "content type")
         ControlSend("{Enter}", "Edit1", hwnd)
-        window := WinWait("Selection ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
+        window := WinWait("Content Types ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)   ; the dialog is titled after the Preferences page
         if !window
             throw Error("content type edit window not shown")
         WinSetAlwaysOnTop(1, window)
@@ -568,16 +568,16 @@ class Shots {
         FileAppend("# Meeting notes`n", Shots.NotesDir "\Meeting Notes.md", "UTF-8")
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["SelectionTypes"] := [Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "DefaultCommand", "typora01")]
-        settings["CustomCommands"].Push(Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_ScriptDir\..\Typora\Typora.exe", "Arguments", "", "Keyword", "", "Selection", "Markdown"))
+        settings["SelectionTypes"] := [Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "OpenCommand", "typora01")]
+        settings["CustomCommands"].Push(Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_ScriptDir\..\Typora\Typora.exe", "Arguments", "", "Keyword", ""))   ; no content types: Open (Enter) is enough
         settings["CustomCommands"].Push(Map("Id", "vscode01", "Title", "VS Code", "Type", "File", "Target", "%LocalAppData%\Programs\Microsoft VS Code\Code.exe", "Arguments", "--reuse-window", "Keyword", "", "Selection", "Markdown"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
-    ; Preferences → Selection → the Markdown type's edit window, with "Enter opens with" dropped down
+    ; Preferences → Content Types → the Markdown type's edit window, with "Open (Enter)" dropped down
     static FileTypeEditor() {
-        window := Shots.SyncWindow("Edit...", "Selection", 1)
+        window := Shots.SyncWindow("Edit...", "Content Types", 1)
         combo := 0
         for ctrl in WinGetControlsHwnd(window)
             if (WinGetClass(ctrl) = "ComboBox" && ControlGetText(ctrl) = "Typora")
@@ -1109,12 +1109,12 @@ class Shots {
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$")
             , Map("Name", "Ticket", "Kind", "Text", "Pattern", "i)^[A-Z]{2,5}-\d+$")
-            , Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")
+            , Map("Name", "PDF", "Kind", "File", "Pattern", "pdf", "OpenCommand", "pdftool1")   ; the "Open (Enter)" column
             , Map("Name", "Drawing", "Kind", "File", "Pattern", "dwg, dxf")]
         for row in [["ERP Order", "https://erp.example.com/order?id={query}", "PO"], ["Warehouse Shipment", "https://wms.example.com/ship/{query}", "PO"]
                   , ["Issue Tracker", "https://issues.example.com/browse/{query}", "Ticket"]]
             settings["CustomCommands"].Push(Map("Title", row[1], "Type", "Url", "Target", row[2], "Arguments", "", "Keyword", "", "Selection", row[3]))
-        settings["CustomCommands"].Push(Map("Title", "PDF Tool", "Type", "File", "Target", "C:\Tools\PdfTool\PdfTool.exe", "Arguments", "", "Keyword", "", "Selection", "PDF"))
+        settings["CustomCommands"].Push(Map("Id", "pdftool1", "Title", "PDF Tool", "Type", "File", "Target", "C:\Tools\PdfTool\PdfTool.exe", "Arguments", "", "Keyword", "", "Selection", "PDF"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

@@ -17,9 +17,11 @@
 ;                         { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" } ]   File: extensions; several files match when all of them do
 ;   A text selection is Text plus every Text type it matches; a URL is Url plus the Text types it matches; one file is File (a folder: Folder)
 ;   plus the File types of its extension; several files are Files plus the File types all of them match.
-;   A File type may name the command that opens its files with Enter: "DefaultCommand": "<the command's Id>" (only a command set for
-;   that type counts; see DefaultCommand). Files and folders in the search results get the same commands in their actions panel
-;   (ForResult), and Enter on such a file runs the default command (DefaultActionFor) instead of opening it with Windows' association.
+;   A File type may name the command that opens its files, as an "Open" of Total Commander's internal associations:
+;   "OpenCommand": "<the command's Id>" (a File or Command custom command; it counts for the type even when its "Selection" doesn't
+;   name it). Files and folders in the search results get the same commands in their actions panel (ForResult), the open command
+;   first; Enter on such a file runs it (OpenActionFor) instead of opening the file with Windows' association. Programs and
+;   shortcuts (ProgramTypes) are never opened this way, so starting a program can't be taken over by a type.
 ;   A custom command with "Selection": "PO, PDF" (type names, any case) is shown first in the panel of a selection of any of those types:
 ;     {query} in Target / Arguments becomes the selected text or path (encoded in URLs); several files become "a" "b" (each quoted);
 ;     a File / Command without {query} gets the selection appended as its last argument, quoted (as "Open with").
@@ -38,7 +40,7 @@
 ;   SelectionActions.SampleTypes(text, list)  the types of a sample text or path (the test box in Preferences → Selection), list = SelectionTypes being edited
 ;   SelectionActions.GuessType(info)          -> {Name, Kind, Pattern} Map for "Make a Content Type from It...", "" when there is no good one
 ;   SelectionActions.TypeEditorFields([sample, typeName]) the fields of a content type in the edit dialog (sample: a line saying whether
-;                                             it matches; typeName: its name when the dialog opens, for the commands "Enter opens with" offers)
+;                                             it matches; typeName: its name when the dialog opens: its commands come first in "Open (Enter)")
 ;===============================================================================
 
 class SelectionActions {
@@ -345,15 +347,10 @@ class SelectionActions {
     ; a file (not a folder) whose extension is one of the type's ("pdf, .docx" - separated by commas, semicolons, | or spaces)
     static _ExtMatches(userType, filePath) {
         SplitPath(filePath, , , &ext)
-        if (ext = "")
-            return false
-        for each in StrSplit(userType.Pattern, [",", ";", "|", " ", "`t"])
-            if ((each := LTrim(Trim(each), ".")) != "" && each = ext)
-                return !InStr(FileExist(filePath), "D")                    ; the disk is asked only when the extension matches
-        return false
+        return SelectionActions._HasExt(userType, ext) && !InStr(FileExist(filePath), "D")   ; the disk is asked only when the extension matches
     }
 
-    ; The user's content types from ALTRun.json "SelectionTypes": [{Name, Kind: Text | File, Pattern, DefaultCommand}] (DefaultCommand: a
+    ; The user's content types from ALTRun.json "SelectionTypes": [{Name, Kind: Text | File, Pattern, OpenCommand}] (OpenCommand: a
     ; command Id, File types only, "" when not set); entries without a name or pattern,
     ; or named like a built-in type, are left out. list: the entries to read (the copy being edited in Preferences), the saved ones when not given
     static UserTypes(list := "") {
@@ -368,8 +365,8 @@ class SelectionActions {
             if (name = "" || Trim(pattern) = "" || SelectionActions.IsBuiltInType(name))
                 continue
             kind := (entry.Has("Kind") && entry["Kind"] = "File") ? "File" : "Text"
-            defaultCommand := (kind = "File" && entry.Has("DefaultCommand") && !IsObject(entry["DefaultCommand"])) ? Trim(entry["DefaultCommand"]) : ""
-            types.Push({Name: name, Kind: kind, Pattern: pattern, DefaultCommand: defaultCommand})
+            openCommand := (kind = "File" && entry.Has("OpenCommand") && !IsObject(entry["OpenCommand"])) ? Trim(entry["OpenCommand"]) : ""
+            types.Push({Name: name, Kind: kind, Pattern: pattern, OpenCommand: openCommand})
         }
         return types
     }
@@ -394,19 +391,18 @@ class SelectionActions {
     }
 
     ; The custom commands for a selection (Classify's result), in the order of the command list (none with custom commands turned
-    ; off), then the scripts for it (ScriptProvider.ActionsFor)
-    ; The type's default command (DefaultCommand) comes first, so Enter in the panel does what Enter does on the file
+    ; off), then the scripts for it (ScriptProvider.ActionsFor). The file type's open command (OpenCommand) comes first, so Enter in
+    ; the panel does what Enter does on the file; it is there even when its "Selection" doesn't name the type
     static CommandActions(info) {
         actions := []
-        defaultCommand := SelectionActions.DefaultCommand(info)
-        if ProviderRegistry.IsEnabled(CustomCommandProvider)
+        if ProviderRegistry.IsEnabled(CustomCommandProvider) {
+            openCommand := SelectionActions.OpenCommand(info)
+            if (IsObject(openCommand) && IsObject(action := SelectionActions._CommandAction(openCommand, info)))
+                actions.Push(action)
             for command in AppSettings.CustomCommands
-                if (SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info))) {
-                    if (command = defaultCommand)
-                        actions.InsertAt(1, action)
-                    else
-                        actions.Push(action)
-                }
+                if (command != openCommand && SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info)))
+                    actions.Push(action)
+        }
         for action in ScriptProvider.ActionsFor(info)
             actions.Push(action)
         return actions
@@ -421,44 +417,71 @@ class SelectionActions {
         return false
     }
 
-    ; The custom command that opens a file of this selection (Classify's result) with Enter: the DefaultCommand of the first of the
-    ; user's File types it has, when that command exists and is set for that type (its "Selection types"); "" otherwise, or with
+    ; Programs and shortcuts: never opened with a type's open command, so a type can't take over starting programs
+    static ProgramTypes := Map("exe", 1, "com", 1, "lnk", 1, "url", 1, "msc", 1, "cpl", 1, "scr", 1, "pif", 1, "appref-ms", 1)
+
+    ; Commands a type can open its files with: custom commands that run a program (File or Command) and have an Id
+    static IsProgramCommand(command) => command is Map && command.Has("Id") && command["Id"] != ""
+        && (!command.Has("Type") || command["Type"] = "File" || command["Type"] = "Command")
+
+    ; The custom command that opens a file of this selection (Classify's result) with Enter: the OpenCommand of the first of the
+    ; user's File types it has, when that command exists and runs a program; "" otherwise, for programs and shortcuts, or with
     ; custom commands turned off. userTypes / commands: the saved ones when not given
-    static DefaultCommand(info, userTypes := "", commands := "") {
-        if (info.Kind != "file" || !ProviderRegistry.IsEnabled(CustomCommandProvider))
+    static OpenCommand(info, userTypes := "", commands := "") {
+        if (info.Kind != "file" || !ProviderRegistry.IsEnabled(CustomCommandProvider) || SelectionActions._IsProgram(info.Path))
             return ""
         for userType in IsObject(userTypes) ? userTypes : SelectionActions.UserTypes() {
-            if (userType.DefaultCommand = "" || !SelectionActions.CommandFor(Map("Selection", userType.Name), info.Types))
+            if (userType.OpenCommand = "" || !SelectionActions.CommandFor(Map("Selection", userType.Name), info.Types))
                 continue
             for command in IsObject(commands) ? commands : AppSettings.CustomCommands
-                if (command is Map && command.Has("Id") && command["Id"] = userType.DefaultCommand)
-                    return SelectionActions.CommandFor(command, [userType.Name]) ? command : ""
-            return ""                                                       ; the first type with a default decides, even when its command is gone
+                if (SelectionActions.IsProgramCommand(command) && command["Id"] = userType.OpenCommand)
+                    return command
+            return ""                                                       ; the first type with an open command decides, even when the command is gone
         }
         return ""
     }
 
+    static _IsProgram(filePath) {
+        SplitPath(filePath, , , &ext)
+        return SelectionActions.ProgramTypes.Has(StrLower(ext))
+    }
+
     ; A file or folder in the search results (search, pinned, recent, browsing) -> Classify's result for its path, as if it were selected;
-    ; "" for other results, programs started with parameters (a custom command), results with their own action, and paths that aren't there
+    ; "" for other results, programs started with parameters (a custom command), results with their own action, and paths that aren't
+    ; there (a path on a network drive counts as there without asking the network: Path.ExistsOrRemote)
     static ForResult(item) {
         if (!IsObject(item) || !(item.Kind = "file" || item.Kind = "folder") || item.Provider = "Selection" || IsObject(item.OnRun)
-            || item.Arguments != "" || item.WindowArgs || !RegExMatch(item.Arg, "^(?:[A-Za-z]:\\|\\\\)") || !FileExist(item.Arg))
+            || item.Arguments != "" || item.WindowArgs || !RegExMatch(item.Arg, "^(?:[A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(item.Arg))
             return ""
         return SelectionActions.Classify({Files: [item.Arg]})
     }
 
-    ; Enter on a file in the search results: the row of its type's default command (run with its OnRun), "" to open it as usual.
-    ; Looks at the disk only when one of the user's types has a default command
-    static DefaultActionFor(item) {
+    ; Enter on a file in the search results: the row of its type's open command (run with its OnRun), "" to open it as usual.
+    ; Only the file name is looked at until one of the user's types with an open command has its extension, so Enter on other
+    ; files (or with no open commands set) never touches the disk here
+    static OpenActionFor(item) {
+        if (!IsObject(item) || item.Kind != "file" || SelectionActions._IsProgram(item.Arg))
+            return ""
+        SplitPath(item.Arg, , , &ext)
         found := false
         for userType in SelectionActions.UserTypes()
-            if (userType.DefaultCommand != "") {
+            if (userType.OpenCommand != "" && SelectionActions._HasExt(userType, ext)) {
                 found := true
                 break
             }
-        if (!found || !IsObject(info := SelectionActions.ForResult(item)) || !IsObject(command := SelectionActions.DefaultCommand(info)))
+        if (!found || !IsObject(info := SelectionActions.ForResult(item)) || !IsObject(command := SelectionActions.OpenCommand(info)))
             return ""
         return SelectionActions._CommandAction(command, info)
+    }
+
+    ; Whether one of a File type's extensions is ext (the name only, no disk)
+    static _HasExt(userType, ext) {
+        if (ext = "" || userType.Kind != "File")
+            return false
+        for each in StrSplit(userType.Pattern, [",", ";", "|", " ", "`t"])
+            if ((each := LTrim(Trim(each), ".")) != "" && each = ext)
+                return true
+        return false
     }
 
     ; The titles of the commands (a list being edited in Preferences) that are shown for these types, then of the scripts
@@ -551,20 +574,37 @@ class SelectionActions {
         return (unknown = "") ? "" : I18n.T("Cmd.Selection.Unknown", unknown)
     }
 
-    ; "Enter opens with": Windows' association, or one of the commands set for this type (the commands being edited in Preferences when it
-    ; is open); the command's Id is saved, so renaming the command keeps it. A new type has no commands yet: the list is offered once it has
-    static _DefaultCommandField(typeName) {
-        choices := [["", I18n.T("SelType.DefaultCommand.None")]]
+    ; "Open (Enter)": Windows' association, or a command that runs a program (IsProgramCommand; the commands being edited in Preferences
+    ; when it is open): the ones set for this type (its name when the dialog opened) first, then the others. The command's Id is saved,
+    ; so renaming the command keeps it; choosing a command is enough, its "Selection" needn't name the type
+    static _OpenCommandField(typeName) {
+        choices := [["", I18n.T("SelType.OpenCommand.None")]], others := []
         commands := (IsObject(PreferencesWindow.Gui) && IsObject(PreferencesWindow.Working) && PreferencesWindow.Working.Has("CustomCommands"))
             ? PreferencesWindow.Working["CustomCommands"] : AppSettings.CustomCommands
-        if (Trim(typeName) != "")
-            for command in commands
-                if (command is Map && command.Has("Id") && command["Id"] != "" && SelectionActions.CommandFor(command, [Trim(typeName)]))
-                    choices.Push([command["Id"], (command.Has("Title") && command["Title"] != "") ? command["Title"] : command["Id"]])
-        field := ItemEditor.Field("DefaultCommand", "SelType.DefaultCommand", "choice", false, choices, I18n.T("SelType.Field.DefaultCommand"))
-        field.OmitEmpty := true                                             ; most types have none: no "DefaultCommand": "" in the settings
-        field.Check := (value, edited) => (value != "" && !(edited.Has("Kind") && edited["Kind"] = "File")) ? I18n.T("SelType.DefaultCommand.TextKind") : ""
+        for command in commands {
+            if !SelectionActions.IsProgramCommand(command)
+                continue
+            choice := [command["Id"], (command.Has("Title") && command["Title"] != "") ? command["Title"] : command["Id"]]
+            if (Trim(typeName) != "" && SelectionActions.CommandFor(command, [Trim(typeName)]))
+                choices.Push(choice)
+            else
+                others.Push(choice)
+        }
+        choices.Push(others*)
+        field := ItemEditor.Field("OpenCommand", "SelType.OpenCommand", "choice", false, choices, I18n.T("SelType.Field.OpenCommand"))
+        field.OmitEmpty := true                                             ; most types have none: no "OpenCommand": "" in the settings
+        field.Check := (value, edited) => (value != "" && !(edited.Has("Kind") && edited["Kind"] = "File")) ? I18n.T("SelType.OpenCommand.TextKind") : ""
         return field
+    }
+
+    ; The title of the command with this Id in commands, "" when there is none (the types list's "Open (Enter)" column)
+    static CommandTitle(id, commands) {
+        if (id = "")
+            return ""
+        for command in (commands is Array) ? commands : []
+            if (command is Map && command.Has("Id") && command["Id"] = id)
+                return command.Has("Title") ? command["Title"] : id
+        return ""
     }
 
     static NewType() {
@@ -578,7 +618,7 @@ class SelectionActions {
         pattern := ItemEditor.Field("Pattern", "Prefs.Col.Pattern", "text", true, "", I18n.T("SelType.Field.Pattern"))
         pattern.Check := (value, edited) => SelectionActions.PatternProblem(edited.Has("Kind") ? edited["Kind"] : "Text", value)
         fields := [name, ItemEditor.Field("Kind", "Prefs.Col.Kind", "choice", false, kinds, I18n.T("SelType.Field.Kind")), pattern
-            , SelectionActions._DefaultCommandField(typeName)]
+            , SelectionActions._OpenCommandField(typeName)]
         if (sample != "") {                                                 ; opened from the selection: whether it matches, while editing
             line := ItemEditor.Field("Sample", "SelType.Sample", "info", false, "", "")
             line.Text := (edited) => SelectionActions.SampleText(sample, edited)
@@ -613,6 +653,11 @@ class SelectionActions {
         }
         item := CustomCommandProvider._ToItem(command, 0, takesQuery ? info.Term : "")
         item.Title := command["Title"]
+        item.CommandId := command.Has("Id") ? command["Id"] : ""            ; which command the row runs (the open command is found by it)
+        if RegExMatch(item.Arg, "\\\.\.?\\") && RegExMatch(item.Arg, "^(?:[A-Za-z]:\\|\\\\)") {   ; A_ScriptDir\..\Typora\Typora.exe: shown and run as C:\Typora\Typora.exe
+            full := Path.Full(item.Arg)
+            item.Subtitle := StrReplace(item.Subtitle, item.Arg, full), item.Arg := full
+        }
         item.Keyword := command.Has("Keyword") ? command["Keyword"] : ""     ; found by it when typing in the panel
         item.AutoComplete := ""
         if appends {

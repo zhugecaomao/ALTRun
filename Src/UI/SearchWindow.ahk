@@ -815,10 +815,10 @@ class SearchWindow {
             SearchWindow._SafeRun(() => ActionCatalog.RunModifier(item, modifier))
     }
 
-    ; Enter: a file whose content type has a default command runs that command (SelectionActions.DefaultActionFor), anything else its default action
+    ; Enter: a file whose content type has an open command runs that command (SelectionActions.OpenActionFor), anything else its default action
     static _RunEnter(item) {
-        if IsObject(typeDefault := SelectionActions.DefaultActionFor(item))
-            return typeDefault.OnRun.Call(typeDefault)
+        if IsObject(typeOpen := SelectionActions.OpenActionFor(item))
+            return typeOpen.OnRun.Call(typeOpen)
         ActionCatalog.RunDefault(item)
     }
 

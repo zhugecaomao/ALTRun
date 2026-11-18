@@ -145,7 +145,7 @@ File actions (like Listary):
 ![Windows context menu](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/shellmenu.png)
 
 ## Actions on selected content
-Like Alfred's Universal Actions: select text, files or a URL in any program and press `Ctrl+Alt+\` (change it in Preferences → Selection → "Selection hotkey"); ALTRun opens the action panel for that content directly, and you can type to filter:
+Like Alfred's Universal Actions: select text, files or a URL in any program and press `Ctrl+Alt+\` (change it in Preferences → Content Types → "Selection hotkey"); ALTRun opens the action panel for that content directly, and you can type to filter:
 
 | Selection | Actions |
 |---|---|
@@ -157,20 +157,20 @@ Like Alfred's Universal Actions: select text, files or a URL in any program and 
 The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored right after and the copy isn't recorded in the clipboard history. In console / terminal windows `Ctrl+C` would interrupt the running program, so `Ctrl+Insert` is used there. `Esc` or `←` closes the window.
 
 ### Your own actions for a selection
-![Preferences → Selection](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-selection.png)
+![Preferences → Content Types](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-selection.png)
 
 Custom commands can be shown for a selection too, first in the action panel (Enter runs the first one), so the same order number can go to several systems:
 
-1. Describe your **content types** once in Preferences → Selection → Content types (Add): a name, the kind and the pattern. `Text (regex)` types are a regular expression, matched against the selected text without leading and trailing spaces and line breaks (for example `^PO\d{8}$`; start it with `i)` to ignore case); `File (extensions)` types are extensions (for example `pdf, docx`). New installs come with typical types, each with a default command set for it: Email → Send Email, IP → Ping, Coordinates (such as `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint. **Add Examples** adds the types missing from your list and brings their commands into Custom Commands too (a missing command is added; your command of the same name that isn't set for any type yet gets the type). The **Test** box below the list shows which types a sample has and which commands it would show: type or paste text, or for a file type its path, drop the file on the box or choose it with `...`. The "Used by commands" column shows the commands set for each type.
+1. Describe your **content types** once in Preferences → Content Types → Content types (Add): a name, the kind and the pattern. `Text (regex)` types are a regular expression, matched against the selected text without leading and trailing spaces and line breaks (for example `^PO\d{8}$`; start it with `i)` to ignore case); `File (extensions)` types are extensions (for example `pdf, docx`). New installs come with typical types, each with a default command set for it: Email → Send Email, IP → Ping, Coordinates (such as `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint. **Add Examples** adds the types missing from your list and brings their commands into Custom Commands too (a missing command is added; your command of the same name that isn't set for any type yet gets the type). The **Test** box below the list shows which types a sample has and which commands it would show: type or paste text, or for a file type its path, drop the file on the box or choose it with `...`. The "Used by commands" column shows the commands set for each type.
    The built-in types need no definition: `Text` (any text), `Url`, `File`, `Folder`, `Files` (several files or folders).
    In `ALTRun.json` (`F4`) the types are kept as:
    ```jsonc
    "SelectionTypes": [
      { "Name": "PO",  "Kind": "Text", "Pattern": "^PO\\d{8}$" },
-     { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "DefaultCommand": "k3x9a2mq" }
+     { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "OpenCommand": "k3x9a2mq" }
    ]
    ```
-2. In a custom command's edit dialog, choose the types it is for in **Selection types**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"Selection"`:
+2. In a custom command's edit dialog, choose the types it is for in **Content types**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"Selection"`:
    ```jsonc
    { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
    { "Title": "Open in PDF tool", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }
@@ -179,12 +179,15 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
 
 Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword). [Scripts](Scripts) can be offered for content types too (`@altrun.selection PO` at the top of the script): they come after the custom commands, and the selection is passed as their first argument.
 
-**Files in the search results**: press `→` on a file or folder found by a search (or a pinned or recent item, or one in a folder you are browsing) and the commands and scripts for its content types come right after Open, as with `Ctrl+Alt+\`. To open a type of file with one of them on `Enter`, choose it in the type's **Enter opens with** (the type's edit dialog; it offers the commands that have this type in their Selection types; `DefaultCommand` in `ALTRun.json` is the command's `Id`). That command then runs on `Enter` in the search results and comes first in the action panel; Open there still uses Windows' association. This is for portable setups where Windows doesn't know a type, for example `.md` files opened by Total Commander's internal associations:
-1. Preferences → Selection → Content types → Add: name `Markdown`, kind `File (extensions)`, pattern `md, markdown`
-2. Preferences → Custom Commands → Add: name `Typora`, type File, target `A_ScriptDir\..\Typora\Typora.exe` (a path next to ALTRun's folder, which still works when the USB drive letter changes), Selection types `Markdown`
-3. Edit the `Markdown` type again and choose `Typora` in **Enter opens with**
+**Files in the search results**: press `→` on a file or folder found by a search (or a pinned or recent item, or one in a folder you are browsing) and the commands and scripts for its content types come right after Open, as with `Ctrl+Alt+\`.
 
-**Starting from a selection**: when no command or script is set for the selection's types, the panel ends with **Add a Command for This Content...** (the command edit dialog with "Selection types" filled in: your own type when the selection has one, otherwise the built-in one such as `Text` or `File`). When none of your types match, **Make a Content Type from It...** comes too: the type edit dialog with a pattern guessed from the selection (digits `^\d{8}$`; letters then digits `^PO\d+$`; an email address; a link by its site, `^https?://(www\.)?github\.com(/|$)`; other text exactly as it is; files by their extension), and a line saying whether the selection matches while you edit it. After OK the command dialog for the new type opens; cancel it to keep only the type. Type to find them in the panel (for example `content`).
+**Opening a type of file with a program of your choice** (like Total Commander's internal associations): a File type's **Open (Enter)** names the custom command that opens its files. `Enter` on such a file in the search results runs it, and it comes first in the file's action panel; Open there still uses Windows' association, and Windows' own settings aren't changed. Any custom command that runs a program can be chosen, whether or not it lists the type (in `ALTRun.json`: `"OpenCommand"`, the command's `Id`). Programs and shortcuts (`.exe`, `.lnk`...) always start as usual. This is for portable setups where Windows doesn't know a type, for example `.md` files opened by a portable editor:
+1. Preferences → Custom Commands → Add: name `Typora`, type File, target `A_ScriptDir\..\Typora\Typora.exe` (a path next to ALTRun's folder, which still works when the USB drive letter changes)
+2. Preferences → Content Types → Add: name `Markdown`, kind `File (extensions)`, pattern `md, markdown`, **Open (Enter)** `Typora`
+
+The types list shows each type's **Open (Enter)**, and the command's edit dialog shows it on its "Triggers" line.
+
+**Starting from a selection**: when no command or script is set for the selection's types, the panel ends with **Add a Command for This Content...** (the command edit dialog with "Content types" filled in: your own type when the selection has one, otherwise the built-in one such as `Text` or `File`). When none of your types match, **Make a Content Type from It...** comes too: the type edit dialog with a pattern guessed from the selection (digits `^\d{8}$`; letters then digits `^PO\d+$`; an email address; a link by its site, `^https?://(www\.)?github\.com(/|$)`; other text exactly as it is; files by their extension), and a line saying whether the selection matches while you edit it. After OK the command dialog for the new type opens; cancel it to keep only the type. Type to find them in the panel (for example `content`).
 
 **A hotkey for one content type**: give the commands for that type the same keyword with `{query}` (for example `po` for "ERP order" and "WMS order"), then add a hotkey in Preferences → Hotkeys with the action "Search in ALTRun" and the search text `po {selection}`. Select an order number and press it: the search window lists just those commands with the number filled in; Enter runs the first, ↓ picks another. This uses the selected text only (on one line, at most 100 characters; see [Hotkeys](Hotkeys)), and the check for shells below doesn't apply there, as when you type the text yourself; for files, use `Ctrl+Alt+\`, where the commands for the file's type come first.
 

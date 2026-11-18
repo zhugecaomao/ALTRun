@@ -520,6 +520,13 @@ class CustomCommandProvider {
         types := ItemEditor.TagsText(command.Has("Selection") ? command["Selection"] : "")
         if (types != "")
             parts.Push(I18n.T("Cmd.Triggers.Selection", types))
+        opens := ""                                                         ; the File types whose "Open (Enter)" is this command (being edited in Preferences)
+        if (command.Has("Id") && command["Id"] != "")
+            for userType in SelectionActions.UserTypes(SelectionActions._EditingTypes())
+                if (userType.OpenCommand = command["Id"])
+                    opens .= (opens = "" ? "" : ", ") userType.Name
+        if (opens != "")
+            parts.Push(I18n.T("Cmd.Triggers.Open", opens))
         keys := ""
         for entry in hotkeys
             if (entry is Map && entry.Has("Key") && LTrim(entry["Key"], "~") != "")
