@@ -19,6 +19,29 @@
 ;===============================================================================
 
 class ResultActions {
+    ; The commands and scripts for a search result's content types (SelectionActions.ForResult) -> {Rows, Open}: Open = the first row
+    ; is its file type's open command (found by the command's Id)
+    static _TypeRows(item) {
+        result := {Rows: [], Open: false}
+        if !IsObject(info := SelectionActions.ForResult(item))
+            return result
+        result.Rows := SelectionActions.CommandActions(info)
+        result.Open := result.Rows.Length && IsObject(command := SelectionActions.OpenCommand(info))
+            && result.Rows[1].HasOwnProp("CommandId") && result.Rows[1].CommandId = command["Id"]
+        return result
+    }
+
+    ; Open All for marked items: each file whose content type has an open command runs it, the others open as usual
+    static OpenAll(paths) {
+        for markedPath in paths {
+            action := SelectionActions.OpenActionFor(ResultItem("", "", {Kind: InStr(FileExist(markedPath), "D") ? "folder" : "file", Arg: markedPath}))
+            if IsObject(action)
+                action.OnRun.Call(action)
+            else
+                ActionCatalog.OpenMany([markedPath])
+        }
+    }
+
     ; The actions panel: the user's commands for a selection (LeadActions) first, then the default action, the general actions for this kind of result, and the result's own actions
     static ListFor(item) {
         list := []
@@ -34,9 +57,20 @@ class ResultActions {
             enter := ""
         }
 
+        ; files and folders in the search results: the commands and scripts for their content types, as for a selection (Ctrl+Alt+\);
+        ; a file type's open command (OpenCommand) comes first and has Enter, as Enter on the result runs it
+        typed := item.LeadActions.Length ? {Rows: [], Open: false} : ResultActions._TypeRows(item)
+        typeRows := typed.Rows, typeOpen := typed.Open
         switch item.Kind {
             case "file":
+                if typeOpen {
+                    list.Push(typeRows[1])
+                    enter := ""
+                }
                 add("Action.Open", target, (*) => (filled := ActionCatalog.ForWindow(item), ActionCatalog.OpenFile(filled.Arg, filled.Arguments)), enter)
+                for row in typeRows
+                    if !(typeOpen && A_Index = 1)
+                        list.Push(row)
                 if ActionCatalog.CanRunAsAdmin(target)
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => (filled := ActionCatalog.ForWindow(item), ActionCatalog.RunAsAdmin(filled.Arg, filled.Arguments)), "Ctrl+Shift+Enter")
                 if IsObject(editor := ActionCatalog.EditorFor(target))      ; the file type has an "Edit" verb (e.g. .ahk opens in an editor)
@@ -56,6 +90,8 @@ class ResultActions {
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "folder":
                 add("Action.Open", target, (*) => ActionCatalog.OpenFolder(target), enter)
+                for row in typeRows
+                    list.Push(row)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(target))
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
@@ -108,7 +144,7 @@ class ResultActions {
         list := []
         add(title, icon, fn, hint := "") => list.Push(ResultItem(title, hint, {Icon: icon, OnRun: fn}))
         count := paths.Length
-        add(I18n.T("Action.OpenAll", count), "res:imageres.dll,-5302", (*) => ActionCatalog.OpenMany(paths), "Enter")
+        add(I18n.T("Action.OpenAll", count), "res:imageres.dll,-5302", (*) => ResultActions.OpenAll(paths), "Enter")
         add(I18n.T("Action.CopyFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths), I18n.T("Action.CopyFile.Hint"))
         add(I18n.T("Action.CutFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths, true), I18n.T("Action.CopyFile.Hint"))
         joined := TextTools.Join(paths)

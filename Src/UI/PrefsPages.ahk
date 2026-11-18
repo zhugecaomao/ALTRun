@@ -511,9 +511,11 @@ class PrefsPages {
             return text
         }
         list := PrefsForm.List("SelectionTypes", 190
-            , [["Prefs.Col.Name", "Name", 100], ["Prefs.Col.Kind", "Kind", 110, (kind) => SelectionActions.KindText(kind)]
-             , ["Prefs.Col.Pattern", "Pattern", 190], ["Prefs.Col.UsedBy", "Name", 160, usedBy]]
-            , SelectionActions.TypeEditorFields(), () => SelectionActions.NewType(), "", "", true
+            , [["Prefs.Col.Name", "Name", 95], ["Prefs.Col.Kind", "Kind", 105, (kind) => SelectionActions.KindText(kind)]
+             , ["Prefs.Col.Pattern", "Pattern", 125], ["SelType.OpenCommand", "OpenCommand", 100, (id) => SelectionActions.CommandTitle(id, commandList())]
+             , ["Prefs.Col.UsedBy", "Name", 135, usedBy]]
+            , (owner, title, item, *) => ItemEditor.Edit(owner, title, SelectionActions.TypeEditorFields("", item.Has("Name") ? item["Name"] : ""), item)
+            , () => SelectionActions.NewType(), "", "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.SelectionTypeKeys(item), After: () => PrefsPages._AddSelectionExampleCommands()})
         PrefsForm.Note("Prefs.SelectionTypesNote")
         ; the test box: not a setting (no "Apply"), so its controls are added here rather than through PrefsForm.Add.
