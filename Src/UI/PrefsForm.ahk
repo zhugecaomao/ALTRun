@@ -506,13 +506,14 @@ class PrefsForm {
     ; examples: optional {Label, Keys: (item) => [...], After: () => ""}: a button that adds the default items (AppSettings.Defaults() at path) missing from the list;
     ; After (optional) runs next, e.g. to add what belongs with them elsewhere, and returns a line for the message ("" = nothing more).
     ; Keys gives the texts that identify an item (compared case-insensitively); a default sharing any of them with an item in the list is skipped
-    ; menu: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu.
-    ; Check paths, menu and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
+    ; menuActions: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu (not "menu":
+    ; names are case-insensitive, and a parameter named menu hides the Menu class, so the right-click menu failed).
+    ; Check paths, menuActions and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
     ; options: optional {RowColor, DeletePrompt, AfterDelete, Hint}, each a function of the item:
     ;   RowColor: the row's text color as a COLORREF (0xBBGGRR), "" = the normal color (drawn with NM_CUSTOMDRAW)
     ;   Hint: a short text for the Status column, shown at once (no check needed) unless a check found the path missing / offline
     ;   DeletePrompt: the question before deleting it ("" = "Delete '<first column>'?"); AfterDelete: called once it is removed
-    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menu := "", options := "") {
+    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menuActions := "", options := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
         for column in columns
@@ -727,8 +728,8 @@ class PrefsForm {
         actions := [], actionButton := "", extraButtons := []               ; Check paths, the page's menu, Add examples: one button, or "More" with a menu
         if IsObject(check)
             actions.Push({Label: I18n.T("Prefs.CheckTargets"), Click: (list, button) => CheckItems(button)})
-        if IsObject(menu)
-            actions.Push(menu*)
+        if IsObject(menuActions)
+            actions.Push(menuActions*)
         if IsObject(examples) {
             if actions.Length
                 actions.Push("-")
