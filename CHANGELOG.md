@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.22]
+
+测试版。
+
+Test build.
+
+### 修复
+- 两个屏幕缩放比例不同时 (例如笔记本 150%、外接显示器 100%), 打开 / 保存对话框下方的文件夹面板跑到很远的地方、宽度只有对话框的 2/3 (#567)
+
 ## [2026.11.16.21]
 
 测试版。
@@ -1688,7 +1697,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...HEAD
+[2026.11.16.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...2026.11.16.22
 [2026.11.16.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...2026.11.16.21
 [2026.11.16.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...2026.11.16.20
 [2026.11.16.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...2026.11.16.19

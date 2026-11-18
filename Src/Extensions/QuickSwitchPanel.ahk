@@ -426,19 +426,36 @@ class QuickSwitchPanel {
             , rowsH, QuickSwitchPanel._rowHeight, QuickSwitchPanel._frameH + QuickSwitchPanel._barHeight, area, open)
     }
 
-    ; the window's visible frame (Win10/11 windows have an invisible resize border around them, which WinGetPos includes)
+    ; The window's visible frame (Win10/11 windows have an invisible resize border around them, which WinGetPos includes),
+    ; in ALTRun's own coordinates. ALTRun is system DPI aware: on a monitor with another scale (a laptop at 150% and a monitor
+    ; at 100%) Windows scales the coordinates it gets, but DWMWA_EXTENDED_FRAME_BOUNDS is always in physical pixels, so the
+    ; frame is converted with the window's physical rectangle (#567: the panel was 2/3 of the dialog's width and far from it)
     static _FrameRect(hwnd) {
+        try WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        catch
+            return ""
+        window := {X: x, Y: y, W: w, H: h}
         rect := Buffer(16, 0)
-        if !DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) {   ; DWMWA_EXTENDED_FRAME_BOUNDS
-            left := NumGet(rect, 0, "Int"), top := NumGet(rect, 4, "Int")
-            if (NumGet(rect, 8, "Int") > left)
-                return {X: left, Y: top, W: NumGet(rect, 8, "Int") - left, H: NumGet(rect, 12, "Int") - top}
-        }
-        try {
-            WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
-            return {X: x, Y: y, W: w, H: h}
-        }
-        return ""
+        if DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16)   ; DWMWA_EXTENDED_FRAME_BOUNDS; not 0 = failed
+            return window
+        frame := {Left: NumGet(rect, 0, "Int"), Top: NumGet(rect, 4, "Int"), Right: NumGet(rect, 8, "Int"), Bottom: NumGet(rect, 12, "Int")}
+        if (frame.Right <= frame.Left)
+            return window
+        physical := Win.PhysicalWindowRect(hwnd)
+        if !IsObject(physical)                                                  ; before Windows 10 1607: as before, the frame as it is
+            return {X: frame.Left, Y: frame.Top, W: frame.Right - frame.Left, H: frame.Bottom - frame.Top}
+        return QuickSwitchPanel.LogicalFrame(window, physical, frame)
+    }
+
+    ; The physical frame {Left, Top, Right, Bottom} in the coordinates of window {X, Y, W, H}, whose physical rectangle is physical
+    ; {Left, Top, Right, Bottom}: the same offsets and sizes, scaled from physical to ALTRun's pixels. The same scale: frame as it is
+    static LogicalFrame(window, physical, frame) {
+        physicalW := physical.Right - physical.Left, physicalH := physical.Bottom - physical.Top
+        if (physicalW <= 0 || physicalH <= 0)
+            return window
+        scaleX := window.W / physicalW, scaleY := window.H / physicalH
+        return {X: window.X + Round((frame.Left - physical.Left) * scaleX), Y: window.Y + Round((frame.Top - physical.Top) * scaleY)
+              , W: Round((frame.Right - frame.Left) * scaleX), H: Round((frame.Bottom - frame.Top) * scaleY)}
     }
 
     ; Panel position and rows {X, Y, Rows} (as in Listary), never over the dialog's buttons and file list (#440): right below the dialog,

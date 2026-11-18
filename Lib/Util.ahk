@@ -329,6 +329,24 @@ class Win {
         return Win.WorkAreaAt(x + w // 2, y + h // 2)
     }
 
+    ; A window's rectangle {Left, Top, Right, Bottom} in physical pixels: GetWindowRect while this thread is per-monitor DPI aware
+    ; for a moment (WinGetPos gives coordinates scaled to ALTRun's system DPI on a monitor with another scale).
+    ; "" before Windows 10 1607 (no SetThreadDpiAwarenessContext) or when the window is gone
+    static PhysicalWindowRect(hwnd) {
+        static PER_MONITOR_AWARE_V2 := -4
+        try previous := DllCall("SetThreadDpiAwarenessContext", "Ptr", PER_MONITOR_AWARE_V2, "Ptr")
+        catch
+            return ""
+        if !previous
+            return ""
+        try {
+            rect := Buffer(16, 0)
+            if !DllCall("GetWindowRect", "Ptr", hwnd, "Ptr", rect)
+                return ""
+            return {Left: NumGet(rect, 0, "Int"), Top: NumGet(rect, 4, "Int"), Right: NumGet(rect, 8, "Int"), Bottom: NumGet(rect, 12, "Int")}
+        } finally DllCall("SetThreadDpiAwarenessContext", "Ptr", previous, "Ptr")
+    }
+
     static WorkArea(monitor) {
         MonitorGetWorkArea(monitor, &left, &top, &right, &bottom)
         return {Left: left, Top: top, Right: right, Bottom: bottom}
