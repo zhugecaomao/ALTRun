@@ -281,6 +281,8 @@ class ProjectTests {
         TestRunner.Equal("ScriptLibrary.check: web, network none", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nr := ComObject(`"WinHttp.WinHttpRequest.5.1`")"), "a: makes web requests but @altrun.network is none; ")
         TestRunner.Equal("ScriptLibrary.check: host not used", ProjectTests._ScriptProblems("a", head "; @altrun.network example.org`n"), "a: network host example.org isn't used in the script; ")
         TestRunner.Equal("ScriptLibrary.check: key written", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nkey := `"sk-abcdefghijklmnopqrstuvwxyz`""), "a: looks like a key or token is written in it (sk-abc...); ")
+        TestRunner.Equal("ScriptLibrary.check: COM ID in braces", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nclsid := `"{557CF406-1A04-11D3-9A73-0000F81EF32E}`""), "")
+        TestRunner.Equal("ScriptLibrary.check: key that looks like a GUID", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nkey := `"557cf406-1a04-11d3-9a73-0000f81ef32e:fx`""), "a: looks like a key or token is written in it (557cf4...); ")
         TestRunner.Equal("ScriptLibrary.check: author", ProjectTests._ScriptProblems("a", head "; @altrun.network none`n; @altrun.author some-user1`n"), "")
         TestRunner.Equal("ScriptLibrary.check: author not a user name", ProjectTests._ScriptProblems("a", head "; @altrun.network none`n; @altrun.author Some One`n"), "a: @altrun.author isn't a GitHub user name; ")
         TestRunner.Equal("ScriptLibrary.check: no description", ProjectTests._ScriptProblems("a", "# @altrun.title T`n# @altrun.network none`n"), "a: no @altrun.description; a: no @altrun.description_zh; ")
@@ -311,7 +313,8 @@ class ProjectTests {
                 else if !InStr(rest, host)
                     problems .= name ": network host " host " isn't used in the script; "
         }
-        if RegExMatch(text, "i)\b(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::fx)?|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,})", &key)
+        keyText := RegExReplace(text, "\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}", "{GUID}")   ; a COM class or interface ID in braces isn't a key
+        if RegExMatch(keyText, "i)\b(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?::fx)?|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,})", &key)
             problems .= name ": looks like a key or token is written in it (" SubStr(key[0], 1, 6) "...); "
         return problems
     }
