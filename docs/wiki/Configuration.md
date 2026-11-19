@@ -27,7 +27,6 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Calculator | [Calculator](Calculator) |
 | Scripts | [Scripts](Scripts) |
 | Keyboard / Hotkeys | [Custom hotkeys](Hotkeys) (Caps Lock, switching to English, the Space and Tab keys: see also [Shortcuts](Usage#shortcuts)) |
-| Delayed Start | [Delayed start](Delayed-Start) |
 | Quick Switch | [Quick Switch](Quick-Switch) |
 | Dialog Panel | [Dialog Folder Panel](Quick-Switch-Panel) |
 | Date Stamp | [Date Stamp](Date-Stamp) |
@@ -46,7 +45,6 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
   "CustomCommands": [ ... ],      // custom commands
   "SelectionTypes": [ ... ],      // content types of a selection, see Usage → Actions on selected content
   "Snippets":       [ ... ],      // snippets
-  "DelayedStart":   [ ... ],      // delayed start
   "SyncTasks":      [ ... ],      // folder sync tasks, see Folder sync
   "DataLocation":   "%OneDrive%\\ALTRun"   // optional: use this data folder instead
 }
@@ -277,12 +275,9 @@ See [Extensions](Extensions).
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
-],
-"DelayedStart": [
-  { "Name": "OneDrive", "Target": "%LocalAppData%\\Microsoft\\OneDrive\\OneDrive.exe", "Arguments": "/background", "Delay": 300, "Enabled": 1 }
 ]
 ```
-For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets), [Custom hotkeys](Hotkeys) and [Delayed start](Delayed-Start).
+For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets) and [Custom hotkeys](Hotkeys).
 
 `Id` (custom commands, snippets, sync tasks): 8 characters `a-z 0-9`, made by ALTRun, unique in its list. It stays the same when the item is renamed or its target changes: a hotkey runs a custom command by it (`"Action": "custom:<Id>"`), and the learned ranking and recent items follow it. Don't change it by hand; leave it out for an item you add by hand (one is made when ALTRun loads the file). A missing or repeated one is replaced.
 

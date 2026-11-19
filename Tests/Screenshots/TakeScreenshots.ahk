@@ -19,6 +19,7 @@
 #SingleInstance Force
 #Warn All, StdOut
 #Include ..\..\Lib\JSON.ahk
+#Include "%A_ScriptDir%\..\..\docs\scripts\Delayed Start.ahk"            ; the demo tasks of the delayed start scenes (DelayedStart.Sync); it opens no window when included
 
 Shots.Run(A_Args)
 ExitApp(Shots.Failures)
@@ -30,11 +31,12 @@ class Shots {
     static DemoDir  := ""
     static Pid      := 0
     static Failures := 0
+    static DemoTasks := false                                       ; demo tasks in Task Scheduler (delayed start scenes) to delete
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "delayedstart", "delayedstart-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor", "selection-type-editor-file"
                          , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list", "first-run"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -115,8 +117,8 @@ class Shots {
             ["prefs-applications", "Light", "-Preferences Applications", () => Shots.Preferences()],    ; Wiki: automatic app index updates
             ["prefs-clipboard",  "Light", "-Preferences Clipboard", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
             ["prefs-websearch",  "Light", "-Preferences WebSearch", () => Shots.Preferences()],     ; Wiki: web search
-            ["prefs-delayedstart", "Light", "-Preferences DelayedStart", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
-            ["prefs-startupapps", "Light", "-Preferences DelayedStart", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
+            ["delayedstart", "Light", "", () => Shots.ToolWindow("Delayed Start.ahk", "Delayed Start"), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (script library)
+            ["delayedstart-startupapps", "Light", "", () => Shots.StartupApps(), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (startup apps)
             ["prefs-sync",       "Light", "-Preferences Sync", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
             ["sync-editor",      "Light", "-Preferences Sync", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
             ["sync-preview",     "Light", "-Preferences Sync", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
@@ -724,6 +726,10 @@ class Shots {
             if pid
                 try ProcessClose(pid)
         Shots.HelperPid := 0, Shots.SamplePids := []
+        if Shots.DemoTasks {                                                ; the delayed start scenes' tasks
+            try DelayedStart.Sync([])
+            Shots.DemoTasks := false
+        }
         for window in Shots.HiddenWindows                                   ; the terminal window the demo hid
             try WinShow(window)
         Shots.HiddenWindows := []
@@ -969,21 +975,20 @@ class Shots {
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
-    ; The startup apps picker of the Delayed Start page, with two made-up startup apps of this user (Run key). They are deleted again once the
-    ; picker has listed them, so a run on your own PC leaves nothing behind
+    ; Startup Apps... in the Delayed Start window, with two demo startup apps of this user (HKCU Run; their programs aren't in the list)
     static StartupApps() {
         runKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
-        demo := [["ALTRun Demo Sync Tool", '"C:\Tools\SyncTool\SyncTool.exe" --tray'], ["ALTRun Demo Chat", '"C:\Tools\Chat\Chat.exe" /minimized']]
+        demo := [["ALTRun Demo Backup", '"C:\Tools\Backup\Backup.exe" --tray'], ["ALTRun Demo Notes", '"C:\Tools\Notes\Notes.exe" /minimized']]
         for value in demo
             RegWrite(value[2], "REG_SZ", runKey, value[1])
         try {
-            prefs := Shots.Preferences()
-            button := ControlGetHwnd("Startup Apps...", prefs)               ; the screenshots use the English interface
-            Shots.Log("button: visible " ControlGetVisible(button) ", enabled " ControlGetEnabled(button))
+            window := Shots.ToolWindow("Delayed Start.ahk", "Delayed Start")
+            pid := WinGetPID(window)
+            button := ControlGetHwnd("Startup Apps...", window)                ; the screenshots use the English interface
             PostMessage(0xF5, 0, 0, button)                                 ; BM_CLICK, as in SyncWindow: a ControlClick was sometimes lost
-            picker := WinWait("Startup Apps ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
+            picker := WinWait("Startup Apps ahk_class AutoHotkeyGUI ahk_pid " pid, , 10)
             if !picker {
-                Shots.Diagnose(prefs)
+                Shots.Diagnose(window)
                 throw Error("startup apps window not shown")
             }
         } finally {
@@ -995,15 +1000,14 @@ class Shots {
         return picker
     }
 
-    ; A delayed start list (made up)
-    static DelayedStartList() {
-        settingsFile := Shots.AppDir "\Data\ALTRun.json"
-        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["DelayedStart"] := [Map("Name", "OneDrive", "Target", "%LocalAppData%\Microsoft\OneDrive\OneDrive.exe", "Arguments", "/background", "Delay", 300, "Enabled", 1)
+    ; Three demo tasks in this user's Task Scheduler folder, as the Delayed Start script lists them (deleted again by CloseHelpers)
+    static DelayedStartTasks() {
+        Shots.DemoTasks := true
+        problems := DelayedStart.Sync([Map("Name", "OneDrive", "Target", "%LocalAppData%\Microsoft\OneDrive\OneDrive.exe", "Arguments", "/background", "Delay", 300, "Enabled", 1)
             , Map("Name", "Sync Tool", "Target", "C:\Tools\SyncTool\SyncTool.exe", "Arguments", "--tray", "Delay", 90, "Enabled", 1)
-            , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)]
-        FileDelete(settingsFile)
-        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+            , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)])
+        if (problems != "")
+            throw Error("demo tasks: " problems)
     }
 
     ; The default type IP and the default Ping command set for it, added after the six demo commands (row 7), for the command editor

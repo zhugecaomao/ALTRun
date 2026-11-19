@@ -1,4 +1,4 @@
-# Delayed start against the real Windows Task Scheduler (Tests\Integration\DelayedStartCheck.ahk): as a new standard user,
+# The script library's Delayed Start.ahk against the real Windows Task Scheduler (Tests\Integration\DelayedStartCheck.ahk): as a new standard user,
 # which is what matters (schtasks /SC ONLOGON needs an administrator; the COM interface ALTRun uses doesn't), then as the
 # administrator the runner is. On pull requests that change it, on main, or run by hand
 name: Delayed start
@@ -6,8 +6,7 @@ name: Delayed start
 on:
   pull_request:
     paths:
-      - Lib/TaskScheduler.ahk
-      - Src/Extensions/DelayedStart.ahk
+      - docs/scripts/Delayed Start.ahk
       - Tests/Integration/DelayedStartCheck.ahk
       - Src/Extensions/AdminHelper.ahk
       - .github/workflows/delayed-start.yml
@@ -15,8 +14,7 @@ on:
   push:
     branches: [main]
     paths:
-      - Lib/TaskScheduler.ahk
-      - Src/Extensions/DelayedStart.ahk
+      - docs/scripts/Delayed Start.ahk
       - Tests/Integration/DelayedStartCheck.ahk
       - Src/Extensions/AdminHelper.ahk
       - .github/workflows/delayed-start.yml
@@ -50,7 +48,7 @@ jobs:
           New-Item -ItemType Directory $root -Force | Out-Null
           Copy-Item Lib, Src, Resources, Tests, tools -Destination $root -Recurse
           New-Item -ItemType Directory "$root\docs" -Force | Out-Null
-          Copy-Item docs\scripts -Destination "$root\docs" -Recurse   # Tests\RunTests.ahk includes script library scripts (PT Tools, SPF2M)
+          Copy-Item docs\scripts -Destination "$root\docs" -Recurse   # Tests\RunTests.ahk includes script library scripts (PT Tools, SPF2M, Delayed Start)
           $name = "altruncheck"
           $password = "Aa1!" + [guid]::NewGuid().ToString("N").Substring(0, 10)   # a throwaway account on a throwaway runner; at most 14 characters, or net user asks to confirm
           net user $name $password /add

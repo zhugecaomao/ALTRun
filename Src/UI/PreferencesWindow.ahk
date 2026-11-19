@@ -30,11 +30,11 @@ class PreferencesWindow {
         , "Prefs.Page.Applications", "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.WebSearch", "Prefs.Page.Calculator", "Prefs.Page.Clipboard", "Prefs.Page.Snippets"
         , "Prefs.Page.Commands", "Prefs.Page.Scripts", "Prefs.Page.Selection", "Prefs.Page.Hotkeys"
         , "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp"
-        , "Prefs.Page.DelayedStart", "Prefs.Page.Sync"
+        , "Prefs.Page.Sync"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
     ; the first page of each group after the first (basics / search / commands and triggers / window tools / automation / usage and advanced):
     ; the page list has a gap with a line above each of them
-    static GroupStarts := ["Prefs.Page.Applications", "Prefs.Page.Commands", "Prefs.Page.QuickSwitch", "Prefs.Page.DelayedStart", "Prefs.Page.Usage"]
+    static GroupStarts := ["Prefs.Page.Applications", "Prefs.Page.Commands", "Prefs.Page.QuickSwitch", "Prefs.Page.Sync", "Prefs.Page.Usage"]
     static _page := 0
     static _dirty := false, _ready := false, ApplyButton := ""
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
@@ -383,7 +383,7 @@ class PreferencesWindow {
                           , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Custom-Commands", "Prefs.Page.Selection", "Usage", "Prefs.Page.Snippets", "Snippets"
                           , "Prefs.Page.Clipboard", "Clipboard", "Prefs.Page.WebSearch", "Web-Search", "Prefs.Page.Calculator", "Calculator"
-                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.DelayedStart", "Delayed-Start", "Prefs.Page.Sync", "Sync-Tasks", "Prefs.Page.QuickSwitch", "Quick-Switch"
+                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.Sync", "Sync-Tasks", "Prefs.Page.QuickSwitch", "Quick-Switch"
                           , "Prefs.Page.QSPanel", "Quick-Switch-Panel", "Prefs.Page.DateStamp", "Date-Stamp", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
@@ -492,7 +492,6 @@ class PreferencesWindow {
         if !PreferencesWindow._ApplyAdminHelper(PreferencesWindow.Working)
             return
         stale := PreferencesWindow.StaleIndexes(AppSettings.Data, PreferencesWindow.Working)
-        delayedBefore := AppSettings.Data["DelayedStart"]
         persistBefore := AppSettings.Feature("Clipboard")["Persist"]
         AppSettings.Data := PreferencesWindow.Working
         if !AppSettings.Save()
@@ -501,7 +500,6 @@ class PreferencesWindow {
         if (persistBefore && !AppSettings.Feature("Clipboard")["Persist"] && (FileExist(ClipboardProvider.File) || DirExist(ClipboardProvider.Folder))
             && MsgBox(I18n.T("Prefs.ClipPersistDelete"), I18n.T("Prefs.Title"), "YesNo Icon? Default2 Owner" PreferencesWindow.Gui.Hwnd) = "Yes")
             ClipboardProvider.DeleteSaved()
-        DelayedStart.AfterSave(delayedBefore, AppSettings.Data["DelayedStart"], PreferencesWindow.Gui.Hwnd)   ; the Task Scheduler tasks follow the list
         if general["LaunchAtLogin"]                                         ; ticked: on in Task Manager → Startup apps too
             App.TurnOnInTaskManager()
         if stale.Apps                                                       ; the index scope changed: rescan in the background after restarting (the old index is used until then)
@@ -524,7 +522,7 @@ class PreferencesWindow {
         , "Prefs.Page.Calculator", "BuildCalculator", "Prefs.Page.Clipboard", "BuildClipboard", "Prefs.Page.Snippets", "BuildSnippets"
         , "Prefs.Page.Commands", "BuildCommands", "Prefs.Page.Scripts", "BuildScripts", "Prefs.Page.Selection", "BuildSelection", "Prefs.Page.Hotkeys", "BuildHotkeys"
         , "Prefs.Page.QuickSwitch", "BuildQuickSwitch", "Prefs.Page.QSPanel", "BuildQuickSwitchPanel", "Prefs.Page.DateStamp", "BuildDateStamp"
-        , "Prefs.Page.DelayedStart", "BuildDelayedStart", "Prefs.Page.Sync", "BuildSync", "Prefs.Page.Usage", "BuildUsage", "Prefs.Page.Advanced", "BuildAdvanced")
+        , "Prefs.Page.Sync", "BuildSync", "Prefs.Page.Usage", "BuildUsage", "Prefs.Page.Advanced", "BuildAdvanced")
     static _helpButton := ""
     ; Builds every page (for the tests that check each page's layout)
     static BuildAll() {

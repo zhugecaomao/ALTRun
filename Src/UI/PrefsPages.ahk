@@ -979,17 +979,6 @@ class PrefsPages {
         PrefsForm.LinesButton(base "AppendWindows", "Prefs.AppendWindows")
     }
 
-    ; Programs started some time after signing in, as Task Scheduler tasks (see DelayedStart)
-    static BuildDelayedStart() {
-        PrefsForm.BeginPage("Prefs.Page.DelayedStart")
-        PrefsForm.List("DelayedStart", 420
-            , [["Prefs.Col.Name", "Name", 130], ["Prefs.Col.Program", "Target", 250], ["Prefs.Col.Delay", "Delay", 80, (v) => DelayedStart.DelayText(v)]
-             , ["Prefs.Col.Enabled", "Enabled", 60, (v) => I18n.T((v = "" || v) ? "DelayedStart.On" : "DelayedStart.Off")]]   ; missing = on, as DelayedStart reads it
-            , DelayedStart.EditorFields(), () => DelayedStart.NewItem(), ""
-            , [{Label: I18n.T("DelayedStart.StartupApps"), Width: 115, Click: (list, *) => PrefsPages._AddStartupApp(list)}])
-        PrefsForm.LinkNote(I18n.T("DelayedStart.Note", '<a href="taskschd.msc">', '<a href="taskmgr.exe /0 /startup">', "</a>"))   ; links: Task Scheduler, Task Manager's startup apps
-    }
-
     ; Folder sync tasks: the list with its buttons (Duplicate, and Sync... for the task's window: previewing, running and stopping are
     ; there, this page only sets tasks up), then the options. The window uses the task as it is in the list, before Apply or OK
     static BuildSync() {
@@ -1036,12 +1025,6 @@ class PrefsPages {
         if !IsObject(task := list.Selected.Call())
             return MsgBox(I18n.T("Sync.SelectFirst"), I18n.T("Prefs.Page.Sync"), "Iconi Owner" PreferencesWindow.Gui.Hwnd)
         return SyncPreview.OpenTask(ItemEditor.WithDefaults(task, RoboSync.NewTask()))   ; a task written by hand may leave keys out
-    }
-
-    ; "Startup Apps...": an entry made from one of the startup apps, opened in the edit dialog first
-    static _AddStartupApp(list) {
-        if IsObject(item := DelayedStart.PickStartupApp(PreferencesWindow.Gui, list.Items))
-            list.Insert.Call(item)                                         ; Insert is a function kept in the list object, not a method: called with .Call
     }
 
     ; "About" at the top (icon, name, version, home page, check for updates), the settings and data file locations and actions below

@@ -913,7 +913,7 @@ class CoreTests {
             try RegDelete(key, name)
             eq("no entry: on", App.LaunchOffInTaskManager(name), false)
             eq("on: nothing written", App.TurnOnInTaskManager(name), false)
-            RegWrite(DelayedStart.ApprovedData(true), "REG_BINARY", key, name)
+            RegWrite(StartupApproved.Data(true), "REG_BINARY", key, name)
             eq("turned off in Task Manager", App.LaunchOffInTaskManager(name), true)
             eq("turned on again", App.TurnOnInTaskManager(name) "|" App.LaunchOffInTaskManager(name) "|" RegRead(key, name), "1|0|020000000000000000000000")
         } finally {

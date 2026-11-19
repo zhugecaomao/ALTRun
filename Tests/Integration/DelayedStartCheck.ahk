@@ -3,7 +3,8 @@
 ;-------------------------------------------------------------------------------
 ; Run by Tests\RunTests.ahk DelayedStartCheck: on Windows CI by .github/workflows/delayed-start.yml, as a new standard
 ; (non-administrator) user and as the administrator; also works on your own PC (it only touches its own task folder,
-; \ALTRun\<user name> check, and deletes it again). Registers tasks through DelayedStart.Sync, reads them back,
+; \ALTRun\<user name> check, and deletes it again). Checks the script library's Delayed Start.ahk (DelayedStart, TaskScheduler; RunTests.ahk
+; #Includes it) and the administrator helper's task (AdminHelper). Registers tasks through DelayedStart.Sync, reads them back,
 ; changes and removes them; turns a startup app made for the check (HKCU Run) off and on again, then deletes it. Prints one line per check (PASS / FAIL / INFO); returns the number of failed checks.
 ;===============================================================================
 class DelayedStartCheck {
@@ -43,6 +44,12 @@ class DelayedStartCheck {
             ; Read back, the tasks count as right: nothing registered again (what the start-up check does)
             plan := DelayedStart.Plan(DelayedStart.Desired(items), TaskScheduler.Tasks(folderPath))
             DelayedStartCheck.Check("read back: nothing to change", plan.Register.Length = 0 && plan.Delete.Length = 0, plan.Register.Length " to register, " plan.Delete.Length " to delete")
+
+            ; The window's list is read from the tasks: set up again from it, nothing changes
+            listed := DelayedStart.Items(folderPath)
+            plan := DelayedStart.Plan(DelayedStart.Desired(listed), TaskScheduler.Tasks(folderPath))
+            DelayedStartCheck.Check("listed from the tasks, the same list", listed.Length = 2 && plan.Register.Length = 0 && plan.Delete.Length = 0
+                , listed.Length " listed, " plan.Register.Length " to register, " plan.Delete.Length " to delete")
             times := []
             Loop 5 {
                 started := Logger.Ms()
