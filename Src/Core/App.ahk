@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.16.23"
+    static Version := "2026.11.16.24"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -97,7 +97,6 @@ class App {
         SetTimer(() => IconCache.Prefetch(ProviderRegistry.IconSpecs()), -SearchWindow.IconPrefetchDelay)   ; then read the common items' icons in the background
         if AppSettings.General["CheckForUpdates"]
             UpdateChecker.Schedule()                                        ; checked in the background (see UpdateChecker); a new version shows in the search window
-        DelayedStart.Schedule()                                             ; the delayed start tasks follow the list, 30 s later (only with entries)
         SyncJobs.Adopt()                                                    ; sync tasks a restart left running
 
         Logger.Time("startup: total", started)
@@ -702,15 +701,15 @@ class App {
     }
 
     ; "Launch ALTRun at login" can also be turned off in Task Manager → Startup apps: the shortcut stays, and Windows marks it off in
-    ; StartupApproved (see DelayedStart.SetEntryOff). Preferences shows the option as off then, and turns it on again there when ticked.
+    ; StartupApproved (see Lib\StartupApproved.ahk). Preferences shows the option as off then, and turns it on again there when ticked.
     ; ALTRun itself never turns it back on at start-up: what the user chose in Task Manager stands
     static StartupLinkName := "ALTRun.lnk"
-    static StartupApprovedKey => "HKCU" DelayedStart.ApprovedKey "StartupFolder"
+    static StartupApprovedKey => "HKCU" StartupApproved.Key "StartupFolder"
 
     static LaunchOffInTaskManager(name := App.StartupLinkName) {
         data := ""
         try data := RegRead(App.StartupApprovedKey, name)
-        return DelayedStart.IsOffData(data)
+        return StartupApproved.IsOff(data)
     }
 
     ; Ticked in Preferences: on in Task Manager too (only when it is off there; nothing is written otherwise)
@@ -718,7 +717,7 @@ class App {
         if !App.LaunchOffInTaskManager(name)
             return false
         try {
-            RegWrite(DelayedStart.ApprovedData(false), "REG_BINARY", App.StartupApprovedKey, name)
+            RegWrite(StartupApproved.Data(false), "REG_BINARY", App.StartupApprovedKey, name)
             return true
         } catch as e {
             Logger.Error("App: cannot turn on the start-up shortcut in Task Manager - " e.Message)

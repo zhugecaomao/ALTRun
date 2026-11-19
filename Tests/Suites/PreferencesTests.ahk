@@ -556,7 +556,7 @@ class PreferencesTests {
         eq("number out of range", PreferencesWindow.ParseArgs(["-Preferences", "99"]).Page, 1)
         args := PreferencesWindow.ParseArgs(["-Preferences"])
         eq("default page", args.Page, 1)
-        eq("page name", PreferencesWindow.PageName("Prefs.Page.DelayedStart"), "DelayedStart")
+        eq("page name", PreferencesWindow.PageName("Prefs.Page.QSPanel"), "QSPanel")
         layout := PreferencesWindow.PageLayout(591, 23, [6, 13, 17, 20, 22])   ; the page list at 96 DPI: 23 rows, 5 gaps
         eq("layout: row height", layout.RowH, 23)
         eq("layout: gap (the rest of the height spread over the gaps)", layout.Gap, 12)

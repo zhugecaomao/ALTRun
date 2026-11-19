@@ -32,10 +32,10 @@ Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框; + QuickSwitchPanel、QuickSwitchFavorites、
                     FileDialogs、FileManagers), AutoDate, CapsLockSwitch,
                     AdminHelper (helper for administrator windows), SelectionActions, CurrencyRates, UpdateChecker,
-                    DelayedStart, RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
+                    RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  单元测试的入口: 载入程序代码 (设置只在内存里), 运行所有测试类
-Tests\Suites\       单元测试, 每个方面一个类 (Core, Provider, SearchWindow, Preferences, Extension, PTTools, Project)
+Tests\Suites\       单元测试, 每个方面一个类 (Core, Provider, SearchWindow, Preferences, Extension, PTTools, DelayedStart, Project)
 Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据 (脚本库的 SPF2M.ahk 用)
 Tests\Screenshots\  自动截图
 Tests\Bench\       性能测试: 在 Windows 上模拟日常操作, 比较两个版本 (见下面 "性能测试")
@@ -267,13 +267,13 @@ GitHub → Actions → **File Drag** 用 `Tests\Integration\FileDragCheck.ahk` �
 ### 首次启动
 GitHub → Actions → **First run** 用 `Tests\Integration\FirstRunCheck.ahk` 对真实的 "启动" 文件夹检查新安装第一次启动时的询问 (`App.AskLaunchAtLogin`): 没有 Data 文件夹时会问, 等回答时 "启动" 文件夹里没有快捷方式、`ALTRun.json` 里已经是 `LaunchAtLogin` 0; 点 "否" 保持关闭; 下次启动不再问; 按 Enter ("是", 默认按钮) 建开机启动快捷方式; 旧版本的 `ALTRun.json` 和从 `ALTRun.ini` 升级都不问。修改 `App.ahk`、`AppSettings.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑, 原来的 "启动" / "发送到" / 开始菜单 `ALTRun.lnk` 会放回去: `FirstRunCheck.ahk <仓库副本>`。
 ### 延迟启动
-GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查延迟启动: 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改延迟启动或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。
+GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查脚本库的 `Delayed Start.ahk` (和管理员小助手的任务): 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改这个脚本或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。
 
 ## 质量验证与局限
 
 - `Tests\RunTests.ahk`: 覆盖匹配、查询解析、设置迁移、排序、剪贴板和索引等纯逻辑; 不等于完整的手动 UI 测试。
 - 测试就是 `Tests\Suites\` 里各个类的静态方法, 名字不以 `_` 开头 (`_` 开头的是辅助函数); 不用另外登记就会运行。测试改了设置、界面语言或日志开关要改回去, 否则算失败, 所以测试之间不依赖先后顺序。程序读到的每个设置都要在 `AppSettings.Defaults()` 里有默认值 (`SettingsKeys` 检查)。
-- 脚本库里有值得测试的代码的脚本 (`docs\scripts\PT Tools.ahk`、`SPF2M.ahk`) 仍是一个独立文件, 只在 `if (A_LineFile = A_ScriptFullPath)` 时打开窗口, 这样 `Tests\RunTests.ahk` 可以 `#Include` 它、测试里面的类 (`PTToolsTests`)。类名不能和 ALTRun 的重名 (用 `PTCalc`, 不用 `Calc`); 从 ALTRun 复制过去的代码由测试和原来的对比。
+- 脚本库里有值得测试的代码的脚本 (`docs\scripts\PT Tools.ahk`、`SPF2M.ahk`、`Delayed Start.ahk`) 仍是一个独立文件, 只在 `if (A_LineFile = A_ScriptFullPath)` 时打开窗口, 这样 `Tests\RunTests.ahk` 可以 `#Include` 它、测试里面的类 (`PTToolsTests`、`DelayedStartTests`)。类名不能和 ALTRun 的重名 (用 `PTCalc`, 不用 `Calc`); 从 ALTRun 复制过去的代码由测试和原来的对比。
 - Windows CI: 运行单元测试、语法检查和重名检查 (`Tests\Tools\NameCheck.ahk`, 见下面的 "避免重名"), 并检查偏好设置布局、Wiki 页面配对和文档链接。
 - CI 通过 `Tests\Tools\RunAhk.ps1` 运行 AutoHotkey 脚本, 每个脚本都有时间上限 (单元测试 10 分钟, 每个语法检查 2 分钟, 截图 25 分钟)。脚本卡在没人关的对话框上时 (例如类初始化时出错, 弹出了错误窗口) 会被停止, 日志里打出它的窗口标题和文字, 从对话框的内容就能看出哪里出错。每个任务另外还有 `timeout-minutes` 兜底。
 - 截图测试: 检查主要窗口在不同语言 / 主题下的显示; 不验证所有交互流程。

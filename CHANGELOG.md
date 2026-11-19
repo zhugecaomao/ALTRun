@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.16.24]
+
+测试版。
+
+Test build.
+
+### 新增
+- 脚本库加了 `Delayed Start.ahk` (关键字 `delayedstart`): 登录 Windows 几分钟后再启动 OneDrive 等程序, 功能和原来的 偏好设置 → 延迟启动 一样 (任务计划程序里的任务、启动项...、关掉 / 重新打开程序自己的启动)。列表直接读任务计划程序, 不另存设置; 改动点确定时就生效; 中文 Windows (简体) 上界面是中文, 其他是英文
+
+### 移除
+- 偏好设置 → 延迟启动 移到了脚本库, 需要的话从 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 下载 `Delayed Start.ahk` 到 `Scripts\` 文件夹。已经建好的任务照常运行, 脚本窗口里原样列出, 不用迁移; ALTRun 启动后不再按列表补齐任务 (多台电脑共用设置文件时, 在另一台电脑上运行一次脚本添加)。ALTRun.json 里旧的 `DelayedStart` 不再使用, 留着无害
+
 ## [2026.11.16.23]
 
 测试版。
@@ -1706,7 +1718,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...HEAD
+[2026.11.16.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...2026.11.16.24
 [2026.11.16.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...2026.11.16.23
 [2026.11.16.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...2026.11.16.22
 [2026.11.16.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...2026.11.16.21

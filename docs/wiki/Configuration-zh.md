@@ -27,7 +27,6 @@
 | 计算器 | [计算器](Calculator-zh) |
 | 脚本扩展 | [脚本扩展](Scripts-zh) |
 | 键盘 / 自定义热键 | [自定义热键](Hotkeys-zh) (CapsLock、切换到英文; 空格和 Tab 键另见 [快捷键](Usage-zh#快捷键)) |
-| 延迟启动 | [延迟启动](Delayed-Start-zh) |
 | 对话框跳转 | [对话框快速跳转](Quick-Switch-zh) |
 | 对话框面板 | [对话框文件夹面板](Quick-Switch-Panel-zh) |
 | 一键加日期 | [一键加日期](Date-Stamp-zh) |
@@ -46,7 +45,6 @@
   "CustomCommands": [ ... ],      // 自定义命令
   "SelectionTypes": [ ... ],      // 选中内容的类型, 见 使用 → 选中内容的操作
   "Snippets":       [ ... ],      // 文字片段
-  "DelayedStart":   [ ... ],      // 延迟启动
   "SyncTasks":      [ ... ],      // 文件夹同步任务, 见 文件夹同步
   "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹
 }
@@ -277,12 +275,9 @@
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
-],
-"DelayedStart": [
-  { "Name": "OneDrive", "Target": "%LocalAppData%\\Microsoft\\OneDrive\\OneDrive.exe", "Arguments": "/background", "Delay": 300, "Enabled": 1 }
 ]
 ```
-字段说明见 [自定义命令](Custom-Commands-zh#字段)、[文字片段](Snippets-zh)、[自定义热键](Hotkeys-zh) 和 [延迟启动](Delayed-Start-zh)。
+字段说明见 [自定义命令](Custom-Commands-zh#字段)、[文字片段](Snippets-zh) 和 [自定义热键](Hotkeys-zh)。
 
 `Id` (自定义命令、文字片段、同步任务): 8 位 `a-z 0-9`, 由 ALTRun 生成, 在同一个列表里不重复。改名或改目标时不变: 热键按它运行自定义命令 (`"Action": "custom:<Id>"`), 学到的排序和最近使用也跟着它。不要手动改; 手动添加的条目不用写 (ALTRun 读取时会补上)。缺少或重复的会换成新的。
 

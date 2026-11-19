@@ -21,7 +21,7 @@
 ;   "SelectionTypes": [ { "Name", "Kind", "Pattern", "DefaultCommand" } ],   the user's content types of a selection (Kind Text: regular expression /
 ;                    File: extensions; DefaultCommand, optional, File types: the Id of the custom command Enter opens such files with), see SelectionActions
 ;   "Snippets"      : [ { "Id", "Name", "Keyword", "Text", "AutoExpand" } ],
-;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
+;   "DelayedStart"  : no longer read (up to 2026.11.16.23: Preferences → Delayed Start, now the script library's Delayed Start.ahk); left as it is
 ;   "SyncTasks"     : [ { "Id", "Name", "Source", "Destination", "Mode", ... } ],    folder sync tasks run with robocopy (see RoboSync)
 ;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   optional, only in the file at the default location: use this data folder instead (see ResolveDataDir)
 ; }
@@ -122,7 +122,7 @@ class AppSettings {
     }
 
     ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
-    static KeptOnReset := [["CustomCommands"], ["SelectionTypes"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
+    static KeptOnReset := [["CustomCommands"], ["SelectionTypes"], ["Snippets"], ["Hotkeys"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
         , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["DataLocation"]]
 
     ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
@@ -836,7 +836,6 @@ class AppSettings {
             "CustomCommands", AppSettings._DefaultCommands(),
             "SelectionTypes", AppSettings._DefaultSelectionTypes(),         ; the user's content types of a selection (see SelectionActions)
             "Snippets", AppSettings._DefaultSnippets(),
-            "DelayedStart", [],                                             ; programs started some time after signing in (see DelayedStart)
             "SyncTasks", []                                                 ; folder sync tasks run with robocopy (see RoboSync)
         )
     }
