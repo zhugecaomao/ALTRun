@@ -21,6 +21,8 @@ Thank you for wanting to improve ALTRun! Bug reports, documentation improvements
 4. For UI changes, attach screenshots made with the English UI and made-up sample data; don't include anything personal or work-related
 5. For user-visible changes, update the README (`README.md` and `README.zh-CN.md`), `CHANGELOG.md` and, where needed, the wiki (`docs/wiki/`, both the English page and the `-zh` Chinese page)
 
+**Scripts for the [script library](https://zhugecaomao.github.io/ALTRun/#scripts)** are welcome too: add the script to `docs/scripts/` in a pull request; what it needs and how it is reviewed is in [docs/scripts/README.md](docs/scripts/README.md#contributing-a-script--投稿脚本).
+
 The project structure, development environment, code style, translations, documentation and release process are described in the **[Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development)** in the wiki.
 
 By submitting code, you agree to release your contribution under the [GPL-3.0](LICENSE) license.
@@ -47,6 +49,8 @@ By submitting code, you agree to release your contribution under the [GPL-3.0](L
 3. 新功能或修复请附带测试 (`Tests\RunTests.ahk`)
 4. 涉及界面的改动请附上截图, 用英文界面和虚构的示例数据, 不要放个人或工作相关的信息
 5. 用户可见的变化请更新 README (`README.md` 和 `README.zh-CN.md`)、`CHANGELOG.md`, 必要时更新 Wiki (`docs/wiki/`, 英文页和 `-zh` 中文页都要改)
+
+也欢迎给 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 投稿: 用 PR 把脚本加到 `docs/scripts/`; 要写什么、怎么审查见 [docs/scripts/README.md](docs/scripts/README.md#contributing-a-script--投稿脚本)。
 
 项目结构、开发环境、代码规范、界面翻译、文档和发布流程见 Wiki 的 **[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development-zh)**。
 

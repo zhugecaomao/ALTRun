@@ -2,7 +2,7 @@
 
 # Scripts
 
-**Ready-made scripts** (translation, a Total Commander command palette, file hashes and more) are in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts) on the website: download one into the `Scripts\` folder and use it.
+**Ready-made scripts** (translation, a Total Commander command palette, file hashes and more) are in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts) on the website: download one into the `Scripts\` folder and use it. Wrote one others could use? [Contribute it to the library](https://github.com/zhugecaomao/ALTRun/blob/main/docs/scripts/README.md#contributing-a-script--投稿脚本) with a pull request.
 
 Put your own scripts into the `Scripts\` folder (in the program folder; Preferences → Scripts → "Open Scripts Folder", or search for "Open Scripts Folder"; it starts empty: ready-made scripts are in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts), Preferences → Scripts → "Browse Script Library") and you can find and run them by name or keyword in the search window, like Raycast's Script Commands. To see only scripts, type **`script `** (all of them) or **`script name`** (typing just `script`, without the space, shows a hint after the names that start with "script"; `Enter` on it completes `script `; while typing, e.g. `scr`, the hint is at the end of the list); change the keyword in Preferences → Scripts → "Search keyword". Supported: `.ahk` (run with the AutoHotkey inside ALTRun, nothing else to install), `.ps1`, `.bat` / `.cmd`, `.py` (needs Python). Preferences → Scripts lists the scripts found; double-click one to edit it in Notepad:
 

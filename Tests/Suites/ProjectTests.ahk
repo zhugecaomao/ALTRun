@@ -281,6 +281,8 @@ class ProjectTests {
         TestRunner.Equal("ScriptLibrary.check: web, network none", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nr := ComObject(`"WinHttp.WinHttpRequest.5.1`")"), "a: makes web requests but @altrun.network is none; ")
         TestRunner.Equal("ScriptLibrary.check: host not used", ProjectTests._ScriptProblems("a", head "; @altrun.network example.org`n"), "a: network host example.org isn't used in the script; ")
         TestRunner.Equal("ScriptLibrary.check: key written", ProjectTests._ScriptProblems("a", head "; @altrun.network none`nkey := `"sk-abcdefghijklmnopqrstuvwxyz`""), "a: looks like a key or token is written in it (sk-abc...); ")
+        TestRunner.Equal("ScriptLibrary.check: author", ProjectTests._ScriptProblems("a", head "; @altrun.network none`n; @altrun.author some-user1`n"), "")
+        TestRunner.Equal("ScriptLibrary.check: author not a user name", ProjectTests._ScriptProblems("a", head "; @altrun.network none`n; @altrun.author Some One`n"), "a: @altrun.author isn't a GitHub user name; ")
         TestRunner.Equal("ScriptLibrary.check: no description", ProjectTests._ScriptProblems("a", "# @altrun.title T`n# @altrun.network none`n"), "a: no @altrun.description; a: no @altrun.description_zh; ")
         TestRunner.Equal("ScriptLibrary.check: description after line 30", ProjectTests._ScriptProblems("a", "; @altrun.title T`n; @altrun.network none`n" StrReplace(Format("{:30}", ""), " ", "`n") "; @altrun.description D`n; @altrun.description_zh 说明`n"), "a: no @altrun.description; a: no @altrun.description_zh; ")
     }
@@ -295,6 +297,8 @@ class ProjectTests {
             problems .= name ": description_zh isn't Chinese; "
         if (meta.Has("requires") != meta.Has("requires_zh"))
             problems .= name ": requires and requires_zh go together; "
+        if (meta.Has("author") && !RegExMatch(meta["author"], "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$"))   ; the website links it to github.com/<author>
+            problems .= name ": @altrun.author isn't a GitHub user name; "
         network := meta.Has("network") ? Trim(meta["network"]) : ""
         web := RegExMatch(text, "i)WinHttp|XMLHTTP|\bDownload\(|Invoke-WebRequest|Invoke-RestMethod|Net\.WebClient|HttpClient|\bcurl(\.exe)?\s")
         if (web > 0 && network = "none")

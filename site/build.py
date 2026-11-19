@@ -185,7 +185,7 @@ def script_meta(path):
 
 
 def script_library():
-    """docs/scripts/*.ahk, *.ps1, *.bat, *.cmd -> (count, cards): title, keyword, description, what it needs and connects to, download links"""
+    """docs/scripts/*.ahk, *.ps1, *.bat, *.cmd -> (count, cards): title, keyword, description, what it needs and connects to, author, download links"""
     folder = os.path.join(ROOT, "docs", "scripts")
     cards = []
     for name in sorted(os.listdir(folder), key=str.lower):
@@ -201,10 +201,13 @@ def script_library():
                    f'<li><span lang="zh">联网: {html.escape(hosts)}</span><span lang="en">Connects to: {html.escape(hosts)}</span></li>')
         requires = (f'<li><span lang="zh">需要: {esc("requires_zh")}</span><span lang="en">Needs: {esc("requires")}</span></li>'
                     if meta.get("requires") else "")
+        author = meta.get("author", "").strip()                                 # contributed scripts: a GitHub user name (checked by the tests)
+        author = (f'<li><span lang="zh">作者: </span><span lang="en">By </span><a href="https://github.com/{html.escape(author)}">@{html.escape(author)}</a></li>'
+                  if re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})", author) else "")
         cards.append(
             f'<article>\n<h3>{esc("title", name)}{keyword}</h3>\n'
             f'<p><span lang="zh">{esc("description_zh")}</span><span lang="en">{esc("description")}</span></p>\n'
-            f'<ul class="facts">{requires}{network}<li>{kind}</li></ul>\n'
+            f'<ul class="facts">{requires}{network}<li>{kind}</li>{author}</ul>\n'
             f'<p class="get"><a href="https://raw.githubusercontent.com/{REPO}/main/{path}"><span lang="zh">下载</span><span lang="en">Download</span></a>'
             f' · <a href="https://github.com/{REPO}/blob/main/{path}"><span lang="zh">源码</span><span lang="en">Source</span></a>'
             f' · <a href="https://gitee.com/{GITEE_REPO}/blob/main/{path}"><span lang="zh">Gitee 镜像</span><span lang="en">Gitee mirror</span></a></p>\n'

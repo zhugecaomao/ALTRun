@@ -2,7 +2,7 @@
 
 # 脚本扩展
 
-**现成的脚本** (翻译、Total Commander 命令面板、文件哈希等) 在网站的 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts): 下载到 `Scripts\` 文件夹就能用。
+**现成的脚本** (翻译、Total Commander 命令面板、文件哈希等) 在网站的 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts): 下载到 `Scripts\` 文件夹就能用。写了别人也用得上的脚本? 欢迎提交 Pull Request [投稿到脚本库](https://github.com/zhugecaomao/ALTRun/blob/main/docs/scripts/README.md#contributing-a-script--投稿脚本)。
 
 把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹"; 一开始是空的, 现成的脚本在 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts), 偏好设置 → 脚本 → "浏览脚本库"), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。只想看脚本时, 输入 **`script `** (列出全部) 或 **`script 名称`** (只输入 `script` 不带空格时, 显示一行提示 (名字以 script 开头的排在它前面), 在提示上按 `Enter` 补全成 `script `; 还没输完整时, 例如 `scr`, 提示在列表最后); 关键字在 偏好设置 → 脚本 → "搜索关键字" 修改。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。偏好设置 → 脚本 列出找到的脚本, 双击用记事本编辑:
 
