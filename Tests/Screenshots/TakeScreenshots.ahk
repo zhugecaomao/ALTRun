@@ -117,7 +117,7 @@ class Shots {
             ["prefs-applications", "Light", "-Preferences Applications", () => Shots.Preferences()],    ; Wiki: automatic app index updates
             ["prefs-clipboard",  "Light", "-Preferences Clipboard", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
             ["prefs-websearch",  "Light", "-Preferences WebSearch", () => Shots.Preferences()],     ; Wiki: web search
-            ["delayedstart", "Light", "", () => Shots.ToolWindow("Delayed Start.ahk", "Delayed Start"), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (script library)
+            ["delayedstart", "Light", "", () => Shots.DelayedStartShot(), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (script library)
             ["delayedstart-startupapps", "Light", "", () => Shots.StartupApps(), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (startup apps)
             ["prefs-sync",       "Light", "-Preferences Sync", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
             ["sync-editor",      "Light", "-Preferences Sync", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
@@ -998,6 +998,13 @@ class Shots {
         WinSetAlwaysOnTop(1, picker)
         Sleep(800)
         return picker
+    }
+
+    ; The Delayed Start window, above the search window ALTRun shows after starting (unlike PT Tools, it isn't always on top)
+    static DelayedStartShot() {
+        window := Shots.ToolWindow("Delayed Start.ahk", "Delayed Start")
+        WinSetAlwaysOnTop(1, window)
+        return window
     }
 
     ; Three demo tasks in this user's Task Scheduler folder, as the Delayed Start script lists them (deleted again by CloseHelpers)
