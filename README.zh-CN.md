@@ -209,7 +209,7 @@ scoop update altrun    # 升级（请先退出 ALTRun）
 
 ## 反馈问题
 - 报告问题：[提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose)（请附上 Windows 版本和复现步骤）
-- 提问：[提交问题](https://github.com/zhugecaomao/ALTRun/issues/new?template=question.yml)
+- 发起讨论：[创建讨论帖](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml)
 
 ## 参与贡献
 - 投稿脚本：用 Pull Request 把脚本加到[脚本库](docs/scripts/README.md#contributing-a-script--投稿脚本)
