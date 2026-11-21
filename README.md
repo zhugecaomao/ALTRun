@@ -209,8 +209,6 @@ For upgrading from an older version or from 2.x, see [Installation and upgrades]
 
 ## Feedback and contributing
 - Report a problem: [open an issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) (please include your Windows version and the steps to reproduce)
-- Questions: [ask a question](https://github.com/zhugecaomao/ALTRun/issues/new?template=question.yml)
-- Ideas: [suggest a feature](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml)
 - Scripts: contribute one to the [script library](docs/scripts/README.md#contributing-a-script--投稿脚本) with a pull request
 - Code contributions: please read [CONTRIBUTING.md](CONTRIBUTING.md) first; the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) covers the project structure, running the tests and adding a search feature
 
