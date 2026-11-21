@@ -64,4 +64,4 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | 更多操作 | `→` 或鼠标右键 |
 | 忘了怎么写 | `?` 查看所有输入语法和快捷键 |
 
-有问题或建议: [Issues](https://github.com/zhugecaomao/ALTRun/issues) · [Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
+使用问题: [提交问题](https://github.com/zhugecaomao/ALTRun/issues/new?template=question.yml) · 功能建议: [提交建议](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml)
