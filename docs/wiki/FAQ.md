@@ -95,4 +95,4 @@ Not by default: the clipboard history is kept on this PC only (`%LOCALAPPDATA%\A
 User commands from 2.x are imported from `ALTRun.ini` as custom commands, and the built-in commands are replaced by [system commands](System-Commands#system-commands). The import happens only once, when there's no `ALTRun.json` yet: to import again, quit ALTRun, rename `Data\ALTRun.json` and run it again. `ALTRun.ini` is never changed; see [Installation and upgrades](Installation#upgrading-from-2x-v20260812-and-earlier-to-30).
 
 ---
-Didn't find an answer? [Open an issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) or ask in [Discussions](https://github.com/zhugecaomao/ALTRun/discussions).
+Didn't find an answer? [Ask a question](https://github.com/zhugecaomao/ALTRun/issues/new?template=question.yml).
