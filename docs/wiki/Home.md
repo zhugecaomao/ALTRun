@@ -64,4 +64,4 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | More actions | `→` or right-click |
 | Forgot the syntax | `?` lists every search syntax and shortcut |
 
-Questions or ideas: [Issues](https://github.com/zhugecaomao/ALTRun/issues) · [Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
+Questions or ideas: [Issues](https://github.com/zhugecaomao/ALTRun/issues)

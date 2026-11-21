@@ -24,7 +24,7 @@ Checked by the tests (`ProjectTests.ScriptLibrary`, and syntax in the Tests work
 
 ## Contributing a script / 投稿脚本
 
-Scripts from other people are welcome. Send a pull request that adds the script to `docs/scripts/` (one script per pull request; Chinese or English is fine); a script attached to a discussion or an issue isn't taken in as it is. Before it goes in, the script is reviewed line by line for these, besides the checks above:
+Scripts from other people are welcome. Send a pull request that adds the script to `docs/scripts/` (one script per pull request; Chinese or English is fine); a script attached to an issue isn't taken in as it is. Before it goes in, the script is reviewed line by line for these, besides the checks above:
 
 - What it does matches the description, and nothing more; it doesn't download and run other code
 - Nothing you select, type or capture is written to a log or left in a temporary file (delete temporary files on every way out, errors included)
@@ -35,7 +35,7 @@ Scripts from other people are welcome. Send a pull request that adds the script 
 
 Put `@altrun.author` in it to be named on the website; once merged you are also listed among the [contributors](https://github.com/zhugecaomao/ALTRun/graphs/contributors). Scripts in the library are released under the [GPL-3.0](../../LICENSE) license, like the rest of ALTRun. Later fixes may be made to a contributed script, and a script that stops working and can't be fixed may be removed.
 
-欢迎别人写的脚本。请提交 Pull Request, 把脚本加到 `docs/scripts/` (一个 PR 一个脚本; 中文英文都可以); 讨论区或 issue 里的附件不直接收录。收录前除了上面的检查, 还会逐行审查这几点:
+欢迎别人写的脚本。请提交 Pull Request, 把脚本加到 `docs/scripts/` (一个 PR 一个脚本; 中文英文都可以); 仅作为 Issue 附件提交的脚本不直接收录。收录前除了上面的检查, 还会逐行审查这几点:
 
 - 做的事和说明一致, 不做别的; 不下载别的代码来运行
 - 选中的、输入的、截取的内容不写进日志, 也不留在临时文件里 (所有退出路径都删临时文件, 出错时也一样)

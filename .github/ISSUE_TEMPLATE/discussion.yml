@@ -1,0 +1,25 @@
+name: Discussion / 一般讨论
+description: Start a discussion about ALTRun / 发起与 ALTRun 相关的一般讨论
+title: ""
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before starting a discussion, please check the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) and [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ).
+        发起讨论前，请先查阅 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) 和 [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ)。
+
+  - type: textarea
+    id: discussion
+    attributes:
+      label: Discussion topic / 讨论主题
+      description: Share your ideas, feedback, or any topic related to ALTRun. / 分享你的想法、反馈或任何与 ALTRun 相关的话题。
+      placeholder: What would you like to discuss? / 你想讨论什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context / 补充信息
+      description: Add any details that may help the discussion. / 补充有助于讨论的信息。
