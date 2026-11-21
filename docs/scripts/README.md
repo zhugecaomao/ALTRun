@@ -24,7 +24,7 @@ Checked by the tests (`ProjectTests.ScriptLibrary`, and syntax in the Tests work
 
 ## Contributing a script / 投稿脚本
 
-Scripts from other people are welcome. Send a pull request that adds the script to `docs/scripts/` (one script per pull request; Chinese or English is fine); a script submitted only as an issue attachment isn't taken in as it is. Before it goes in, the script is reviewed line by line for these, besides the checks above:
+Scripts from other people are welcome. Send a pull request that adds the script to `docs/scripts/` (one script per pull request; Chinese or English is fine); a script attached to an issue isn't taken in as it is. Before it goes in, the script is reviewed line by line for these, besides the checks above:
 
 - What it does matches the description, and nothing more; it doesn't download and run other code
 - Nothing you select, type or capture is written to a log or left in a temporary file (delete temporary files on every way out, errors included)
