@@ -31,6 +31,15 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Dialog Panel | [Dialog Folder Panel](Quick-Switch-Panel) |
 | Date Stamp | [Date Stamp](Date-Stamp) |
 
+## Working with lists
+
+Lists that use the standard Preferences list editor share the same context menu. Right-click a row, or focus the list and press the Menu key or `Shift+F10`. Right-clicking a row selects it before opening the menu.
+
+- With a row selected: **Edit** (the default command, also available by double-clicking), **Delete**, **Add**, then any actions specific to that page.
+- With no row selected: **Add** and the page-specific actions remain available; **Edit** and **Delete** are omitted.
+
+The menu provides the same commands as the buttons below the list and its **More** menu. Page-specific actions vary by list and may include checking entries, importing or other operations.
+
 ## Structure
 ```jsonc
 {
