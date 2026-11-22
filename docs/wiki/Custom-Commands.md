@@ -58,6 +58,8 @@ Folders open in Preferences → General → File manager (Explorer by default; T
 ## Commands with an argument ({query})
 Put `{query}` in the target or arguments and give the command a keyword; typing "keyword text" replaces `{query}` with the text (URL-encoded in web addresses). It works just like a web search keyword:
 
+Custom commands currently support only the exact `{query}` placeholder. The `{query|default}` form used by web search URLs is not interpreted in custom commands and remains unchanged. To provide an argument, use a keyword and type the value after a space, or pass the selection through a content type or hotkey.
+
 | Title | Type | Target | Arguments | Keyword | Type this |
 |---|---|---|---|---|---|
 | Jira | Link | `https://jira.example.com/browse/{query}` | | `jira` | `jira ABC-123` |
