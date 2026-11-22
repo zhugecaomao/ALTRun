@@ -288,6 +288,8 @@ See [Extensions](Extensions).
 ```
 For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets) and [Custom hotkeys](Hotkeys).
 
+Custom commands currently support only the exact `{query}` placeholder; `{query|default}` is specific to web search URLs and is not interpreted in custom commands. See [Custom commands](Custom-Commands#commands-with-an-argument-query).
+
 `Id` (custom commands, snippets, sync tasks): 8 characters `a-z 0-9`, made by ALTRun, unique in its list. It stays the same when the item is renamed or its target changes: a hotkey runs a custom command by it (`"Action": "custom:<Id>"`), and the learned ranking and recent items follow it. Don't change it by hand; leave it out for an item you add by hand (one is made when ALTRun loads the file). A missing or repeated one is replaced.
 
 ## The Data folder
