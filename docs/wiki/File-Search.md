@@ -11,228 +11,13 @@ Normal searches show apps, commands, snippets and so on, but **not** files from 
 
 - **Recently opened files**: **`recent report`** searches the files and folders you opened recently in any program (Windows' "Recent items"), newest first, on local disks and network shares alike; **`recent `** with nothing after it lists the newest. It reads Windows' Recent folder directly, so it works without Everything and without the built-in index (Everything doesn't list these by default: `\AppData\` is excluded in Preferences → Search Sources → "Filter"). Change the keyword in Preferences → File Search → "Recent keywords"; `recent report` also works in file search mode. Network files are listed without accessing the network, so a slow or disconnected share doesn't hold up the list
 - **By type** (like Listary's filters): **`doc report`** searches documents only; there are also `pic` pictures, `video`, `audio`, `zip` archives, `exe` programs and `cad` (dwg / dxf / dgn / rvt / ifc / skp...). `doc report` also works in file search mode. Change the keywords and extensions in Preferences → File Search → "File types" → **Edit...**, one `keyword = ext ext ...` per line (the line shows just the keywords). With Everything this is the same as `ext:doc;docx;...`
-
-### Default file types and extensions
-
-| Keyword | Extensions |
-|---|---|
-| `doc` | `doc docx xls xlsx xlsm csv ppt pptx pdf txt md rtf odt ods` |
-| `pic` | `jpg jpeg png gif bmp tif tiff webp svg ico heic` |
-| `video` | `mp4 mkv avi mov wmv flv webm m4v` |
-| `audio` | `mp3 wav flac aac m4a ogg wma` |
-| `zip` | `zip rar 7z tar gz tgz bz2 xz iso` |
-| `exe` | `exe msi bat cmd ps1 lnk` |
-| `cad` | `dwg dxf dgn dwf rvt ifc skp` |
-
-The list is editable. Each rule uses one keyword, an equals sign and a space-separated extension list. Extensions may include or omit the leading dot; commas and semicolons can also separate extensions. Lines without `=` are ignored.
-- To find files by modification date, write Everything's syntax directly, for example `Space` + `dm:today report` or `dm:2days`
+- To find files by modification date, write [Everything's syntax](#everything-search-syntax) directly, for example `Space` + `dm:today report` or `dm:7days`
 
 A keyword needs a space after it to start a file search: typing just `folder`, `open`, `recent` or `doc` shows commands and apps with that word in their name as usual, plus a hint for the keyword. Apps and commands whose name starts with that word (e.g. Docker for `doc`) stay above the hint, so `Enter` still opens them; otherwise the hint comes first. `Enter`, `Tab` or a double-click on the hint completes the keyword and the space (e.g. `recent `). While a keyword isn't typed in full yet (at least 3 letters, e.g. `fol`, `rec`, `vid`), its hint shows at the end of the list.
 
 Results are sorted by how well the name matches: exact > start of the name > start of a word (for example `2026-Budget`) > contains (for example `NewBudget`); at the same match quality, folders come before files, then by modification time (newest first). With Everything, ALTRun takes Everything's first 300 results and then sorts them, so the best-matching folder isn't missed just because it wasn't modified recently.
 
-Everything search syntax is passed directly to Everything when it is running. ALTRun does not parse it, and it is not available when the built-in index is used. For example, `Space` + `folder:budget 2024`, `ext:pdf report` or `dm:today report`.
-
-## Everything search syntax reference
-
-Everything supports a query language for matching filenames, folders and indexed properties. ALTRun passes the query to Everything through its IPC interface; it does not implement or extend this syntax. Results depend on the installed Everything version and its indexing settings.
-
-> **Version note:** The current official Search Syntax, Search Functions and Search Modifiers references are marked as requiring Everything 1.5. ALTRun's IPC integration is tested with Everything 1.4 and 1.5, but that does not mean every 1.5 search function is available in 1.4. Check the version requirement before using advanced expressions.
-
-### 1. Query structure
-
-A search term follows this structure:
-
-`[!][search-modifier:][search-function:]<value>`
-
-- `!` excludes a term.
-- `search-modifier:` changes how a term is matched.
-- `search-function:` selects a property, such as extension, size or modification date.
-- `value` is the text or property value to match.
-- Text without a search function searches names; it also searches full paths when Match Path is enabled.
-
-| Query | Meaning |
-|---|---|
-| `report budget` | Both terms must match (AND) |
-| `report \| budget` | Either term may match (OR) |
-| `!draft` | Exclude terms matching draft |
-| `"annual report"` | Treat the quoted phrase as plain text |
-| `<report budget> \| invoice` | Grouping: (report AND budget) OR invoice |
-
-By default, OR is evaluated before AND. Use `< >` to group terms explicitly. Spaces around `|` are optional.
-
-### 2. Wildcards and literal characters
-
-| Pattern | Meaning |
-|---|---|
-| `*` | Zero or more characters, except a path separator |
-| `**` | Zero or more characters, including path separators |
-| `?` | Exactly one character, except a path separator |
-
-Examples: `*.pdf`, `report*` and `*report*`. Wildcards match the whole filename. Use `wildcards:` for extended wildcard syntax in property searches: `#` matches one digit, `[abc]` matches one character from a set, `[!abc]` matches one character outside a set, and a backslash escapes the next character.
-
-For literal special characters, use quotes or character entities such as `&sp:` (space), `&vert:` (vertical bar), `&excl:` (exclamation mark), `&lt:`, `&gt:` and `&quot:`. Unicode characters can use `&#<decimal>:` or `&#x<hex>:`.
-
-### 3. File and folder filters
-
-| Search term | Meaning | Example |
-|---|---|---|
-| `file:` | Files only | `file:report` |
-| `folder:` | Folders only | `folder:budget` |
-| `ext:` | Match whole file extensions | `ext:pdf` |
-| `ext:` list | Match any listed extension | `ext:pdf;docx;xlsx` |
-| `extension:` | Search the extension property | `extension:pdf` |
-| `stem:` | Search the filename without its extension | `stem:report` |
-| `path:` modifier | Match full path and name | `path:Projects report` |
-| `no-path:` modifier | Match name only | `no-path:report` |
-
-Built-in Everything type macros include `audio:`, `zip:`, `doc:`, `exe:`, `image:` and `video:`. `doc:` uses Everything's own document category. ALTRun's `doc report` uses the extension list configured in Preferences → File Search → File types. These are not the same filter definition.
-
-`ext:` ignores leading `.`, `*` and `*.` in extension values, and supports `*` / `?` wildcards, e.g. `ext:*.doc*`. `ext:` with an empty value matches files without an extension. Folders have no extension; use `folder:` for folders.
-
-Quote paths containing spaces, for example `"C:\Program Files"`.
-
-### 4. Common property functions
-
-| Function | Property | Example |
-|---|---|---|
-| `ext:` | File extension | `ext:pdf;docx` |
-| `size:` | File size | `size:>10mb` |
-| `date-modified:` (`dm:`) | Modification date | `dm:today` |
-| `date-created:` (`dc:`) | Creation date | `dc:yesterday` |
-| `date-accessed:` | Last access date | `date-accessed:7days` |
-| `attributes:` | Windows file attributes | `attributes:RH` |
-| `content:` | File contents | `content:"annual report"` |
-| `width:`, `height:` | Image dimensions | `width:>=1920` |
-| `length:` | Media duration | `length:>10mins` |
-| `kind:` | File or folder kind | `kind:document` |
-
-A function uses `function:value`. Hyphens in function names may be omitted, so `date-modified:` and `datemodified:` are equivalent. Available functions depend on the Everything version and indexed metadata.
-
-### 5. Supported value formats
-
-The value format depends on the property type.
-
-**Text values**
-- Plain text: `author:Example`
-- Quoted text, including spaces or operators: `author:"Example Author"`
-- Empty value: `author:` matches a non-empty text value; `size:` matches a non-zero numeric value.
-- Unknown value: `size:unknown` matches a property that is unknown or has not been indexed.
-
-**Numeric values and comparisons**
-
-| Format | Meaning |
-|---|---|
-| `function:value` | Equal within the precision implied by the unit |
-| `function:=value` or `function:==value` | Exact equality |
-| `function:<value` / `<=value` | Less than / less than or equal |
-| `function:>value` / `>=value` | Greater than / greater than or equal |
-| `function:!=value` | Not exactly equal |
-| `function:!value` | Not equal within the value's unit granularity |
-| `function:start..end` or `function:start-end` | Inclusive range |
-
-For example, `size:1kb` matches 1024–2047 bytes, while `size:=1kb` matches exactly 1024 bytes. Other examples: `size:>10mb`, `width:1920..3840`.
-
-**Units**
-- File sizes accept units such as `b`, `kb`, `mb` and `gb`.
-- Durations accept combined units, such as `length:1hour2mins5secs`, or `length:90seconds`.
-- Durations can also use `minutes:seconds` (for example, `length:1:32`) or ISO 8601 duration syntax (for example, `length:pt1h20m30s`).
-
-**Date values**
-
-- Constants: `today`, `yesterday`, month names or abbreviations, weekday names or abbreviations, `mtd`, `ytd`, `qtd`, and `unknown`.
-- Year: `2026` or the two-digit current-century year `26`.
-- Month: `07/2026` or `2026/07`.
-- Full date: `YYYY/MM/DD`, `DD/MM/YYYY` or `MM/DD/YYYY`; slash-separated formats depend on regional settings.
-- ISO 8601: `2026-07`, `2026-07-22` or `2026-07-22T10:30`.
-- Compact date: `20260722` or `260722`.
-- Relative duration: `10mins`, `2days`, `3weeks`, `4months`.
-- Inclusive date range: `2026-07-01..2026-07-31`.
-
-Examples: `dm:today`, `dm:2days`, `dc:2026-07`, `date-modified:2026-07-01..2026-07-31`.
-
-**Additional date formats**
-- Excel serial date/time: values from `10000` to `99999`, for example `date-modified:46189.7795022`.
-- Windows FILETIME: a 9-or-more-digit decimal value or hexadecimal with a `0x` prefix, for example `date-modified:134260745917910877` or `date-modified:0x1DCFD6FE3B74F5D`.
-- In ISO 8601 extended dates, `*` can stand for a date component, for example `date-modified:*-02`.
-
-**Duration formats**
-- Unit format: `[n<hours|hour|h>][n<minutes|minute|mins|min|m>][n<seconds|second|secs|sec|s>]`.
-- Clock format: `[[[days:]hours:]minutes:]seconds[.milliseconds]`, for example `length:1:43:21.987`.
-- ISO 8601 duration: `P[n]Y[n]M[n]DT[n]H[n]M[n]S`, `P[n]W`, `PYYYYMMDDThhmmss` or `P[YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]`.
-
-**Sub-expressions**
-
-Property functions can apply to a grouped expression in `< >`. For example, `content:<abc 123>` matches content containing both terms, while `content:<abc|123>` matches either term.
-
-**Function parsing**
-- A hyphen in a search function name is optional, e.g. `date-modified:` and `datemodified:`.
-- Add `*` immediately after a function name to treat the rest of the query as plain text without further parsing, e.g. `content*:<div class="menu">`.
-- Property substitution uses `$property-name:` to insert the current item's property value. Regex captures can be reused as `$0:` to `$9:`. These are advanced Everything 1.5 features.
-
-**File attribute values**
-
-`attributes:` accepts one or more letters: `A` (Archive), `C` (Compressed), `D` (Directory), `E` (Encrypted), `H` (Hidden), `I` (Not Content Indexed), `L` (Reparse Point), `N` (Normal), `M` (Recall on Data Access), `O` (Offline), `P` (Pinned), `R` (Read-only), `S` (System), `T` (Temporary), `U` (Unpinned), `V` (Integrity Stream) and `X` (No Scrub Data). Decimal and hexadecimal Windows attribute values are also accepted; hexadecimal uses the `0x` prefix. Examples: `attributes:RH`, `attributes:0x200`.
-
-**Lists and multi-value properties**
-- Property functions accept semicolon-separated lists: `ext:pdf;docx;xlsx`.
-- List items are ORed: `width:1920;3840` matches either width.
-- Quote a list item containing a semicolon: `artist:John;"Jane Doe"`.
-- Multi-value properties normally match if any value matches. Use `all-strings:` to require every value to match, or `no-multi-string:` to treat the entire list as one literal string. Example: `all-strings:artist:John;Jane`.
-- Full-text functions such as `content:` treat semicolons as search text, not list separators.
-
-**Wildcards and regular expressions**
-- Filename text supports `*`, `**` and `?`.
-- Use `wildcards:` for extended wildcards in other text properties, for example `wildcards:comment:project*`.
-- Use `regex:` for regular expressions, for example `regex:^report.*\.pdf$` or `regex:content:^Invoice`.
-
-### 6. Search modifiers (Everything 1.5)
-
-Modifiers change how a search term is matched. Multiple modifiers can be combined and can apply to a grouped expression.
-
-| Modifier | Meaning | Example |
-|---|---|---|
-| `case:` / `no-case:` | Enable / disable case-sensitive matching | `case:Report` |
-| `whole:` | Match the whole filename or property value | `whole:hosts` |
-| `whole-words:` | Match whole words | `whole-words:report` |
-| `prefix:` | Match the start of words | `prefix:ever` |
-| `suffix:` | Match the end of words | `suffix:hosts` |
-| `start-with:` | Match only the start of a filename or property value | `start-with:report` |
-| `end-with:` | Match only the end of a filename | `end-with:hosts` |
-| `path:` / `no-path:` | Enable / disable full-path matching | `path:system32 hosts` |
-| `regex:` | Enable regular expressions | `regex:^report` |
-| `wildcards:` / `no-wildcards:` | Enable extended / disable wildcard matching | `wildcards:comment:project*` |
-| `pinyin:` | Match Chinese using full Pinyin | `pinyin:nihao` |
-| `diacritics:` | Match accent marks | `diacritics:"Déjà Vu"` |
-
-Modifiers can be disabled with `no-`, for example `no-case:` and `no-path:`. Hyphens in modifier names are optional: `end-with:` and `endwith:` are equivalent, as are `start-with:` and `startwith:`. The hyphenated forms are the official documented names. A modifier can be prefixed with `?` to apply it to the rest of the query, e.g. `?case: FOO BAR`; `::` selects the built-in modifier instead of a user-defined override. A trailing `*` on a modifier makes the rest of the query plain text.
-
-### 7. Performance and practical examples
-
-Everything evaluates faster indexed conditions before slower operations such as content searches. Combine a selective filter with a content search for better performance.
-
-| Goal | Query |
-|---|---|
-| PDF reports | `ext:pdf report` |
-| Documents modified today | `doc: dm:today` |
-| Large files | `size:>100mb` |
-| PDFs in a project path | `path:Projects ext:pdf` |
-| Exclude hidden items | `!attributes:H` |
-| Search PDF contents | `ext:pdf content:"annual report"` |
-| Images at least 1920 px wide | `width:>=1920` |
-| Videos longer than 10 minutes | `length:>10mins` |
-
-Content searches can be slow and depend on Everything's content indexing and supported file formats. Property functions also depend on the relevant metadata being available or indexed.
-
-### 8. Official references
-
-This is a practical reference, not a copy of the complete Everything manual. For the full list of functions, modifiers, aliases and property-specific values, see:
-
-- [Search Syntax](https://www.voidtools.com/support/everything/search_syntax/)
-- [Search Functions](https://www.voidtools.com/support/everything/search_functions/)
-- [Search Modifiers](https://www.voidtools.com/support/everything/search_modifiers/)
-
-The official Search Syntax, Search Functions and Search Modifiers pages currently state that they require Everything 1.5.
+Everything's search syntax can be used as is and is passed straight to Everything: for example `Space` + `folder:budget 2024`, `ext:pdf report` or `path:Projects report` (see [Everything search syntax](#everything-search-syntax)).
 
 At most 30 results are shown; when nothing is found you can continue in Everything or Windows Search with one key. When a normal search finds nothing at all, a "Search files" fallback item is offered at the end as well.
 
@@ -252,6 +37,41 @@ Folders you use often work better as [custom commands](Custom-Commands): custom 
 `Enter` opens, `Ctrl+Enter` reveals in the file manager, `Alt+Enter` copies the path, `→` shows more actions (Open With, copy / cut the file, copy / move to the current folder in TC, Open Terminal Here, Properties, Move to Recycle Bin...), see the [action panel](Usage#action-panel).
 
 Custom commands set for a file's content type (for example `Markdown` = `md, markdown`) come right after Open in its action panel, and the type's **Open (Enter)** can name a command that opens its files on `Enter`, like Total Commander's internal associations: useful when Windows doesn't know the type, as in a portable setup. See [Your own actions for a selection](Usage#your-own-actions-for-a-selection).
+
+### File types and their extensions
+
+| Keyword | Extensions |
+|---|---|
+| `doc` | `doc docx xls xlsx xlsm csv ppt pptx pdf txt md rtf odt ods` |
+| `pic` | `jpg jpeg png gif bmp tif tiff webp svg ico heic` |
+| `video` | `mp4 mkv avi mov wmv flv webm m4v` |
+| `audio` | `mp3 wav flac aac m4a ogg wma` |
+| `zip` | `zip rar 7z tar gz tgz bz2 xz iso` |
+| `exe` | `exe msi bat cmd ps1 lnk` |
+| `cad` | `dwg dxf dgn dwf rvt ifc skp` |
+
+These are the defaults; change them as described above. The leading dot is optional, commas or semicolons also separate extensions, and lines without `=` are ignored.
+
+## Everything search syntax
+When Everything is running, file searches go to it unchanged (over IPC): ALTRun doesn't parse this syntax, and the built-in index doesn't understand it. Type it in file search mode (`Space` first, or a keyword such as `file `). The most useful parts:
+
+| Syntax | Meaning | Example |
+|---|---|---|
+| space | All terms must match (AND) | `report 2024` |
+| `\|` | Either term (OR) | `report \| invoice` |
+| `!` | Exclude | `report !draft` |
+| `< >` | Group terms | `<report \| invoice> 2024` |
+| `" "` | A phrase with spaces or special characters | `"annual report"` |
+| `*` `?` | Wildcards; they match the whole name | `*.pdf`, `report??.docx` |
+| `file:` / `folder:` | Files / folders only | `folder:budget` |
+| `ext:` | Extensions; `;` separates several | `ext:pdf;docx report` |
+| `path:` | Match the folder path too | `path:Projects report` |
+| `size:` | Size, with `<` `>` or a range `..` | `size:>100mb`, `size:10mb..50mb` |
+| `dm:` / `dc:` | Date modified / created | `dm:today`, `dm:7days`, `dm:2026-07-01..2026-07-31` |
+| `content:` | Text inside files: slow, combine it with other filters | `ext:txt content:invoice` |
+| `regex:` | Regular expression | `regex:^report.*\.pdf$` |
+
+Everything's own macros such as `doc:` use Everything's lists; ALTRun's `doc report` uses the extensions above. Everything 1.5 adds many more functions and modifiers (for example `start-with:` / `end-with:`, also written `startwith:` / `endwith:`, image width and height, media length); some don't work in 1.4. The full references (they describe Everything 1.5): [Search Syntax](https://www.voidtools.com/support/everything/search_syntax/), [Search Functions](https://www.voidtools.com/support/everything/search_functions/), [Search Modifiers](https://www.voidtools.com/support/everything/search_modifiers/).
 
 ## Browsing folders
 Type a path in the search box to list what's in that folder (folders first); the last part of the path filters the list:

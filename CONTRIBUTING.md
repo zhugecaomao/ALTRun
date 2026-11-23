@@ -6,7 +6,7 @@ Thank you for wanting to improve ALTRun! Bug reports, documentation improvements
 
 ## Reporting problems
 - **Bugs**: use the [bug report template](https://github.com/zhugecaomao/ALTRun/issues/new?template=bug_report.yml) and include your Windows version, ALTRun version and the steps to reproduce, ideally with a screenshot
-- **Ideas**: use the [feature request template](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml)
+- **Ideas**: use the [feature request template](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml); for questions or open-ended topics, use the [discussion template](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml)
 - When more information is needed, turn on "Write a debug log" in Preferences → Advanced, reproduce the problem, then type "log" in the search box to open the log file (`%Temp%\ALTRun.log`) and attach the relevant part (remove anything private first)
 - Security problems: please report them privately, see [SECURITY.md](SECURITY.md)
 
@@ -35,7 +35,7 @@ By submitting code, you agree to release your contribution under the [GPL-3.0](L
 
 ## 反馈问题
 - **Bug**: 用 [Bug 报告模板](https://github.com/zhugecaomao/ALTRun/issues/new?template=bug_report.yml), 写清 Windows 版本、ALTRun 版本、复现步骤, 最好附上截图
-- **建议**: 用 [功能建议模板](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml)
+- **建议**: 用 [功能建议模板](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml); 使用问题或开放式话题用 [一般讨论模板](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml)
 - 需要更多信息时, 可以在偏好设置 → 高级里打开 "写入调试日志", 复现问题后在搜索框输入 "日志" (或 log) 打开日志文件 (`%Temp%\ALTRun.log`), 附上相关部分 (注意先去掉隐私信息)
 - 安全问题请私下报告, 见 [SECURITY.md](SECURITY.md#安全策略)
 
