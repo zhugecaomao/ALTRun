@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.16.25]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 通用 → 文件管理器 的参数里可以用 `{path}` (要打开的文件夹) 和 `{file}` (文件或文件夹本身) 指定路径放在哪里, 例如 Total Commander 总在右侧面板打开: `TOTALCMD64.exe /O /T /R="{path}"`; 在文件管理器中显示 (`Ctrl+Enter`) 时 `{path}` 是所在的文件夹, `{file}` 是这个文件。不写时和以前一样把路径加在参数后面 (#610)
+
+### 修复
+- 自定义命令的目标只写了程序名, 而程序登记在 App Paths 里 (例如 `chrome.exe`、`winword`) 时, `Ctrl+Enter` 现在打开程序所在的文件夹 
+
 ## [2026.11.16.24]
 
 测试版。
@@ -1718,7 +1730,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.25...HEAD
+[2026.11.16.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...2026.11.16.25
 [2026.11.16.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...2026.11.16.24
 [2026.11.16.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...2026.11.16.23
 [2026.11.16.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...2026.11.16.22

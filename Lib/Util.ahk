@@ -109,6 +109,18 @@ class Path {
         return FileExist(fullPath) != ""
     }
 
+    ; The full path of a program registered under App Paths (chrome, winword.exe...: names that Run finds without PATH),
+    ; "" when it isn't registered. name has no extension -> .exe, as ShellExecute does
+    static AppPath(name) {
+        SplitPath(name, , , &ext)
+        if (ext = "")
+            name .= ".exe"
+        for root in ["HKCU", "HKLM"]
+            try if ((registered := Trim(RegRead(root "\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" name, ""), ' "`t')) != "")
+                return Path.ExpandEnv(registered)                               ; often REG_EXPAND_SZ (%ProgramFiles%\...)
+        return ""
+    }
+
     ; Whether files can be written in this folder (tries to create a temporary file and delete it)
     static IsWritable(dir) {
         probe := dir "\ALTRun.write-test.tmp"

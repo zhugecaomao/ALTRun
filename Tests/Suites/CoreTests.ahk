@@ -441,9 +441,47 @@ class CoreTests {
             eq("TC: /TT isn't /T", ActionCatalog.TabArgs(tc), "/TT /O /T")
             other := {Exe: "C:\Apps\Opus\dopus.exe", Args: "/x", Explorer: false}
             eq("other file managers untouched", ActionCatalog.TabArgs(other), "/x")
+            eq("TC by its file name, not its folder", ActionCatalog.IsTotalCommander({Exe: "C:\totalcmd\dopus.exe"}), false)
+
+            ; The command lines for Open Folder / Reveal: {path} = the folder to show, {file} = the item; none = as before
+            general["FolderNewTab"] := 0
+            folder := "C:\Demo Folder", item := folder "\R&D (1).txt"
+            tcExe := '"' tc.Exe '"', opusExe := '"' other.Exe '"'
+            tc.Args := ""
+            eq("open folder, no placeholder: folder appended", ActionCatalog.FileManagerLine(tc, folder, folder, '"' folder '"'), tcExe ' "' folder '"')
+            eq("reveal TC, no placeholder: /P and the item", ActionCatalog.RevealLine(tc, item), tcExe ' /P "' item '"')
+            eq("reveal other, no placeholder: the folder", ActionCatalog.RevealLine(other, item), opusExe ' /x "' folder '"')
+            tc.Args := '/O /T /R="{path}"'
+            eq("reveal {path}: the folder, nothing appended", ActionCatalog.RevealLine(tc, item), tcExe ' /O /T /R="' folder '"')
+            eq("open folder {path}: the folder", ActionCatalog.FileManagerLine(tc, folder, folder, '"' folder '"'), tcExe ' /O /T /R="' folder '"')
+            tc.Args := '/O /T /R="{file}"'
+            eq("reveal {file}: the item", ActionCatalog.RevealLine(tc, item), tcExe ' /O /T /R="' item '"')
+            eq("open folder {file}: the folder", ActionCatalog.FileManagerLine(tc, folder, folder, '"' folder '"'), tcExe ' /O /T /R="' folder '"')
+            eq("reveal a folder {file}: the folder itself, {path} its parent", ActionCatalog.FillPaths("{path}|{file}", "C:\Demo", "C:\Demo\Sub"), "C:\Demo|C:\Demo\Sub")
+            other.Args := "{PATH} --select {File} {path}"
+            eq("any case, every occurrence", ActionCatalog.RevealLine(other, item), opusExe " " folder " --select " item " " folder)
+            eq("one pass: a name with {file} isn't replaced again", ActionCatalog.FillPaths("{path}", "C:\a{file}b", "x"), "C:\a{file}b")
+            eq("$ in a path stays", ActionCatalog.FillPaths('"{file}"', "\\srv\share$", "\\srv\share$\$1.txt"), '"\\srv\share$\$1.txt"')
+            eq("unknown braces stay", ActionCatalog.FillPaths("{paths} {path}", "C:\a", "x"), "{paths} C:\a")
+            general["FolderNewTab"] := 1
+            tc.Args := '/R="{path}"'
+            eq("placeholder: TC still gets /O /T", ActionCatalog.RevealLine(tc, item), tcExe ' /R="' folder '" /O /T')
         } finally
             general["FolderNewTab"] := saved
         eq("default off", AppSettings.Defaults()["General"]["FolderNewTab"], 0)
+
+        ; Ctrl+Enter on a custom command whose program is given by name: the program's own folder (PATH, then App Paths)
+        appKey := "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ALTRunTestReveal.exe"
+        try {
+            RegWrite('"%WINDIR%\notepad.exe"', "REG_EXPAND_SZ", appKey)
+            eq("App Paths: quotes removed, variables expanded", Path.AppPath("ALTRunTestReveal"), A_WinDir "\notepad.exe")
+            eq("reveal a name under App Paths", ActionCatalog.RevealPath("ALTRunTestReveal.exe"), A_WinDir "\notepad.exe")
+        } finally
+            try RegDeleteKey(appKey)
+        eq("App Paths: not registered", Path.AppPath("ALTRunTestReveal"), "")
+        found := ActionCatalog.RevealPath("notepad")
+        eq("reveal a name in PATH: a full path", (InStr(found, "\") > 0 && FileExist(found) != "") ? "found" : found, "found")
+        eq("reveal a full path: unchanged", ActionCatalog.RevealPath(A_WinDir "\no such file.txt"), A_WinDir "\no such file.txt")
 
         ; When a new tab isn't used: normal cases only to the debug log; Explorer failing once a run to the log even when it is off
         logged := []
