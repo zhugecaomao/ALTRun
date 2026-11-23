@@ -2,12 +2,12 @@
 ; FileManagers.ahk - the current folder of file managers (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Reads, without touching the clipboard, the folder open in Total Commander (its WM_COPYDATA interface), Directory Opus
-; (dopusrt.exe /info) and File Explorer windows, which of them was used last, and Windows' recently used folders.
-; Used by Quick Switch, "terminal here" and the result actions.
+; (dopusrt.exe /info), Arke (Lib\Arke.ahk) and File Explorer windows, which of them was used last, and Windows'
+; recently used folders. Used by Quick Switch, "terminal here" and the result actions.
 ;
 ; Usage:
 ;   FileManagers.FileManagerFolder()        {Path, Tag} of the file manager used last
-;   FileManagers.FolderOfWindow(hwnd)       current folder of a TC / Opus / Explorer window (read only, for "terminal here")
+;   FileManagers.FolderOfWindow(hwnd)       current folder of a TC / Opus / Arke / Explorer window (read only, for "terminal here")
 ;   FileManagers.RecentFolders(n)           the n most recently used folders (opened files count by their folder)
 ;===============================================================================
 
@@ -86,7 +86,7 @@ class FileManagers {
         return ""
     }
 
-    ; Current folder of the TC / Opus / Explorer window nearest the top: {Path, Tag, Hwnd}, "" when none.
+    ; Current folder of the TC / Opus / Arke / Explorer window nearest the top: {Path, Tag, Hwnd}, "" when none.
     ; Windows are listed front to back, so with a dialog in front this is the file manager used last
     ; (the jump hotkey, auto jump, "Copy to ..." in the actions)
     static FileManagerFolder() {
@@ -96,6 +96,7 @@ class FileManagers {
             switch className {
                 case "TTOTAL_CMD"   : return {Path: FileManagers.TotalCmdFolder(hwnd), Tag: "Total Commander", Hwnd: hwnd}
                 case "dopus.lister" : return {Path: FileManagers.DOpusFolder(hwnd), Tag: "Directory Opus", Hwnd: hwnd}
+                case "ArkeWindow"   : return {Path: Arke.Folder(hwnd), Tag: "Arke", Hwnd: hwnd}
                 case "CabinetWClass": return {Path: FileManagers.ExplorerFolder(hwnd), Tag: I18n.T("QuickSwitch.TagExplorer"), Hwnd: hwnd}
             }
         }
@@ -105,7 +106,7 @@ class FileManagers {
     static IsFileManager(hwnd) {
         className := ""
         try className := WinGetClass("ahk_id " hwnd)
-        return className = "TTOTAL_CMD" || className = "dopus.lister" || className = "CabinetWClass"
+        return className = "TTOTAL_CMD" || className = "dopus.lister" || className = "ArkeWindow" || className = "CabinetWClass"
     }
 
     static FolderOfWindow(hwnd) {
@@ -114,6 +115,7 @@ class FileManagers {
         switch WinGetClass("ahk_id " hwnd) {
             case "TTOTAL_CMD"   : return FileManagers.TotalCmdFolder(hwnd)
             case "dopus.lister" : return FileManagers.DOpusFolder(hwnd)
+            case "ArkeWindow"   : return Arke.Folder(hwnd)
             case "CabinetWClass": return FileManagers.ExplorerFolder(hwnd)
         }
         return ""

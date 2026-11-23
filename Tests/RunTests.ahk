@@ -19,6 +19,7 @@
 #Include %A_ScriptDir%\..\Lib\DelimitedText.ahk
 #Include %A_ScriptDir%\..\Lib\Kanji.ahk
 #Include %A_ScriptDir%\..\Lib\Everything.ahk
+#Include %A_ScriptDir%\..\Lib\Arke.ahk
 #Include %A_ScriptDir%\..\Lib\Units.ahk
 #Include %A_ScriptDir%\..\Lib\ClipboardData.ahk
 #Include %A_ScriptDir%\..\Lib\FileDrag.ahk
@@ -107,6 +108,7 @@
 
 #Include %A_ScriptDir%\TestUtil.ahk
 #Include %A_ScriptDir%\FakeEverything.ahk
+#Include %A_ScriptDir%\FakeArke.ahk
 #Include %A_ScriptDir%\Bench\FileIndexBench.ahk
 #Include %A_ScriptDir%\Integration\DelayedStartCheck.ahk
 #Include %A_ScriptDir%\Integration\AdminDialogCheck.ahk

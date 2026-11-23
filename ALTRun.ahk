@@ -40,6 +40,7 @@
 #Include Lib\DelimitedText.ahk
 #Include Lib\Kanji.ahk
 #Include Lib\Everything.ahk
+#Include Lib\Arke.ahk
 #Include Lib\Units.ahk
 #Include Lib\ClipboardData.ahk
 #Include Lib\FileDrag.ahk
