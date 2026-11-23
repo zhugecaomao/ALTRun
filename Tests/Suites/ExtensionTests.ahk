@@ -2039,6 +2039,16 @@ class ExtensionTests {
         ClipboardProvider.Entries := [Map("Text", "newest"), Map("Text", "previous"), Map("Text", "older")]
         eq("clipboard:1", SnippetProvider.Expand("[{clipboard:1}] [{clipboard:2}] [{clipboard:9}]"), "[previous] [older] []")
         ClipboardProvider.Entries := saved
+        ; {enter} / {tab}: keys pressed between the parts (any case); other braces stay
+        parts := SnippetProvider.KeyParts("Microsoft YaHei{Enter}")
+        eq("keys: text then Enter", parts.Length "|" parts[1].Text "|" parts[1].Key "|" parts[2].Text "|" parts[2].Key, "2|Microsoft YaHei|Enter||")
+        parts := SnippetProvider.KeyParts("{tab}a{TAB}b{x}{enter}c")
+        joined := ""
+        for part in parts
+            joined .= "[" part.Text "/" part.Key "]"
+        eq("keys: several, a key first, other braces stay", joined, "[/Tab][a/Tab][b{x}/Enter][c/]")
+        eq("keys: none", SnippetProvider.KeyParts("plain`ntext").Length, 1)
+        eq("keys: not expanded by Expand", SnippetProvider.Expand("a{enter}"), "a{enter}")
     }
 
     ; Snippet import / export: merge rules, header, auto expansion

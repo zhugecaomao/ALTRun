@@ -26,6 +26,21 @@ Replaced when pasting:
 | `{clipboard:1}` `{clipboard:2}` | The 1st, 2nd previous text in the clipboard history (like Alfred; `{clipboard}` is the current clipboard; files and images are skipped) |
 | `{uuid}` | A randomly generated UUID, different each time |
 | `{cursor}` | The cursor ends up here after pasting |
+| `{enter}` `{tab}` | Presses the `Enter` / `Tab` key there (see below) |
+
+### Pressing Enter or Tab: `{enter}` `{tab}`
+A line break or a tab in the text is a character: in a single-line box it is ignored or pasted as is, and it doesn't confirm anything. `{enter}` and `{tab}` press the key instead, after the text before them has been pasted:
+
+| Snippet text | Typed where | Result |
+|---|---|---|
+| `Microsoft YaHei{enter}` (keyword `yh`) | PowerPoint's font box: `;yh` | the font name is filled in and confirmed, as if you pressed Enter |
+| `John Smith{tab}john@example.com{tab}+65 1234 5678` | the first box of a form | fills three boxes, moving on with Tab |
+| `{tab}` at the start | anywhere | Tab first, then the text |
+
+- Any case works (`{Enter}`, `{TAB}`)
+- `{cursor}` counts only after the last `{enter}` / `{tab}` (the caret can't move back past a key); earlier ones are dropped
+- `{enter}` really presses Enter: in a chat window it sends the message, in a dialog it may press the default button
+- Placeholders that put in text (`{clipboard}`...) never press keys, even when that text contains `{enter}`
 
 ## Snippet expansion
 Type `;keyword` (for example `;sig`) in any program and what you typed is deleted and replaced by the snippet text, like Alfred's snippets. The `;` prefix keeps normal typing from triggering it by accident; change it in `Features.Snippets.ExpandPrefix`. To stop a single snippet from expanding, untick "Expand automatically when typed" in its edit window (`"AutoExpand": 0`); it can still be searched. Snippets don't expand in ALTRun's own search window, in Windows password boxes, or in the windows listed under [Don't expand in](#dont-expand-in).

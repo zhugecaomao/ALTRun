@@ -15,6 +15,8 @@
 ;               window isn't left in menu mode (a lone Alt opens its menu bar, the second tap closes it again)
 ;   alt-once    one Alt tap doesn't show the search window
 ;   alt-space   Alt+Space (the main hotkey) shows it, a lone Alt tap right after doesn't toggle it again
+;   snippet-keys typing ;kk in the first box of a form expands the snippet "one{tab}two{enter}": one, Tab to the second box, two, and
+;               Enter presses the form's default button (#591)
 ; Each is tried Rounds times. Prints one line per round (PASS / FAIL) and ALTRun's log on failure; the exit code is the number of
 ; failed rounds.
 ;
@@ -32,6 +34,7 @@ global Work := "C:\HotkeyCheck\work", LogFile := A_Temp "\ALTRun.log"
 global PlainMarker := Work "\plain.txt", QueryMarker := Work "\query.txt", ScriptMarker := Work "\script.txt"
 global ScriptsDir := AppDir "\Scripts"                                    ; a portable copy (its folder is writable): the Scripts folder is in it
 global Failures := 0, AppPid := 0, Source := "", SourceEdit := "", MenuPid := 0, MenuWin := 0
+global Form := "", FormA := "", FormB := "", FormSubmitted := 0
 OnError(Crashed)
 
 try {
@@ -50,6 +53,8 @@ try {
         SingleAlt(A_Index)
     Loop Rounds
         AltSpaceThenAlt(A_Index)
+    Loop Rounds
+        SnippetKeys(A_Index)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -83,7 +88,8 @@ Setup() {
             Map("Key", "^!F9", "Action", "custom:plain001", "WinTitle", "")
           , Map("Key", "^!F10", "Action", "custom:query001", "WinTitle", "")
           , Map("Key", "^!F11", "Action", "custom:gone0001", "WinTitle", "")
-          , Map("Key", "^!F12", "Action", "script:marker.ahk", "WinTitle", "")])
+          , Map("Key", "^!F12", "Action", "script:marker.ahk", "WinTitle", "")]
+        , "Snippets", [Map("Name", "Keys", "Keyword", "kk", "Text", "one{tab}two{enter}")])
     try DirDelete(ScriptsDir, true)
     DirCreate(ScriptsDir)
     FileAppend("; @altrun.title Write script marker`n; @altrun.selection Text`n"
@@ -105,6 +111,10 @@ Setup() {
     Source := Gui("+AlwaysOnTop", "HotkeyCheck source")                     ; the program with the selection: an edit box of this script
     SourceEdit := Source.AddEdit("w300 r1", "hello123")
     Source.Show()
+    Form := Gui("+AlwaysOnTop", "HotkeyCheck form")                         ; two boxes and a default button, for {tab} / {enter} in a snippet
+    FormA := Form.AddEdit("w300 r1"), FormB := Form.AddEdit("w300 r1")
+    Form.AddButton("Default w80", "OK").OnEvent("Click", (*) => (FormSubmitted += 1))
+    Form.Show("x0 y300")
     ; a window with a menu bar, in a process of its own (a lone Alt opens the menu bar, like in Notepad: its menu loop would hold this script)
     FileAppend('#NoTrayIcon`ng := Gui("+AlwaysOnTop", "HotkeyCheck menu")`nm := Menu(), m.Add("Item", (*) => 0)`n'
         . 'g.MenuBar := MenuBar(), g.MenuBar.Add("&File", m)`ng.AddEdit("w300 r1")`ng.OnEvent("Close", (*) => ExitApp())`ng.Show()`n'
@@ -210,6 +220,25 @@ AltSpaceThenAlt(n) {
     LeaveMenu()
 }
 
+; ;kk typed in the first box (at SendLevel 1, like a person: the hotstrings ignore other scripts' keys at level 0)
+SnippetKeys(n) {
+    global FormSubmitted
+    FormA.Value := "", FormB.Value := "", FormSubmitted := 0
+    WinActivate(Form.Hwnd)
+    if !WinWaitActive(Form.Hwnd, , 3)
+        throw Error("the form didn't come to the front")
+    FormA.Focus()
+    Sleep(200)
+    SendLevel(1), SendEvent(";kk"), SendLevel(0)
+    start := A_TickCount
+    while (!FormSubmitted && A_TickCount - start < 5000)
+        Sleep(100)
+    Sleep(300)                                                              ; anything typed after Enter would show now
+    a := FormA.Value, b := FormB.Value
+    Result("snippet-keys", n, a == "one" && b == "two" && FormSubmitted = 1
+        , "box 1 [" a "], box 2 [" b "], default button pressed " FormSubmitted "x")
+}
+
 TapAlt() {
     SendLevel(1)
     SendEvent("{LAlt}")
@@ -284,6 +313,7 @@ LogSince(offset) {
 TearDown() {
     global AppPid
     try Source.Destroy()
+    try Form.Destroy()
     if MenuPid
         try ProcessClose(MenuPid)
     if AppPid {

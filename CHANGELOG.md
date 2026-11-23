@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.9]
+
+测试版。
+
+Test build.
+
+### 新增
+- 文字片段新占位符 `{enter}` / `{tab}`: 在那里真的按一下 Enter / Tab 键 (前面的文字贴好之后), 例如片段 `微软雅黑{enter}` 在 PowerPoint 的字体框里填入并确认, 或者用 `{tab}` 一次填好表单的几个框. 和文字里的换行 / 制表符不同, 换行在单行输入框里不起确认作用 (#591)
+
 ## [2026.11.23.8]
 
 测试版。
@@ -1640,7 +1649,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...HEAD
+[2026.11.23.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...2026.11.23.9
 [2026.11.23.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...2026.11.23.8
 [2026.11.23.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...2026.11.23.7
 [2026.11.23.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...2026.11.23.6
