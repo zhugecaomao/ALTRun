@@ -95,21 +95,8 @@ class RoboSync {
         return '"' (SubStr(arg, -1) = "\" ? arg "\" : arg) '"'
     }
 
-    ; The arguments of a command line, as programs started with it read them (CommandLineToArgvW); a dummy program name goes first,
-    ; since the first word is read by other rules
-    static Tokens(commandLine) {
-        tokens := []
-        if (Trim(commandLine) = "")
-            return tokens
-        count := 0
-        argv := DllCall("shell32\CommandLineToArgvW", "WStr", "x " commandLine, "Int*", &count, "Ptr")
-        if !argv
-            return tokens
-        Loop count - 1
-            tokens.Push(StrGet(NumGet(argv, A_Index * A_PtrSize, "Ptr"), "UTF-16"))
-        DllCall("LocalFree", "Ptr", argv)
-        return tokens
-    }
+    ; The arguments of a command line, as programs started with it read them
+    static Tokens(commandLine) => Win.Args(commandLine)
 
     ; Space-separated words, with "quoted parts" kept together (the Files field: *.docx "my report.*")
     static Words(text) => RoboSync.Tokens(text)

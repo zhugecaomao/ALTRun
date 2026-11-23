@@ -222,6 +222,10 @@ class I18n {
         s["Selection.AddCommand"] := "Add a Command for This Content..."
         s["Selection.AddCommand.Sub"] := "Content types: {1}"
         s["Selection.NewType"] := "Make a Content Type from It..."
+        s["Selection.Refused"] := "Can't take the selection: it has {1}, which would break the command line"
+        s["Selection.Refused.Shell"] := "Can't take the selection: it has {1}, which {2} would run as code"
+        s["Selection.Refused.PowerShell"] := "To pass it as text, put {query} in single quotes in -Command ('{query}'), or pass it to a script after -File."
+        s["Selection.LineBreak"] := "a line break"
 
         ; --- Providers ---
         s["App.Subtitle.Store"]        := "Microsoft Store app"

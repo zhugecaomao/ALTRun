@@ -25,8 +25,10 @@
 ;   A custom command with "Selection": "PO, PDF" (type names, any case) is shown first in the panel of a selection of any of those types:
 ;     {query} in Target / Arguments becomes the selected text or path (encoded in URLs); several files become "a" "b" (each quoted);
 ;     a File / Command without {query} gets the selection appended as its last argument, quoted (as "Open with").
-;   Selected text can't break out of the command line: a command isn't shown when the text has a line break or a double quote
-;   (except URLs, which are encoded), nor when it runs a shell (cmd, PowerShell, a batch file...) and the text has that shell's special characters.
+;   Selected text can't break out of the command line: a command can't take the text when it has a line break or a double quote
+;   (except URLs, which are encoded), nor when it runs a shell (cmd, PowerShell, a batch file...) and the text has that shell's special characters;
+;   its row stays in the panel saying why, and Enter on it only says so. PowerShell started directly takes any of them where the selection
+;   is only text to it: an argument of the script after -File, or a single-quoted string of -Command (its single quotes doubled).
 ;   Scripts with "@altrun.selection PO, PDF" in their header come after the custom commands, with the same checks (ScriptProvider.ActionsFor).
 ;   When no command or script is set for the selection's types, the panel ends with "Add a Command for This Content..." (the command
 ;   edit dialog with "Selection types" filled in) and, when none of the user's types matched, "Make a Content Type from It..." (the type
@@ -397,10 +399,10 @@ class SelectionActions {
         actions := []
         if ProviderRegistry.IsEnabled(CustomCommandProvider) {
             openCommand := SelectionActions.OpenCommand(info)
-            if (IsObject(openCommand) && IsObject(action := SelectionActions._CommandAction(openCommand, info)))
+            if (IsObject(openCommand) && IsObject(action := SelectionActions._CommandAction(openCommand, info, true)))
                 actions.Push(action)
             for command in AppSettings.CustomCommands
-                if (command != openCommand && SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info)))
+                if (command != openCommand && SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info, true)))
                     actions.Push(action)
         }
         for action in ScriptProvider.ActionsFor(info)
@@ -650,17 +652,21 @@ class SelectionActions {
     static KindText(kind) => I18n.T((kind = "File") ? "Prefs.SelKind.File" : "Prefs.SelKind.Text")
 
     ; The panel row of a custom command for the selection, "" when the selection can't be put into its command line safely
-    static _CommandAction(command, info) {
+    ; (refusedRow: then a row saying why, RefusedRow)
+    static _CommandAction(command, info, refusedRow := false) {
         commandType := command.Has("Type") ? command["Type"] : "File"
         takesQuery := CustomCommandProvider.TakesQuery(command)
         appends := !takesQuery && (commandType = "File" || commandType = "Command")
         if (commandType = "Url") {
             if (takesQuery && info.Kind = "files")                          ; several paths make no URL
                 return ""
-        } else if ((takesQuery || appends) && !SelectionActions.SafeArgument(info, command)) {
-            return ""
+        } else if ((takesQuery || appends) && IsObject(problem := SelectionActions.ArgumentProblem(info, command))) {
+            return refusedRow ? SelectionActions.RefusedRow(command["Title"], CustomCommandProvider._ToItem(command, 0).Icon, problem) : ""
         }
-        item := CustomCommandProvider._ToItem(command, 0, takesQuery ? info.Term : "")
+        term := info.Term
+        if (takesQuery && SelectionActions.PowerShellMode(command) = "quoted")
+            term := RegExReplace(term, "['‘’‚‛]", "$0$0")                  ; inside PowerShell's single quotes: a quote doubled is one quote
+        item := CustomCommandProvider._ToItem(command, 0, takesQuery ? term : "")
         item.Title := command["Title"]
         item.CommandId := command.Has("Id") ? command["Id"] : ""            ; which command the row runs (the open command is found by it)
         if RegExMatch(item.Arg, "\\\.\.?\\") {                            ; A_ScriptDir\..\Typora\Typora.exe: shown and run as C:\Typora\Typora.exe
@@ -686,32 +692,202 @@ class SelectionActions {
         return (*) => ActionCatalog.RunDefault(runItem)
     }
 
-    ; Whether the selection can go into the command's command line: paths always can (they have no double quotes);
-    ; text can't have a line break or a double quote; shells also refuse their special characters. A shell is looked for
-    ; in the target after expanding it (%ComSpec%, A_WinDir, a name found on PATH) and anywhere in the arguments, so a
-    ; shell started through another program ("wt.exe cmd /k ...", "conhost.exe powershell ...") is caught too
-    static SafeArgument(info, command) {
-        if (info.Kind = "text" || info.Kind = "url") {
-            if RegExMatch(info.Term, '[\r\n"]')
-                return false
-        }
+    ; Whether the selection can go into the command's command line (ArgumentProblem finds nothing)
+    static SafeArgument(info, command) => !IsObject(SelectionActions.ArgumentProblem(info, command))
+
+    ; Why the selection can't go into the command's command line: {Chars: the characters refused, Shell: the shells that would read
+    ; them as code ("" for a line break or a double quote, which break any command line)}; "" when it can.
+    ; Paths have no double quotes; text can't have a line break or a double quote; shells also refuse their special characters. A shell
+    ; is looked for in the target after expanding it (%ComSpec%, A_WinDir, a name found on PATH) and anywhere in the arguments, so a
+    ; shell started through another program ("wt.exe cmd /k ...", "conhost.exe powershell ...") is caught too. PowerShell started
+    ; directly takes them where the selection is only text to it (PowerShellMode)
+    static ArgumentProblem(info, command) {
+        if ((info.Kind = "text" || info.Kind = "url") && RegExMatch(info.Term, '[\r\n"]'))
+            return {Chars: SelectionActions._CharsIn(info.Term, '[\r\n"]'), Shell: ""}
         target := command.Has("Target") ? command["Target"] : ""
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
-        switch SelectionActions.ShellIn(target " " CustomCommandProvider._Resolve(Trim(target, '" ')) " " Path.ExpandEnv(arguments)) {
-            case "posix": return !RegExMatch(info.Term, "[&|<>^%!``$;(){}@']")   ; PowerShell / Unix shells: also cmd's characters (cmd may be in between)
-            case "cmd":   return !RegExMatch(info.Term, "[&|<>^%!]")
+        line := target " " CustomCommandProvider._Resolve(Trim(target, '" ')) " " Path.ExpandEnv(arguments)
+        switch (shell := SelectionActions.ShellIn(line)) {
+            case "cmd": special := "[&|<>^%!]"
+            case "":    return ""
+            default:    special := "[&|<>^%!``$;(){}@']"                  ; PowerShell / Unix shells: also cmd's characters (cmd may be in between)
         }
-        return true
+        if (!RegExMatch(info.Term, special) || shell = "powershell" && SelectionActions._TextToPowerShell(info, command))
+            return ""
+        names := ""
+        for name in SelectionActions.ShellNames(line)
+            names .= (names = "" ? "" : " / ") name
+        return {Chars: SelectionActions._CharsIn(info.Term, special), Shell: names}
     }
 
-    ; "posix" when a command line names PowerShell or a Unix shell, "cmd" when it names cmd or a batch file, else "".
-    ; Whole names only (not "-Command"); a false match only refuses more selections
-    static ShellIn(commandLine) {
-        if RegExMatch(commandLine, "i)(?<![\w.-])(powershell|powershell_ise|pwsh|bash|sh|wsl|zsh)(\.exe)?(?![\w.-])|\.ps1(?![\w.])")
-            return "posix"
-        if RegExMatch(commandLine, "i)(?<![\w.-])(cmd|command)(\.exe|\.com)?(?![\w.-])|\.(bat|cmd)(?![\w.])")
-            return "cmd"
+    ; PowerShell started directly reads the selection as text (PowerShellMode). In -Command it goes into single quotes: not several
+    ; quoted paths, and not text ending in \ right before a " of the command line (that would escape the quote)
+    static _TextToPowerShell(info, command) {
+        switch SelectionActions.PowerShellMode(command) {
+            case "file":
+                return true
+            case "quoted":
+                arguments := command.Has("Arguments") ? command["Arguments"] : ""
+                return info.Kind != "files" && !(SubStr(info.Term, -1) = "\" && RegExMatch(arguments, 'i)\{query\}"'))
+        }
+        return false
+    }
+
+    ; How PowerShell started directly (the target is powershell.exe or pwsh.exe) reads the selection, by where {query} is (a command
+    ; without {query} gets it as its last argument): "file" when it's an argument of the script after -File (pwsh: also a script named
+    ; without -File, its default), "quoted" when every {query} is inside a single-quoted string of -Command (powershell.exe: also code
+    ; written without -Command, its default), else "" (as code, or a command line not understood: the strict check)
+    static PowerShellMode(command) {
+        target := Trim(command.Has("Target") ? command["Target"] : "", '" ')
+        if InStr(target, "{query}")
+            return ""
+        SplitPath(CustomCommandProvider._Resolve(target), &name)
+        if !RegExMatch(name, "i)^(powershell|pwsh)(\.exe)?$", &program)
+            return ""
+        arguments := command.Has("Arguments") ? command["Arguments"] : ""
+        args := Win.Args(Path.ExpandEnv(arguments) (CustomCommandProvider.TakesQuery(command) ? "" : " {query}"))
+        index := 0
+        while (++index <= args.Length) {
+            arg := args[index]
+            if !RegExMatch(arg, "^-(.+)$", &parameter)                      ; the first word that isn't a parameter
+                return (program[1] = "pwsh") ? SelectionActions._AfterScript(args, index) : SelectionActions._QuotedCode(args, index)
+            if InStr(arg, "{query}")                                        ; in one of PowerShell's own parameters
+                return ""
+            switch SelectionActions._PowerShellParameter(parameter[1]) {
+                case "file":    return SelectionActions._AfterScript(args, index + 1)
+                case "command": return SelectionActions._QuotedCode(args, index + 1)
+                case "value":   index++                                     ; its value is checked as the next word would be
+                    if (index <= args.Length && InStr(args[index], "{query}"))
+                        return ""
+                case "switch":  continue
+                default:        return ""                                   ; -EncodedCommand, -CommandWithArgs, an unknown abbreviation...
+            }
+        }
         return ""
+    }
+
+    ; "file" when args[index] is the script and {query} comes only after it: PowerShell passes the script its arguments as text
+    static _AfterScript(args, index) => (index <= args.Length && !InStr(args[index], "{query}")) ? "file" : ""
+
+    ; "quoted" when the code (args from index on, joined by spaces as PowerShell does) has every {query} in single quotes, and
+    ; nothing in it runs a string as code again (Invoke-Expression, a script block, another PowerShell or a process started from it)
+    static _QuotedCode(args, index) {
+        code := ""
+        while (index <= args.Length)
+            code .= (code = "" ? "" : " ") args[index++]
+        if RegExMatch(code, "i)(?<![\w-])(iex|invoke-expression|invoke-command|icm|scriptblock|expandstring|start-process|saps|start|powershell|pwsh)(?![\w-])")
+            return ""
+        return SelectionActions.InSingleQuotes(code) ? "quoted" : ""
+    }
+
+    ; A PowerShell command-line parameter (without its -): "file", "command", "switch" (takes no value), "value" (takes the next word)
+    ; or "" (not known: the strict check). Abbreviations of 3 letters or more and the usual short names are known
+    static _PowerShellParameter(name) {
+        static switches := ["noprofile", "nologo", "noexit", "noninteractive", "noprofileloadtime", "sta", "mta", "login", "interactive"]
+        static values := ["executionpolicy", "windowstyle", "workingdirectory", "version", "inputformat", "outputformat", "psconsolefile"
+            , "configurationname", "configurationfile", "settingsfile", "custompipename"]
+        static shortValues := Map("ep", 1, "ex", 1, "w", 1, "wd", 1)
+        name := StrLower(name)
+        if (name = "f" || name = "file")
+            return "file"
+        if (name = "c" || name = "command")
+            return "command"
+        if shortValues.Has(name)
+            return "value"
+        if (StrLen(name) >= 3) {
+            for each in switches
+                if (InStr(each, name) = 1)
+                    return "switch"
+            for each in values
+                if (InStr(each, name) = 1)
+                    return "value"
+        }
+        return ""
+    }
+
+    ; Whether PowerShell code has {query} and every {query} is inside a single-quoted string ('...', also with PowerShell's other single
+    ; quotes ‘ ’ ‚ ‛), where nothing but a quote is special. Double-quoted strings ($ and ` work there) and comments end the scan: false
+    static InSingleQuotes(code) {
+        static single := "'‘’‚‛", double := '"“”„'
+        state := "", found := false, index := 0, length := StrLen(code)
+        while (++index <= length) {
+            char := SubStr(code, index, 1)
+            if (SubStr(code, index, 7) = "{query}") {
+                if (state != "single")
+                    return false
+                found := true, index += 6
+                continue
+            }
+            switch state {
+                case "single":
+                    if InStr(single, char)
+                        if (index < length && InStr(single, SubStr(code, index + 1, 1)))
+                            index++                                         ; doubled: a quote inside the string
+                        else
+                            state := ""
+                case "double":
+                    if (char = "``")
+                        index++
+                    else if InStr(double, char)
+                        if (index < length && InStr(double, SubStr(code, index + 1, 1)))
+                            index++
+                        else
+                            state := ""
+                default:
+                    if (char = "``")
+                        index++
+                    else if InStr(single, char)
+                        state := "single"
+                    else if InStr(double, char)
+                        state := "double"
+                    else if (char = "#")                                    ; a comment (# or <# #>)
+                        return false
+            }
+        }
+        return found && state = ""
+    }
+
+    ; The characters of text matching pattern (a character class), each once, separated by spaces; a line break is named
+    static _CharsIn(text, pattern) {
+        chars := "", seen := Map()
+        Loop Parse, text {
+            char := (A_LoopField = "`r" || A_LoopField = "`n") ? I18n.T("Selection.LineBreak") : A_LoopField
+            if (!seen.Has(char) && RegExMatch(A_LoopField, pattern)) {
+                seen[char] := true
+                chars .= (chars = "" ? "" : " ") char
+            }
+        }
+        return chars
+    }
+
+    ; The panel row of a command or script that can't take the selection (ArgumentProblem's problem): its subtitle says why, and Enter
+    ; says it again (for PowerShell, with how to write the command so it can)
+    static RefusedRow(title, icon, problem) {
+        text := (problem.Shell = "") ? I18n.T("Selection.Refused", problem.Chars) : I18n.T("Selection.Refused.Shell", problem.Chars, problem.Shell)
+        notice := (problem.Shell = "PowerShell") ? text "`n" I18n.T("Selection.Refused.PowerShell") : text
+        return ResultItem(title, text, {Icon: icon, Refused: true, OnRun: (*) => App.Notify(notice, 5000)})
+    }
+
+    ; The shells a command line names: PowerShell, a Unix shell (by its name), cmd. Whole names only (not "-Command");
+    ; a false match only refuses more selections
+    static ShellNames(commandLine) {
+        names := []
+        if RegExMatch(commandLine, "i)(?<![\w.-])(powershell|powershell_ise|pwsh)(\.exe)?(?![\w.-])|\.ps1(?![\w.])")
+            names.Push("PowerShell")
+        if RegExMatch(commandLine, "i)(?<![\w.-])(bash|sh|wsl|zsh)(\.exe)?(?![\w.-])", &unix)
+            names.Push(StrLower(unix[1]))
+        if RegExMatch(commandLine, "i)(?<![\w.-])(cmd|command)(\.exe|\.com)?(?![\w.-])|\.(bat|cmd)(?![\w.])")
+            names.Push("cmd")
+        return names
+    }
+
+    ; "powershell" when a command line names PowerShell and no other shell, "cmd" when it names cmd or a batch file and no other
+    ; shell, "posix" when it names a Unix shell or more than one shell (the strictest check), else ""
+    static ShellIn(commandLine) {
+        names := SelectionActions.ShellNames(commandLine)
+        if (names.Length = 0)
+            return ""
+        return (names.Length = 1 && (names[1] = "PowerShell" || names[1] = "cmd")) ? StrLower(names[1]) : "posix"
     }
 
     ; One command-line argument in double quotes; trailing backslashes are doubled so "C:\" doesn't escape the closing quote

@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.16.28]
+
+测试版。
+
+Test build.
+
+### 修复
+- 选中内容里有 `( ) { } ' $ ;` 等字符时, 运行 PowerShell 的自定义命令不再从选中内容的操作面板里消失: 直接启动的 PowerShell (`powershell.exe` / `pwsh.exe`) 在 `-Command` 里把 `{query}` 放在单引号中 (`'{query}'`, 选中内容里的单引号自动写成两个), 或者用 `-File` 传给脚本时, 这些字符只当文字, 可以运行 (#615)
+
+### 改进
+- 选中内容因为换行、双引号或 shell 的特殊字符不能传给某个命令或脚本时, 这一行仍留在面板里, 说明是哪些字符; 按 Enter 只显示这条说明, PowerShell 命令还会说明怎样写才能接收 (#615)
+
 ## [2026.11.16.27]
 
 测试版。
@@ -1748,7 +1760,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.27...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.28...HEAD
+[2026.11.16.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.27...2026.11.16.28
 [2026.11.16.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.26...2026.11.16.27
 [2026.11.16.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.25...2026.11.16.26
 [2026.11.16.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...2026.11.16.25

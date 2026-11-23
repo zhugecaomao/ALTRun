@@ -2319,10 +2319,18 @@ class ExtensionTests {
                 text .= name "|"
             return RTrim(text, "|")
         }
+        refusedRows(selection) {
+            text := ""
+            for action in SelectionActions.ItemFor(selection).LeadActions
+                if action.HasOwnProp("Refused")
+                    text .= action.Title ": " action.Subtitle "|"
+            return RTrim(text, "|")
+        }
         leads(selection) {
             text := ""
             for action in SelectionActions.ItemFor(selection).LeadActions
-                text .= action.Title "|"
+                if !action.HasOwnProp("Refused")                            ; rows saying why a command can't take it: refusedRows
+                    text .= action.Title "|"
             return RTrim(text, "|")
         }
         try {
@@ -2368,6 +2376,70 @@ class ExtensionTests {
             eq("powershell: $() refused, cmd fine", leads({Text: "$(calc)"}), "Ping")
             eq("double quote refused", leads({Text: 'say "hi"'}), "")
             eq("line break refused", leads({Text: "line one`nline two"}), "")
+            ; refused: the row stays, saying why; Enter only says so
+            eq("refused rows say why", refusedRows({Text: "1.1.1.1 & calc"}), "Ping: " I18n.T("Selection.Refused.Shell", "&", "cmd") "|PS: "
+                I18n.T("Selection.Refused.Shell", "&", "PowerShell"))
+            eq("refused: line break and quote, each once", refusedRows({Text: 'a "b"`r`nc "d"'}), "Ping: " I18n.T("Selection.Refused", '" ' I18n.T("Selection.LineBreak"))
+                "|PS: " I18n.T("Selection.Refused", '" ' I18n.T("Selection.LineBreak")))
+            psRow := SelectionActions.ItemFor({Text: "(x)"}).LeadActions[2]
+            savedNotify := App.GetOwnPropDesc("Notify"), notices := []
+            App.DefineProp("Notify", {Call: (this, message, *) => notices.Push(message)})
+            try psRow.OnRun.Call()
+            finally App.DefineProp("Notify", savedNotify)
+            eq("refused: Enter says why, with PowerShell's way out", notices.Length ? notices[1] : "", I18n.T("Selection.Refused.Shell", "( )", "PowerShell")
+                "`n" I18n.T("Selection.Refused.PowerShell"))
+            eq("refused row not run as the command", psRow.Kind "|" psRow.Arg, "command|")
+
+            ; #615: PowerShell started directly takes its special characters where the selection is only text to it
+            ps := (args, target := "powershell.exe") => cmd("PS", "Command", target, args, "Text")
+            action := (command, text) => SelectionActions._CommandAction(command, SelectionActions.Classify({Text: text}))
+            psQuoted := ps("-NoProfile -Command `"Get-ChildItem D:\Videos -Filter '*{query}*'`"")
+            psFile := ps("-NoProfile -ExecutionPolicy Bypass -File C:\Tools\find.ps1 `"{query}`"")
+            for text in ["(測試)", "{測試}", "a; b & c | d $e @f <g> ^h %i% !j"] {
+                eq("-Command single-quoted: " text, action(psQuoted, text).Arguments, "-NoProfile -Command `"Get-ChildItem D:\Videos -Filter '*" text "*'`"")
+                eq("-File argument: " text, action(psFile, text).Arguments, "-NoProfile -ExecutionPolicy Bypass -File C:\Tools\find.ps1 `"" text "`"")
+            }
+            eq("-Command: single quotes doubled (all of PowerShell's)", action(psQuoted, "it's ‘a’ ‚b‛").Arguments
+                , "-NoProfile -Command `"Get-ChildItem D:\Videos -Filter '*it''s ‘‘a’’ ‚‚b‛‛*'`"")
+            eq("-File: quotes kept", action(psFile, "it's").Arguments, "-NoProfile -ExecutionPolicy Bypass -File C:\Tools\find.ps1 `"it's`"")
+            eq("still refused: double quote / line break", IsObject(action(psQuoted, 'a "b"')) "|" IsObject(action(psFile, "a`nb")), "0|0")
+            eq("appended after -File: text", action(ps("-File C:\Tools\find.ps1"), "(x)").Arguments, '-File C:\Tools\find.ps1 "(x)"')
+            eq("appended to -Command: code, refused", IsObject(action(ps("-Command Write-Output"), "(x)")), 0)
+            modes := [
+                ["-Command Write-Output {query}", ""],                     ; unquoted: code
+                ["-Command `"Write-Output \`"{query}\`"`"", ""],          ; double-quoted: $ and ` work there
+                ["-Command `"Write-Output '{query}'`"", "quoted"],
+                ["-c `"Write-Output '{query}'`"", "quoted"],
+                ["`"Write-Output '{query}'`"", "quoted"],                  ; powershell.exe: code without -Command
+                ["-NoP -NonI -WindowStyle Hidden -Command `"Write-Output '{query}'`"", "quoted"],
+                ["-Command `"Write-Output 'a' {query} 'b'`"", ""],         ; between two strings
+                ["-Command `"Write-Output 'it''s {query}'`"", "quoted"],   ; a doubled quote stays inside
+                ["-Command `"Write-Output ``'{query}'`"", ""],             ; `' is no quote
+                ["-Command `"Write-Output 1 # '{query}'`"", ""],           ; comment
+                ["-Command `"Write-Output '{query}' + {query}`"", ""],      ; one of two outside
+                ["-Command `"Write-Output '{query}`"", ""],                ; not closed
+                ["-Command `"Invoke-Expression 'Write-Output {query}'`"", ""],   ; the string runs as code again
+                ["-Command `"iex 'Write-Output {query}'`"", ""],
+                ["-Command `"& ([ScriptBlock]::Create('Write-Output {query}'))`"", ""],
+                ["-Command `"Start-Process notepad -ArgumentList '{query}'`"", ""],
+                ["-Command `"powershell -Command 'Write-Output {query}'`"", ""],
+                ["-File C:\Tools\a.ps1 {query} -Name {query}", "file"],
+                ["-NoProfile -ExecutionPolicy Bypass -f C:\Tools\a.ps1 {query}", "file"],
+                ["-File {query}", ""],                                     ; the script itself
+                ["-ExecutionPolicy {query} -File C:\Tools\a.ps1", ""],
+                ["-EncodedCommand {query}", ""],
+                ["-Co `"Write-Output '{query}'`"", ""]                     ; abbreviation not known: strict
+            ]
+            for each in modes
+                eq("PowerShellMode " each[1], SelectionActions.PowerShellMode(ps(each[1])), each[2])
+            eq("pwsh: script without -File", SelectionActions.PowerShellMode(ps("C:\Tools\a.ps1 {query}", "pwsh.exe")), "file")
+            eq("powershell.exe: code without -Command", SelectionActions.PowerShellMode(ps("C:\Tools\a.ps1 {query}")), "")
+            eq("full path, quoted", SelectionActions.PowerShellMode(ps("-File C:\a.ps1 {query}", '"C:\Program Files\PowerShell\7\pwsh.exe"')), "file")
+            eq("not PowerShell itself: strict", SelectionActions.PowerShellMode(ps("-File C:\a.ps1 {query}", "wt.exe")), "")
+            eq("cmd in between: strict", IsObject(action(ps("/c powershell -Command `"Write-Output '{query}'`"", "cmd.exe"), "(x)")), 0)
+            eq("cmd named in PowerShell's command line: strict", IsObject(action(ps("-Command `"cmd /c echo '{query}'`""), "(x)")), 0)
+            eq("text ending in \ before a command-line quote: strict", IsObject(action(ps("-Command `"Write-Output 'x{query}`"'`""), "a(b)\")), 0)
+            eq("several files can't be single-quoted", SelectionActions.SafeArgument(SelectionActions.Classify({Files: ["C:\a (1).pdf", "C:\b.pdf"]}), psQuoted), false)
             safe := (target, args, text) => SelectionActions.SafeArgument(SelectionActions.Classify({Text: text}), cmd("T", "Command", target, args, "Text"))
             comSpec := EnvGet("ComSpec")
             if (comSpec = "")                                               ; Wine has no ComSpec; Windows always does
@@ -2459,5 +2531,52 @@ class ExtensionTests {
         eq("examples: again none", SelectionActions.AddExampleCommands(mine, defaultCommands).Added, 0)
         eq("mailto keeps @", CustomCommandProvider.UrlTerm("mailto:{query}", "a.b@c.com") "|" CustomCommandProvider.UrlTerm("https://x/?q={query}", "a@b"), "a.b@c.com|a%40b")
         eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
+    }
+
+    ; #615 on Windows: PowerShell (5.1, and 7 when installed) really reads a selection with its special characters as text: single-quoted
+    ; in -Command (its quotes doubled) and after -File; the parts that would create a file if they ran as code don't (not in Wine)
+    static SelectionPowerShell() {
+        eq := (n, a, e) => TestRunner.Equal("SelectionPowerShell." n, a, e)
+        if DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+            return                                                          ; Wine's powershell.exe is a stand-in that runs nothing
+        programs := []
+        for each in [A_WinDir "\System32\WindowsPowerShell\v1.0\powershell.exe", EnvGet("ProgramFiles") "\PowerShell\7\pwsh.exe"]
+            if FileExist(each)
+                programs.Push(each)
+        if !programs.Length
+            return
+        root := A_Temp "\ALTRun-selection-ps-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        root := TestRunner.LongPath(root)
+        out := root "\out.txt", marker := root "\ran.txt"
+        FileAppend("[IO.File]::WriteAllText('" out "', $args[0])", root "\echo.ps1", "UTF-8")
+        payload := "(測試) $(New-Item '" marker "'); (New-Item '" marker "') & {x} @y | it's ‘a’ ‚b‛ %PATH% ^!"
+        try {
+            for program in programs {
+                SplitPath(program, &name)
+                commands := Map(
+                    "-Command", Map("Title", "Q", "Type", "Command", "Target", program, "Selection", "Text"
+                        , "Arguments", "-NoProfile -NonInteractive -Command `"[IO.File]::WriteAllText('" out "', '{query}')`""),
+                    "-File", Map("Title", "F", "Type", "Command", "Target", program, "Selection", "Text"
+                        , "Arguments", "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"" root "\echo.ps1`" `"{query}`""))
+                for way, command in commands {
+                    item := SelectionActions._CommandAction(command, SelectionActions.Classify({Text: payload}))
+                    if !IsObject(item) {
+                        eq(name " " way ": shown", "refused", "shown")
+                        continue
+                    }
+                    try FileDelete(out)
+                    got := []
+                    ChildProcess.Start('"' program '" ' item.Arguments, (result) => got.Push(result))
+                    TestUtil.WaitFor(() => got.Length, 30000)
+                    text := FileExist(out) ? FileRead(out, "UTF-8") : "(no output: " (got.Length ? got[1].Stderr : "no result") ")"
+                    eq(name " " way ": the text as selected", text, payload)
+                    eq(name " " way ": nothing ran as code", FileExist(marker), "")
+                }
+            }
+        } finally {
+            try DirDelete(root, true)
+        }
     }
 }
