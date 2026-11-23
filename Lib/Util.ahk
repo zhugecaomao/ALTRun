@@ -516,6 +516,22 @@ class Win {
         return on != 0
     }
 
+    ; The arguments of a command line, as programs started with it read them (CommandLineToArgvW); a dummy program name goes first,
+    ; since the first word is read by other rules
+    static Args(commandLine) {
+        tokens := []
+        if (Trim(commandLine) = "")
+            return tokens
+        count := 0
+        argv := DllCall("shell32\CommandLineToArgvW", "WStr", "x " commandLine, "Int*", &count, "Ptr")
+        if !argv
+            return tokens
+        Loop count - 1
+            tokens.Push(StrGet(NumGet(argv, A_Index * A_PtrSize, "Ptr"), "UTF-16"))
+        DllCall("LocalFree", "Ptr", argv)
+        return tokens
+    }
+
     ; One argument in double quotes as programs read it (CommandLineToArgvW): \" for a quote, and the backslashes before a quote or
     ; the closing one doubled ("C:\" would otherwise escape the closing quote)
     static QuoteArg(arg) {

@@ -3012,19 +3012,25 @@ class ProviderTests {
             eq("types any case", ScriptProvider.ForTypes(byName["pdf.ahk"], ["File", "pdf"]) "|" ScriptProvider.ForTypes(byName["pdf.ahk"], ["Text"]), "1|0")
             eq("shell of the real command line", SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["pdf.ahk"])["Target"]) "|"
                 SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["quiet.ahk"])["Target"]) "|" SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["ip.bat"])["Target"]) "|"
-                SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["lookup.ps1"])["Target"]), "||cmd|posix")
+                SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["lookup.ps1"])["Target"]), "||cmd|powershell")
+            psText := {Kind: "text", Types: ["Text"], Term: "(x) {y}; 'z' & $w", Quoted: "", Text: ""}
+            eq("ps1 after -File: PowerShell's characters are only text", SelectionActions.SafeArgument(psText, ScriptProvider.ShellCommand(byName["lookup.ps1"])), true)
+            psText.Term := "two`nlines"
+            eq("ps1: a line break still refused", SelectionActions.SafeArgument(psText, ScriptProvider.ShellCommand(byName["lookup.ps1"])), false)
 
             scripts["Enabled"] := 1
             titles(info) {
                 list := ""
                 for row in ScriptProvider.ActionsFor(info)
-                    list .= row.Title "|"
+                    list .= row.Title (row.HasOwnProp("Refused") ? " (refused)" : "") "|"
                 return RTrim(list, "|")
             }
             text(term, types) => {Kind: "text", Types: types, Term: term, Quoted: SelectionActions.Quote(term), Text: term}
             eq("panel: a file of the type", titles({Kind: "file", Types: ["File", "PDF"], Term: "C:\a.pdf", Quoted: '"C:\a.pdf"', Path: "C:\a.pdf"}), "PDF Tool")
             eq("panel: safe text for cmd", titles(text("10.0.0.1", ["Text", "IP"])), "Ping IP|Quiet")
-            eq("panel: cmd characters refused for a batch file, not for a silent ahk (no cmd)", titles(text("10.0.0.1 & del x", ["Text", "IP"])), "Quiet")
+            eq("panel: cmd characters refused for a batch file, not for a silent ahk (no cmd)", titles(text("10.0.0.1 & del x", ["Text", "IP"])), "Ping IP (refused)|Quiet")
+            refused := ScriptProvider.ActionsFor(text("10.0.0.1 & del x", ["IP"]))[1]
+            eq("panel: the refused row says why", refused.Subtitle, I18n.T("Selection.Refused.Shell", "&", "cmd"))
             eq("panel: no type, no script", titles(text("hello", ["Url"])), "")
             files := ["C:\a b\1.pdf", "C:\2.pdf"]
             argument := ScriptProvider.SelectionArgument({Kind: "files", Files: files, Term: '"C:\a b\1.pdf" "C:\2.pdf"'})

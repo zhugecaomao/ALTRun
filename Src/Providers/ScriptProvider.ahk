@@ -116,14 +116,18 @@ class ScriptProvider {
     }
 
     ; The actions panel rows of the scripts for a selection (SelectionActions.Classify's result), in file name order; none with
-    ; scripts turned off. A script whose command line can't take the selection safely isn't shown (as the custom commands)
+    ; scripts turned off. A script whose command line can't take the selection safely gets a row saying why (as the custom commands)
     static ActionsFor(info) {
         actions := []
         if !ProviderRegistry.IsEnabled(ScriptProvider)
             return actions
         for script in ScriptProvider.Current() {
-            if (script.Mode = "filter" || !(ScriptProvider.ForTypes(script, info.Types) && SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script))))
+            if (script.Mode = "filter" || !ScriptProvider.ForTypes(script, info.Types))
                 continue
+            if IsObject(problem := SelectionActions.ArgumentProblem(info, ScriptProvider.ShellCommand(script))) {
+                actions.Push(SelectionActions.RefusedRow(script.Title, ScriptProvider.IconOf(script), problem))
+                continue
+            }
             actions.Push(ResultItem(script.Title, I18n.T("Script.Subtitle", script.Name)
                 , {Icon: ScriptProvider.IconOf(script), OnRun: ScriptProvider._Runner(script, ScriptProvider.SelectionArgument(info)), Keyword: script.Keyword}))
         }
@@ -141,11 +145,12 @@ class ScriptProvider {
         return info.Term
     }
 
-    ; The command line the selection checks look at (SelectionActions.SafeArgument): a batch file runs through cmd
-    ; (named as cmd.exe: only looked at, and %ComSpec% may be any path)
+    ; The command line the selection checks look at (SelectionActions.ArgumentProblem), as Target (the program) and Arguments: a batch
+    ; file runs through cmd (named as cmd.exe: only looked at, and %ComSpec% may be any path)
     static ShellCommand(script) {
-        line := ScriptProvider.CommandLine(script)
-        return Map("Target", ScriptProvider.ThroughCmd(script) ? "cmd.exe /c " line : line, "Arguments", "")
+        line := ScriptProvider.ThroughCmd(script) ? "cmd.exe /c " ScriptProvider.CommandLine(script) : ScriptProvider.CommandLine(script)
+        RegExMatch(line, '^("[^"]*"|\S+)\s*(.*)$', &part)
+        return Map("Target", part[1], "Arguments", part[2])
     }
 
     ; A custom hotkey whose Action is "script:<file name>", by the rules of CustomCommandProvider.RunFromHotkey: a script that takes
