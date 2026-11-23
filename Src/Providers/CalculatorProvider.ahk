@@ -10,10 +10,17 @@
 ; Number bases: "0xFF" / "0b1010" / "0o17" show decimal, hex and binary; "255 in hex" / "0xff to dec" / "10 in bin" / "8 in oct".
 ; Dates: "today + 30 days" / "2026-12-25 - 2 weeks" / "today + 3 months" (units d w m y, or 天 周 月 年);
 ;       "2026-12-25 - today" gives the days between two dates. today can also be now / 今天.
+; History (Features.Calculator.History, off by default; #583): a calculation is remembered when its result is used (Enter / an action),
+; not while typing; unit / base / date conversions and single numbers aren't. Below the result of a calculation the newest
+; HistoryCount entries are listed, "=" alone lists all; Enter copies a result, Tab puts the expression back, Ctrl+Del deletes one.
+; Kept in Data\CalcHistory.json (newest first, at most HistoryKeep). Results never go into "Recent" (RecentProvider.Skip).
 ;===============================================================================
 
 class CalculatorProvider {
     static Id := "Calculator"
+    static HistoryKeep := 50
+    static HistoryFile := ""                                                ; "" = Data\CalcHistory.json (tests use another file)
+    static _history := ""                                                   ; loaded on first use
 
     static Init() {
         if AppSettings.Feature("Calculator")["Currency"]
@@ -22,6 +29,8 @@ class CalculatorProvider {
 
     static Search(query) {
         results := []
+        if (Trim(query.Text) = "=")
+            return CalculatorProvider.HistoryOn() ? CalculatorProvider._HistoryItems("", 0) : results
         if (bases := CalculatorProvider._Bases(query.Text)).Length
             return bases
         if (dates := CalculatorProvider._Dates(query.Text)).Length
@@ -33,6 +42,7 @@ class CalculatorProvider {
             expression := SubStr(expression, 2)
         else if !Calc.Looks(expression)
             return results
+        typed := Trim(expression)
         expression := StrReplace(StrReplace(StrReplace(expression, ","), "×", "*"), "÷", "/")
 
         value := Calc.Eval(expression)
@@ -42,10 +52,119 @@ class CalculatorProvider {
 
         results.Push(ResultItem(text, I18n.T("Calc.Subtitle") " · " Trim(expression), {
             Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 200, LargeText: text
+            , Expression: typed
         }))
         if AppSettings.Feature("Calculator")["StructuralCalc"]
             CalculatorProvider._AddStructural(results, value)
+        if CalculatorProvider.HistoryOn()
+            for item in CalculatorProvider._HistoryItems(typed, CalculatorProvider._HistoryCount())
+                results.Push(item)
         return results
+    }
+
+    ;---------------------------------------------------------------------------
+    ; History
+    ;---------------------------------------------------------------------------
+    static HistoryOn() => AppSettings.Feature("Calculator")["History"] ? true : false
+
+    static _HistoryCount() {
+        options := AppSettings.Feature("Calculator")
+        count := options.Has("HistoryCount") ? options["HistoryCount"] : 3
+        return (IsInteger(count) && count > 0) ? count + 0 : 3
+    }
+
+    ; The history rows below a result: the newest limit entries (0 = all), without the calculation typed right now
+    ; (it is the result row above). Scores below the structural rows (199 / 198), newest first
+    static _HistoryItems(skip, limit) {
+        items := [], skipKey := CalculatorProvider._Key(skip)
+        for entry in CalculatorProvider.History() {
+            if (limit && items.Length >= limit)
+                break
+            if (skip != "" && CalculatorProvider._Key(entry["Expr"]) = skipKey)
+                continue
+            expr := entry["Expr"], result := entry["Result"]
+            items.Push(ResultItem(expr " = " result, I18n.T("Calc.History"), {Kind: "text", Arg: result, LargeText: result
+                , Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 190 - items.Length
+                , AutoComplete: Calc.Looks(expr) ? expr : "=" expr                ; Tab: back in the box, still calculated ("1,000*3" needs "=")
+                , Source: entry}))                                          ; Source + DeleteItem: Ctrl+Del deletes it
+        }
+        return items
+    }
+
+    static History() {
+        if !IsObject(CalculatorProvider._history)
+            CalculatorProvider._LoadHistory()
+        return CalculatorProvider._history
+    }
+
+    static _File() => (CalculatorProvider.HistoryFile != "") ? CalculatorProvider.HistoryFile : AppSettings.DataDir "\CalcHistory.json"
+
+    static _LoadHistory() {
+        CalculatorProvider._history := [], historyFile := CalculatorProvider._File()
+        if !FileExist(historyFile)
+            return
+        try {
+            data := JSON.Parse(FileRead(historyFile, "UTF-8"))
+            for entry in ((data is Map && data.Has("Items") && data["Items"] is Array) ? data["Items"] : [])
+                if (entry is Map && entry.Has("Expr") && entry.Has("Result") && !IsObject(entry["Expr"]) && !IsObject(entry["Result"])
+                        && entry["Expr"] != "" && CalculatorProvider._history.Length < CalculatorProvider.HistoryKeep)
+                    CalculatorProvider._history.Push(entry)
+        } catch as e {
+            Logger.Error("CalculatorProvider: history not read - " e.Message)
+            try FileMove(historyFile, historyFile ".bad", 1)                  ; kept for a look; the next calculation starts a new file
+        }
+    }
+
+    static _SaveHistory() {
+        try JSON.WriteFile(CalculatorProvider._File(), Map("Version", 1, "Items", CalculatorProvider.History()), 2)
+        catch as e
+            Logger.Error("CalculatorProvider: history not saved - " e.Message)
+    }
+
+    ; "12 * (3+4)" and "12*(3+4)" are the same calculation
+    static _Key(expr) => StrLower(RegExReplace(expr, "\s"))
+
+    ; A result was used (Enter / an action in the search window): its calculation goes to the top of the history.
+    ; Only calculations with an operator (not "=5"); a history row moves its entry to the top
+    static Remember(item) {
+        if (!IsObject(item) || item.Provider != CalculatorProvider.Id || !CalculatorProvider.HistoryOn())
+            return
+        if (item.Source is Map)
+            expr := item.Source["Expr"], result := item.Source["Result"]
+        else if (item.HasOwnProp("Expression") && RegExMatch(item.Expression, "[^\s+\-(]\s*[\+\-\*/\^×÷]"))
+            expr := item.Expression, result := item.Arg
+        else
+            return
+        history := CalculatorProvider.History(), key := CalculatorProvider._Key(expr)
+        for index, entry in history
+            if (CalculatorProvider._Key(entry["Expr"]) = key) {
+                history.RemoveAt(index)
+                break
+            }
+        history.InsertAt(1, Map("Expr", expr, "Result", result, "Time", A_Now))
+        while (history.Length > CalculatorProvider.HistoryKeep)
+            history.Pop()
+        CalculatorProvider._SaveHistory()
+    }
+
+    static DeleteItem(item) {
+        history := CalculatorProvider.History(), key := CalculatorProvider._Key(item.Source["Expr"])
+        for index, entry in history
+            if (CalculatorProvider._Key(entry["Expr"]) = key) {
+                history.RemoveAt(index)
+                CalculatorProvider._SaveHistory()
+                return true
+            }
+        return false
+    }
+
+    ; Clear... in Preferences → Calculator; returns how many there were
+    static ClearHistory() {
+        if (count := CalculatorProvider.History().Length) {
+            CalculatorProvider._history := []
+            CalculatorProvider._SaveHistory()
+        }
+        return count
     }
 
     ; At most two decimals, trailing 0s dropped, thousands separators in the integer part: 1234567.504 -> 1,234,567.5, 10/3 -> 3.33

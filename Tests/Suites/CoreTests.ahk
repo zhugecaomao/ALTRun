@@ -309,6 +309,71 @@ class CoreTests {
             options[key] := value
     }
 
+    ; Calculation history (#583): remembered when a result is used, listed below results and with "=" alone; Ctrl+Del / Clear
+    static CalculatorHistory() {
+        eq := (n, a, e) => TestRunner.Equal("CalculatorHistory." n, a, e)
+        options := AppSettings.Feature("Calculator"), saved := Map()
+        for key in ["History", "HistoryCount", "StructuralCalc"]
+            saved[key] := options[key]
+        testFile := A_Temp "\ALTRun-calc-history-test.json"
+        try FileDelete(testFile)
+        CalculatorProvider.HistoryFile := testFile, CalculatorProvider._history := ""
+        savedProviders := ProviderRegistry.Providers, ProviderRegistry.Providers := [CalculatorProvider]   ; Ctrl+Del finds the provider by Id
+        try {
+            use(text, row := 1) {                                           ; like Enter on a row in the search window
+                item := CalculatorProvider.Search(SearchQuery(text))[row]
+                item.Provider := CalculatorProvider.Id
+                CalculatorProvider.Remember(item)
+                return item
+            }
+            titles(text) {
+                list := ""
+                for item in CalculatorProvider.Search(SearchQuery(text))
+                    list .= (list = "" ? "" : "|") item.Title
+                return list
+            }
+            options["StructuralCalc"] := 0, options["History"] := 0, options["HistoryCount"] := 3
+            use("1+1")
+            eq("off: nothing remembered", CalculatorProvider.History().Length, 0)
+            eq("off: = lists nothing", CalculatorProvider.Search(SearchQuery("=")).Length, 0)
+            options["History"] := 1
+            for text in ["1+1", "2*3", "=5", "-7", "10 km in mi", "0xff", "2 * 3", "3×4", "=1,000*2"]
+                use(text)
+            eq("only calculations, same one once", titles("="), "1,000*2 = 2,000|3×4 = 12|2 * 3 = 6|1+1 = 2")
+            eq("below a result: newest 3 without itself", titles("2*3"), "6|1,000*2 = 2,000|3×4 = 12|1+1 = 2")
+            options["HistoryCount"] := 1
+            eq("count from the settings", titles("9-1"), "8|1,000*2 = 2,000")
+            eq("not below conversions", CalculatorProvider.Search(SearchQuery("0xff")).Length, 3)
+            rows := CalculatorProvider.Search(SearchQuery("="))
+            eq("row: Enter copies the result", rows[1].Kind "|" rows[1].Arg, "text|2,000")
+            eq("row: Tab puts the calculation back", rows[1].AutoComplete "|" rows[2].AutoComplete, "=1,000*2|3×4")
+            TestRunner.True("CalculatorHistory.row: below the result rows", rows[1].Score < 198 && rows[2].Score < rows[1].Score)
+            eq("row: not learned, not in Recent", rows[1].Uid "|" IsObject(RecentProvider.Snapshot(rows[1])), "|0")
+            rows[3].Provider := CalculatorProvider.Id
+            CalculatorProvider.Remember(rows[3])                            ; Enter on a history row: back to the top
+            eq("used row moves up", titles("="), "2 * 3 = 6|1,000*2 = 2,000|3×4 = 12|1+1 = 2")
+            row := CalculatorProvider.Search(SearchQuery("="))[2]
+            row.Provider := CalculatorProvider.Id
+            TestRunner.True("CalculatorHistory.Ctrl+Del offered", ResultActions.CanDelete(row) && !ResultActions.CanDelete(CalculatorProvider.Search(SearchQuery("1+2"))[1]))
+            ResultActions.DeleteItem(row)
+            eq("deleted", titles("="), "2 * 3 = 6|3×4 = 12|1+1 = 2")
+            CalculatorProvider._history := ""                               ; read back from the file
+            eq("saved and loaded", titles("="), "2 * 3 = 6|3×4 = 12|1+1 = 2")
+            Loop 60
+                use(A_Index "+1")
+            eq("at most HistoryKeep", CalculatorProvider.History().Length, CalculatorProvider.HistoryKeep)
+            eq("cleared", CalculatorProvider.ClearHistory() "|" CalculatorProvider.Search(SearchQuery("=")).Length, CalculatorProvider.HistoryKeep "|0")
+            FileDelete(testFile), FileAppend("{not json", testFile, "UTF-8"), CalculatorProvider._history := ""
+            eq("bad file: empty, kept as .bad", CalculatorProvider.History().Length "|" (FileExist(testFile ".bad") != ""), "0|1")
+        } finally {
+            for key, value in saved
+                options[key] := value
+            CalculatorProvider.HistoryFile := "", CalculatorProvider._history := "", ProviderRegistry.Providers := savedProviders
+            for leftover in [testFile, testFile ".bad"]
+                try FileDelete(leftover)
+        }
+    }
+
     static TextTools() {
         eq := (n, a, e) => TestRunner.Equal("TextTools." n, a, e)
         eq("sort", TextTools.SortLines("b`r`na`r`nc"), "a`r`nb`r`nc")

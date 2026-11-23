@@ -21,6 +21,18 @@
 
 ![偏好设置 → 计算器](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-calculator.png)
 
+### 计算历史
+在 偏好设置 → 计算器 勾选 "记住计算 (按 Enter 时)" (`Features.Calculator.History`, 默认关), 用到计算结果时 (`Enter` 复制、`Ctrl+Enter` 粘贴或者动作面板里的操作) 记下这条算式, 打字过程中不记。单位、进制、日期换算和单个数字不记。
+
+- 输入算式时, 结果下面列出最近几条 ("显示条数", `HistoryCount`, 默认 3)
+- 只输入 `=` 列出全部 (最多 50 条, 最新的在前; 再用一次的移到最前)
+- 在历史上: `Enter` 复制结果, `Tab` 把算式填回搜索框接着改, `Ctrl+Del` 删除这一条
+- 勾选框右边的 "清空..." 删除全部; 历史保存在 `Data\CalcHistory.json`
+
+计算结果不进空搜索框的 "最近使用"。
+
+![结果下面的计算历史](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/calculator-history.png)
+
 ### 单位和货币换算
 写法: 数值 + 单位 + `in` / `to` / `=` / `->` / `转` + 目标单位, 单位不区分大小写, `m²` 可以写成 `m2`。例如 `10 km in mi`、`5ft to cm`、`100 f to c`、`3 亩 in m2`、`1 GB to MB`、`300 kN to kip`、`20 MPa in psi`。`Enter` 复制数字。
 

@@ -178,6 +178,8 @@
 | BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
 | BarPrefix | `H` | 结构计算: 钢筋代号前缀 (`T`、`Y`、`Φ`...) |
 | Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Calculator-zh#单位和货币换算) |
+| History | 0 | 记住用到结果的计算 (`Data\CalcHistory.json`, 最多 50 条), 见 [计算历史](Calculator-zh#计算历史) |
+| HistoryCount | 3 | 结果下面显示几条历史 (1-50); 只输入 `=` 列出全部 |
 
 ### Bookmarks 浏览器书签
 | 键 | 默认 | 说明 |

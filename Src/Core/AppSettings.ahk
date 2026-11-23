@@ -544,6 +544,7 @@ class AppSettings {
         ["Features.Clipboard"     , "MaxImages"           , 0, 1000],
         ["Features.Calculator"    , "RebarCover"          , 0, 1000],
         ["Features.Calculator"    , "MaxBarSpacing"       , 1, 10000],
+        ["Features.Calculator"    , "HistoryCount"        , 1, 50],         ; at most CalculatorProvider.HistoryKeep are kept
         ["Features.FileSearch"    , "MaxResults"          , 1, 1000],
         ["Features.FileSearch"    , "DefaultResultsLimit" , 0, 100],
         ["Features.FileSearch"    , "MinQueryLength"      , 1, 50],
@@ -717,7 +718,9 @@ class AppSettings {
                     "MaxBarSpacing" , 300,                                  ; maximum spacing of main bars (mm)
                     "BarSizes"      , [13, 16, 20, 25, 32],                 ; bar diameters listed in the steel area row (mm)
                     "BarPrefix"     , "H",                                  ; bar symbol prefix (H / T / Y / Φ...)
-                    "Currency"      , 0                                     ; currency conversion (100 usd to sgd): exchange rates downloaded daily from frankfurter.dev, off by default
+                    "Currency"      , 0,                                    ; currency conversion (100 usd to sgd): exchange rates downloaded daily from frankfurter.dev, off by default
+                    "History"       , 0,                                    ; remember calculations whose result was used (Data\CalcHistory.json, #583)
+                    "HistoryCount"  , 3                                     ; history rows below a result; "=" alone lists all
                 ),
                 "WebSearch", Map(
                     "Enabled"  , 1,
