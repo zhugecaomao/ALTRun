@@ -464,7 +464,7 @@
   "Prefs.FileKeywords": "ファイルキーワード",
   "Prefs.FileKeywords.Desc": "ファイルキーワード: \"open 報告書\" で名前に \"報告書\" を含むファイルとフォルダーを検索します。フォルダーキーワード: \"folder プロジェクト\" でフォルダーのみ検索します。複数はカンマ区切りです。",
   "Prefs.FileManager": "ファイルマネージャー",
-  "Prefs.FileManager.Desc": "フォルダーを開くプログラム。引数も指定可 (例: C:\\Apps\\TOTALCMD64.exe /O /T /S または /R={path}、{path} はフォルダー)。既定: explorer.exe",
+  "Prefs.FileManager.Desc": "フォルダーを開くプログラム。引数も指定可、{path} はパス (例: C:\\Apps\\TOTALCMD64.exe /O /T /S または /R={path})。既定: explorer.exe",
   "Prefs.FolderNewTab": "フォルダーを新しいタブで開く",
   "Prefs.FolderNewTab.Desc": "エクスプローラー: 最後に使ったウィンドウに新しいタブ (Windows 11 22H2 以降)。Total Commander: /O /T を追加。その他: 上の欄に独自のパラメーター。",
   "Prefs.Browser": "ブラウザー",

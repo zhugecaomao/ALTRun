@@ -443,7 +443,8 @@ class CoreTests {
             eq("other file managers untouched", ActionCatalog.TabArgs(other), "/x")
             eq("TC by its file name, not its folder", ActionCatalog.IsTotalCommander({Exe: "C:\totalcmd\dopus.exe"}), false)
 
-            ; The command lines for Open Folder / Reveal: {path} = the folder (for Reveal the containing one); none = as before
+            ; The command lines for Open Folder / Reveal: {path} = the folder; for Reveal, Total Commander gets the item and /P (it
+            ; selects it), other file managers the containing folder; no {path} = as before
             general["FolderNewTab"] := 0
             folder := "C:\Demo Folder", item := folder "\R&D (1).txt"
             tcExe := '"' tc.Exe '"', opusExe := '"' other.Exe '"'
@@ -452,11 +453,16 @@ class CoreTests {
             eq("reveal TC, no placeholder: /P and the item", ActionCatalog.RevealLine(tc, item), tcExe ' /P "' item '"')
             eq("reveal other, no placeholder: the folder", ActionCatalog.RevealLine(other, item), opusExe ' /x "' folder '"')
             tc.Args := '/O /T /R="{path}"'
-            eq("reveal {path}: the containing folder, nothing appended", ActionCatalog.RevealLine(tc, item), tcExe ' /O /T /R="' folder '"')
+            eq("reveal TC {path}: the item, /P first, nothing appended", ActionCatalog.RevealLine(tc, item), tcExe ' /P /O /T /R="' item '"')
             eq("open folder {path}: the folder", ActionCatalog.FileManagerLine(tc, folder, '"' folder '"'), tcExe ' /O /T /R="' folder '"')
-            eq("reveal a folder {path}: its parent", ActionCatalog.RevealLine(tc, "C:\Demo\Sub"), tcExe ' /O /T /R="C:\Demo"')
+            eq("reveal TC a folder {path}: the folder itself, /P", ActionCatalog.RevealLine(tc, "C:\Demo\Sub"), tcExe ' /P /O /T /R="C:\Demo\Sub"')
+            tc.Args := "/O /T /p /R={path}"
+            eq("reveal TC: /P already there (any case), not added again", ActionCatalog.RevealLine(tc, item), tcExe ' /O /T /p /R="' item '"')
+            tc.Args := "/P=R /R={path}"
+            eq("reveal TC: /P=R isn't /P", ActionCatalog.RevealLine(tc, item), tcExe ' /P /P=R /R="' item '"')
+            eq("open folder TC {path}: no /P", ActionCatalog.FileManagerLine(tc, folder, '"' folder '"'), tcExe ' /P=R /R="' folder '"')
             other.Args := "{PATH} --select {Path}"
-            eq("any case, every occurrence, quoted for the spaces", ActionCatalog.RevealLine(other, item), opusExe ' "' folder '" --select "' folder '"')
+            eq("reveal other {path}: the containing folder, any case, every occurrence, quoted", ActionCatalog.RevealLine(other, item), opusExe ' "' folder '" --select "' folder '"')
             eq("one pass: a folder named {path} isn't replaced again", ActionCatalog.FillPath("{path}", "C:\\a{path}b"), "C:\\a{path}b")
             eq("{file} is not a placeholder", ActionCatalog.FillPath("{file} {path}", "C:\a"), "{file} C:\a")
             eq("$ in a path stays", ActionCatalog.FillPath('"{path}"', "\\srv\share$\$1"), '"\\srv\share$\$1"')
@@ -471,7 +477,7 @@ class CoreTests {
             eq("auto quotes: a tab", ActionCatalog.FillPath("{path}", "C:\a`tb"), '"C:\a`tb"')
             general["FolderNewTab"] := 1
             tc.Args := '/R="{path}"'
-            eq("placeholder: TC still gets /O /T", ActionCatalog.RevealLine(tc, item), tcExe ' /R="' folder '" /O /T')
+            eq("placeholder: TC still gets /O /T", ActionCatalog.RevealLine(tc, item), tcExe ' /P /R="' item '" /O /T')
         } finally
             general["FolderNewTab"] := saved
         eq("default off", AppSettings.Defaults()["General"]["FolderNewTab"], 0)

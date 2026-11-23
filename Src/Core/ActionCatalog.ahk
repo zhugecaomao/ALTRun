@@ -186,34 +186,39 @@ class ActionCatalog {
         Run(ActionCatalog.RevealLine(manager, resolved))
     }
 
-    ; The file manager's command line for Reveal. Without {path}, Total Commander gets the item as a plain path after /P (it
-    ; opens the containing folder and selects the item; it doesn't select with /L= or /R=); other file managers take different
-    ; arguments, so they get the containing folder
+    ; The file manager's command line for Reveal. Total Commander: /P before a path opens the folder that holds it and selects
+    ; it (a file or a folder), also together with /L= / /R=, so it gets the item itself and /P, with or without {path}; without
+    ; /P it opens the path and selects nothing. Other file managers take different arguments: the containing folder
     static RevealLine(manager, resolved) {
+        if ActionCatalog.IsTotalCommander(manager)
+            return ActionCatalog.FileManagerLine(manager, resolved, '/P "' resolved '"', "/P")
         folder := ActionCatalog.ParentDir(resolved)
-        legacy := ActionCatalog.IsTotalCommander(manager) ? '/P "' resolved '"' : '"' folder '"'
-        return ActionCatalog.FileManagerLine(manager, folder, legacy)
+        return ActionCatalog.FileManagerLine(manager, folder, '"' folder '"')
     }
 
-    ; The file manager's command line. {path} in its parameters (FileManager setting) places the folder: the folder to open, or
-    ; for Reveal the containing folder (e.g. Total Commander's /R={path}: always the right panel). Without it, legacyArgs follow
-    ; the parameters, as before placeholders existed (so existing settings keep working)
-    static FileManagerLine(manager, folder, legacyArgs) {
+    ; The file manager's command line. {path} in its parameters (FileManager setting) places the path: the folder to open, or
+    ; what Reveal passes (see RevealLine), e.g. Total Commander's /R={path}: always the right panel. flag goes first when there
+    ; is {path} and the parameters don't have it yet (Total Commander's /P for Reveal). Without {path}, legacyArgs follow the
+    ; parameters, as before placeholders existed (so existing settings keep working)
+    static FileManagerLine(manager, target, legacyArgs, flag := "") {
         args := ActionCatalog.TabArgs(manager)
-        args := InStr(args, "{path}") > 0 ? ActionCatalog.FillPath(args, folder) : Trim(args " " legacyArgs)
-        return Trim('"' manager.Exe '" ' args)
+        if !(InStr(args, "{path}") > 0)
+            return Trim('"' manager.Exe '" ' Trim(args " " legacyArgs))
+        if (flag != "" && !RegExMatch(args, "i)(^|\s)" flag "(\s|$)"))                ; /P=R is another switch
+            args := flag " " args
+        return '"' manager.Exe '" ' ActionCatalog.FillPath(args, target)
     }
 
-    ; Every {path} (any case) replaced in one pass. A folder with spaces is quoted unless that {path} is already inside quotes
+    ; Every {path} (any case) replaced in one pass. A path with spaces is quoted unless that {path} is already inside quotes
     ; (an odd number of " before it, as in /R="{path}"): {path} and /R={path} both become /R="C:\My Folder". Only whitespace
     ; needs it, as Run starts the program without cmd.exe, and a Windows path can't contain ". Not RegExReplace: "$" in a path
     ; (C:\$Recycle.Bin, \\server\share$) would be read as a back-reference
-    static FillPath(args, folder) {
-        quoted := RegExMatch(folder, "\s") > 0 ? '"' folder '"' : folder
+    static FillPath(args, target) {
+        quoted := RegExMatch(target, "\s") > 0 ? '"' target '"' : target
         out := "", pos := 1
         while ((found := InStr(args, "{path}", false, pos)) > 0) {
             StrReplace(SubStr(args, 1, found - 1), '"', '"', , &quotes)
-            out .= SubStr(args, pos, found - pos) (Mod(quotes, 2) ? folder : quoted)
+            out .= SubStr(args, pos, found - pos) (Mod(quotes, 2) ? target : quoted)
             pos := found + StrLen("{path}")
         }
         return out SubStr(args, pos)
