@@ -171,7 +171,7 @@ class ActionCatalog {
                 return
             return Run('explorer.exe "' resolved '"')
         }
-        Run(ActionCatalog.FileManagerLine(manager, resolved, resolved, '"' resolved '"'))
+        Run(ActionCatalog.FileManagerLine(manager, resolved, '"' resolved '"'))
     }
 
     ; Ctrl+Enter / "Reveal in File Manager": the folder that holds target, with target selected where the file manager can
@@ -186,38 +186,35 @@ class ActionCatalog {
         Run(ActionCatalog.RevealLine(manager, resolved))
     }
 
-    ; The file manager's command line for Reveal. Without placeholders, Total Commander gets the item after /P (it opens the
-    ; folder and selects the item); other file managers take different arguments, so they get the containing folder
+    ; The file manager's command line for Reveal. Without {path}, Total Commander gets the item as a plain path after /P (it
+    ; opens the containing folder and selects the item; it doesn't select with /L= or /R=); other file managers take different
+    ; arguments, so they get the containing folder
     static RevealLine(manager, resolved) {
         folder := ActionCatalog.ParentDir(resolved)
         legacy := ActionCatalog.IsTotalCommander(manager) ? '/P "' resolved '"' : '"' folder '"'
-        return ActionCatalog.FileManagerLine(manager, folder, resolved, legacy)
+        return ActionCatalog.FileManagerLine(manager, folder, legacy)
     }
 
-    ; The file manager's command line. Its parameters (FileManager setting) can place the paths themselves: {path} = the folder
-    ; to show, {file} = the item itself (the file or folder to select; for Open Folder the folder, as for {path}); quotes are
-    ; added when needed (see FillPaths). Without either, legacyArgs follow the parameters, as before placeholders existed
-    ; (so existing settings keep working)
-    static FileManagerLine(manager, folder, item, legacyArgs) {
+    ; The file manager's command line. {path} in its parameters (FileManager setting) places the folder: the folder to open, or
+    ; for Reveal the containing folder (e.g. Total Commander's /R={path}: always the right panel). Without it, legacyArgs follow
+    ; the parameters, as before placeholders existed (so existing settings keep working)
+    static FileManagerLine(manager, folder, legacyArgs) {
         args := ActionCatalog.TabArgs(manager)
-        args := RegExMatch(args, "i)\{(path|file)\}") ? ActionCatalog.FillPaths(args, folder, item) : Trim(args " " legacyArgs)
+        args := InStr(args, "{path}") > 0 ? ActionCatalog.FillPath(args, folder) : Trim(args " " legacyArgs)
         return Trim('"' manager.Exe '" ' args)
     }
 
-    ; {path} / {file} (any case) replaced in one pass, so a folder whose name contains "{file}" isn't replaced again.
-    ; A path with spaces is quoted unless the placeholder is already inside quotes (an odd number of " before it, as in
-    ; /R="{path}"): {path} and /R={path} both become /R="C:\My Folder". Only whitespace needs it, as Run starts the program
-    ; without cmd.exe, and a Windows path can't contain ". Not RegExReplace: "$" in a path (C:\$Recycle.Bin, \\server\share$)
-    ; would be read as a back-reference
-    static FillPaths(args, folder, item) {
+    ; Every {path} (any case) replaced in one pass. A folder with spaces is quoted unless that {path} is already inside quotes
+    ; (an odd number of " before it, as in /R="{path}"): {path} and /R={path} both become /R="C:\My Folder". Only whitespace
+    ; needs it, as Run starts the program without cmd.exe, and a Windows path can't contain ". Not RegExReplace: "$" in a path
+    ; (C:\$Recycle.Bin, \\server\share$) would be read as a back-reference
+    static FillPath(args, folder) {
+        quoted := RegExMatch(folder, "\s") > 0 ? '"' folder '"' : folder
         out := "", pos := 1
-        while (found := RegExMatch(args, "i)\{(path|file)\}", &m, pos)) {
-            value := (m[1] = "path") ? folder : item
+        while ((found := InStr(args, "{path}", false, pos)) > 0) {
             StrReplace(SubStr(args, 1, found - 1), '"', '"', , &quotes)
-            if (Mod(quotes, 2) = 0 && RegExMatch(value, "\s") > 0)
-                value := '"' value '"'
-            out .= SubStr(args, pos, found - pos) value
-            pos := found + m.Len
+            out .= SubStr(args, pos, found - pos) (Mod(quotes, 2) ? folder : quoted)
+            pos := found + StrLen("{path}")
         }
         return out SubStr(args, pos)
     }
