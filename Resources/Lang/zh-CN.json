@@ -175,6 +175,8 @@
   "Help.LargeType.Text": "大字显示",
   "Help.EditFile.Key": "Ctrl+E",
   "Help.EditFile.Text": "用编辑程序打开选中的文件 (例如脚本)",
+  "Help.Everything.Key": "Ctrl+F",
+  "Help.Everything.Text": "在 Everything 里搜索输入的内容 (筛选, 按大小或日期排序)",
   "Help.Mark.Key": "Insert",
   "Help.Mark.Text": "标记文件和文件夹, → 对所有标记的一起操作",
   "Help.Number.Key": "Ctrl+1 ~ Ctrl+9",

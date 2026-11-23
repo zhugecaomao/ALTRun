@@ -175,6 +175,8 @@
   "Help.LargeType.Text": "拡大表示",
   "Help.EditFile.Key": "Ctrl+E",
   "Help.EditFile.Text": "選択したファイルをエディターで開く (スクリプトなど)",
+  "Help.Everything.Key": "Ctrl+F",
+  "Help.Everything.Text": "入力した文字を Everything で検索 (絞り込み、サイズや日付で並べ替え)",
   "Help.Mark.Key": "Insert",
   "Help.Mark.Text": "ファイルやフォルダーに印を付け、→ でまとめて操作",
   "Help.Number.Key": "Ctrl+1 ~ Ctrl+9",

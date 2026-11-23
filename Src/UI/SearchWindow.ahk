@@ -25,6 +25,7 @@
 ;   Ctrl+C (no text selected in the box)  copy the current result
 ;   Ctrl+L                           Large Type
 ;   Ctrl+E                           edit the selected file (when its type has an "Edit" verb, see ActionCatalog.EditorFor)
+;   Ctrl+F                           search what is typed in Everything's own window (Windows Search without Everything, #566)
 ;   F3                               edit the current result (no results: a new custom command from the typed text)
 ;   Ctrl+Del (caret at the end)      delete the current result (after confirming)
 ;   F1                               about ALTRun (the Advanced page of Preferences)
@@ -1251,6 +1252,13 @@ class SearchWindow {
             return
         SearchWindow.Hide("run")
         SearchWindow._SafeRun(() => ActionCatalog.EditFile(item.Arg))
+    }
+
+    ; Ctrl+F: the text typed to Everything (FileSearchProvider.FullSearchFor)
+    static SearchInEverything() {
+        text := SearchWindow.Input.Value
+        SearchWindow.Hide("run")
+        SearchWindow._SafeRun(() => FileSearchProvider.FullSearchFor(text))
     }
 
     static _ShowLargeType() {

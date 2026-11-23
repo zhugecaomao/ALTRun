@@ -57,6 +57,7 @@ class HelpProvider {
             ["ScriptKeyword", "Scripts"     , "Scripts"],
             ["Query"      , "CustomCommands", "Custom-Commands"],
             ["EditFile"   , "FileSearch"    , "Usage"],
+            ["Everything" , ""              , "File-Search"],
             ["Pinyin"     , ""              , "File-Search"],
             ["Browse"     , "FileSearch"    , "File-Search"],
             ["Mark"       , "FileSearch"    , "File-Search"],

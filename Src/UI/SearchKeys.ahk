@@ -284,6 +284,11 @@ class SearchKeys {
             case 0x45:                                                      ; Ctrl+E
                 SearchWindow._EditFileSelected()
                 return 0
+            case 0x46:                                                      ; Ctrl+F
+                if (SearchWindow.Session.Mode != "results")
+                    return
+                SearchWindow.SearchInEverything()
+                return 0
             case 0xBC:                                                      ; Ctrl+,
                 SearchWindow.Hide()
                 App.OpenPreferences()

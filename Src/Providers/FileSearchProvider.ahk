@@ -16,6 +16,8 @@
 ;   5. Browse a folder: type a path such as C:\  D:\Projects\rep  \\server\share\  ~\  %OneDrive%\ to list
 ;                       that folder (the last part filters), folders first; Tab opens the selected folder, Backspace goes up
 ;                       (like folder browsing in PowerToys Run / Flow Launcher). Hidden and system files are not listed
+; Ctrl+F, or "Search in Everything" in a file result's actions panel: what is typed goes to Everything's own window (sorting,
+;   filters by size / date...), with a keyword's folder: / ext: scope; Windows Search when Everything isn't found (#566)
 ; Results are sorted by how well the name matches (exact > start of the name > start of a word > contains), folders
 ; first on ties, then by modification time. Everything syntax (folder:, ext:, path:...) is passed to Everything as is.
 ;
@@ -253,6 +255,7 @@ class FileSearchProvider {
         for found in FileSearchProvider.Query(term, options["MaxResults"], false, scope) {
             item := FileSearchProvider._ToItem(found, 150 - A_Index * 0.01)
             item.Exclusive := exclusive
+            item.Actions.Push(FileSearchProvider.FullSearchAction(term, scope))
             results.Push(item)
         }
         fallback := FileSearchProvider.FallbackItem(term, scope)
@@ -297,8 +300,11 @@ class FileSearchProvider {
     ; default results: scores lowered (at most about 40), after applications / commands
     static _DefaultResults(text, options) {
         results := []
-        for found in FileSearchProvider.Query(text, options["DefaultResultsLimit"], options["DefaultResultsMatch"] != "Contains")
-            results.Push(FileSearchProvider._ToItem(found, 5 + (found.Score + (found.IsFolder ? 1 : 0)) * 0.35))
+        for found in FileSearchProvider.Query(text, options["DefaultResultsLimit"], options["DefaultResultsMatch"] != "Contains") {
+            item := FileSearchProvider._ToItem(found, 5 + (found.Score + (found.IsFolder ? 1 : 0)) * 0.35)
+            item.Actions.Push(FileSearchProvider.FullSearchAction(text))
+            results.Push(item)
+        }
         return results
     }
 
@@ -409,13 +415,59 @@ class FileSearchProvider {
         if (exe != "") {
             search := FileSearchProvider._ScopePrefix(scope) StrReplace(term, '"')
             return ResultItem(I18n.T("Files.OpenEverything", search), exe, {
-                Icon: exe, OnRun: (*) => Run('"' exe '" -s "' search '"')
+                Icon: exe, OnRun: (*) => FileSearchProvider.OpenEverything(exe, search)
             })
         }
         search := (IsObject(scope) ? "" : scope ? "kind:folder " : "") term
         return ResultItem(I18n.T("Files.WindowsSearch", search), "search-ms:", {
             Icon: "res:imageres.dll,-8", OnRun: (*) => Run("search-ms:query=" Url.Encode(search))
         })
+    }
+
+    ; Everything's search window with search (-s: a new window, or the one already open, gets the text); just the window when search is ""
+    static OpenEverything(exe, search) => Run('"' exe '"' (search != "" ? ' -s "' search '"' : ""))
+
+    ; "Search in Everything" (Windows Search without Everything) for the actions panel of a file result: the same as the fallback row,
+    ; with the shortcut as its second line
+    static FullSearchAction(term, scope := false) {
+        action := FileSearchProvider.FallbackItem(term, scope)
+        action.Subtitle := "Ctrl+F"
+        return action
+    }
+
+    ; Ctrl+F in the search window (#566): text as typed, a file / folder keyword or type filter becoming its Everything scope
+    ; ("folder budget" -> folder:budget, "doc report" -> ext:doc;docx... report); "" = just open Everything (Windows Search: nothing)
+    static FullSearchFor(text) {
+        term := FileSearchProvider.TypedScope(text, &scope)
+        if (term = "" && !IsObject(scope) && !scope) {
+            if ((exe := FileSearchProvider._EverythingExe()) != "")
+                FileSearchProvider.OpenEverything(exe, "")
+            return
+        }
+        item := FileSearchProvider.FallbackItem(term, scope)
+        item.OnRun.Call(item)
+    }
+
+    ; The search words in text and their scope (false = files and folders, true = folders, an entry of TypeFilters), as Search reads
+    ; the keywords ('report, file report, folder budget, doc report, recent report); otherwise the whole text
+    static TypedScope(text, &scope) {
+        options := AppSettings.Feature("FileSearch")
+        query := SearchQuery(Trim(text)), term := "", scope := false
+        if (options["QuotePrefix"] && query.MatchPrefix("'", &term))
+            return term
+        if query.HasRest {
+            if (query.MatchKeyword(options["Keywords"], &term) || query.MatchKeyword(options["RecentKeywords"], &term))
+                return term
+            if query.MatchKeyword(options["FolderKeywords"], &term) {
+                scope := true
+                return term
+            }
+            if IsObject(filter := FileSearchProvider.MatchType(query, &term)) {
+                scope := filter
+                return term
+            }
+        }
+        return Trim(text)
     }
 
     static _EverythingExe() {
