@@ -46,7 +46,7 @@
 | 本地开发服务器 | `lh` | `http://localhost:{query\|8000}` (8000 是端口号: `lh ` 打开 8000, `lh 3000` 打开 3000) |
 
 ### 一次打开几个网页
-在 **网址** 里写几行, 每行一个网址 (在框里按 `Enter` 换行)。搜索一次就按顺序把它们都打开, 例如比价, 或者同时查两本词典:
+在 **网址** 里写几行, 每行一个网址 (在框里按 `Enter` 换行). 搜索一次就按顺序把它们都打开, 例如比价, 或者同时查两本词典:
 
 ![一个引擎写两个网址](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch-editor.png)
 
@@ -63,9 +63,9 @@ https://www.youdao.com/result?word={query}&lang=en
 ![结果: 第一个网址和还有几个](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch-multi.png)
 
 - 最多 10 个网址; 空行跳过
-- 每一行都可以用 `{query}` / `{query\|默认值}`。关键字加空格后什么都不输入时, 默认值用第一个 `{query\|...}` 的; 默认值为空 (`{query\|}`) 时每一行都直接打开, `{query}` 换成空
+- 每一行都可以用 `{query}` / `{query\|默认值}`. 关键字加空格后什么都不输入时, 默认值用第一个 `{query\|...}` 的; 默认值为空 (`{query\|}`) 时每一行都直接打开, `{query}` 换成空
 - 结果下面显示第一个网址和还有几个, 例如 `https://cn.bing.com/dict/search?q=hello  (还有 1 个)`; `Alt+Enter` 复制所有网址, 每行一个
-- 网页之间隔 0.25 秒打开, 浏览器还在启动时也不会漏掉。选中内容或剪贴板历史里的一条按 `→` 用这个引擎搜索, 也都会打开
+- 网页之间隔 0.25 秒打开, 浏览器还在启动时也不会漏掉. 选中内容或剪贴板历史里的一条按 `→` 用这个引擎搜索, 也都会打开
 - 偏好设置的列表里几行用 `|` 隔开显示; **下载网站图标** 用第一个网址的网站
 
 ### 搜索剪贴板
