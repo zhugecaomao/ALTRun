@@ -49,11 +49,6 @@ class EverythingCheck {
 
         EverythingCheck.Check("no results for a name nobody has", Everything.Query(name "_nothing_like_it", 10).Length = 0)
 
-        ; TEMPORARY probe (removed before merge): which date-modified forms each Everything version accepts
-        for q in ["dm:thisweek", "dm:last7days", "dm:" A_YYYY "-" A_MM "-01.." A_YYYY "-" A_MM "-" A_DD, "dm:2000-07-01..2000-07-31", "dc:last7days"]
-            EverythingCheck.Log("PROBE " q ": " Everything.Query(name " " q, 10).Length " results"
-                . (Everything.LastProblem != "" ? " (" Everything.LastProblem ")" : ""))
-
         ; How long a query takes once the index is ready (information only: a CI runner is no PC). Timed with the
         ; performance counter: A_TickCount only moves in 15.6 ms steps
         times := []
