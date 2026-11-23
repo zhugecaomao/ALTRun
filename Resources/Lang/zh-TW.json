@@ -910,6 +910,7 @@
   "Prefs.TabKey.Next": "選取下一個結果",
   "Prefs.StartMenu": "新增到開始選單",
   "Prefs.StartMenu.Desc": "在開始選單裡新增 ALTRun 的捷徑",
+  "Prefs.StartMenu.Scoop": "以 Scoop 安裝: Scoop 已將 ALTRun 新增到開始選單 (Scoop Apps)",
   "Prefs.Status.Missing": "找不到",
   "Prefs.Status.OK": "正常",
   "Prefs.Status.Skipped": "-",

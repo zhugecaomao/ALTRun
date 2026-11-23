@@ -2532,6 +2532,21 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.Equal("UpdateChecker.winget", UpdateChecker.InstalledBy("C:\Users\me\AppData\Local\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_Microsoft.Winget.Source_8wekyb3d8bbwe"), "winget")
         TestRunner.Equal("UpdateChecker.by hand", UpdateChecker.InstalledBy("C:\Tools\ALTRun"), "")
         TestRunner.Equal("UpdateChecker.other altrun folder", UpdateChecker.InstalledBy("C:\apps\altrun\sub\deeper"), "")
+        ; Installed with Scoop: Scoop's Start menu shortcut is used instead of ALTRun's own (#575)
+        menus := A_Temp "\ALTRunTest-ScoopMenus", scoopDir := "C:\Users\me\scoop\apps\altrun\current"
+        try DirDelete(menus, true)
+        try {
+            DirCreate(menus "\user\Scoop Apps"), DirCreate(menus "\common\Scoop Apps")
+            starts := [menus "\user", menus "\common"]
+            TestRunner.Equal("ScoopShortcut.none yet", App.ScoopShortcut(scoopDir, starts), "")
+            FileAppend("", menus "\common\Scoop Apps\ALTRun.lnk")
+            TestRunner.Equal("ScoopShortcut.global install", App.ScoopShortcut(scoopDir, starts), menus "\common\Scoop Apps\ALTRun.lnk")
+            FileAppend("", menus "\user\Scoop Apps\ALTRun.lnk")
+            TestRunner.Equal("ScoopShortcut.user install", App.ScoopShortcut(scoopDir, starts), menus "\user\Scoop Apps\ALTRun.lnk")
+            TestRunner.Equal("ScoopShortcut.not Scoop", App.ScoopShortcut("C:\Tools\ALTRun", starts), "")
+            TestRunner.Equal("ScoopShortcut.winget", App.ScoopShortcut("C:\Users\me\AppData\Local\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_x", starts), "")
+        } finally
+            try DirDelete(menus, true)
         TestRunner.Equal("I18n.args", I18n.T("Web.SearchFor", "Google", "x"), "Search Google for 'x'")
         TestRunner.Equal("I18n.missing", I18n.T("No.Such.Key"), "No.Such.Key")
         TestRunner.True("System commands", SystemProvider.Commands().Length > 40)

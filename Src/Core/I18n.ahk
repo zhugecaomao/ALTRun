@@ -846,6 +846,7 @@ class I18n {
         s["Prefs.SendToMenu.Desc"]     := "Explorer → right-click → Send to → ALTRun adds custom commands: one item opens the editor, several are added at once."
         s["Prefs.StartMenu"]           := "Add to Start menu"
         s["Prefs.StartMenu.Desc"]      := "Adds an ALTRun shortcut to the Start menu."
+        s["Prefs.StartMenu.Scoop"]     := "Installed with Scoop: Scoop already adds ALTRun to the Start menu (Scoop Apps)."
         s["Prefs.CheckUpdates"]        := "Check for updates automatically"
         s["Prefs.CheckUpdates.Desc"]   := "Checks GitHub in the background at startup and every 6 hours. A new version shows up in the search window."
         s["Prefs.SaveLog"]             := "Write a debug log"

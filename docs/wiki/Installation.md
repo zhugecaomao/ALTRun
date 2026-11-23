@@ -42,9 +42,10 @@ scoop install altrun
 ```
 
 - After installing, the Start menu has "Scoop Apps → ALTRun"; the program is in `scoop\apps\altrun\current`
+- Only Scoop's shortcut stays in the Start menu: when ALTRun is installed with Scoop and Scoop's shortcut is there, ALTRun doesn't add its own "ALTRun" to the Start menu (for both a normal and a `--global` install), and removes the one it added earlier at startup (only the one ALTRun created; a shortcut of the same name you put there yourself is left alone). Preferences → General → "Add to Start menu" is grayed out then, with a note that Scoop already adds it; the setting itself is kept and works again if you install ALTRun another way later
 - Upgrading: quit ALTRun first, then run `scoop update altrun`. Settings and data (`Data\`, including `Data\ALTRun.json`) and `Themes\` are kept
 - Uninstalling: `scoop uninstall altrun`; your settings stay in `scoop\persist\altrun` and come back when you reinstall. To delete them too, use `scoop uninstall altrun --purge`
-- When installed with Scoop, a new version found by "Check for Updates" tells you to upgrade with `scoop update altrun`; don't unzip over it by hand
+- When installed with Scoop, ALTRun never downloads or replaces its own files (so it can't update behind Scoop's back and make Scoop update it again): a new version found by "Check for Updates" is only shown in the search window, and `Enter` copies `scoop update altrun`; a manual check and the `-Update` command line only tell you, they don't install. Don't unzip over it by hand. If you don't want the notice, turn off "Check for updates automatically" in Preferences → General and just use `scoop update`
 
 ## Files in the program folder
 | File / folder | What it is | On upgrade |

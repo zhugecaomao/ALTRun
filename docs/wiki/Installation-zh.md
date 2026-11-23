@@ -42,9 +42,10 @@ scoop install altrun
 ```
 
 - 安装后开始菜单里有 "Scoop Apps → ALTRun", 程序在 `scoop\apps\altrun\current`
+- 开始菜单里只留 Scoop 的这一个: 用 Scoop 安装、Scoop 的快捷方式也在时, ALTRun 不再自己在开始菜单里建 "ALTRun" (个人安装和 `--global` 全局安装都一样), 以前建过的在启动时删掉 (只删 ALTRun 自己建的, 你自己放的同名快捷方式不动)。偏好设置 → 通用 → "添加到开始菜单" 这时变灰, 说明写着 Scoop 已经添加; 原来的设置保留, 以后改用别的方式安装时照常生效
 - 升级: 先退出 ALTRun, 再运行 `scoop update altrun`。设置和数据 (`Data\`, 包括 `Data\ALTRun.json`)、`Themes\` 都会保留
 - 卸载: `scoop uninstall altrun`, 设置留在 `scoop\persist\altrun`, 重新安装后自动恢复; 连设置一起删除用 `scoop uninstall altrun --purge`
-- 用 Scoop 安装时, "检查更新" 发现新版本会提示用 `scoop update altrun` 升级, 不要手动解压覆盖
+- 用 Scoop 安装时, ALTRun 不会自己下载和替换程序文件 (不会出现 ALTRun 自己更新了、Scoop 不知道又更新一遍的情况): "检查更新" 发现新版本只在搜索窗口里提示, `Enter` 复制 `scoop update altrun`; 手动检查和命令行 `-Update` 也只提示, 不安装。不要手动解压覆盖。不想看到提示, 可以在偏好设置 → 通用里关掉 "自动检查更新", 只用 `scoop update`
 
 ## 程序目录里的文件
 | 文件 / 文件夹 | 说明 | 升级时 |
