@@ -9,6 +9,8 @@
 ;   FileDialogs.IsFileDialog()                      the front window is a file dialog (also the hotkeys' condition)
 ;   FileDialogs.SetDialogPath(folder, dialog := 0)  jump a dialog to a folder
 ;   FileDialogs.PickFile(path, dialog := 0)         jump a dialog to a file's folder
+; The extract windows of WinRAR and 7-Zip (ExtractDialogs) count too, with a jump of their own: the folder only goes into the
+; destination box (Enter or OK there would start extracting), and AutoSwitch / AutoSwitchOnOpen leave them alone (see QuickSwitch._Check)
 ;===============================================================================
 
 class FileDialogs {
@@ -24,6 +26,8 @@ class FileDialogs {
         try winClass := WinGetClass(target)
         browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
         if (browse && FileDialogs.LooksLikeBrowseDialog(winClass, controls, FileDialogs._TreeId(controls, target)))
+            return true
+        if (QuickSwitch._ExtractEnabled() && QuickSwitch._Matches("ahk_group ALTRunExtractDialogs", hwnd) && FileDialogs.ExtractPathBox(hwnd))
             return true
         return QuickSwitch._Matches("ahk_group ALTRunDialogs", hwnd) && FileDialogs.LooksLikeFileDialog(winClass, controls, title)
     }
@@ -141,6 +145,60 @@ class FileDialogs {
         return false
     }
 
+    ; The destination box (a combo box) of a WinRAR / 7-Zip extract window, 0 if the window isn't one. Told apart by control IDs, whatever the
+    ; language (control trees read on Windows CI, WinRAR 7 / 7-Zip 25): see ExtractBoxIn
+    static ExtractPathBox(dialog) {
+        exe := "", controls := []
+        if DllCall("GetWindowThreadProcessId", "Ptr", dialog, "UInt*", &pid := 0, "UInt")   ; WinGetProcessName doesn't see hidden windows
+            try exe := ProcessGetName(pid)
+        if !(RegExMatch(exe, "i)^(7zG|7zFM|WinRAR)\.exe$") && QuickSwitch.ClassOf(dialog) = "#32770")
+            return 0
+        try for control in WinGetControlsHwnd("ahk_id " dialog)
+            controls.Push({Hwnd: control, Class: QuickSwitch.ClassOf(control), Id: DllCall("GetDlgCtrlID", "Ptr", control, "Int"), Parent: DllCall("GetParent", "Ptr", control, "Ptr")})
+        return FileDialogs.ExtractBoxIn(exe, dialog, controls)
+    }
+
+    ; controls: {Hwnd, Class, Id, Parent} of every control in the window
+    ;   7-Zip "Extract" (7zG, or 7zFM's Extract button): path combo box 100, overwrite mode 103. "Add to Archive" has those IDs too, and its
+    ;     archive format box 104, which Extract lacks
+    ;   7-Zip File Manager "Copy" / "Move" (F5 / F6, also how it extracts from an archive open there): label 100, path combo box 101, "..." 102
+    ;   WinRAR "Extraction path and options": a property sheet; its General page holds the path combo box 101 next to the folder tree 104
+    static ExtractBoxIn(exe, dialog, controls) {
+        find(parent, id, wanted := "") {
+            for control in controls
+                if (control.Parent = parent && control.Id = id)
+                    return (wanted = "" || control.Class = wanted) ? control.Hwnd : 0
+            return 0
+        }
+        if (exe = "7zG.exe" || exe = "7zFM.exe") {
+            if ((box := find(dialog, 100, "ComboBox")) && find(dialog, 103, "ComboBox") && !find(dialog, 104))
+                return box
+            if (exe = "7zFM.exe" && (box := find(dialog, 101, "ComboBox")) && find(dialog, 102, "Button") && find(dialog, 100, "Static"))
+                return box
+        } else if (exe = "WinRAR.exe") {
+            for control in controls
+                if (control.Id = 101 && control.Class = "ComboBox" && find(control.Parent, 104, "SysTreeView32"))
+                    return control.Hwnd
+        }
+        return 0
+    }
+
+    ; An extract window: the folder into its destination box, as typing does (the program reads the box when OK is clicked). No Enter and
+    ; no OK: that would start extracting, which the user does after checking the other options
+    static FillExtractPath(folder, dialog) {
+        if !(box := FileDialogs.ExtractPathBox(dialog))
+            return false
+        editBox := DllCall("GetWindow", "Ptr", box, "UInt", 5, "Ptr")       ; GW_CHILD: the combo box's edit box
+        try ok := editBox && FileDialogs._SetBoxText(editBox, folder)
+        catch
+            ok := false
+        if !ok
+            Logger.Error("QuickSwitch: the extract window's destination box didn't take " folder)
+        else if Logger.Enabled
+            Logger.Debug("QuickSwitch: filled [" folder "] into the extract window's destination box")
+        return ok
+    }
+
     static _HasControl(controls, patterns*) {
         for name in controls
             for pattern in patterns
@@ -187,6 +245,8 @@ class FileDialogs {
     ; switching back to the dialog failed and the panel is still in front). false when it surely didn't go there
     static Jump(folder, dialog) {
         method := FileDialogs.DialogJumpMethod(dialog)
+        if (method = "fill")                                                ; an extract window: Enter there would extract
+            return FileDialogs.FillExtractPath(folder, dialog)
         if (method = "browse")                                              ; folder tree only: select it there, pressing Enter would mean OK
             return FileDialogs.SelectInBrowseDialog(folder, dialog)
         if (method = "message") {
@@ -269,6 +329,10 @@ class FileDialogs {
     ; The tests check a jump with it
     static DialogFolder(dialog) {
         text := ""
+        if (box := FileDialogs.ExtractPathBox(dialog)) {                   ; an extract window: its destination, if it is a folder already
+            try text := RTrim(ControlGetText(box), "\")
+            return (text != "" && DirExist(text)) ? text : ""
+        }
         try text := WinGetText("ahk_id " dialog)
         Loop Parse, text, "`n", "`r"
             if RegExMatch(A_LoopField, "^[^:：\\]{1,40}[:：]\s*((?:[A-Za-z]:\\|\\\\)[^\r\n]*)$", &m)
@@ -309,8 +373,11 @@ class FileDialogs {
             , "UInt", 0x2, "UInt", 2000, "Ptr", 0, "Ptr") != 0              ; SMTO_ABORTIFHUNG
     }
 
-    ; How the folder goes into this dialog, see JumpMethod; "browse" = a folder tree dialog (SelectInBrowseDialog)
+    ; How the folder goes into this dialog, see JumpMethod; "browse" = a folder tree dialog (SelectInBrowseDialog), "fill" = an extract
+    ; window (FillExtractPath)
     static DialogJumpMethod(dialog) {
+        if FileDialogs.ExtractPathBox(dialog)
+            return "fill"
         if FileDialogs.IsBrowseWindow(dialog)
             return "browse"
         className := "", hasEdit := false

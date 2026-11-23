@@ -15,6 +15,9 @@
 ; send level 1 like a person's keys); the tab is closed again (Ctrl+W) after each round.
 ; Then AutoSwitchOnOpen: with a window of this check in front (not a file manager) and Explorer behind it at Folder A, a new Open
 ; dialog must jump to Folder A as it opens (a switch from Explorer isn't involved, so AutoSwitch alone wouldn't jump).
+; Then the extract windows of 7-Zip and WinRAR (#609; each skipped when not installed, the workflow installs WinRAR): opened after
+; Explorer, they must not jump by themselves (as they open, or on a switch from Explorer), and Ctrl+G must put Folder A into the
+; destination box and nothing more (the window stays open, nothing is extracted).
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -49,6 +52,8 @@ try {
     for how in ["click", "alt+down"]
         Loop Rounds
             MenuRound(how, A_Index)
+    for program in ["7-Zip", "WinRAR"]
+        ExtractRound(program)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -276,6 +281,86 @@ OpenRound(n) {
         if (pid && !ProcessWaitClose(pid, 3))
             try ProcessClose(pid)
         Sleep(300)
+    }
+}
+
+; An extract window (#609) of 7-Zip (7zG x -ad) or WinRAR (Alt+E in its main window), opened with Explorer at Folder A used last:
+; no jump by itself (AutoSwitch and AutoSwitchOnOpen are on), Ctrl+G fills Folder A into the destination box (Edit1 in both) without
+; extracting. Skipped when the program isn't installed
+ExtractRound(program) {
+    name := "extract " program
+    sevenZip := A_ProgramFiles "\7-Zip", winRar := A_ProgramFiles "\WinRAR\WinRAR.exe"
+    if !FileExist(sevenZip "\7z.exe")
+        return Say("SKIP " name ": no 7-Zip to make the archive")
+    if (program = "WinRAR" && !FileExist(winRar))
+        return Say("SKIP " name ": WinRAR isn't installed")
+    archive := Demo "\test.zip", target := Demo "\Folder A\"
+    if !FileExist(archive) {
+        FileAppend("text", Demo "\Start\a.txt")
+        RunWait('"' sevenZip '\7z.exe" a "' archive '" "' Demo '\Start\a.txt"', , "Hide")
+    }
+    WinActivate(Explorer)                                                   ; Explorer: the file manager used last
+    if !WinWaitActive(Explorer, , 3)
+        return Fail(name, 1, "Explorer didn't come to the front")
+    Sleep(300)
+    logSize := LogLength(), pids := []
+    try {
+        if (program = "7-Zip") {
+            Run('"' sevenZip '\7zG.exe" x "' archive '" -o"' Demo '\Start" -ad', Demo, , &pid), pids.Push(pid)
+            window := WinWait("ahk_class #32770 ahk_pid " pid, , 10)
+        } else {
+            Run('"' winRar '" "' archive '"', Demo, , &pid), pids.Push(pid)
+            if !(main := WinWait("ahk_class WinRarWindow ahk_pid " pid, , 20))
+                return Fail(name, 1, "WinRAR's main window didn't open")
+            WinActivate(main)
+            if !WinWaitActive(main, , 3)
+                return Fail(name, 1, "WinRAR's main window didn't come to the front")
+            Sleep(500)
+            Send("!e")                                                      ; Extract To
+            window := WinWait("ahk_class #32770 ahk_pid " pid, , 10)
+        }
+        if !window {
+            Windows()
+            return Fail(name, 1, "the extract window didn't open")
+        }
+        Sleep(300)
+        before := box()
+        Say("INFO " name ": " WinGetTitle(window) ", destination [" before "]")
+        Sleep(1500)                                                         ; AutoSwitchOnOpen jumps a new dialog within a few hundred ms
+        if (box() != before)
+            return Fail(name, 1, "the destination changed by itself as the window opened: [" box() "]", logSize)
+        WinActivate(Explorer), WinWaitActive(Explorer, , 3), Sleep(400)      ; a switch from Explorer: AutoSwitch must leave it alone too
+        WinActivate(window)
+        if !WinWaitActive(window, , 3)
+            return Fail(name, 1, "the extract window didn't come back to the front")
+        Sleep(1500)
+        if (box() != before)
+            return Fail(name, 1, "the destination changed on a switch from Explorer: [" box() "]", logSize)
+        Say("PASS " name ": no jump by itself")
+        start := A_TickCount
+        SendLevel(1)                                                        ; hook hotkeys ignore other scripts' keys at send level 0
+        SendEvent("^g")
+        SendLevel(0)
+        while (A_TickCount - start < 3000 && box() != target)
+            Sleep(20)
+        if (box() != target)
+            return Fail(name " ctrl+g", 1, "the destination box has [" box() "], not [" target "]", logSize)
+        filledMs := A_TickCount - start
+        Sleep(1000)                                                         ; extracting would close the window or write a.txt
+        if !WinExist(window)
+            return Fail(name " ctrl+g", 1, "the extract window closed: Ctrl+G must not start extracting", logSize)
+        if FileExist(target "a.txt")
+            return Fail(name " ctrl+g", 1, "a.txt was extracted into Folder A", logSize)
+        Say("PASS " name " ctrl+g: filled the destination in " filledMs " ms, still open, nothing extracted")
+    } finally {
+        for pid in pids
+            try ProcessClose(pid)
+        Sleep(300)
+    }
+
+    box() {                                                                 ; the destination box: Edit1 in both programs
+        try return ControlGetText("Edit1", window)
+        return ""
     }
 }
 

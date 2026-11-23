@@ -27,6 +27,10 @@ Tick **Also jump when a dialog opens, to the file manager used last** (`AutoSwit
 
 Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel and `Ctrl+G` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). In programs running as administrator, see below.
 
+## WinRAR and 7-Zip extract windows
+
+The extract windows of WinRAR ("Extraction path and options") and 7-Zip ("Extract", also "Copy" / "Move" in 7-Zip File Manager) count too: `Ctrl+G` or a click in the folder panel puts the folder into the destination box, and nothing more. Enter or OK there would start extracting, so ALTRun presses neither: check the other options and click OK yourself. They never jump by themselves (auto switch leaves them alone, as the program suggests a folder named after the archive). Untick **WinRAR / 7-Zip extract windows** under **Works in** to leave them alone (`ExtractDialogs`). Not in programs running as administrator.
+
 ## Programs running as administrator
 
 Windows doesn't let programs with normal rights control windows running as administrator, so by default ALTRun can't jump the dialogs of such programs (installers, tools started with "Run as administrator"); a jump there shows a hint once per dialog. Tick **Dialogs of programs running as administrator** under **Works in** (`AdminDialogs`) and ALTRun creates a scheduled task (confirm UAC once); from then on every start uses it to run a **small helper with administrator rights** (no more UAC prompts), and the helper exits with ALTRun. The jumps there then work like anywhere else: the hotkeys, the folder panel, auto switch, Open / Save and Browse for Folder dialogs. ALTRun itself keeps normal rights, so programs opened from it, drag and drop and network drives are not affected. The helper is the same one as for [Caps Lock in administrator windows](Hotkeys#caps-lock-switches-the-input-method), one task for both; unticking the last of the two options deletes the task (confirm once more).
@@ -57,10 +61,11 @@ Preferences → Quick Switch controls the hotkeys, eligible windows and automati
 | `StandardDialogs` | `1` = in the standard Open / Save dialogs (`ahk_class #32770`) |
 | `DialogWindows` | Other dialogs where Quick Switch works (dialogs programs draw themselves), a list of window conditions, default `[]` |
 | `BrowseDialogs` | `1` = also in "Browse for Folder" dialogs (folder tree only) |
+| `ExtractDialogs` | `1` = also in the extract windows of WinRAR / 7-Zip: only the destination box is filled (see above); default `1` |
 | `AdminDialogs` | `1` = also in dialogs of programs running as administrator, through a small helper with administrator rights (see above); default `0` |
 | `ExcludeWindows` | Windows where Quick Switch is fully disabled (a list) |
 | `AutoSwitchExclude` | Windows where automatic switching is disabled but manual hotkeys still work (a list) |
 
-Window conditions are `ahk_exe program.exe`, `ahk_class ClassName` or part of the window title, one per list item, for example `"ExcludeWindows": ["ahk_exe 7zG.exe", "ahk_class SysListView32"]`.
+Window conditions are `ahk_exe program.exe`, `ahk_class ClassName` or part of the window title, one per list item, for example `"ExcludeWindows": ["ahk_exe TOTALCMD64.exe", "ahk_class SysListView32"]`.
 
 The [Dialog Folder Panel](Quick-Switch-Panel) has its own Preferences page and can appear beside Open / Save dialogs.

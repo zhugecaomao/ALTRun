@@ -1,6 +1,6 @@
 # Automatic switching to a file dialog on a real Windows desktop (Tests\Integration\QuickSwitchCheck.ahk): Explorer at a folder,
 # an Open dialog, then switching from Explorer to the dialog (activate, Alt+Tab, a click on the title bar) must make the dialog
-# jump to Explorer's folder. On pull requests that change Quick Switch, on main, every Monday (a new runner image can change how
+# jump to Explorer's folder; the extract windows of 7-Zip and WinRAR only take the folder with Ctrl+G. On pull requests that change Quick Switch, on main, every Monday (a new runner image can change how
 # windows come to the front without any change here), or run by hand
 name: Quick Switch
 
@@ -59,6 +59,11 @@ jobs:
 
       - name: Download AutoHotkey v2                                      # pinned, the same as the release build (.github/actions/setup-ahk)
         uses: ./.github/actions/setup-ahk
+
+      - name: Install WinRAR                                               # for the extract window round (#609); the round is skipped without it
+        continue-on-error: true
+        shell: pwsh
+        run: choco install winrar -y --no-progress | Select-Object -Last 2
 
       - name: Switch to a dialog
         shell: pwsh
