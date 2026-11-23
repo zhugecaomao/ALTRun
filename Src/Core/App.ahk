@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.23.11"
+    static Version := "2026.11.23.12"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -684,7 +684,7 @@ class App {
         for shortcut in [
             [general["LaunchAtLogin"], A_Startup "\" App.StartupLinkName, "-Startup"],
             [general["SendToMenu"], sendTo, "-SendTo"],
-            [general["StartMenuShortcut"], A_Programs "\ALTRun.lnk", ""]
+            [general["StartMenuShortcut"] && App.ScoopShortcut() = "", A_Programs "\ALTRun.lnk", ""]   ; installed with Scoop: Scoop's shortcut is the one (#575)
         ] {
             if (skipStartup && shortcut[3] = "-Startup")
                 continue
@@ -698,6 +698,18 @@ class App {
                 Logger.Error("App: shortcut " shortcut[2] " - " e.Message)
             }
         }
+    }
+
+    ; Scoop adds its own shortcut (the manifest's "shortcuts") in Start menu\Programs\Scoop Apps, in the common Start menu for a global install.
+    ; Installed with Scoop and that shortcut is there: ALTRun doesn't add a second "ALTRun" to the Start menu, and removes the one it added earlier
+    ; (only its own, see IsOwnShortcut), so uninstalling with Scoop leaves no shortcut behind. Returns Scoop's shortcut, "" otherwise
+    static ScoopShortcut(programDir := A_ScriptDir, startMenus := [A_Programs, A_ProgramsCommon]) {
+        if (UpdateChecker.InstalledBy(programDir) != "scoop")
+            return ""
+        for dir in startMenus
+            if FileExist(dir "\Scoop Apps\ALTRun.lnk")
+                return dir "\Scoop Apps\ALTRun.lnk"
+        return ""
     }
 
     ; "Launch ALTRun at login" can also be turned off in Task Manager → Startup apps: the shortcut stays, and Windows marks it off in

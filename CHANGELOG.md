@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.12]
+
+测试版。
+
+Test build.
+
+### 修复
+- 用 Scoop 安装时开始菜单里有两个 ALTRun: Scoop 已经在 "Scoop Apps" 里建了一个, ALTRun 又在开始菜单里建一个. 现在用 Scoop 安装、Scoop 的快捷方式也在时, ALTRun 不再自己建, 以前建的启动时删掉 (只删 ALTRun 自己建的); 偏好设置 → 通用 → "添加到开始菜单" 变灰并说明原因, 设置本身保留. 用 Scoop 安装时 ALTRun 本来就不会自己更新 (只提示 `scoop update altrun`), Wiki 写明了 (#575)
+
 ## [2026.11.23.11]
 
 测试版。
@@ -1667,7 +1676,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...HEAD
+[2026.11.23.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...2026.11.23.12
 [2026.11.23.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...2026.11.23.11
 [2026.11.23.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...2026.11.23.10
 [2026.11.23.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...2026.11.23.9

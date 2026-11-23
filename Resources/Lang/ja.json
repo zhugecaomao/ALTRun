@@ -909,6 +909,7 @@
   "Prefs.TabKey.Next": "次の結果を選択",
   "Prefs.StartMenu": "スタートメニューに追加",
   "Prefs.StartMenu.Desc": "スタートメニューに ALTRun のショートカットを追加します。",
+  "Prefs.StartMenu.Scoop": "Scoop でインストール済み: Scoop がスタートメニュー (Scoop Apps) に追加しています。",
   "Prefs.Status.Missing": "見つかりません",
   "Prefs.Status.OK": "正常",
   "Prefs.Status.Skipped": "-",

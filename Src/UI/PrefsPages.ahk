@@ -19,7 +19,10 @@ class PrefsPages {
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
                    , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"]] {  ; writing the debug log is under Advanced → Diagnostics
-            PrefsForm.Check("General." row[1], row[2], , , row[3])
+            scoop := (row[1] = "StartMenuShortcut" && App.ScoopShortcut() != "")   ; Scoop's shortcut is used instead (App.ScoopShortcut): the setting is kept for other installs
+            ctrl := PrefsForm.Check("General." row[1], row[2], , scoop ? I18n.T("Prefs.StartMenu.Scoop") : "", row[3])
+            if scoop
+                ctrl.Enabled := false
         }
         PrefsForm.Gap()
         PrefsForm.Field("General.FileManager", "Prefs.FileManager", "L", "file")
