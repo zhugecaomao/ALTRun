@@ -354,15 +354,7 @@ class CustomCommandProvider {
     }
 
     ; programs registered under "App Paths" (winword, chrome...), which Run can open directly too
-    static _InAppPaths(name) {
-        SplitPath(name, , , &ext)
-        if (ext = "")
-            name .= ".exe"
-        for root in ["HKCU", "HKLM"]
-            try if (RegRead(root "\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" name, "") != "")
-                return true
-        return false
-    }
+    static _InAppPaths(name) => Path.AppPath(name) != ""
 
     static NewCommand() {
         return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")   ; the Id is given when the edit dialog opens (EditDialog) or when saving (AppSettings.EnsureIds)

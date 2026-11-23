@@ -171,21 +171,59 @@ class ActionCatalog {
                 return
             return Run('explorer.exe "' resolved '"')
         }
-        Run(Trim('"' manager.Exe '" ' ActionCatalog.TabArgs(manager)) ' "' resolved '"')
+        Run(ActionCatalog.FileManagerLine(manager, resolved, resolved, '"' resolved '"'))
     }
 
+    ; Ctrl+Enter / "Reveal in File Manager": the folder that holds target, with target selected where the file manager can
     static Reveal(target) {
-        resolved := Path.Resolve(target)
+        resolved := ActionCatalog.RevealPath(target)
         manager := ActionCatalog.FileManagerCommand(AppSettings.General["FileManager"])
         if manager.Explorer {
             if (AppSettings.General["FolderNewTab"] && ActionCatalog._InExplorerTab(ActionCatalog.ParentDir(resolved), Path.Leaf(resolved)))
                 return
             return Run('explorer.exe /select,"' resolved '"')
         }
-        command := Trim('"' manager.Exe '" ' ActionCatalog.TabArgs(manager))
-        if InStr(manager.Exe, "totalcmd")
-            return Run(command ' /P "' resolved '"')                        ; Total Commander: open the containing folder and select the file
-        Run(command ' "' ActionCatalog.ParentDir(resolved) '"')            ; other file managers take different arguments: open the containing folder
+        Run(ActionCatalog.RevealLine(manager, resolved))
+    }
+
+    ; The file manager's command line for Reveal. Without placeholders, Total Commander gets the item after /P (it opens the
+    ; folder and selects the item); other file managers take different arguments, so they get the containing folder
+    static RevealLine(manager, resolved) {
+        folder := ActionCatalog.ParentDir(resolved)
+        legacy := ActionCatalog.IsTotalCommander(manager) ? '/P "' resolved '"' : '"' folder '"'
+        return ActionCatalog.FileManagerLine(manager, folder, resolved, legacy)
+    }
+
+    ; The file manager's command line. Its parameters (FileManager setting) can place the paths themselves: {path} = the folder
+    ; to show, {file} = the item itself (the file or folder to select; for Open Folder the folder, as for {path}); quoting is
+    ; up to the user, as the right quoting depends on the file manager. Without either, legacyArgs follow the parameters, as
+    ; before placeholders existed (so existing settings keep working)
+    static FileManagerLine(manager, folder, item, legacyArgs) {
+        args := ActionCatalog.TabArgs(manager)
+        args := RegExMatch(args, "i)\{(path|file)\}") ? ActionCatalog.FillPaths(args, folder, item) : Trim(args " " legacyArgs)
+        return Trim('"' manager.Exe '" ' args)
+    }
+
+    ; {path} / {file} (any case) replaced in one pass, so a folder whose name contains "{file}" isn't replaced again.
+    ; Not RegExReplace: "$" in a path (C:\$Recycle.Bin, \\server\share$) would be read as a back-reference
+    static FillPaths(args, folder, item) {
+        out := "", pos := 1
+        while (found := RegExMatch(args, "i)\{(path|file)\}", &m, pos)) {
+            out .= SubStr(args, pos, found - pos) ((m[1] = "path") ? folder : item)
+            pos := found + m.Len
+        }
+        return out SubStr(args, pos)
+    }
+
+    static IsTotalCommander(manager) => InStr(Path.Leaf(manager.Exe), "totalcmd") > 0
+
+    ; The file or folder that Reveal shows. A custom command's program given by name (notepad, chrome.exe) is looked up where Run
+    ; finds it: in PATH (Path.Resolve), then under App Paths (Path.AppPath), so Ctrl+Enter opens the program's folder
+    static RevealPath(target) {
+        resolved := Path.Resolve(target)
+        if (!InStr(resolved, "\") && (registered := Path.AppPath(resolved)) != "")
+            return registered
+        return resolved
     }
 
     ; A new tab of an Explorer window already open: the one in front before ALTRun was shown first; false = open a new window
@@ -218,7 +256,7 @@ class ActionCatalog {
     ; when they aren't there yet
     static TabArgs(manager) {
         args := manager.Args
-        if !(AppSettings.General["FolderNewTab"] && InStr(Path.Leaf(manager.Exe), "totalcmd"))
+        if !(AppSettings.General["FolderNewTab"] && ActionCatalog.IsTotalCommander(manager))
             return args
         for flag in ["/O", "/T"]
             if !RegExMatch(args, "i)(^|\s)" flag "(\s|$)")
