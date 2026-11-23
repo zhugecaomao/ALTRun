@@ -12,6 +12,9 @@
 ;                       Hotkey; unused keys removed; old ScopeExclude default and Compact themes replaced (#176)
 ;   6 -> 7   _From6()   custom commands, snippets and sync tasks get an Id; the settings of the Search Window and Keyboard pages
 ;                       move to the Window / Keyboard groups; pinned commands use the new Uid (#176)
+;   7 -> 8   _From7()   SelectionTypes / a command's Selection -> ContentTypes; DelayedStart and Extensions.PTTools (no longer read)
+;                       removed; 7-Zip's extract window out of Quick Switch's excluded windows; remote desktops added to the
+;                       windows snippets don't expand in (#176)
 ;
 ; When the settings structure changes later: AppSettings.CurrentVersion + 1, and add a _FromN() here.
 ; Before upgrading, Backup() copies the original file to ALTRun.v<N>.backup.json.
@@ -20,10 +23,11 @@
 ;   - general settings: show hotkey, start with Windows, tray, hide on focus loss, file manager
 ;   - user commands (UserCommand): File/Dir/CMD/URL -> CustomCommands, Clip -> Snippets
 ;   - index folders / types / depth, the structural calculation switch, snippet paste mode
-;   - Listary-style folder jumps, Ctrl+D date stamp, PT Tools settings
+;   - Listary-style folder jumps, Ctrl+D date stamp
 ;   - conditional hotkeys (e.g. middle button opens PT Tools in RAPT) -> Hotkeys
 ; Not kept: the built-in command list (DefaultCommand, replaced by the system commands feature), the old index
-; (Index, rebuilt), run history, usage statistics and the old list-appearance options.
+; (Index, rebuilt), run history, usage statistics, the old list-appearance options and the PT Tools inputs (PT Tools is a script now,
+; with its own PT Tools.ini).
 ;===============================================================================
 
 class SchemaMigration {
@@ -104,6 +108,57 @@ class SchemaMigration {
             return ""
         }
         return backup
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 7 -> 8
+    ;---------------------------------------------------------------------------
+    ; One name for content types (#176):
+    ;   - "SelectionTypes" -> "ContentTypes", a custom command's "Selection" -> "ContentTypes" (AppSettings.RenameContentTypes, also at every
+    ;     load: going back to an older version leaves its default "SelectionTypes" next to "ContentTypes", removed when this version loads again)
+    ;   - "DelayedStart" (#577) and "Extensions.PTTools" (#554) were no longer read since both became scripts of the script library: removed
+    ;   - Quick Switch's excluded windows: "ahk_exe 7zG.exe" removed, since Quick Switch works in 7-Zip's extract window now (#609)
+    ;   - the windows snippets don't expand in: the remote desktop clients added to the defaults in 2026.11.16.23 (#574) are added to old
+    ;     users' lists too (only what is missing; an emptied list is left alone)
+    ; Going back to an older version: quit ALTRun, put ALTRun.v7.backup.json back as ALTRun.json
+    static AddedExpandExclude := ["ahk_exe ToDesk.exe", "ahk_exe SunloginClient.exe", "ahk_exe AnyDesk.exe", "ahk_exe TeamViewer.exe", "ahk_exe rustdesk.exe"]
+    static _From7(data) {
+        AppSettings.RenameContentTypes(data)
+        SchemaMigration._DeleteKey(data, "DelayedStart")
+        extensions := SchemaMigration._Section(data, "Extensions")
+        SchemaMigration._DeleteKey(extensions, "PTTools")
+        SchemaMigration._RemoveFromList(SchemaMigration._Section(extensions, "QuickSwitch"), "ExcludeWindows", ["ahk_exe 7zG.exe"])
+        snippets := SchemaMigration._Section(SchemaMigration._Section(data, "Features"), "Snippets")
+        SchemaMigration._AddToList(snippets, "ExpandExclude", SchemaMigration.AddedExpandExclude)
+        return data
+    }
+
+    ; Adds the items not yet in the array section[key] (case-insensitive); a missing, emptied or non-array list is left alone
+    static _AddToList(section, key, items) {
+        if !(section.Has(key) && section[key] is Array && section[key].Length)
+            return
+        have := Map(), have.CaseSense := "Off"
+        for item in section[key]
+            if !IsObject(item)
+                have[Trim(item)] := true
+        for item in items
+            if !have.Has(item)
+                section[key].Push(item)
+    }
+
+    ; Removes these items from the array section[key] (case-insensitive, surrounding spaces ignored)
+    static _RemoveFromList(section, key, items) {
+        if !(section.Has(key) && section[key] is Array)
+            return
+        drop := Map(), drop.CaseSense := "Off"
+        for item in items
+            drop[item] := true
+        list := section[key], i := list.Length
+        while (i >= 1) {
+            if (!IsObject(list[i]) && drop.Has(Trim(list[i])))
+                list.RemoveAt(i)
+            i--
+        }
     }
 
     ;---------------------------------------------------------------------------
@@ -334,9 +389,6 @@ class SchemaMigration {
         dateOptions["Hotkey"]        := pick(oldHotkeys, "AutoDateBEHKey", dateOptions["Hotkey"])
         dateOptions["RenameWindows"] := pick(oldHotkeys, "AutoDateBefExt", TextTools.JoinList(dateOptions["RenameWindows"]))
         dateOptions["AppendWindows"] := pick(oldHotkeys, "AutoDateAtEnd", TextTools.JoinList(dateOptions["AppendWindows"]))
-
-        if (old.Has("PTTools") && old["PTTools"] is Map)
-            data["Extensions"]["PTTools"] := old["PTTools"]
 
         data["Hotkeys"] := SchemaMigration._ConditionalHotkeys(oldHotkeys)
 

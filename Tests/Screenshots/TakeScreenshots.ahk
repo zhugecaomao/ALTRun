@@ -572,9 +572,9 @@ class Shots {
         FileAppend("# Meeting notes`n", Shots.NotesDir "\Meeting Notes.md", "UTF-8")
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["SelectionTypes"] := [Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "OpenCommand", "typora01")]
+        settings["ContentTypes"] := [Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "OpenCommand", "typora01")]
         settings["CustomCommands"].Push(Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_ScriptDir\..\Typora\Typora.exe", "Arguments", "", "Keyword", ""))   ; no content types: Open (Enter) is enough
-        settings["CustomCommands"].Push(Map("Id", "vscode01", "Title", "VS Code", "Type", "File", "Target", "%LocalAppData%\Programs\Microsoft VS Code\Code.exe", "Arguments", "--reuse-window", "Keyword", "", "Selection", "Markdown"))
+        settings["CustomCommands"].Push(Map("Id", "vscode01", "Title", "VS Code", "Type", "File", "Target", "%LocalAppData%\Programs\Microsoft VS Code\Code.exe", "Arguments", "--reuse-window", "Keyword", "", "ContentTypes", "Markdown"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
@@ -598,9 +598,9 @@ class Shots {
     static TypeWithoutCommand() {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        if !settings.Has("SelectionTypes")
-            settings["SelectionTypes"] := []
-        settings["SelectionTypes"].Push(Map("Name", "Invoice", "Kind", "Text", "Pattern", "^INV-\d{4}-\d{4}$"))
+        if !settings.Has("ContentTypes")
+            settings["ContentTypes"] := []
+        settings["ContentTypes"].Push(Map("Name", "Invoice", "Kind", "Text", "Pattern", "^INV-\d{4}-\d{4}$"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
@@ -1034,8 +1034,8 @@ class Shots {
     static PingForIp() {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["SelectionTypes"] := [Map("Name", "IP", "Kind", "Text", "Pattern", "^(\d{1,3}\.){3}\d{1,3}$")]   ; as in AppSettings._DefaultSelectionTypes
-        settings["CustomCommands"].Push(Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP"))
+        settings["ContentTypes"] := [Map("Name", "IP", "Kind", "Text", "Pattern", "^(\d{1,3}\.){3}\d{1,3}$")]   ; as in AppSettings._DefaultContentTypes
+        settings["CustomCommands"].Push(Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "ContentTypes", "IP"))
         settings["Hotkeys"] := [Map("Key", "^!p", "Action", "custom:pg7k2m4x", "WinTitle", "")]   ; "Hotkey Ctrl+Alt+P" on the Triggers line
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
@@ -1047,7 +1047,7 @@ class Shots {
     static CommandHotkey(withList := false, withClash := false, withScripts := false) {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["CustomCommands"].Push(Map("Id", "np4k2x7q", "Title", "Edit in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "en", "Selection", "Text files"))
+        settings["CustomCommands"].Push(Map("Id", "np4k2x7q", "Title", "Edit in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "en", "ContentTypes", "Text files"))
         settings["Hotkeys"] := [Map("Key", "^!n", "Action", "custom:np4k2x7q", "WinTitle", "")]   ; the first one (the demo settings have no Hotkeys: the defaults)
         if withList
             settings["Hotkeys"].Push(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", "")
@@ -1120,14 +1120,14 @@ class Shots {
     static SelectionTypes() {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$")
+        settings["ContentTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$")
             , Map("Name", "Ticket", "Kind", "Text", "Pattern", "i)^[A-Z]{2,5}-\d+$")
             , Map("Name", "PDF", "Kind", "File", "Pattern", "pdf", "OpenCommand", "pdftool1")   ; the "Open (Enter)" column
             , Map("Name", "Drawing", "Kind", "File", "Pattern", "dwg, dxf")]
         for row in [["ERP Order", "https://erp.example.com/order?id={query}", "PO"], ["Warehouse Shipment", "https://wms.example.com/ship/{query}", "PO"]
                   , ["Issue Tracker", "https://issues.example.com/browse/{query}", "Ticket"]]
-            settings["CustomCommands"].Push(Map("Title", row[1], "Type", "Url", "Target", row[2], "Arguments", "", "Keyword", "", "Selection", row[3]))
-        settings["CustomCommands"].Push(Map("Id", "pdftool1", "Title", "PDF Tool", "Type", "File", "Target", "C:\Tools\PdfTool\PdfTool.exe", "Arguments", "", "Keyword", "", "Selection", "PDF"))
+            settings["CustomCommands"].Push(Map("Title", row[1], "Type", "Url", "Target", row[2], "Arguments", "", "Keyword", "", "ContentTypes", row[3]))
+        settings["CustomCommands"].Push(Map("Id", "pdftool1", "Title", "PDF Tool", "Type", "File", "Target", "C:\Tools\PdfTool\PdfTool.exe", "Arguments", "", "Keyword", "", "ContentTypes", "PDF"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

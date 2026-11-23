@@ -31,7 +31,7 @@ Src\UI\             SearchWindow (+ SearchSession, SearchKeys, ResultRows, Searc
 Src\Providers\      Search features, one class per feature
 Src\Extensions\     Features outside the search window: SnippetExpander, QuickSwitch (file dialogs; + QuickSwitchPanel, QuickSwitchFavorites,
                     FileDialogs, FileManagers), AutoDate, CapsLockSwitch,
-                    AdminHelper (helper for administrator windows), SelectionActions, CurrencyRates, UpdateChecker,
+                    AdminHelper (helper for administrator windows), ContentTypes (what a selection or file is), SelectionActions, CurrencyRates, UpdateChecker,
                     RoboSync + SyncJobs + SyncProgress (folder sync with robocopy)
 Resources\          Data shipped with the program (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  Unit test runner: loads the code with in-memory settings and runs every suite
@@ -155,6 +155,7 @@ Optional:
 - Only adding new settings: add them to `AppSettings.Defaults()`; entries missing from older files are filled in automatically
 - Renaming, moving or restructuring existing entries: `AppSettings.CurrentVersion + 1`, and add a `_FromN(data)` to `SchemaMigration` that converts version N to N+1. A backup `ALTRun.vN.backup.json` is made automatically before upgrading
 - Moving a setting to another group: add it to `AppSettings.MovedKeys`. `AppSettings.MoveGroups` runs at every load, not only when upgrading: an older ALTRun reading the file fills the old place in with its default, and the next load of the newer one removes it (the new place wins)
+- Renaming a key that an older ALTRun fills in again with its default (as `SelectionTypes` → `ContentTypes` in version 8): do the rename at every load too (`AppSettings.RenameContentTypes`, before the defaults are filled in); when both names are there, the new one wins and the old one is removed
 - Custom commands, snippets and sync tasks have an `Id` (`AppSettings.EnsureIds`, at every load and before every save): hotkeys refer to commands by it (`custom:<Id>`), and the learned ranking uses it (`Knowledge.json` has its own `Version`; `Knowledge.ConvertUids`). Never change a valid Id; a copied item drops it (a new one is made when saving)
 
 ## Change checklists
@@ -264,7 +265,7 @@ GitHub → Actions → **Quick Switch** checks automatic switching (`Extensions.
 
 
 ### Hotkeys
-GitHub → Actions → **Hotkeys** presses custom hotkeys that run a custom command (`custom:<Id>`) on a real Windows desktop with `Tests\Integration\HotkeyCheck.ahk`. It starts a copy of ALTRun with two commands that write marker files with `cmd.exe` and three hotkeys: one runs the command without `{query}` (its marker must be written), one runs the `{query}` command while text is selected in an edit box of the check (the marker must hold that text, and the clipboard must be what it was before), and one points to a command that doesn't exist (nothing runs, ALTRun's log says so). Each is tried 3 times; a failed round prints ALTRun's log. It runs on pull requests that change `App.ahk`, `CustomCommandProvider.ahk`, `SelectionActions.ahk` or the check, and on main. The script also works on your own PC (it takes over the keyboard for about half a minute): `HotkeyCheck.ahk <copy of the repository> [rounds]`.
+GitHub → Actions → **Hotkeys** presses custom hotkeys that run a custom command (`custom:<Id>`) on a real Windows desktop with `Tests\Integration\HotkeyCheck.ahk`. It starts a copy of ALTRun with two commands that write marker files with `cmd.exe` and three hotkeys: one runs the command without `{query}` (its marker must be written), one runs the `{query}` command while text is selected in an edit box of the check (the marker must hold that text, and the clipboard must be what it was before), and one points to a command that doesn't exist (nothing runs, ALTRun's log says so). Each is tried 3 times; a failed round prints ALTRun's log. It runs on pull requests that change `App.ahk`, `CustomCommandProvider.ahk`, `ScriptProvider.ahk`, `ContentTypes.ahk`, `SelectionActions.ahk` or the check, and on main. The script also works on your own PC (it takes over the keyboard for about half a minute): `HotkeyCheck.ahk <copy of the repository> [rounds]`.
 ### File drag
 GitHub → Actions → **File Drag** drags with the real mouse on a Windows desktop with `Tests\Integration\FileDragCheck.ahk`. It starts a copy of ALTRun with one pinned file and checks two cases: dragging that file (row 1 of the empty search box) onto an Explorer window copies it there, keeps the original (`FileDrag` offers only copy and link, never move) and hides the search window; pressing Esc during the drag copies nothing and keeps the window. It runs on pull requests that change `Lib\FileDrag.ahk`, `SearchWindow.ahk` or the check, on main, or by hand.
 ### First run

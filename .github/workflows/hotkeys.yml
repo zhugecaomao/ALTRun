@@ -9,6 +9,7 @@ on:
       - Src/Core/App.ahk
       - Src/Providers/CustomCommandProvider.ahk
       - Src/Providers/ScriptProvider.ahk
+      - Src/Extensions/ContentTypes.ahk
       - Src/Extensions/SelectionActions.ahk
       - Tests/Integration/HotkeyCheck.ahk
       - .github/workflows/hotkeys.yml
@@ -19,6 +20,7 @@ on:
       - Src/Core/App.ahk
       - Src/Providers/CustomCommandProvider.ahk
       - Src/Providers/ScriptProvider.ahk
+      - Src/Extensions/ContentTypes.ahk
       - Src/Extensions/SelectionActions.ahk
       - Tests/Integration/HotkeyCheck.ahk
       - .github/workflows/hotkeys.yml

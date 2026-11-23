@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.23.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 设置格式升到版本 8, 第一次启动时自动转换 (先备份成 `Data\ALTRun.v7.backup.json`): `ALTRun.json` 里的 `SelectionTypes` 改名 `ContentTypes`, 自定义命令的 `Selection` 也改名 `ContentTypes`, 和界面上的 "内容类型" 一致; 不再使用的 `DelayedStart` 和 `Extensions.PTTools` (延迟启动和 PT 工具箱已改成脚本) 删掉. 退回旧版后再升级回来也没问题: 两个名字都在时以 `ContentTypes` 为准, 旧的删掉. 脚本开头的 `@altrun.selection` 照常可用, 也可以写成 `@altrun.types` (#176)
+- 老用户的设置升级时: Quick Switch "不生效的窗口" 去掉 `ahk_exe 7zG.exe`, 7-Zip 的解压窗口也能用 Quick Switch 了 (新安装早已去掉) (#609); 文字片段 "不展开的窗口" 补上 ToDesk, 向日葵, AnyDesk, TeamViewer, RustDesk 这几个远程桌面 (只补缺的, 自己加的保留, 清空了的列表不动)
+
 ## [2026.11.23.5]
 
 测试版。
@@ -1612,7 +1622,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...HEAD
+[2026.11.23.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...2026.11.23.6
 [2026.11.23.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...2026.11.23.5
 [2026.11.23.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...2026.11.23.4
 [2026.11.23.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...2026.11.23.3

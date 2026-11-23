@@ -969,7 +969,7 @@ class ProviderTests {
         hk(key) => Map("Key", key, "Action", "custom:pq7k2m4x", "SearchText", "", "WinTitle", "")
         eq("plain command", kinds(cmd("notepad.exe")), "")
         eq("query with a keyword", kinds(cmd("cmd.exe", "/k ping {query}", "ping")), "")
-        eq("query with a content type", kinds(cmd("cmd.exe", "/k ping {query}", "", "Selection", "IP")), "")
+        eq("query with a content type", kinds(cmd("cmd.exe", "/k ping {query}", "", "ContentTypes", "IP")), "")
         eq("query with a hotkey", kinds(cmd("cmd.exe", "/k ping {query}"), [hk("^!p")]), "")
         eq("query with nothing", kinds(cmd("cmd.exe", "/k ping {query}")), "Query|")
         eq("query: any case, in the target", kinds(cmd("https://x.example.com/{Query}")), "Query|")
@@ -1841,7 +1841,7 @@ class ProviderTests {
                 Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
               , Map("Id", "query001", "Title", "Google", "Type", "Url", "Target", "https://www.google.com/search?q={query}", "Arguments", "", "Keyword", "gg")
               , Map("Id", "query002", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "")
-              , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", "Text files")
+              , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "ContentTypes", "Text files")
               , Map("Id", "deflt001", "Title", "Ping Default", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query|127.0.0.1}", "Keyword", "pd")
               , Map("Id", "deflt002", "Title", "Ping Clipboard", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query|clipboard}", "Keyword", "")]
             savedClip := ClipboardAll()
@@ -2035,7 +2035,7 @@ class ProviderTests {
         commands := [
             Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
           , Map("Id", "query001", "Title", "Google", "Type", "Url", "Target", "https://www.google.com/search?q={query}", "Arguments", "", "Keyword", "gg")
-          , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", "Text files")
+          , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "ContentTypes", "Text files")
           , Map("Title", "Just added", "Type", "File", "Target", "calc.exe", "Arguments", "", "Keyword", "ja")]   ; added in Preferences, no Id yet
 
         eq("name: custom", HotkeyEditor.ActionName("custom:plain001", commands), "Notepad")
@@ -3128,6 +3128,13 @@ class ProviderTests {
             eq("by file name", names, "ip.bat|lookup.ps1|noword.py|pdf.ahk|plain.ahk|quiet.ahk|")
             eq("types read", PrefsPages.JoinNames(byName["pdf.ahk"].Selection) "/" byName["plain.ahk"].Selection.Length, "PDF, Files/0")
             eq("types any case", ScriptProvider.ForTypes(byName["pdf.ahk"], ["File", "pdf"]) "|" ScriptProvider.ForTypes(byName["pdf.ahk"], ["Text"]), "1|0")
+            typesFile := A_Temp "\ALTRun-script-types-test.ahk"                ; "@altrun.types": another name, the types of both add up
+            try FileDelete(typesFile)
+            FileAppend("; @altrun.types PO; PDF`n; @altrun.selection Text`n", typesFile, "UTF-8")
+            eq("@altrun.types", PrefsPages.JoinNames(ScriptProvider.ReadScript(typesFile).Selection), "Text, PO, PDF")
+            FileDelete(typesFile), FileAppend("; @altrun.types IP`n", typesFile, "UTF-8")
+            eq("@altrun.types alone", PrefsPages.JoinNames(ScriptProvider.ReadScript(typesFile).Selection), "IP")
+            FileDelete(typesFile)
             eq("shell of the real command line", SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["pdf.ahk"])["Target"]) "|"
                 SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["quiet.ahk"])["Target"]) "|" SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["ip.bat"])["Target"]) "|"
                 SelectionActions.ShellIn(ScriptProvider.ShellCommand(byName["lookup.ps1"])["Target"]), "||cmd|powershell")
@@ -3157,7 +3164,7 @@ class ProviderTests {
             scripts["Enabled"] := 0
             eq("panel: scripts turned off", titles(text("10.0.0.1", ["Text", "IP"])), "")
             scripts["Enabled"] := 1
-            eq("titles for Preferences", PrefsPages.JoinNames(SelectionActions.CommandTitles(["pdf"], [Map("Title", "Open", "Selection", "PDF")], ScriptProvider.Scripts))
+            eq("titles for Preferences", PrefsPages.JoinNames(SelectionActions.CommandTitles(["pdf"], [Map("Title", "Open", "ContentTypes", "PDF")], ScriptProvider.Scripts))
                 , "Open, " I18n.T("Selection.ScriptTitle", "PDF Tool"))
 
             ScriptProvider.DefineProp("Run", {Call: (this, script, argument := "") => ran.Push({Name: script.Name, Argument: argument})})

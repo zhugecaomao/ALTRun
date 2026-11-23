@@ -250,7 +250,7 @@ class HotkeyEditor {
             if (StrLen(target) > 80)
                 target := SubStr(target, 1, 79) "…"
             rule := CustomCommandProvider.TakesQuery(command) ? "HotkeyEditor.Detail.Query"
-                : SelectionActions.CommandTypes(command).Length ? "HotkeyEditor.Detail.Types" : "HotkeyEditor.Detail.Plain"
+                : ContentTypes.CommandTypes(command).Length ? "HotkeyEditor.Detail.Types" : "HotkeyEditor.Detail.Plain"
             return {Text: I18n.T("CommandPicker.Kind.Custom") " · " target " · " I18n.T(rule), Missing: false}
         }
         if (SubStr(id, 1, 7) = "script:") {                                ; the rules of ScriptProvider.RunFromHotkey
