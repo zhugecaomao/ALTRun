@@ -250,6 +250,64 @@ class ProjectTests {
         TestRunner.Equal("WikiPages.help pages exist in both languages", missing, "")
     }
 
+    ; Markdown tables in the Wiki and the READMEs have as many cells in every row as the delimiter row has columns. GitHub splits cells
+    ; at every "|" not written "\|", inside `inline code` too, so a cell showing `{query|x}` shifts the rest of its row
+    static MarkdownTables() {
+        root := A_ScriptDir "\..\", files := ["README.md", "README.zh-CN.md", "CONTRIBUTING.md", "docs\scripts\README.md"]
+        Loop Files, root "docs\wiki\*.md"
+            files.Push("docs\wiki\" A_LoopFileName)
+        problems := "", tables := 0
+        for relative in files
+            problems .= ProjectTests._TableProblems(StrReplace(relative, "\", "/"), FileRead(root relative, "UTF-8"), &tables)
+        TestRunner.True("MarkdownTables.has tables (" tables ")", tables >= 100)
+        TestRunner.Equal("MarkdownTables.problems", problems, "")
+        ; the check itself, on made-up text
+        table := "| A | B |`n|---|:--:|`n"
+        TestRunner.Equal("MarkdownTables.check: good", ProjectTests._TableProblems("a", table "| ``x`` | y \| z |`n``a\|b`` | c`n"), "")
+        TestRunner.Equal("MarkdownTables.check: pipe in inline code", ProjectTests._TableProblems("a", table "| ``{query|x}`` | y |`n"), "a:3 expected 2 columns, got 3; ")
+        TestRunner.Equal("MarkdownTables.check: header", ProjectTests._TableProblems("a", "| A | B | C |`n|---|---|`n| x | y |`n"), "a:1 expected 2 columns, got 3; ")
+        TestRunner.Equal("MarkdownTables.check: short row", ProjectTests._TableProblems("a", table "| x |`n`n| not | a | table |`n"), "a:3 expected 2 columns, got 1; ")
+        TestRunner.Equal("MarkdownTables.check: code fence", ProjectTests._TableProblems("a", "~~~~md`n" table "| x | y | z |`n~~~`n~~~~`n``````"), "")
+        TestRunner.Equal("MarkdownTables.check: heading ends a table", ProjectTests._TableProblems("a", table "| x | y |`n## Next`n"), "")
+    }
+
+    ; Rows of the Markdown tables in text (file name) whose cell count isn't the delimiter row's, as "name:line expected N columns, got M; "
+    ; for each; adds the tables found to tables. Fenced code is skipped; a table ends at a blank line, a heading or a quote
+    static _TableProblems(name, text, &tables := 0) {
+        problems := "", fence := "", columns := 0, previous := ""
+        for index, line in StrSplit(text, "`n", "`r") {
+            if (fence != "") {                                             ; a fence closes with the same character, at least as many times
+                if RegExMatch(line, "^\s*" SubStr(fence, 1, 1) "{" StrLen(fence) ",}\s*$")
+                    fence := ""
+                continue
+            }
+            if RegExMatch(line, "^\s*(``{3,}|~{3,})", &m) {
+                fence := m[1], columns := 0, previous := ""
+                continue
+            }
+            row := Trim(line)
+            if (columns > 0) {
+                if (row = "" || RegExMatch(row, "^[#>]"))
+                    columns := 0
+                else if ((cells := ProjectTests._TableCells(row)) != columns)
+                    problems .= name ":" index " expected " columns " columns, got " cells "; "
+            } else if (InStr(previous, "|") && InStr(row, "|") && RegExMatch(row, "^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$")) {
+                columns := ProjectTests._TableCells(row), tables += 1
+                if ((cells := ProjectTests._TableCells(previous)) != columns)
+                    problems .= name ":" (index - 1) " expected " columns " columns, got " cells "; "
+            }
+            previous := row
+        }
+        return problems
+    }
+
+    ; Cells in a table row: "\|" is a pipe in a cell, and a pipe at the start or end of the row is optional
+    static _TableCells(row) {
+        row := RegExReplace(Trim(StrReplace(row, "\|")), "^\||\|$")
+        StrReplace(row, "|", "", , &count)
+        return count + 1
+    }
+
     ; The script library (docs\scripts, listed on the website by site\build.py): each script has in its first 30 lines (where ALTRun reads
     ; @altrun.xxx) a title, a description in English and Chinese and @altrun.network (the hosts it connects to, or "none"); a script that
     ; makes web requests names its hosts, each host named appears in the script, and no API key or token is written in it
