@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.27]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文件管理器参数只留一个占位符 `{path}`, 去掉测试版 .25 加的 `{file}`: 打开文件夹时是这个文件夹; 在文件管理器中显示 (`Ctrl+Enter`) 时, Total Commander 是那个文件或文件夹本身, ALTRun 自动加 `/P`, 所以用 `/R={path}` 也能在右侧面板打开并选中它; 其他文件管理器是所在的文件夹。偏好设置 → 通用 → 文件管理器 的说明里加了 `{path}` 和 `/R={path}` 的例子 (#610)
+
 ## [2026.11.16.26]
 
 测试版。
@@ -1739,7 +1748,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.27...HEAD
+[2026.11.16.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.26...2026.11.16.27
 [2026.11.16.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.25...2026.11.16.26
 [2026.11.16.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...2026.11.16.25
 [2026.11.16.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...2026.11.16.24
