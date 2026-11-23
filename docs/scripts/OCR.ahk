@@ -18,61 +18,45 @@
 ; LANGUAGE / 语言
 ;   Set ALTRUN_OCR_LANG to force a language tag for the offline engine, e.g. zh-Hans-CN, en-US, ja (empty = Windows user-profile languages; the online engine ignores it).
 ;   可用 ALTRUN_OCR_LANG 指定离线引擎的识别语言, 留空则用系统语言 (在线引擎忽略此设置).
+;   All settings here (VOLC_AK, VOLC_SK, ALTRUN_OCR_ENGINE, ALTRUN_OCR_LANG) are read from the process environment, then from HKCU\Environment, so no ALTRun restart is needed.
+;   这里的设置都先从进程环境读, 读不到再从注册表 HKCU\Environment 读, 改了不用重启 ALTRun.
 ; ENGINE / 引擎
 ;   Default engine is online (Volcengine OCRNormal, visual.volcengineapi.com) for much better accuracy.
-;   Setup: set user env vars VOLC_AK and VOLC_SK. No ALTRun restart is needed: the script reads them from the process environment first, then from HKCU\Environment in the registry.
+;   Setup: set user env vars VOLC_AK and VOLC_SK.
 ;   Use a dedicated IAM sub-user allowed only for OCR calls; do not use the main account's keys. Screenshots are uploaded to Volcengine - do not use this on confidential drawings.
 ;   No Python / pip / volcengine SDK required: the Volcengine V4 signature and the HTTP call are done in PowerShell (built into Windows).
 ;   If VOLC_AK / VOLC_SK are unset, or the online call fails (no network, bad key,
-;   quota exhausted), it silently falls back to the offline Windows OCR engine.
-;   Force offline with ALTRUN_OCR_ENGINE=windows.
+;   quota exhausted, no answer within 15 s), it falls back to the offline Windows OCR engine;
+;   the notification then says why. Force offline with ALTRUN_OCR_ENGINE=windows.
 ;   默认用在线引擎 (火山引擎 OCRNormal, visual.volcengineapi.com), 准确率更高.
-;   配置: 设置用户环境变量 VOLC_AK / VOLC_SK. 不用重启 ALTRun - 先从进程环境读, 读不到再从注册表 HKCU\Environment 读.
+;   配置: 设置用户环境变量 VOLC_AK / VOLC_SK.
 ;   建议用只授权 OCR 的 IAM 子用户, 不要用主账号密钥; 截图会上传到火山引擎, 涉密图纸请勿使用.
 ;   不需要 Python / pip / volcengine SDK - V4 签名和 HTTP 调用都在 Windows 自带的 PowerShell 里完成.
-;   未设置密钥或在线识别失败 (断网/密钥错/额度用尽) 时自动回退到离线 Windows OCR. 设 ALTRUN_OCR_ENGINE=windows 可强制离线.
+;   未设置密钥或在线识别失败 (断网/密钥错/额度用尽/15 秒没有响应) 时自动回退到离线 Windows OCR, 通知里会写原因. 设 ALTRUN_OCR_ENGINE=windows 可强制离线.
+; TESTING / 测试
+;   ALTRUN_OCR_IMAGE = a PNG file: recognize it instead of selecting a screen area (used by the CI checks).
+;   ALTRUN_OCR_IMAGE 设为一个 PNG 文件时识别这个文件, 不框选屏幕 (CI 检查用).
 ;
 #Requires AutoHotkey v2.0
 #NoTrayIcon
 
+; ALTRun (and AutoHotkey) are system DPI aware: on a monitor whose scale differs from the primary one, mouse and window
+; coordinates are scaled while the screen DC is not, so the blue box and the captured area drift apart. Per-monitor
+; aware (Windows 10 1607+) makes all of them physical pixels; it must be set before the overlay windows are created.
+try DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")   ; DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+
 ;-------------------------------------------------------------------------------
 ; Config
 ;-------------------------------------------------------------------------------
-; Read credentials from the process environment first, then fall back to the
-; persisted user registry value. Windows does NOT refresh an already-running
-; process' environment block after SetEnvironmentVariable(..., "User"), so
-; EnvGet can be empty even though the key is correctly stored in the registry.
-ak := EnvGet("VOLC_AK")
-sk := EnvGet("VOLC_SK")
-if (ak = "") {
-    try {
-        ak := RegRead("HKEY_CURRENT_USER\Environment", "VOLC_AK")
-    } catch {
-        ak := ""
-    }
-}
-if (sk = "") {
-    try {
-        sk := RegRead("HKEY_CURRENT_USER\Environment", "VOLC_SK")
-    } catch {
-        sk := ""
-    }
-}
-; Inject into this process so the child PowerShell inherits them.
+ak := ReadUserEnv("VOLC_AK")
+sk := ReadUserEnv("VOLC_SK")
+; Inject into this process so the child PowerShell inherits them (never on its command line, which other programs can read).
 if (ak != "")
     EnvSet("VOLC_AK", ak)
 if (sk != "")
     EnvSet("VOLC_SK", sk)
 
-engine := EnvGet("ALTRUN_OCR_ENGINE")
-if (engine = "") {
-    ; Same registry fallback as the keys, so switching to offline needs no ALTRun restart.
-    try {
-        engine := RegRead("HKEY_CURRENT_USER\Environment", "ALTRUN_OCR_ENGINE")
-    } catch {
-        engine := ""
-    }
-}
+engine := ReadUserEnv("ALTRUN_OCR_ENGINE")
 if (engine = "")
     engine := "online"                               ; online OCR is far more accurate than Windows OCR
 fallbackReason := ""                                ; empty = no fallback; otherwise why offline OCR was used
@@ -80,29 +64,33 @@ if (engine = "online" && (ak = "" || sk = "")) {
     engine := "windows"                             ; no credentials -> silently use offline OCR
     fallbackReason := "no API key"
 }
-lang := EnvGet("ALTRUN_OCR_LANG")
+lang := ReadUserEnv("ALTRUN_OCR_LANG")
 
-; Temporary files. Every name includes this process' PID, so two concurrent
-; runs never collide (the first to exit cannot delete the other's engine).
-; All are removed on exit (including on error / Esc), leaving nothing in %TEMP%.
+; Temporary files. Every name includes this process' PID, so two concurrent runs never collide.
+; Both are removed on exit (including on error / Esc). The engines are passed with -EncodedCommand,
+; so no .ps1 is written: nothing is left behind even when ALTRun ends a run that took too long.
 pid := DllCall("GetCurrentProcessId")                ; AHK v2 has no built-in PID variable; ask Windows directly
-enginePs := A_Temp "\altrun-ocr-" pid "-Engine.ps1"  ; offline Windows OCR engine (generated)
-enginePsOnline := A_Temp "\altrun-ocr-" pid "-Online.ps1"  ; online Volcengine OCR engine (generated)
 tmpPng := A_Temp "\altrun-ocr-" pid ".png"
 tmpTxt := A_Temp "\altrun-ocr-" pid ".txt"
 OnExit(CleanupTemp)
 
-; No @altrun.selection / argument, so ALTRun never passes a file to this script.
-; Always start by selecting a screen region.
-if !SelectRegion(&x, &y, &w, &h)                     ; Esc or a too-small selection cancels silently
-    ExitApp
-if !CaptureRegion(x, y, w, h, tmpPng)
-    Fail("Could not capture the screen")
+image := EnvGet("ALTRUN_OCR_IMAGE")                  ; for tests: recognize this file instead of a screen area
+if (image = "") {
+    ; No @altrun.selection / argument, so ALTRun never passes a file to this script.
+    ; Always start by selecting a screen region.
+    if !SelectRegion(&x, &y, &w, &h)                 ; Esc or a too-small selection cancels silently
+        ExitApp
+    if !CaptureRegion(x, y, w, h, tmpPng)
+        Fail("Could not capture the screen")
+    image := tmpPng
+} else if !FileExist(image) {
+    Fail("ALTRUN_OCR_IMAGE not found: " image)
+}
 
-text := Ocr(tmpPng, enginePs, enginePsOnline, lang)
+text := Ocr(image, lang)
 
 if (text = "") {
-    FileAppend("OCR: no text found", "*", "UTF-8-RAW")
+    FileAppend("OCR: no text found" (fallbackReason != "" ? " (offline - " fallbackReason ")" : ""), "*", "UTF-8-RAW")
     ExitApp
 }
 
@@ -116,14 +104,23 @@ if (fallbackReason != "")
 FileAppend(notice, "*", "UTF-8-RAW")                 ; silent mode shows the last line as a notification
 
 ;-------------------------------------------------------------------------------
+; A setting from the process environment, else from HKCU\Environment: Windows does not refresh a running process'
+; environment after a user variable is set, so ALTRun (and this script, its child) would not see a new value until restarted.
+;-------------------------------------------------------------------------------
+ReadUserEnv(name) {
+    value := EnvGet(name)
+    if (value = "")
+        try value := RegRead("HKEY_CURRENT_USER\Environment", name)
+    return value
+}
+
+;-------------------------------------------------------------------------------
 ; Remove our own temporary files on every exit path (success, error, Esc).
 ;-------------------------------------------------------------------------------
 CleanupTemp(*) {
-    global tmpPng, tmpTxt, enginePs, enginePsOnline
+    global tmpPng, tmpTxt
     try FileDelete(tmpPng)
     try FileDelete(tmpTxt)
-    try FileDelete(enginePs)
-    try FileDelete(enginePsOnline)
 }
 
 ;-------------------------------------------------------------------------------
@@ -170,6 +167,9 @@ SelectRegion(&x, &y, &w, &h) {
         Sleep(10)
     }
     bg.Destroy(), sel.Destroy()
+    ; The desktop is composed asynchronously: without waiting for the next frame the capture can still contain
+    ; the dark overlay, which lowers the contrast the OCR engines see
+    try DllCall("dwmapi\DwmFlush")
     x := Min(sx, mx), y := Min(sy, my)
     w := Abs(mx - sx), h := Abs(my - sy)
     return (w >= 5 && h >= 5)                        ; ignore accidental clicks
@@ -209,64 +209,74 @@ CaptureRegion(x, y, w, h, file) {
 ;-------------------------------------------------------------------------------
 ; Run OCR and return its text. If the online engine fails (network down, bad key,
 ; quota exhausted, ...), automatically retry with the offline Windows engine.
-; Returns a blank string only when both engines found no text.
+; Returns a blank string only when the engine that ran found no text.
 ;-------------------------------------------------------------------------------
-Ocr(imagePath, enginePs, enginePsOnline, lang) {
+Ocr(imagePath, lang) {
     global engine, fallbackReason
     switch engine {
         case "windows":
-            return RunWindowsOcr(imagePath, enginePs, lang)
+            return RunWindowsOcr(imagePath, lang)
         case "online":
-            try {
-                text := RunOnlineOcr(imagePath, enginePsOnline)
-                return text
-            } catch {
-                ; Any online failure -> fall back to free offline Windows OCR.
-                fallbackReason := "online unavailable"
-            }
-            return RunWindowsOcr(imagePath, enginePs, lang)
+            try
+                return RunOnlineOcr(imagePath)
+            catch as e
+                fallbackReason := "online failed: " Ascii(e.Message)   ; e.g. a wrong key or used-up quota, which the user can fix
+            return RunWindowsOcr(imagePath, lang)
         default:
             Fail("Unknown ALTRUN_OCR_ENGINE: " engine)
     }
 }
 
 ; Run the online engine. Throws on any failure so Ocr() can catch and fall back.
-RunOnlineOcr(imagePath, enginePsOnline) {
-    global tmpTxt
-    WriteOnlineEngine(enginePsOnline)               ; self-contained: generate the signed PowerShell engine
-    try FileDelete(tmpTxt)
-    cmd := 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' enginePsOnline '" -Image "' imagePath '" -Out "' tmpTxt '"'
-    RunWait(cmd, , "Hide")
-    if !FileExist(tmpTxt)
-        throw Error("Online OCR returned nothing")
-    result := FileRead(tmpTxt, "UTF-8")
+RunOnlineOcr(imagePath) {
+    result := RunEngine(OnlineEngineSource(), Map("Image", imagePath))
+    if (result = "")
+        throw Error("no answer")
     if SubStr(result, 1, 7) = "ERROR: "
         throw Error(SubStr(result, 8))
-    return result
+    return SubStr(result, 4)                         ; after the "OK:" marker, so an empty result isn't taken for a crash
 }
 
 ; Run the offline Windows OCR engine. Kept separate so it can be reused as a fallback.
-RunWindowsOcr(imagePath, enginePs, lang) {
-    global tmpTxt
-    WriteEngine(enginePs)                           ; self-contained: generate the PowerShell engine
-    try FileDelete(tmpTxt)
-    cmd := 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' enginePs '" -Image "' imagePath '" -Out "' tmpTxt '"'
-    if (lang != "")
-        cmd .= ' -Lang "' lang '"'
-    RunWait(cmd, , "Hide")
-    if !FileExist(tmpTxt)
+RunWindowsOcr(imagePath, lang) {
+    result := RunEngine(WindowsEngineSource(), Map("Image", imagePath, "Lang", lang))
+    if (result = "")
         Fail("OCR engine returned nothing (is the OCR language pack installed?)")
-    result := FileRead(tmpTxt, "UTF-8")
     if SubStr(result, 1, 7) = "ERROR: "
         Fail(SubStr(result, 8))
-    return result
+    return SubStr(result, 4)
 }
 
-; Write the embedded Windows OCR (WinRT) engine to a temporary .ps1 file
-WriteEngine(path) {
-    src := "
+; Run a PowerShell engine with its parameters as variables in front of it; returns what it wrote to tmpTxt, or "" when
+; it wrote nothing. -EncodedCommand (Base64 of UTF-16) carries any path safely and needs no .ps1 file or execution policy;
+; the engines are about 4 KB, so the command line stays far below Windows' 32767-character limit.
+RunEngine(source, params) {
+    global tmpTxt
+    try FileDelete(tmpTxt)
+    params["Out"] := tmpTxt
+    script := ""
+    for name, value in params                        ; PowerShell also ends a single-quoted string at curly single quotes
+        script .= "$" name " = '" RegExReplace(value, "['\x{2018}\x{2019}\x{201A}\x{201B}]", "$0$0") "'`n"
+    RunWait("powershell.exe -NoProfile -NonInteractive -EncodedCommand " Base64Utf16(script source), , "Hide")
+    return FileExist(tmpTxt) ? FileRead(tmpTxt, "UTF-8") : ""
+}
+
+Base64Utf16(text) {
+    size := StrPut(text, "UTF-16")                   ; bytes, with the terminating zero
+    data := Buffer(size)
+    StrPut(text, data, "UTF-16")
+    flags := 0x40000001                              ; CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF
+    chars := 0
+    DllCall("crypt32\CryptBinaryToStringW", "Ptr", data, "UInt", size - 2, "UInt", flags, "Ptr", 0, "UInt*", &chars)
+    out := Buffer(chars * 2)
+    DllCall("crypt32\CryptBinaryToStringW", "Ptr", data, "UInt", size - 2, "UInt", flags, "Ptr", out, "UInt*", &chars)
+    return StrGet(out, "UTF-16")
+}
+
+; The embedded Windows OCR (WinRT) engine; $Image, $Out and $Lang are set in front of it
+WindowsEngineSource() {
+    return "
 (
-param([string]$Image, [string]$Out, [string]$Lang)
 $ErrorActionPreference = 'Stop'
 # .NET error messages follow the OS UI culture (Chinese here). Force English so
 # errors written to stdout survive ALTRun's GBK fallback without mojibake.
@@ -309,28 +319,24 @@ try {
   }
   $result = Await ($ocr.RecognizeAsync($soft)) ([Windows.Media.Ocr.OcrResult])
   $text = ($result.Lines | ForEach-Object { $_.Text }) -join [Environment]::NewLine
-  $cjk = '[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]'
+  $cjk = '[　-〿㐀-䶿一-鿿豈-﫿＀-￯]'
   $text = [regex]::Replace($text, '(?<=' + $cjk + ')\s+(?=' + $cjk + ')', '')
-  [System.IO.File]::WriteAllText($Out, $text, [System.Text.UTF8Encoding]::new($false))
+  [System.IO.File]::WriteAllText($Out, 'OK:' + $text, [System.Text.UTF8Encoding]::new($false))
 } catch {
   [System.IO.File]::WriteAllText($Out, 'ERROR: ' + $_.Exception.Message, [System.Text.UTF8Encoding]::new($false))
   exit 1
 }
 )"
-    f := FileOpen(path, "w", "UTF-8-RAW")             ; the embedded engine is pure ASCII
-    f.Write(src)
-    f.Close()
 }
 
 ;-------------------------------------------------------------------------------
-; Write the embedded online OCR (Volcengine OCRNormal) engine to a temp .ps1 file.
+; The embedded online OCR (Volcengine OCRNormal) engine; $Image and $Out are set in front of it.
 ; It signs the request with Volcengine's V4 HMAC-SHA256 scheme and calls the API
 ; directly, so no Python / SDK is needed. Pure PowerShell, pure ASCII source.
 ;-------------------------------------------------------------------------------
-WriteOnlineEngine(path) {
-    src := "
+OnlineEngineSource() {
+    return "
 (
-param([string]$Image, [string]$Out)
 $ErrorActionPreference = 'Stop'
 # English .NET error messages avoid mojibake when ALTRun decodes stdout as GBK.
 [System.Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
@@ -383,7 +389,10 @@ try {
   $req = [Net.HttpWebRequest]::Create($url)
   $req.Method = 'POST'
   $req.ContentType = 'application/x-www-form-urlencoded'
-  $req.Timeout = 60000
+  # 15 s for connecting and for each read / write (ReadWriteTimeout defaults to 300 s): a stalled connection
+  # must end well before ALTRun stops the script at 120 s, so there is time left to fall back to offline OCR.
+  $req.Timeout = 15000
+  $req.ReadWriteTimeout = 15000
   $req.Headers.Add('X-Date', $xdate)
   $req.Headers.Add('X-Content-Sha256', $bodyHash)
   $req.Headers.Add('Authorization', $auth)
@@ -393,8 +402,10 @@ try {
   $rs.Write($bodyBytes, 0, $bodyBytes.Length)
   $rs.Close()
   $respText = ''
+  $status = 0
   try {
     $resp = $req.GetResponse()
+    $status = [int]$resp.StatusCode
     $sr = [IO.StreamReader]::new($resp.GetResponseStream())
     $respText = $sr.ReadToEnd()
     $sr.Close()
@@ -402,11 +413,15 @@ try {
   } catch [Net.WebException] {
     $er = $_.Exception.Response
     if ($null -eq $er) { throw }
+    $status = [int]$er.StatusCode
     $sr = [IO.StreamReader]::new($er.GetResponseStream())
     $respText = $sr.ReadToEnd()
     $sr.Close()
   }
-  $respObj = $respText | ConvertFrom-Json
+  try { $respObj = $respText | ConvertFrom-Json } catch { $respObj = $null }
+  if ($null -eq $respObj) {
+    throw ('HTTP ' + $status + ', not a JSON answer')   # e.g. a proxy's or captive portal's HTML page
+  }
   $err = $respObj.ResponseMetadata.Error
   if ($null -ne $err) {
     throw ('code=' + $err.Code + ' message=' + $err.Message)
@@ -416,19 +431,25 @@ try {
   }
   $lines = @($respObj.data.line_texts)
   $text = $lines -join $lf
-  [System.IO.File]::WriteAllText($Out, $text, [System.Text.UTF8Encoding]::new($false))
+  [System.IO.File]::WriteAllText($Out, 'OK:' + $text, [System.Text.UTF8Encoding]::new($false))
 } catch {
   [System.IO.File]::WriteAllText($Out, 'ERROR: ' + $_.Exception.Message, [System.Text.UTF8Encoding]::new($false))
   exit 1
 }
 )"
-    f := FileOpen(path, "w", "UTF-8-RAW")             ; the embedded engine is pure ASCII
-    f.Write(src)
-    f.Close()
 }
 
 ;-------------------------------------------------------------------------------
+; Printable ASCII only, at most 120 characters: see the notification note above (an error text can carry Chinese or line breaks)
+Ascii(str) {
+    str := RegExReplace(RegExReplace(str, "\s+", " "), "[^\x20-\x7E]", "?")
+    return StrLen(str) > 120 ? SubStr(str, 1, 117) "..." : str
+}
+
 Fail(message) {
-    FileAppend("OCR error: " message "`n", "**", "UTF-8-RAW")   ; first stderr line is shown on failure
+    global fallbackReason
+    if (fallbackReason != "")
+        message .= " (" fallbackReason ")"          ; e.g. no language pack after the online engine failed: say both
+    FileAppend("OCR error: " Ascii(message) "`n", "**", "UTF-8-RAW")   ; first stderr line is shown on failure
     ExitApp(1)
 }
