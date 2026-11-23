@@ -13,6 +13,7 @@
   "Action.CopyName": "复制名称",
   "Action.CopyPath": "复制路径",
   "Action.CopyPaths": "复制 {1} 个路径",
+  "Action.CopyCalculation": "复制算式和结果",
   "Action.CopyResult": "复制结果",
   "Action.CopyTo": "复制到 {1} 当前的文件夹",
   "Action.CopyUrl": "复制网址",

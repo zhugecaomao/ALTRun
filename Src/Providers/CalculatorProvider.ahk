@@ -52,7 +52,7 @@ class CalculatorProvider {
 
         results.Push(ResultItem(text, I18n.T("Calc.Subtitle") " · " Trim(expression), {
             Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 200, LargeText: text
-            , Expression: typed
+            , Expression: typed, Actions: CalculatorProvider.CopyCalculation(typed, text)
         }))
         if AppSettings.Feature("Calculator")["StructuralCalc"]
             CalculatorProvider._AddStructural(results, value)
@@ -86,7 +86,7 @@ class CalculatorProvider {
             items.Push(ResultItem(expr " = " result, I18n.T("Calc.History"), {Kind: "text", Arg: result, LargeText: result
                 , Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 190 - items.Length
                 , AutoComplete: Calc.Looks(expr) ? expr : "=" expr                ; Tab: back in the box, still calculated ("1,000*3" needs "=")
-                , Source: entry}))                                          ; Source + DeleteItem: Ctrl+Del deletes it
+                , Source: entry, Actions: CalculatorProvider.CopyCalculation(expr, result)}))   ; Source + DeleteItem: Ctrl+Del deletes it
         }
         return items
     }
@@ -122,6 +122,17 @@ class CalculatorProvider {
     }
 
     ; "12 * (3+4)" and "12*(3+4)" are the same calculation
+    ; The action "Copy Calculation" (#583): "expression = result" on the clipboard, for notes and reports; only for a real calculation
+    ; (an operator in it: "=5" alone would copy "5 = 5")
+    static CopyCalculation(expr, result) {
+        if !CalculatorProvider.IsCalculation(expr)
+            return []
+        line := Trim(expr) " = " result
+        return [ResultItem(I18n.T("Action.CopyCalculation"), line, {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyText(line)})]
+    }
+
+    static IsCalculation(expr) => RegExMatch(expr, "[^\s+\-(]\s*[\+\-\*/\^×÷]") > 0
+
     static _Key(expr) => StrLower(RegExReplace(expr, "\s"))
 
     ; A result was used (Enter / an action in the search window): its calculation goes to the top of the history.
@@ -131,7 +142,7 @@ class CalculatorProvider {
             return
         if (item.Source is Map)
             expr := item.Source["Expr"], result := item.Source["Result"]
-        else if (item.HasOwnProp("Expression") && RegExMatch(item.Expression, "[^\s+\-(]\s*[\+\-\*/\^×÷]"))
+        else if (item.HasOwnProp("Expression") && CalculatorProvider.IsCalculation(item.Expression))
             expr := item.Expression, result := item.Arg
         else
             return

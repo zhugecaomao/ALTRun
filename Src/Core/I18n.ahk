@@ -201,6 +201,7 @@ class I18n {
         s["Action.SaveSnippet"]        := "Save as Snippet..."
         s["Action.ReplaceWith"]        := "Replace with: {1}"
         s["Action.CopyResult"]         := "Copy the result"
+        s["Action.CopyCalculation"]    := "Copy Calculation"            ; calculator: "expression = result"
         s["Action.AddAllCommands"]     := "Add All to Custom Commands"
         s["Action.OpenWith"]           := "Open With..."
         s["Action.EditFile"]           := "Edit"

@@ -349,6 +349,17 @@ class CoreTests {
             eq("row: Tab puts the calculation back", rows[1].AutoComplete "|" rows[2].AutoComplete, "=1,000*2|3×4")
             TestRunner.True("CalculatorHistory.row: below the result rows", rows[1].Score < 198 && rows[2].Score < rows[1].Score)
             eq("row: not learned, not in Recent", rows[1].Uid "|" IsObject(RecentProvider.Snapshot(rows[1])), "|0")
+            ; Copy Calculation (#583): "expression = result" for a real calculation, on the result and on history rows
+            calcAction := (item) => item.Actions.Length ? item.Actions[1].Title "|" item.Actions[1].Subtitle : "(none)"
+            eq("copy calculation: result", calcAction(CalculatorProvider.Search(SearchQuery("3×4"))[1]), I18n.T("Action.CopyCalculation") "|3×4 = 12")
+            eq("copy calculation: history row", calcAction(rows[1]), I18n.T("Action.CopyCalculation") "|1,000*2 = 2,000")
+            eq("copy calculation: not for a plain number", calcAction(CalculatorProvider.Search(SearchQuery("=5"))[1]), "(none)")
+            savedClip := ClipboardAll()
+            try {
+                CalculatorProvider.Search(SearchQuery("2*3"))[1].Actions[1].OnRun.Call()
+                eq("copy calculation: the clipboard", A_Clipboard, "2*3 = 6")
+            } finally
+                A_Clipboard := savedClip
             rows[3].Provider := CalculatorProvider.Id
             CalculatorProvider.Remember(rows[3])                            ; Enter on a history row: back to the top
             eq("used row moves up", titles("="), "2 * 3 = 6|1,000*2 = 2,000|3×4 = 12|1+1 = 2")
