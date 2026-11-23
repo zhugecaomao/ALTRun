@@ -38,7 +38,7 @@ class Shots {
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "delayedstart", "delayedstart-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor", "selection-type-editor-file"
-                         , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list", "first-run"]   ; scenes shot at 100% (see screenshots.yml)
+                         , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "websearch-editor", "prefs-usage", "prefs-advanced", "data-location", "data-location-list", "first-run"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
     static Themes() {
@@ -71,6 +71,7 @@ class Shots {
             ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
             ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\Annual Report 2026\")],
             ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
+            ["websearch-multi", "Light", "", () => Shots.Search("def hello"), () => Shots.TwoDictionaries()],   ; Wiki: one search opens several pages (#565)
             ["script-filter", "Light", "", () => Shots.LiveResults("proj al")],          ; Wiki: scripts (live results of a filter script, made-up projects)
             ["script-filter-error", "Light", "", () => Shots.LiveResults("dict hello")],   ; a filter script that failed: the error row
             ["system",      "Light", "", () => Shots.Search("lock")],
@@ -119,6 +120,7 @@ class Shots {
             ["prefs-applications", "Light", "-Preferences Applications", () => Shots.Preferences()],    ; Wiki: automatic app index updates
             ["prefs-clipboard",  "Light", "-Preferences Clipboard", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
             ["prefs-websearch",  "Light", "-Preferences WebSearch", () => Shots.Preferences()],     ; Wiki: web search
+            ["websearch-editor", "Light", "-Preferences WebSearch", () => Shots.SyncWindow("Edit...", "Web Search", 1), () => Shots.TwoDictionaries()],   ; Wiki: an engine with two addresses, one per line (#565)
             ["delayedstart", "Light", "", () => Shots.DelayedStartShot(), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (script library)
             ["delayedstart-startupapps", "Light", "", () => Shots.StartupApps(), () => Shots.DelayedStartTasks()],   ; Wiki: delayed start (startup apps)
             ["prefs-sync",       "Light", "-Preferences Sync", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
@@ -1037,6 +1039,18 @@ class Shots {
         settings["ContentTypes"] := [Map("Name", "IP", "Kind", "Text", "Pattern", "^(\d{1,3}\.){3}\d{1,3}$")]   ; as in AppSettings._DefaultContentTypes
         settings["CustomCommands"].Push(Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "ContentTypes", "IP"))
         settings["Hotkeys"] := [Map("Key", "^!p", "Action", "custom:pg7k2m4x", "WinTitle", "")]   ; "Hotkey Ctrl+Alt+P" on the Triggers line
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; A search engine with two addresses, one per line (#565), first in the list
+    static TwoDictionaries() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["Features"]["WebSearch"] := Map("Engines", [   ; the demo settings have no engines (the defaults); these two are enough for the scenes
+            Map("Id", "def", "Keyword", "def", "Title", "Dictionaries", "Icon", ""
+              , "Url", "https://www.merriam-webster.com/dictionary/{query}`nhttps://dictionary.cambridge.org/dictionary/english/{query}"),
+            Map("Id", "google", "Keyword", "g", "Title", "Google", "Icon", "", "Url", "https://www.google.com/search?q={query|clipboard}")])
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

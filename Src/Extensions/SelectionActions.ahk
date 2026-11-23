@@ -742,7 +742,7 @@ class SelectionActions {
         if (query = "" || !ProviderRegistry.IsEnabled(WebSearchProvider))
             return actions
         for engine in AppSettings.Feature("WebSearch")["Engines"] {
-            searchUrl := WebSearchProvider.Fill(engine["Url"], query)
+            searchUrl := WebSearchProvider.FillAll(engine["Url"], query)          ; several addresses: one per line, all opened
             actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: WebSearchProvider.IconFor(engine), OnRun: SelectionActions._Opener(searchUrl)
                 , Keyword: engine.Has("Keyword") ? engine["Keyword"] : ""}))
         }

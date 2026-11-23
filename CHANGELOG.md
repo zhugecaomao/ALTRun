@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.13]
+
+测试版。
+
+Test build.
+
+### 新增
+- 网页搜索可以一次打开几个网页: 在偏好设置 → 网页搜索的 "网址" 里写几行, 每行一个网址 (最多 10 个), 输入关键字和搜索词后全部打开; 结果下面显示第一个网址和还有几个. 见 Wiki "网页搜索 → 一次打开几个网页" (#565)
+
 ## [2026.11.23.12]
 
 测试版。
@@ -1676,7 +1685,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...HEAD
+[2026.11.23.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...2026.11.23.13
 [2026.11.23.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...2026.11.23.12
 [2026.11.23.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...2026.11.23.11
 [2026.11.23.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...2026.11.23.10

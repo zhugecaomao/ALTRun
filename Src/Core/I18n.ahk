@@ -244,9 +244,10 @@ class I18n {
         s["Web.SearchClipboardFor"]    := "Search {1} for clipboard: '{2}'"
         s["Web.SearchClipboard"]       := "Search {1} for clipboard"
         s["Web.ClipboardEmpty"]        := "The clipboard has no text"
+        s["Web.MoreUrls"]              := "{1}  (+{2} more)"              ; several addresses: the first, and how many more
         s["Web.Open"]                  := "Open {1}"                      ; {query|}: nothing typed after the keyword, opened with nothing in place of {query}
         s["Web.Field.Keyword"]         := "Type the keyword, a space and the search words: e.g. `"g hello`" searches Google for hello. Several keywords: separate them with commas, e.g. `"g, ㅎ`" (handy when you switch keyboard layouts)."
-        s["Web.Field.Url"]             := "The address of the results page, with {query} where the search words go, e.g. https://www.google.com/search?q={query}. When nothing is typed after the keyword and a space: {query|weather} searches `"weather`", {query|clipboard} searches the text on the clipboard, {query|} opens it with nothing."
+        s["Web.Field.Url"]             := "The address of the results page, with {query} where the search words go, e.g. https://www.google.com/search?q={query}. When nothing is typed after the keyword and a space: {query|weather} searches `"weather`", {query|clipboard} searches the text on the clipboard, {query|} opens it with nothing. One address per line opens several pages at once (at most 10)."
         s["Web.Field.Icon"]            := "Optional: an .ico, .png or .exe file (a relative path starts from the Data folder). Download Site Icon visits the website in the URL once and saves its icon in Data\Icons. Empty = the built-in icon, or the browser icon."
         s["Web.IconDownload"]          := "Download Site Icon"
         s["Web.IconBadUrl"]            := "Enter the URL first (starting with http:// or https://)."

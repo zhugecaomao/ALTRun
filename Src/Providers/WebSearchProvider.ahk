@@ -3,6 +3,8 @@
 ;-------------------------------------------------------------------------------
 ; ALTRun.json -> Features.WebSearch.Engines, each engine:
 ;   { "Id": "google", "Keyword": "g", "Title": "Google", "Url": "https://...?q={query}", "Icon": "" }
+; Url can hold several addresses, one per line (#565): one search opens them all, in that order (at most MaxUrls).
+;   The result's Arg holds the filled addresses one per line; ActionCatalog.OpenUrl opens each line.
 ; "g words" searches with that engine; typing only the keyword "g" offers completion. Keyword can hold several, separated by commas ("g, ㅎ").
 ; With {query|default} in the Url it opens even without search words after the keyword, using the default, e.g. "http://localhost:{query|8000}".
 ; A default of clipboard ({query|clipboard}) searches the text on the clipboard (text only, joined into one line, at most MaxTermChars characters).
@@ -65,8 +67,8 @@ class WebSearchProvider {
                 term := defaultText, empty := (defaultText = "")          ; {query|}: open it with nothing in place of {query}
         }
         if empty {
-            target := WebSearchProvider.Fill(engine["Url"], "")
-            return ResultItem(I18n.T("Web.Open", engine["Title"]), target, {
+            target := WebSearchProvider.FillAll(engine["Url"], "")
+            return ResultItem(I18n.T("Web.Open", engine["Title"]), WebSearchProvider.Subtitle(target), {
                 Kind: "url", Arg: target, Icon: icon, AutoComplete: autoComplete, Source: engine
             })
         }
@@ -75,9 +77,9 @@ class WebSearchProvider {
                 Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
             })
         }
-        target := WebSearchProvider.Fill(engine["Url"], term)
+        target := WebSearchProvider.FillAll(engine["Url"], term)
         title := fromClipboard ? I18n.T("Web.SearchClipboardFor", engine["Title"], WebSearchProvider.Preview(term)) : I18n.T("Web.SearchFor", engine["Title"], term)
-        return ResultItem(title, target, {
+        return ResultItem(title, WebSearchProvider.Subtitle(target), {
             Kind: "url", Arg: target, Icon: icon, AutoComplete: autoComplete, Source: engine
         })
     }
@@ -96,6 +98,32 @@ class WebSearchProvider {
                 term := readClipboard ? WebSearchProvider.ClipboardText() : ""
         }
         return SearchQuery.FillPlaceholder(template, Url.Encode(term))
+    }
+
+    ; The addresses in an engine's Url, one per line (blank lines skipped), at most MaxUrls
+    static MaxUrls := 10
+    static Urls(template) {
+        urls := []
+        for line in StrSplit(template, "`n", "`r `t")
+            if (line != "" && urls.Length < WebSearchProvider.MaxUrls)
+                urls.Push(line)
+        return urls
+    }
+
+    static FirstUrl(template) => (urls := WebSearchProvider.Urls(template)).Length ? urls[1] : ""
+
+    ; Fill for each address in template; the results one per line (the default of {query|default} is read from each line)
+    static FillAll(template, term, readClipboard := true) {
+        filled := ""
+        for line in WebSearchProvider.Urls(template)
+            filled .= (filled = "" ? "" : "`n") WebSearchProvider.Fill(line, term, readClipboard)
+        return filled
+    }
+
+    ; A result's second line: the address, or the first one and how many more
+    static Subtitle(target) {
+        lines := StrSplit(target, "`n")
+        return (lines.Length > 1) ? I18n.T("Web.MoreUrls", lines[1], lines.Length - 1) : target
     }
 
     ; The default in {query|default}, "" if none (or {query|})
@@ -169,7 +197,7 @@ class WebSearchProvider {
     ; Only PNG / ICO / JPG / GIF / BMP are accepted (by file header), at most 1 MB. fetch is passed only by tests (instead of the network)
     static DownloadIcon(address, name, fetch := "") {
         fetch := IsObject(fetch) ? fetch : (target) => WebSearchProvider._Fetch(target)
-        page := WebSearchProvider.Fill(address, "", false)          ; only the site address, no clipboard reading
+        page := WebSearchProvider.Fill(WebSearchProvider.FirstUrl(address), "", false)   ; the first address's site, no clipboard reading
         if !RegExMatch(page, "i)^(https?://[^/?#{}]+)", &m)
             return {Error: I18n.T("Web.IconBadUrl")}
         origin := RTrim(m[1], ":")
@@ -305,9 +333,16 @@ class WebSearchProvider {
     static EditorFields() {
         return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true)
               , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", true, "", I18n.T("Web.Field.Keyword"))
-              , ItemEditor.Field("Url", "Prefs.Col.Url", "text", true, "", I18n.T("Web.Field.Url"))
+              , WebSearchProvider._UrlField()
               , ItemEditor.Field("Id", "Prefs.Col.Id", "text", true)
               , WebSearchProvider._IconField()]
+    }
+
+    ; The Url field: a few lines, one address per line; long addresses don't wrap, so each line is one address
+    static _UrlField() {
+        field := ItemEditor.Field("Url", "Prefs.Col.Url", "multiline", true, "", I18n.T("Web.Field.Url"))
+        field.EditOptions := "r3 -Wrap +HScroll"
+        return field
     }
 
     ; The Icon field: text box + Browse + "Download site icon" (finds the site's icon from the URL, stores it in Data\Icons and fills it in)
@@ -319,7 +354,7 @@ class WebSearchProvider {
 
     static _DownloadClicked(controls, g) {
         g.Opt("+OwnDialogs")
-        address := Trim(controls["Url"].Value)
+        address := WebSearchProvider.FirstUrl(controls["Url"].Value)
         if !RegExMatch(address, "i)^https?://")
             return MsgBox(I18n.T("Web.IconBadUrl"), App.Name, 48)
         name := controls.Has("Id") && Trim(controls["Id"].Value) != "" ? Trim(controls["Id"].Value) : (controls.Has("Keyword") ? Trim(controls["Keyword"].Value) : "")
