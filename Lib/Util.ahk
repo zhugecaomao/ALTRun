@@ -714,9 +714,11 @@ class Pinyin {
 ; precedence: parentheses > power (right-associative, 2^3^2 = 2^(3^2)) > sign (-2^2 = -4, 2^-2 = 0.25) > * / > + -
 ;===============================================================================
 class Calc {
-    ; Whether it looks like an expression
+    ; Whether it looks like an expression; × ÷ count as operators (callers turn them into * / before Eval),
+    ; a letter x doesn't (1920x1080 stays a file search)
     static Looks(expr) {
-        return RegExMatch(expr, "[\+\-\*/\^]") && RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.\s]+$")
+        ops := Chr(0xD7) Chr(0xF7)                                          ; × ÷
+        return RegExMatch(expr, "[\+\-\*/\^" ops "]") && RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.\s" ops "]+$")
     }
 
     ; Returns the result (a float); "" when it isn't a complete expression, divides by 0 or is out of range

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 计算器: `3×4`、`8÷2`、`2×(3+4)` 不用在前面加 `=` 也直接出结果 (以前只有 `*` `/` 可以); 选中这样的算式时 "= 结果" 也能用。字母 `x` 不当乘号, `1920x1080` 照常搜索文件 (#590)
+
 ## [2026.11.23.1]
 
 测试版。
@@ -1570,7 +1579,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...HEAD
+[2026.11.23.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...2026.11.23.2
 [2026.11.23.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...2026.11.23.1
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
