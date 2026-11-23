@@ -73,7 +73,7 @@ Crashed(e, *) {
 }
 
 Setup() {
-    global AppPid, Source, SourceEdit, MenuPid, MenuWin
+    global AppPid, Source, SourceEdit, MenuPid, MenuWin, Form, FormA, FormB
     try DirDelete(Work, true)
     DirCreate(Work)
     cmd := A_WinDir "\System32\cmd.exe"                                     ; full paths: nothing depends on the working folder
@@ -113,7 +113,7 @@ Setup() {
     Source.Show()
     Form := Gui("+AlwaysOnTop", "HotkeyCheck form")                         ; two boxes and a default button, for {tab} / {enter} in a snippet
     FormA := Form.AddEdit("w300 r1"), FormB := Form.AddEdit("w300 r1")
-    Form.AddButton("Default w80", "OK").OnEvent("Click", (*) => (FormSubmitted += 1))
+    Form.AddButton("Default w80", "OK").OnEvent("Click", FormClicked)
     Form.Show("x0 y300")
     ; a window with a menu bar, in a process of its own (a lone Alt opens the menu bar, like in Notepad: its menu loop would hold this script)
     FileAppend('#NoTrayIcon`ng := Gui("+AlwaysOnTop", "HotkeyCheck menu")`nm := Menu(), m.Add("Item", (*) => 0)`n'
@@ -237,6 +237,11 @@ SnippetKeys(n) {
     a := FormA.Value, b := FormB.Value
     Result("snippet-keys", n, a == "one" && b == "two" && FormSubmitted = 1
         , "box 1 [" a "], box 2 [" b "], default button pressed " FormSubmitted "x")
+}
+
+FormClicked(*) {
+    global FormSubmitted
+    FormSubmitted += 1
 }
 
 TapAlt() {
