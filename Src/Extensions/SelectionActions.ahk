@@ -704,8 +704,8 @@ class SelectionActions {
     static ArgumentProblem(info, command) {
         if ((info.Kind = "text" || info.Kind = "url") && RegExMatch(info.Term, '[\r\n"]'))
             return {Chars: SelectionActions._CharsIn(info.Term, '[\r\n"]'), Shell: ""}
-        target := command.Has("Target") ? command["Target"] : ""
-        arguments := command.Has("Arguments") ? command["Arguments"] : ""
+        target := SearchQuery.PlainPlaceholder(command.Has("Target") ? command["Target"] : "")   ; a {query|default} isn't read as part of the command line
+        arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
         line := target " " CustomCommandProvider._Resolve(Trim(target, '" ')) " " Path.ExpandEnv(arguments)
         switch (shell := SelectionActions.ShellIn(line)) {
             case "cmd": special := "[&|<>^%!]"
@@ -727,7 +727,7 @@ class SelectionActions {
             case "file":
                 return true
             case "quoted":
-                arguments := command.Has("Arguments") ? command["Arguments"] : ""
+                arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
                 return info.Kind != "files" && !(SubStr(info.Term, -1) = "\" && RegExMatch(arguments, 'i)\{query\}"'))
         }
         return false
@@ -736,15 +736,16 @@ class SelectionActions {
     ; How PowerShell started directly (the target is powershell.exe or pwsh.exe) reads the selection, by where {query} is (a command
     ; without {query} gets it as its last argument): "file" when it's an argument of the script after -File (pwsh: also a script named
     ; without -File, its default), "quoted" when every {query} is inside a single-quoted string of -Command (powershell.exe: also code
-    ; written without -Command, its default), else "" (as code, or a command line not understood: the strict check)
+    ; written without -Command, its default), else "" (as code, or a command line not understood: the strict check).
+    ; {query|default} counts as {query} (its default could have spaces or quotes)
     static PowerShellMode(command) {
-        target := Trim(command.Has("Target") ? command["Target"] : "", '" ')
+        target := Trim(SearchQuery.PlainPlaceholder(command.Has("Target") ? command["Target"] : ""), '" ')
         if InStr(target, "{query}")
             return ""
         SplitPath(CustomCommandProvider._Resolve(target), &name)
         if !RegExMatch(name, "i)^(powershell|pwsh)(\.exe)?$", &program)
             return ""
-        arguments := command.Has("Arguments") ? command["Arguments"] : ""
+        arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
         args := Win.Args(Path.ExpandEnv(arguments) (CustomCommandProvider.TakesQuery(command) ? "" : " {query}"))
         index := 0
         while (++index <= args.Length) {

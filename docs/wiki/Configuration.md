@@ -222,7 +222,7 @@ Also in Preferences → Features → Feature options. Only windows you can see o
 ### WebSearch
 | Key | Description |
 |---|---|
-| Engines | List of search engines, each `{ "Id", "Keyword", "Title", "Url", "Icon" }`; `Keyword` can hold several keywords separated by commas (for example `"g, ㅎ"`). `{query}` in `Url` is replaced by what you typed. `{query\|weather}` gives a default value: the keyword and a space with no search words searches "weather"; with the default `clipboard` (`{query\|clipboard}`), the text on the clipboard is searched, which is how the built-in engines are written (on upgrade, built-in engines whose URL is still the old default switch to it). `Icon` (optional): an `.ico`, `.png` or `.exe` file for the result icon, a relative path starts from the Data folder (for example `Icons\jira.png`). In the editor, **Download Site Icon** visits the website in the URL once, saves its icon in `Data\Icons` and fills this in. Empty = the built-in icon (the default engines have their own) or the browser icon |
+| Engines | List of search engines, each `{ "Id", "Keyword", "Title", "Url", "Icon" }`; `Keyword` can hold several keywords separated by commas (for example `"g, ㅎ"`). `{query}` in `Url` is replaced by what you typed. `{query\|weather}` gives a default value: the keyword and a space with no search words searches "weather"; with the default `clipboard` (`{query\|clipboard}`), the text on the clipboard is searched, which is how the built-in engines are written (on upgrade, built-in engines whose URL is still the old default switch to it); an empty default (`{query\|}`) opens the URL with nothing in place of `{query}`. Custom commands use the same rules. `Icon` (optional): an `.ico`, `.png` or `.exe` file for the result icon, a relative path starts from the Data folder (for example `Icons\jira.png`). In the editor, **Download Site Icon** visits the website in the URL once, saves its icon in `Data\Icons` and fills this in. Empty = the built-in icon (the default engines have their own) or the browser icon |
 | Fallbacks | Fallback items shown when nothing matches: engine Ids, or `files` (file search). Default `["google", "files", "bing"]` |
 
 ### FileSearch
@@ -288,7 +288,7 @@ See [Extensions](Extensions).
 ```
 For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets) and [Custom hotkeys](Hotkeys).
 
-Custom commands currently support only the exact `{query}` placeholder; `{query|default}` is specific to web search URLs and is not interpreted in custom commands. See [Custom commands](Custom-Commands#commands-with-an-argument-query).
+`{query}` in a custom command's `Target` / `Arguments` follows the same rules as in web search URLs: `{query|default}`, `{query|clipboard}` and `{query|}` give it a default for when nothing is typed after the keyword. See [Commands with an argument](Custom-Commands#commands-with-an-argument-query).
 
 `Id` (custom commands, snippets, sync tasks): 8 characters `a-z 0-9`, made by ALTRun, unique in its list. It stays the same when the item is renamed or its target changes: a hotkey runs a custom command by it (`"Action": "custom:<Id>"`), and the learned ranking and recent items follow it. Don't change it by hand; leave it out for an item you add by hand (one is made when ALTRun loads the file). A missing or repeated one is replaced.
 

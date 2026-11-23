@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.23.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义命令支持 `{query|默认值}`, 规则和网页搜索一样: 只输入关键字 (`ping`) 按 `Enter` 补全成 `ping `; 关键字加空格后不再输入 (`ping `) 就用默认值运行, 例如 `/k ping {query|127.0.0.1}`; 输入了参数用输入的. `{query|clipboard}` 用剪贴板里的文字 (文件, 文件夹和命令行里和选中的文字一样检查, 有换行, 双引号或 cmd / PowerShell 会当成代码的字符时不运行并说明原因); `{query|}` 不带参数也能运行, 例如记事本 `{query|}` 输入 `np ` 直接打开记事本. 热键运行时没有选中内容, 写了默认值的命令直接用默认值运行, 不再打开搜索窗口; 有默认值的命令 "状态" 列不再显示 `{query} 收不到` (#611, #617)
+
+### 改进
+- 网页搜索的 `{query|}` (默认值为空) 现在关键字加空格就直接打开网址 (`{query}` 换成空), 以前仍提示输入搜索词 (#611)
+
 ## [2026.11.23.2]
 
 测试版。
@@ -1579,7 +1591,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...HEAD
+[2026.11.23.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...2026.11.23.3
 [2026.11.23.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...2026.11.23.2
 [2026.11.23.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...2026.11.23.1
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23

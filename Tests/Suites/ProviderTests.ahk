@@ -999,6 +999,106 @@ class ProviderTests {
         } finally I18n.Init(savedLang)
     }
 
+    ; {query|default} / {query|}: the same rules for custom commands and web searches (SearchQuery.PlaceholderDefault / FillPlaceholder)
+    static QueryDefaults() {
+        eq := (n, a, e) => TestRunner.Equal("QueryDefaults." n, a, e)
+        eq("has: plain, default, empty, any case", SearchQuery.HasPlaceholder("a {query} b") SearchQuery.HasPlaceholder("{query|x}")
+            . SearchQuery.HasPlaceholder("{query|}") SearchQuery.HasPlaceholder("{Query|X}") SearchQuery.HasPlaceholder("{querys} {query x}"), "11110")
+        eq("default: written", SearchQuery.PlaceholderDefault("ping {query|127.0.0.1}", &value) "|" value, "1|127.0.0.1")
+        eq("default: empty", SearchQuery.PlaceholderDefault("x {query|} y", &value) "|" value, "1|")
+        eq("default: none", SearchQuery.PlaceholderDefault("x {query} y", &value) "|" value, "0|")
+        eq("default: the first written", SearchQuery.PlaceholderDefault("{query} {query|a} {query|b}", &value) "|" value, "1|a")
+        eq("fill: every form, any case, $ kept", SearchQuery.FillPlaceholder("{query}-{Query|a}-{query|}", "$1 \x"), "$1 \x-$1 \x-$1 \x")
+        eq("plain: only {query|...} changed", SearchQuery.PlainPlaceholder("-c '{query|a b}' {query} {Query|}"), "-c '{query}' {query} {query}")
+        eq("clipboard: any case", SearchQuery.IsClipboardDefault("Clipboard") && !SearchQuery.IsClipboardDefault("clip"), true)
+
+        ; web search {query|}: "kw " opens it with nothing in place of {query}; "kw" still offers completion
+        engine := Map("Id", "site", "Keyword", "bd", "Title", "Baidu", "Url", "https://www.baidu.com/s?wd={query|}")
+        item := WebSearchProvider.ItemFor(engine, "")
+        eq("web {query|}: runs empty", (item.Valid ? 1 : 0) "|" item.Arg "|" item.Title "|" item.AutoComplete, "1|https://www.baidu.com/s?wd=|" I18n.T("Web.Open", "Baidu") "|bd ")
+        item := WebSearchProvider.ItemFor(engine, "", "bd", true)
+        eq("web {query|}: keyword only completes", (item.Valid ? 1 : 0) "|" item.AutoComplete, "0|bd ")
+        eq("web {query|}: typed", WebSearchProvider.ItemFor(engine, "a b").Arg, "https://www.baidu.com/s?wd=a%20b")
+        eq("web: plain {query} still waits", WebSearchProvider.ItemFor(Map("Id", "x", "Keyword", "x", "Title", "X", "Url", "https://x.test/?q={query}"), "").Valid, false)
+
+        saved := AppSettings.Data["CustomCommands"], savedClip := ClipboardAll()
+        cmd(title, type, target, arguments, keyword) => Map("Id", RegExReplace(title, "\W"), "Title", title, "Type", type, "Target", target, "Arguments", arguments, "Keyword", keyword)
+        AppSettings.Data["CustomCommands"] := [
+            cmd("Ping Default", "Command", "cmd.exe", "/k ping {query|127.0.0.1}", "pd"),
+            cmd("Everything", "File", "C:\Tools\Everything.exe", "-s {query|}", "ev"),
+            cmd("Docs Site", "Url", "https://docs.example.com/search?q={query|start here}", "", "ds"),
+            cmd("Clip Ping", "Command", "cmd.exe", "/k ping {query|clipboard}", "cp"),
+            cmd("Clip Map", "Url", "https://maps.example.com/?q={query|Clipboard}", "", "cm"),
+            cmd("Clip PS", "Command", "powershell.exe", "-NoProfile -Command `"Write-Output '{query|clipboard}'`"", "cps"),
+            cmd("Notes Default", "Folder", "D:\Notes\{query|Inbox}", "", "")]
+        CustomCommandProvider._ResetNarrowing()
+        first(text) {
+            items := CustomCommandProvider.Search(SearchQuery(text))
+            return items.Length ? items[1] : ResultItem("none", "")
+        }
+        find(text, title) {
+            for found in CustomCommandProvider.Search(SearchQuery(text))
+                if (found.Title = title)
+                    return found
+            return ResultItem("none", "")
+        }
+        try {
+            item := find("pd", "Ping Default")
+            eq("keyword only: completion", (item.Valid ? 1 : 0) "|" item.AutoComplete "|" item.Title, "0|pd |Ping Default")
+            item := first("pd ")
+            eq("keyword and space: the default", (item.Valid ? 1 : 0) "|" item.Arguments "|" item.Title "|" item.Exclusive, "1|/k ping 127.0.0.1|Ping Default: 127.0.0.1|1")
+            item := first("pd 10.0.0.1")
+            eq("keyword and text: typed", item.Arguments "|" item.Title, "/k ping 10.0.0.1|Ping Default: 10.0.0.1")
+            item := first("ev ")
+            eq("{query|}: runs without it", (item.Valid ? 1 : 0) "|" item.Arguments "|" item.Title, "1|-s |Everything")
+            item := find("ev", "Everything")
+            eq("{query|}: keyword only completes", (item.Valid ? 1 : 0) "|" item.AutoComplete, "0|ev ")
+            eq("{query|} typed", first("ev report.pdf").Arguments, "-s report.pdf")
+            item := first("ds ")
+            eq("url default: encoded", item.Arg "|" item.Title, "https://docs.example.com/search?q=start%20here|Docs Site: start here")
+            item := find("notes", "Notes Default: Inbox")
+            eq("no keyword, found by name: the default", (item.Valid ? 1 : 0) "|" item.Arg, "1|D:\Notes\Inbox")
+            item := find("default", "Ping Default")
+            eq("keyword, found by name: completion, as web searches", (item.Valid ? 1 : 0) "|" item.AutoComplete, "0|pd ")
+
+            ; {query|clipboard}: the clipboard text, one line; outside URLs checked like a selection
+            A_Clipboard := "  10.0.0.8`r`n "
+            item := first("cp ")
+            eq("clipboard: safe text", (item.Valid ? 1 : 0) "|" item.Arguments "|" item.Title, "1|/k ping 10.0.0.8|Clip Ping: 10.0.0.8")
+            eq("clipboard: keyword only still completes", find("cp", "Clip Ping").Valid, false)
+            A_Clipboard := "8.8.8.8 & del x"
+            item := first("cp ")
+            eq("clipboard: shell characters refused", (item.Valid ? 1 : 0) "|" item.Subtitle, "0|" I18n.T("Cmd.Clipboard.Refused.Shell", "&", "cmd"))
+            eq("clipboard: typed text not checked (typed on purpose)", first("cp a & b").Arguments, "/k ping a & b")
+            item := first("cm ")
+            eq("clipboard url: encoded, not refused", (item.Valid ? 1 : 0) "|" item.Arg, "1|https://maps.example.com/?q=8.8.8.8%20%26%20del%20x")
+            A_Clipboard := "it's (1)"
+            item := first("cps ")
+            eq("clipboard PowerShell in single quotes: quote doubled", (item.Valid ? 1 : 0) "|" item.Arguments, "1|-NoProfile -Command `"Write-Output 'it''s (1)'`"")
+            A_Clipboard := "two `"quoted`" words"
+            item := first("cp ")
+            eq("clipboard: double quote refused", (item.Valid ? 1 : 0) "|" item.Subtitle, "0|" I18n.T("Cmd.Clipboard.Refused", '"'))
+            A_Clipboard := ""
+            item := first("cp ")
+            eq("clipboard: empty", (item.Valid ? 1 : 0) "|" item.Subtitle "|" item.AutoComplete, "0|" I18n.T("Web.ClipboardEmpty") "|cp ")
+
+            ; the editor's checks: a default fills {query}, the target with a placeholder isn't looked for on disk
+            commands := AppSettings.Data["CustomCommands"]
+            noKeyword := cmd("x", "Command", "cmd.exe", "/k ping {query|}", "")
+            eq("problems: a default needs no keyword", CustomCommandProvider.PlaceholderProblems(noKeyword, []).Length, 0)
+            noKeyword["Arguments"] := "/k ping {query}"
+            eq("problems: plain {query} still reported", CustomCommandProvider.PlaceholderProblems(noKeyword, [])[1].Kind, "Query")
+            eq("problems: {query|x} not unknown", CustomCommandProvider.PlaceholderProblems(cmd("x", "Command", "a.exe", "{query|x} {Query|}", "k"), []).Length, 0)
+            eq("check target skipped", CustomCommandProvider.CheckTarget(commands[7]), "Skipped")
+            eq("mailto keeps @ with a default", CustomCommandProvider.UrlTerm("mailto:{query|a@b.c}", "x@y.z"), "x@y.z")
+            eq("PowerShell mode as {query}", SelectionActions.PowerShellMode(commands[6]) "|"
+                . SelectionActions.PowerShellMode(cmd("p", "Command", "powershell.exe", "-File C:\a.ps1 {query|a b}", "")), "quoted|file")
+        } finally {
+            AppSettings.Data["CustomCommands"] := saved, A_Clipboard := savedClip
+            CustomCommandProvider._ResetNarrowing()
+        }
+    }
+
     static CheckTargets() {
         eq := (n, a, e) => TestRunner.Equal("CheckTargets." n, a, e)
         dir := A_Temp "\ALTRunTest_CheckTargets"
@@ -1741,7 +1841,10 @@ class ProviderTests {
                 Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
               , Map("Id", "query001", "Title", "Google", "Type", "Url", "Target", "https://www.google.com/search?q={query}", "Arguments", "", "Keyword", "gg")
               , Map("Id", "query002", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "")
-              , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", "Text files")]
+              , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", "Text files")
+              , Map("Id", "deflt001", "Title", "Ping Default", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query|127.0.0.1}", "Keyword", "pd")
+              , Map("Id", "deflt002", "Title", "Ping Clipboard", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query|clipboard}", "Keyword", "")]
+            savedClip := ClipboardAll()
             runHotkey := (id, selection := "") => CustomCommandProvider.RunFromHotkey(id, capture(selection))
 
             runHotkey("plain001", {Text: "ignored"})
@@ -1762,12 +1865,27 @@ class ProviderTests {
             eq("content types, nothing selected: runs as it is", ran.Length "|" ran[5].Arguments, "5|")
             runHotkey("gone0001", {Text: "x"})
             eq("deleted command: says so, nothing runs", notices.Length "|" notices[3] "|" ran.Length, "3|" I18n.T("Hotkey.CommandMissing") "|5")
+            runHotkey("deflt001")
+            eq("{query|default}, nothing selected: runs with the default, no search window", ran.Length "|" ran[6].Arguments "|" shown.Length, "6|/k ping 127.0.0.1|1")
+            runHotkey("deflt001", {Text: "10.0.0.9"})
+            eq("{query|default}, selected: the selection", ran.Length "|" ran[7].Arguments, "7|/k ping 10.0.0.9")
+            A_Clipboard := "10.0.0.7"
+            runHotkey("deflt002")
+            eq("{query|clipboard}, nothing selected: the clipboard", ran.Length "|" ran[8].Arguments, "8|/k ping 10.0.0.7")
+            A_Clipboard := "1.1.1.1 & calc"
+            runHotkey("deflt002")
+            eq("{query|clipboard}: shell characters refused", ran.Length "|" notices.Length "|" notices[4], "8|4|" I18n.T("Cmd.Clipboard.Refused.Shell", "&", "cmd"))
+            A_Clipboard := ""
+            runHotkey("deflt002")
+            eq("{query|clipboard}: empty clipboard says so", ran.Length "|" notices[5], "8|" I18n.T("Web.ClipboardEmpty"))
             eq("summary names the command", InStr(HotkeyEditor.Summary(Map("Key", "^!n", "Action", "custom:plain001", "WinTitle", "")), "Notepad") > 0, true)
             eq("summary of a deleted command: its Id", InStr(HotkeyEditor.Summary(Map("Key", "^!n", "Action", "custom:gone0001", "WinTitle", "")), "custom:gone0001") > 0, true)
             eq("editor keeps the action", HotkeyEditor.Normalize(Map("Key", "^!n", "Action", "custom:plain001"))["Action"], "custom:plain001")
         } finally {
             ActionCatalog.DefineProp("RunDefault", savedRun), App.DefineProp("Notify", savedNotify), SearchWindow.DefineProp("Show", savedShow)
             AppSettings.Data["CustomCommands"] := savedCommands, Usage.Days := savedUsage
+            if IsSet(savedClip)
+                A_Clipboard := savedClip
         }
     }
 

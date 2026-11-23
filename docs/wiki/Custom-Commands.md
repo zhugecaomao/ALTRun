@@ -32,7 +32,7 @@ The Status column also points out placeholders that won't work, without checking
 
 | Status | Meaning |
 |---|---|
-| `{query} empty` | The command has `{query}`, but no keyword, content type or hotkey, so nothing fills it in (it's replaced by nothing). Give it one of them |
+| `{query} empty` | The command has `{query}`, but no keyword, content type, hotkey or default, so nothing fills it in (it's replaced by nothing). Give it one of them, or a default such as `{query\|}` (see [Commands with an argument](#commands-with-an-argument-query)) |
 | `Use {query}` | `{selection}` is for the search text of hotkeys; in a command, the selected text comes in through `{query}` (from a content type or a hotkey), and `{selection}` stays as written |
 | `Unknown {date}` | Commands only replace `{query}`, `{hwnd}` and `{pid}`; any other `{word}` is passed as written. That's fine when the program expects it (for example `{Enter}` for a script) |
 
@@ -56,18 +56,32 @@ Besides the title and keyword, `File` / `Folder` commands also match the target'
 Folders open in Preferences → General → File manager (Explorer by default; Total Commander and others work too); "Open folders in a new tab" there opens them in a new tab of an Explorer window already open (Windows 11 22H2 or later) or of Total Commander.
 
 ## Commands with an argument ({query})
-Put `{query}` in the target or arguments and give the command a keyword; typing "keyword text" replaces `{query}` with the text (URL-encoded in web addresses). It works just like a web search keyword:
+Put `{query}` in the target or arguments and give the command a keyword; typing "keyword text" replaces `{query}` with the text (URL-encoded in web addresses). The rules are the same as for [web search](Web-Search#adding-and-editing) URLs, so a command and a search engine written the same way behave the same:
 
-Custom commands currently support only the exact `{query}` placeholder. The `{query|default}` form used by web search URLs is not interpreted in custom commands and remains unchanged. To provide an argument, use a keyword and type the value after a space, or pass the selection through a content type or hotkey.
+| Written as | `ping` (only the keyword) | `ping ` (keyword and a space, nothing after it) | `ping 10.0.0.1` |
+|---|---|---|---|
+| `{query}` | `Enter` completes it to `ping ` | waits for the argument (the line below says what to type) | `10.0.0.1` |
+| `{query\|127.0.0.1}` | `Enter` completes it to `ping ` | runs with the default, `127.0.0.1` | `10.0.0.1` |
+| `{query\|clipboard}` | `Enter` completes it to `ping ` | runs with the text on the clipboard | `10.0.0.1` |
+| `{query\|}` | `Enter` completes it to `ping ` | runs with nothing in place of `{query}` | `10.0.0.1` |
+
+Typing only the keyword never runs the command, so you can still type an argument; the keyword and a space runs the default. Examples:
 
 | Title | Type | Target | Arguments | Keyword | Type this |
 |---|---|---|---|---|---|
 | Jira | Link | `https://jira.example.com/browse/{query}` | | `jira` | `jira ABC-123` |
-| Ping | Command line | `cmd.exe` | `/k ping {query}` | `ping` | `ping 10.0.0.1` |
-| Project folder | Folder | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
-| Google Maps | Link | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
+| Ping | Command line | `cmd.exe` | `/k ping {query\|127.0.0.1}` | `ping` | `ping 10.0.0.1`; `ping ` pings 127.0.0.1 |
+| Project folder | Folder | `D:\Projects\{query\|2026}` | | `pj` | `pj 2026-05`; `pj ` opens `D:\Projects\2026` |
+| Google Maps | Link | `https://www.google.com/maps/search/{query\|clipboard}` | | `maps` | `maps Changi Airport`; `maps ` searches the address on the clipboard |
+| Notepad | File | `notepad.exe` | `{query\|}` | `np` | `np D:\notes.txt` opens the file; `np ` opens Notepad |
 
-A new installation already has four examples among the default commands: Ping, Google Maps, Send Email (`mailto:{query}`; the address keeps its `@`) and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, the line below it says what to type (for example "Type after 'ping ', then press Enter"), and `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing, unless content types or a hotkey give it the selected text (with none of them, the Status column shows `{query} empty`). "Check Paths" skips paths containing `{query}`.
+- **The default**: the text between `|` and `}` (it can't contain `}`), used as written; in web addresses it's encoded like typed text. All `{query}` in the target and arguments get the same text; if several defaults are written, the first one counts. `{query}` is not case-sensitive (`{Query|x}` works too)
+- **`{query|clipboard}`**: the text on the clipboard, joined into one line and at most 200 characters, read as in [web search](Web-Search#searching-the-clipboard) (not read when files are copied, or when a password manager marks it private). The result line shows the text before you press `Enter`. In a file, folder or command line (not a link) the clipboard text gets the same checks as [selected text](Usage#actions-on-selected-content): a line break or a double quote is refused, and so are the characters cmd or PowerShell would run as code when the command line goes through them; the line then says why and can't be run. Text you type yourself is not checked. If the clipboard has no text, the line says "The clipboard has no text"
+- **Found by its name** (not by the keyword): with a keyword, `Enter` completes it to "keyword " as above. Without a keyword, a command with a default runs with it, and a plain `{query}` is replaced by nothing
+- **Selected text first**: from [Actions on selected content](Usage#actions-on-selected-content) (content types) or a [hotkey](Hotkeys), `{query}` becomes the selected text or path, whatever default is written; the default is used only when there is nothing to put there. With a hotkey and nothing selected, a command with a default runs with it (see [Hotkeys](Hotkeys))
+- **Status column**: a plain `{query}` command without a keyword, content type or hotkey shows `{query} empty`, because nothing fills it in; a command with a default (also `{query|}`) doesn't. "Check Paths" skips paths containing `{query}` in any form
+
+A new installation already has four examples among the default commands: Ping, Google Maps, Send Email (`mailto:{query}`; the address keeps its `@`) and Documents subfolder (`docs folder-name` opens a subfolder of Documents).
 
 ## The window you came from ({hwnd}, {pid})
 `{hwnd}` and `{pid}` in the target or arguments become the handle and the process ID (in decimal) of the window that was in front before you opened ALTRun, so a script can work on that window, for example find the file it has open:
