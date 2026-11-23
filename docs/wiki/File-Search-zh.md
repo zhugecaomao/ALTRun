@@ -11,7 +11,7 @@
 
 - **最近打开的文件**: **`recent 报告`** 搜最近在任何程序里打开过的文件和文件夹 (Windows 的 "最近使用的项目"), 最新的在前, 本地和网络上的都有; 只输入 **`recent `** (后面不跟文字) 列出最新的几个. 直接读 Windows 的 "最近使用的项目" 文件夹, 不需要 Everything, 也不用内置索引 (Everything 默认搜不到这些: 偏好设置 → 搜索来源 → "过滤条件" 里排除了 `\AppData\`). 关键字可以在 偏好设置 → 文件搜索 → "最近文件关键字" 修改; 文件搜索模式里也可以输入 `recent 报告`. 网络上的文件不去访问网络, 网络慢或断开时列表也不会卡住
 - **按类型搜索** (和 Listary 的筛选一样): **`doc 报告`** 只搜文档, 还有 `pic` 图片, `video` 视频, `audio` 音频, `zip` 压缩包, `exe` 程序, `cad` (dwg / dxf / dgn / rvt / ifc / skp...). 文件搜索模式里也可以输入 `doc 报告`. 关键字和扩展名在 偏好设置 → 文件搜索 → "文件类型" → **编辑...** 里修改, 每行一个 `关键字 = 扩展名 扩展名 ...` (设置页上那一行只显示关键字). 有 Everything 时相当于 `ext:doc;docx;...`
-- 按修改日期找可以直接写 [Everything 的语法](#everything-搜索语法), 例如 `空格` + `dm:today 报告`, `dm:7days`
+- 按修改日期找可以直接写 [Everything 的语法](#everything-搜索语法), 例如 `空格` + `dm:today 报告`, `dm:thisweek`
 
 关键字后面要有空格才进入文件搜索: 只输入 `folder`, `open`, `recent`, `doc` 时, 名字里带这个词的命令, 应用照常显示, 另有一行这个关键字的提示. 名字以这个词开头的应用和命令 (例如 `doc` 对应的 Docker) 排在提示前面, 按 `Enter` 照样打开它们; 没有的话提示排第一. 在提示上按 `Enter`, `Tab` 或双击, 补全成关键字加空格 (例如 `recent `). 关键字还没输完整时 (至少 3 个字母, 例如 `fol`, `rec`, `vid`), 提示显示在列表最后.
 
@@ -67,11 +67,11 @@ Everything 运行时, 文件搜索原样交给它 (通过 IPC): ALTRun 不解析
 | `ext:` | 扩展名, 多个用 `;` 分隔 | `ext:pdf;docx 报告` |
 | `path:` | 连文件夹路径一起匹配 | `path:Projects 报告` |
 | `size:` | 大小, 可用 `<` `>` 或范围 `..` | `size:>100mb`, `size:10mb..50mb` |
-| `dm:` / `dc:` | 修改 / 创建日期 | `dm:today`, `dm:7days`, `dm:2026-07-01..2026-07-31` |
+| `dm:` / `dc:` | 修改 / 创建日期 | `dm:today`, `dm:thisweek`, `dm:last7days`, `dm:2026-07-01..2026-07-31` |
 | `content:` | 文件内容: 慢, 和别的条件一起用 | `ext:txt content:发票` |
 | `regex:` | 正则表达式 | `regex:^报告.*\.pdf$` |
 
-Everything 自己的 `doc:` 等宏用的是 Everything 的列表; ALTRun 的 `doc 报告` 用上面的扩展名. Everything 1.5 还有很多函数和修饰符 (例如 `start-with:` / `end-with:`, 也可以写 `startwith:` / `endwith:`, 图片宽高, 媒体时长), 有些在 1.4 里不能用. 完整说明 (按 Everything 1.5 写): [Search Syntax](https://www.voidtools.com/support/everything/search_syntax/), [Search Functions](https://www.voidtools.com/support/everything/search_functions/), [Search Modifiers](https://www.voidtools.com/support/everything/search_modifiers/).
+Everything 自己的 `doc:` 等宏用的是 Everything 的列表; ALTRun 的 `doc 报告` 用上面的扩展名. Everything 1.5 还有很多函数和修饰符 (例如 `start-with:` / `end-with:`, 也可以写 `startwith:` / `endwith:`, 图片宽高, 媒体时长), 有些在 1.4 里不能用. 日期也一样: `dm:last7days` 和 `dm:thisweek` 两个版本都能用, 更短的 `dm:7days` 和 `dm:pastweek` 只有 1.5 能用. 完整说明 (按 Everything 1.5 写): [Search Syntax](https://www.voidtools.com/support/everything/search_syntax/), [Search Functions](https://www.voidtools.com/support/everything/search_functions/), [Search Modifiers](https://www.voidtools.com/support/everything/search_modifiers/).
 
 ## 浏览文件夹
 在搜索框里输入路径, 列出这个文件夹里的内容 (文件夹在前), 路径最后一段用来过滤:

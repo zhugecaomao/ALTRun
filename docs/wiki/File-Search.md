@@ -11,7 +11,7 @@ Normal searches show apps, commands, snippets and so on, but **not** files from 
 
 - **Recently opened files**: **`recent report`** searches the files and folders you opened recently in any program (Windows' "Recent items"), newest first, on local disks and network shares alike; **`recent `** with nothing after it lists the newest. It reads Windows' Recent folder directly, so it works without Everything and without the built-in index (Everything doesn't list these by default: `\AppData\` is excluded in Preferences → Search Sources → "Filter"). Change the keyword in Preferences → File Search → "Recent keywords"; `recent report` also works in file search mode. Network files are listed without accessing the network, so a slow or disconnected share doesn't hold up the list
 - **By type** (like Listary's filters): **`doc report`** searches documents only; there are also `pic` pictures, `video`, `audio`, `zip` archives, `exe` programs and `cad` (dwg / dxf / dgn / rvt / ifc / skp...). `doc report` also works in file search mode. Change the keywords and extensions in Preferences → File Search → "File types" → **Edit...**, one `keyword = ext ext ...` per line (the line shows just the keywords). With Everything this is the same as `ext:doc;docx;...`
-- To find files by modification date, write [Everything's syntax](#everything-search-syntax) directly, for example `Space` + `dm:today report` or `dm:7days`
+- To find files by modification date, write [Everything's syntax](#everything-search-syntax) directly, for example `Space` + `dm:today report` or `dm:thisweek`
 
 A keyword needs a space after it to start a file search: typing just `folder`, `open`, `recent` or `doc` shows commands and apps with that word in their name as usual, plus a hint for the keyword. Apps and commands whose name starts with that word (e.g. Docker for `doc`) stay above the hint, so `Enter` still opens them; otherwise the hint comes first. `Enter`, `Tab` or a double-click on the hint completes the keyword and the space (e.g. `recent `). While a keyword isn't typed in full yet (at least 3 letters, e.g. `fol`, `rec`, `vid`), its hint shows at the end of the list.
 
@@ -67,11 +67,11 @@ When Everything is running, file searches go to it unchanged (over IPC): ALTRun 
 | `ext:` | Extensions; `;` separates several | `ext:pdf;docx report` |
 | `path:` | Match the folder path too | `path:Projects report` |
 | `size:` | Size, with `<` `>` or a range `..` | `size:>100mb`, `size:10mb..50mb` |
-| `dm:` / `dc:` | Date modified / created | `dm:today`, `dm:7days`, `dm:2026-07-01..2026-07-31` |
+| `dm:` / `dc:` | Date modified / created | `dm:today`, `dm:thisweek`, `dm:last7days`, `dm:2026-07-01..2026-07-31` |
 | `content:` | Text inside files: slow, combine it with other filters | `ext:txt content:invoice` |
 | `regex:` | Regular expression | `regex:^report.*\.pdf$` |
 
-Everything's own macros such as `doc:` use Everything's lists; ALTRun's `doc report` uses the extensions above. Everything 1.5 adds many more functions and modifiers (for example `start-with:` / `end-with:`, also written `startwith:` / `endwith:`, image width and height, media length); some don't work in 1.4. The full references (they describe Everything 1.5): [Search Syntax](https://www.voidtools.com/support/everything/search_syntax/), [Search Functions](https://www.voidtools.com/support/everything/search_functions/), [Search Modifiers](https://www.voidtools.com/support/everything/search_modifiers/).
+Everything's own macros such as `doc:` use Everything's lists; ALTRun's `doc report` uses the extensions above. Everything 1.5 adds many more functions and modifiers (for example `start-with:` / `end-with:`, also written `startwith:` / `endwith:`, image width and height, media length); some don't work in 1.4. Dates too: `dm:last7days` and `dm:thisweek` work in both, the shorter `dm:7days` and `dm:pastweek` only in 1.5. The full references (they describe Everything 1.5): [Search Syntax](https://www.voidtools.com/support/everything/search_syntax/), [Search Functions](https://www.voidtools.com/support/everything/search_functions/), [Search Modifiers](https://www.voidtools.com/support/everything/search_modifiers/).
 
 ## Browsing folders
 Type a path in the search box to list what's in that folder (folders first); the last part of the path filters the list:
