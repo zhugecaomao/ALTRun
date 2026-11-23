@@ -850,7 +850,7 @@ class I18n {
         s["Prefs.SaveLog"]             := "Write a debug log"
         s["Prefs.SaveLog.Desc"]        := "Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off."
         s["Prefs.FileManager"]         := "File manager"
-        s["Prefs.FileManager.Desc"]     := "Program that opens folders, e.g. C:\Apps\Arke\arke.exe or C:\Apps\TOTALCMD64.exe /O /T /S; parameters can follow, with {path} for the path (/R={path}). Default: explorer.exe"
+        s["Prefs.FileManager.Desc"]     := 'Program that opens folders, e.g. Total Commander, Directory Opus or Arke; parameters can follow, {path} = the path. Default: explorer.exe. <a href="{1}">Examples and what each supports</a>'
         s["Prefs.FolderNewTab"] := "Open folders in a new tab"
         s["Prefs.FolderNewTab.Desc"] := "File Explorer (Windows 11 22H2 or later) and Arke (0.8.0 or later): a new tab of the window used last. Total Commander: adds /O /T. Others: put their own parameters above."
         s["Prefs.Browser"]             := "Browser"
