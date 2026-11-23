@@ -87,7 +87,7 @@
   "Clipboard.UnpinnedDone": "已取消置顶",
   "Cmd.Clipboard.Refused": "不能使用剪贴板里的文字: 里面有 {1}, 会打乱命令行",
   "Cmd.Clipboard.Refused.Shell": "不能使用剪贴板里的文字: 里面有 {1}, {2} 会把它当成代码",
-  "Cmd.Field.Arguments": "运行程序时附带的参数, 例如 /k ipconfig /all; 文件、文件夹和网址一般留空。目标或参数里的 {query} 会换成关键字后面输入的文字 ({query|文字}: 没有输入时用 \"文字\", {query|}: 没有输入也运行), {hwnd} / {pid} 换成呼出 ALTRun 之前前台窗口的句柄 / 进程 ID",
+  "Cmd.Field.Arguments": "运行程序时附带的参数, 例如 /k ipconfig /all; 文件、文件夹和网址一般留空。目标或参数里的 {query} 会换成关键字后面输入的文字 ({query|文字}: 没有输入时用 \"文字\", {query|clipboard}: 用剪贴板里的文字, {query|}: 没有输入也运行), {hwnd} / {pid} 换成呼出 ALTRun 之前前台窗口的句柄 / 进程 ID",
   "Cmd.Field.Keyword": "可选。输入的文字和关键字完全一样时排在最前面, 例如给记事本设 np。可以写几个, 用逗号分隔, 例如 np, ㅜㅔ",
   "Cmd.Field.Selection": "可选。偏好设置 → 内容类型 里定义的内容类型, 例如 IP, Text files: 选中这类内容再按 Ctrl+Alt+\\ 时, 或在搜索结果的这类文件上按 →, 这个命令排在最前面。{query} 换成选中的文字或路径; 没写 {query} 时, 选中的内容作为程序的最后一个参数。",
   "Cmd.Field.Triggers": "除了在搜索里按名称找到, 还能怎样运行这个命令。这里设的热键在按 确定 时和命令一起保存。",

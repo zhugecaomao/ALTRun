@@ -88,7 +88,7 @@
   "Clipboard.UnpinnedDone": "已取消釘選",
   "Cmd.Clipboard.Refused": "不能使用剪貼簿裡的文字: 裡面有 {1}, 會打亂命令列",
   "Cmd.Clipboard.Refused.Shell": "不能使用剪貼簿裡的文字: 裡面有 {1}, {2} 會把它當成程式碼",
-  "Cmd.Field.Arguments": "執行程式時附帶的參數, 例如 /k ipconfig /all; 檔案、資料夾和網址一般留空。目標或參數裡的 {query} 會換成關鍵字後面輸入的文字 ({query|文字}: 沒有輸入時用「文字」, {query|}: 沒有輸入也執行), {hwnd} / {pid} 換成叫出 ALTRun 之前前景視窗的控制代碼 / 處理程序 ID",
+  "Cmd.Field.Arguments": "執行程式時附帶的參數, 例如 /k ipconfig /all; 檔案、資料夾和網址一般留空。目標或參數裡的 {query} 會換成關鍵字後面輸入的文字 ({query|文字}: 沒有輸入時用「文字」, {query|clipboard}: 用剪貼簿裡的文字, {query|}: 沒有輸入也執行), {hwnd} / {pid} 換成叫出 ALTRun 之前前景視窗的控制代碼 / 處理程序 ID",
   "Cmd.Field.Keyword": "選用。輸入的文字和關鍵字完全一樣時排在最前面, 例如給記事本設 np。可以寫幾個, 用逗號分隔, 例如 np, ㅜㅔ",
   "Cmd.Field.Selection": "選用。偏好設定 → 內容類型 裡定義的內容類型, 例如 IP, Text files: 選取這類內容再按 Ctrl+Alt+\\ 時, 或在搜尋結果的這類檔案上按 →, 這個指令排在最前面。{query} 換成選取的文字或路徑; 沒寫 {query} 時, 選取的內容作為程式的最後一個參數。",
   "Cmd.Field.Triggers": "除了在搜尋裡按名稱找到, 還能怎樣執行這個指令。這裡設的熱鍵在按 確定 時和指令一起儲存。",

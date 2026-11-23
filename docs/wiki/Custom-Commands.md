@@ -45,8 +45,8 @@ Each field in the edit dialog has a line of gray help text below it.
 |---|---|
 | Title | The name shown in results and used for searching |
 | Type | `File` file / program, `Folder` folder, `Command` program + arguments, `Url` web address / link (a web page, or a link such as `ms-settings:windowsupdate` or `mailto:`) |
-| Target | Path, program or web address |
-| Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all` |
+| Target | Path, program or web address. Can contain `{query}`, the text typed after the keyword (see [Commands with an argument](#commands-with-an-argument-query)), for example `https://jira.example.com/browse/{query}` |
+| Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all`. Can contain `{query}` too, also with a default for when nothing is typed after the keyword: `{query\|127.0.0.1}`, `{query\|clipboard}` (the text on the clipboard) or `{query\|}` (run without it); see [Commands with an argument](#commands-with-an-argument-query) |
 | Keyword | Optional. Typing exactly this keyword puts the command first. Several keywords: separate with commas, for example `np, ㅜㅔ` (handy when you switch keyboard layouts: any of them works) |
 | Content types (Selection) | Optional. Content types from Preferences → Content Types (for example `IP, Text files`; pick them from the **Types** menu) the command comes first for when you select something and press `Ctrl+Alt+\` (and in the action panel of such files in the search results; a file type's **Open (Enter)** can also name it), see [Your own actions for a selection](Usage#your-own-actions-for-a-selection) |
 | Triggers | Not saved: one line saying how the command runs besides finding it by name, for example `Keyword ping · Selection IP · Hotkey Ctrl+Alt+P`. **Set Hotkey...** opens the [hotkey window](Hotkeys) for this command (a new command can have one before it is saved); with hotkeys already set it shows a menu to edit or delete each one or add another. The hotkeys are saved with the command when you click **OK** (Cancel drops them too). In Preferences they are saved on **Apply**; from the search window (`F3`) ALTRun restarts if a hotkey changed, so it works at once |
@@ -56,6 +56,23 @@ Besides the title and keyword, `File` / `Folder` commands also match the target'
 Folders open in Preferences → General → File manager (Explorer by default; Total Commander, Directory Opus, Arke and others work too, see [File managers](File-Managers)); "Open folders in a new tab" there opens them in a new tab of an Explorer window already open (Windows 11 22H2 or later), of Total Commander or of Arke.
 
 ## Commands with an argument ({query})
+One command for many values: `ping 10.0.0.1`, `jira ABC-123`, `maps Changi Airport`. Write `{query}` where the value goes, and optionally a default for when you type only the keyword and a space: `{query|default}`, `{query|clipboard}` or `{query|}`.
+
+### Step by step: a Ping command
+1. Preferences → Custom Commands → **Add...** (or type `ping` in the search window and press `F3` when nothing is found)
+2. Fill in: Title `Ping`, Type **Command line**, Target `cmd.exe`, Arguments `/k ping {query|127.0.0.1}`, Keyword `ping`
+3. Click **OK** (in Preferences also **Apply** / **OK** on the page)
+4. Try it in the search window:
+
+| You type | Then | Result |
+|---|---|---|
+| `ping` | `Enter` | the box becomes `ping ` (with a space) and waits for the address; the line below says what to type |
+| `ping 10.0.0.1` | `Enter` | a command prompt runs `ping 10.0.0.1` |
+| `ping ` (nothing after the space) | `Enter` | runs `ping 127.0.0.1`, the default |
+
+With `/k ping {query|clipboard}` instead, copy an IP address anywhere, type `ping ` and press `Enter`: it pings the address on the clipboard (the line shows it before you press `Enter`). With a plain `{query}`, `ping ` waits until you type the address.
+
+### The rules
 Put `{query}` in the target or arguments and give the command a keyword; typing "keyword text" replaces `{query}` with the text (URL-encoded in web addresses). The rules are the same as for [web search](Web-Search#adding-and-editing) URLs, so a command and a search engine written the same way behave the same:
 
 | Written as | `ping` (only the keyword) | `ping ` (keyword and a space, nothing after it) | `ping 10.0.0.1` |

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.8]
+
+测试版。
+
+Test build.
+
+### 改进
+- 自定义命令编辑窗口: 参数下面的说明补上 `{query|clipboard}` (用剪贴板里的文字), 和网页搜索的说明一致; Wiki "自定义命令" 的字段表写明目标和参数可以用 `{query}` 和默认值, 并加了一步步建 Ping 命令的示例
+
 ## [2026.11.23.7]
 
 测试版。
@@ -1631,7 +1640,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...HEAD
+[2026.11.23.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...2026.11.23.8
 [2026.11.23.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...2026.11.23.7
 [2026.11.23.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...2026.11.23.6
 [2026.11.23.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...2026.11.23.5
