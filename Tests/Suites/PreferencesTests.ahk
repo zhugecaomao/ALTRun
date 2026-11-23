@@ -102,7 +102,7 @@ class PreferencesTests {
         eq := (n, a, e) => TestRunner.Equal("ListExamples." n, a, e)
         pages := [["Hotkeys", (item) => PrefsPages.HotkeyKeys(item)], ["CustomCommands", (item) => PrefsPages.CommandKeys(item)]
             , ["Snippets", (item) => PrefsPages.SnippetKeys(item)], ["Features.WebSearch.Engines", (item) => PrefsPages.EngineKeys(item)]
-            , ["SelectionTypes", (item) => PrefsPages.SelectionTypeKeys(item)]]
+            , ["ContentTypes", (item) => PrefsPages.SelectionTypeKeys(item)]]
         for page in pages {
             defaults := PreferencesWindow.GetPath(AppSettings.Defaults(), page[1])
             items := []
@@ -161,13 +161,13 @@ class PreferencesTests {
         shown := ""
         fields := CustomCommandProvider.EditorFields()
         field := fields[fields.Length]
-        eq("last field", field.Key "|" field.Type "|" field.OmitEmpty "|" field.ButtonLabel, "Selection|tags|1|Types")
+        eq("last field", field.Key "|" field.Type "|" field.OmitEmpty "|" field.ButtonLabel, "ContentTypes|tags|1|Types")
         eq("tags text", ItemEditor.TagsText(" PO,pdf ,, po , Images") "|" ItemEditor.TagsText(["IP", "Email"]), "PO, pdf, Images|IP, Email")
         eq("toggle on", ItemEditor.ToggleTag("PO", "Email"), "PO, Email")
         eq("toggle off (any case)", ItemEditor.ToggleTag("PO, email, IP", "Email"), "PO, IP")
         eq("toggle the last off", ItemEditor.ToggleTag("Email", "email"), "")
-        savedTypes := AppSettings.Data["SelectionTypes"]
-        AppSettings.Data["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")]
+        savedTypes := AppSettings.Data["ContentTypes"]
+        AppSettings.Data["ContentTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")]
         try {
             names := ""
             for each in SelectionActions.TypeNamesForEditor()
@@ -180,19 +180,19 @@ class PreferencesTests {
             eq("menu click adds", box.Value, "po, Files, Text")
             eq("known types: no warning", SelectionActions.UnknownTypesWarning("text, PO"), "")
             eq("unknown type warned", SelectionActions.UnknownTypesWarning("PO, Invoice, PDFs"), "Not a content type: Invoice, PDFs. Add it in Preferences → Content Types, or the command won't be shown for it.")
-            ; the dialog itself: what is typed is tidied, and an empty box leaves no "Selection" key
-            edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "Selection", "IP"), "Text ,po,")
+            ; the dialog itself: what is typed is tidied, and an empty box leaves no "ContentTypes" key
+            edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "ContentTypes", "IP"), "Text ,po,")
             eq("shown in the box", shown, "IP")
-            eq("saved tidied", IsObject(edited) ? edited["Selection"] : "no result", "Text, po")
-            edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "Selection", "IP"), "")
-            eq("emptied: key removed", IsObject(edited) ? edited.Has("Selection") : "no result", false)
+            eq("saved tidied", IsObject(edited) ? edited["ContentTypes"] : "no result", "Text, po")
+            edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "ContentTypes", "IP"), "")
+            eq("emptied: key removed", IsObject(edited) ? edited.Has("ContentTypes") : "no result", false)
             edited := CoreFieldsDialog(Map("Title", "Notes", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", ""), "")
-            eq("never set: no key", IsObject(edited) ? edited.Has("Selection") : "no result", false)
-            edited := CoreFieldsDialog(Map("Title", "Notes", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", ["Text", "PO"]), "keep")
+            eq("never set: no key", IsObject(edited) ? edited.Has("ContentTypes") : "no result", false)
+            edited := CoreFieldsDialog(Map("Title", "Notes", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "ContentTypes", ["Text", "PO"]), "keep")
             eq("an array is shown joined", shown, "Text, PO")
-            eq("kept as text", IsObject(edited) ? edited["Selection"] : "no result", "Text, PO")
+            eq("kept as text", IsObject(edited) ? edited["ContentTypes"] : "no result", "Text, PO")
         } finally
-            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["ContentTypes"] := savedTypes
 
         ; Opens the command editor with item, types into "Selection types" ("keep" leaves it as shown), clicks OK; the edited Map or "".
         ; shown: what the box showed when the dialog opened
@@ -220,7 +220,7 @@ class PreferencesTests {
         savedLang := I18n.Lang
         I18n.Init("en")
         hk(key, id := "pg7k2m4x", winTitle := "") => Map("Key", key, "Action", "custom:" id, "SearchText", "", "WinTitle", winTitle)
-        eq("all three", CustomCommandProvider.TriggerText(Map("Keyword", "ping, pg", "Selection", "IP,Text files"), [hk("^!p"), hk("~#p", , "ahk_exe x.exe")])
+        eq("all three", CustomCommandProvider.TriggerText(Map("Keyword", "ping, pg", "ContentTypes", "IP,Text files"), [hk("^!p"), hk("~#p", , "ahk_exe x.exe")])
             , "Keyword ping, pg · Content types IP, Text files · Hotkey Ctrl+Alt+P, Win+P")
         eq("hotkey only", CustomCommandProvider.TriggerText(Map("Keyword", " "), [hk("^!p")]), "Hotkey Ctrl+Alt+P")
         eq("none", CustomCommandProvider.TriggerText(Map("Title", "x"), [hk("")]), "Only found by its name in the search")
@@ -254,7 +254,7 @@ class PreferencesTests {
             eq("line follows the keyword", seen.Typed, "Keyword np")
             eq("button", seen.Button, "Set Hotkey...")
             eq("fits", seen.Fits, true)
-            existing := Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP")
+            existing := Map("Id", "pg7k2m4x", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "ContentTypes", "IP")
             settings.Hotkeys.Push(hk("^!p"))
             eq("cancelled", Dialog(existing, false), "")
             eq("existing: its hotkey on the line", seen.Text, "Keyword ping · Content types IP · Hotkey Ctrl+Alt+P")
@@ -1067,11 +1067,11 @@ class PreferencesTests {
     ; Preferences → Selection: the hotkey, the content types with the commands that use them, and the test box (#434)
     static PreferencesSelectionPage() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesSelectionPage." n, a, e)
-        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedTypes := AppSettings.Data.Has("ContentTypes") ? AppSettings.Data["ContentTypes"] : []
         savedCommands := AppSettings.Data["CustomCommands"]
-        AppSettings.Data["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"), Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")]
-        AppSettings.Data["CustomCommands"] := [Map("Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Arguments", "", "Keyword", "", "Selection", "PO")
-            , Map("Title", "WMS", "Type", "Url", "Target", "https://wms.example.com/{query}", "Arguments", "", "Keyword", "", "Selection", "po, Text")]
+        AppSettings.Data["ContentTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"), Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")]
+        AppSettings.Data["CustomCommands"] := [Map("Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Arguments", "", "Keyword", "", "ContentTypes", "PO")
+            , Map("Title", "WMS", "Type", "Url", "Target", "https://wms.example.com/{query}", "Arguments", "", "Keyword", "", "ContentTypes", "po, Text")]
         PreferencesWindow.Show("Prefs.Page.Selection", -3000, -3000)
         try {
             index := PreferencesWindow._PageIndex("Prefs.Page.Selection")
@@ -1135,7 +1135,7 @@ class PreferencesTests {
                 eq("page list: little space below", NumGet(client, 12, "Int") - NumGet(rect, 12, "Int") < rowH, true)
             }
         } finally {
-            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["ContentTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands
             PreferencesWindow.Close()
         }

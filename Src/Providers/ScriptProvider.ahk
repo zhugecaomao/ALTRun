@@ -17,6 +17,7 @@
 ;   @altrun.selection Text, PDF         content type names (built-in or Preferences → Selection): the script is offered in the actions
 ;                     panel of such a selection (Ctrl+Alt+\, after the custom commands), which is passed to it as its first argument
 ;                     (several files: one argument each), with the panel's command-line checks (SelectionActions.SafeArgument)
+;   @altrun.types     Text, PDF         another name for @altrun.selection (both can be written; their types add up)
 ; Read again when the folder changes (modified time), without reloading ALTRun. F3 edits the script in Notepad.
 ; A custom hotkey with Action "script:<file name>" runs a script (RunFromHotkey); renaming the file breaks it (shown in red in Preferences).
 ; A filter script isn't offered for a selection; its hotkey opens the search window with "keyword " and the selected line of text.
@@ -106,7 +107,7 @@ class ScriptProvider {
         return ""
     }
 
-    ; Whether "@altrun.selection" names one of these content types (any case)
+    ; Whether "@altrun.selection" (or "@altrun.types") names one of these content types (any case)
     static ForTypes(script, types) {
         for name in script.Selection
             for each in types
@@ -115,7 +116,7 @@ class ScriptProvider {
         return false
     }
 
-    ; The actions panel rows of the scripts for a selection (SelectionActions.Classify's result), in file name order; none with
+    ; The actions panel rows of the scripts for a selection (ContentTypes.Classify's result), in file name order; none with
     ; scripts turned off. A script whose command line can't take the selection safely gets a row saying why (as the custom commands)
     static ActionsFor(info) {
         actions := []
@@ -168,7 +169,7 @@ class ScriptProvider {
         if (script.Mode = "filter") {                                      ; the search window with "keyword " and the selected line of text, if any
             text := ""
             if (ScriptFilter.Problem(script) = "" && IsObject(selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture())) {
-                info := SelectionActions.Classify(selection)
+                info := ContentTypes.Classify(selection)
                 if (info.Kind = "text" || info.Kind = "url") && StrLen(info.Term) <= 200 && !RegExMatch(info.Term, "[\r\n]")
                     text := info.Term
             }
@@ -178,7 +179,7 @@ class ScriptProvider {
         if (takesArgument || script.Selection.Length) {
             selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture()
             if IsObject(selection) {
-                info := SelectionActions.Classify(selection)
+                info := ContentTypes.Classify(selection)
                 if !SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script))
                     return App.Notify(I18n.T("Hotkey.SelectionRefused", script.Title), 3000)
                 argument := ScriptProvider.SelectionArgument(info)
@@ -393,8 +394,8 @@ class ScriptProvider {
         if !(mode = "silent" || mode = "output" || mode = "filter")
             mode := "window"
         title := meta["title"], keyword := StrLower(Trim(meta["keyword"]))
-        types := []
-        for each in StrSplit(meta["selection"], [",", ";"])
+        types := []                                                         ; "@altrun.types" is another name for it (the settings call them ContentTypes)
+        for each in StrSplit(meta["selection"] (meta.Has("types") ? "," meta["types"] : ""), [",", ";"])
             if ((each := Trim(each)) != "")
                 types.Push(each)
         pinyinText := Pinyin.Initials(title)

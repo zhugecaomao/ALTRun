@@ -121,7 +121,7 @@ class CoreTests {
         eq("2.x dialogs: standard ones, as arrays", data["Extensions"]["QuickSwitch"]["StandardDialogs"] "|" data["Extensions"]["QuickSwitch"]["DialogWindows"].Length
             "|" (data["Extensions"]["AutoDate"]["RenameWindows"] is Array), "1|0|1")
         eq("2.x old hotkeys not kept", data["Extensions"]["QuickSwitch"].Has("ExplorerHotkey") || data["Extensions"]["QuickSwitch"].Has("TotalCmdHotkey"), false)
-        eq("pttools", data["Extensions"]["PTTools"]["RebarSpanWidth"], 4000)
+        eq("2.x PT Tools inputs not kept (a script with its own ini now)", data["Extensions"].Has("PTTools"), false)
         eq("hotkeys", data["Hotkeys"].Length, 1)
         eq("hotkey action", data["Hotkeys"][1]["Action"], "PTTools")
         eq("commands", data["CustomCommands"].Length, 4)                    ; Func isn't migrated
@@ -166,7 +166,7 @@ class CoreTests {
             , "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD,ahk_class TSTDTREEDLG,ahk_class TCOMBOINPUT")
         eq("4->5 rename windows = new default", TextTools.JoinList(v5["Extensions"]["AutoDate"]["RenameWindows"], ","), TextTools.JoinList(defaults["Extensions"]["AutoDate"]["RenameWindows"], ","))
         eq("4->5 append windows = new default", TextTools.JoinList(v5["Extensions"]["AutoDate"]["AppendWindows"], ","), TextTools.JoinList(defaults["Extensions"]["AutoDate"]["AppendWindows"], ","))
-        eq("4->5 exclude windows: 7-Zip and TC added (7-Zip left the defaults in 2026.11.23.1, #609)", TextTools.JoinList(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","), "ahk_class SysListView32,ahk_exe Explorer.exe,ahk_exe 7zG.exe,ahk_exe TOTALCMD64.exe")
+        eq("4->5 exclude windows: TC added (7-Zip too, removed again by 7->8, #609)", TextTools.JoinList(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","), "ahk_class SysListView32,ahk_exe Explorer.exe,ahk_exe TOTALCMD64.exe")
         eq("4->5 old F1 hotkey removed, others kept", v5["Hotkeys"].Length "|" v5["Hotkeys"][1]["Key"], "1|~MButton")
         sizes := v5["Features"]["Calculator"]["BarSizes"]
         eq("4->5 bar sizes as numbers", (sizes[1] is Integer) "|" sizes[1] "|" sizes[3] "|" (sizes[3] is Integer) "|" sizes[4] "|" sizes[5], "1|13|20|1|25|abc")
@@ -190,13 +190,13 @@ class CoreTests {
                 , "AutoDate", Map("RenameHotkey", "^!d", "AppendHotkey", "^d", "RenameWindows", "ahk_class CabinetWClass", "AppendWindows", "ahk_exe a.exe, ahk_exe b.exe")))
         v6 := SchemaMigration.Upgrade(v5, 5)
         quick := v6["Extensions"]["QuickSwitch"], dates := v6["Extensions"]["AutoDate"]
-        eq("5->7 version", v6["SchemaVersion"], 7)
+        eq("5->current version", v6["SchemaVersion"], AppSettings.CurrentVersion)
         eq("5->6 jump hotkey renamed", quick["Hotkey"] "|" quick.Has("TotalCmdHotkey") "|" quick.Has("ExplorerHotkey"), "^!g|0|0")
         eq("5->6 date hotkey renamed", dates["Hotkey"] "|" dates.Has("RenameHotkey") "|" dates.Has("AppendHotkey"), "^!d|0|0")
         eq("5->6 standard dialogs split out", quick["StandardDialogs"] "|" TextTools.JoinList(quick["DialogWindows"], ","), "1|ahk_class Qt5QWindowIcon")
-        eq("5->6 window lists as arrays", TextTools.JoinList(quick["ExcludeWindows"], ",") "|" quick["AutoSwitchExclude"].Length "|" TextTools.JoinList(dates["RenameWindows"], ",") "|" TextTools.JoinList(dates["AppendWindows"], ",")
-            , "ahk_exe 7zG.exe|0|ahk_class CabinetWClass|ahk_exe a.exe,ahk_exe b.exe")
-        eq("5->6 snippet exclusions as an array", TextTools.JoinList(v6["Features"]["Snippets"]["ExpandExclude"], ","), "ahk_exe mstsc.exe,ahk_exe KeePass.exe")
+        eq("5->6 window lists as arrays", (quick["ExcludeWindows"] is Array) "|" quick["ExcludeWindows"].Length "|" quick["AutoSwitchExclude"].Length "|" TextTools.JoinList(dates["RenameWindows"], ",") "|" TextTools.JoinList(dates["AppendWindows"], ",")
+            , "1|0|0|ahk_class CabinetWClass|ahk_exe a.exe,ahk_exe b.exe")                 ; 7-Zip removed by 7->8
+        eq("5->6 snippet exclusions as an array", TextTools.JoinList(v6["Features"]["Snippets"]["ExpandExclude"], ","), "ahk_exe mstsc.exe,ahk_exe KeePass.exe," TextTools.JoinList(SchemaMigration.AddedExpandExclude, ","))
         eq("5->6 unused refresh removed", v6["Features"]["Applications"].Has("RefreshMinutes") "|" v6["Features"]["Applications"]["Depth"], "0|3")
         eq("5->6 old scope exclude -> new default", v6["Features"]["FileSearch"]["ScopeExclude"], defaults["Features"]["FileSearch"]["ScopeExclude"])
         eq("5->6 compact theme -> theme at normal density", v6["Appearance"]["Theme"] "|" v6["Appearance"]["Density"], "Dark|Normal")
@@ -674,7 +674,7 @@ class CoreTests {
             , "Features", Map("Recent", Map("RecentCount", 3, "Pinned", [Map("Uid", "custom:file|notepad.exe|", "Kind", "file", "Arg", "notepad.exe")
                 , Map("Uid", "system:Lock", "System", "Lock"), Map("Uid", "custom:file|gone.exe|", "Kind", "file", "Arg", "gone.exe")])))
         v7 := SchemaMigration.Upgrade(v6, 6)
-        eq("version", v7["SchemaVersion"], 7)
+        eq("version", v7["SchemaVersion"], AppSettings.CurrentVersion)
         eq("Ids", AppSettings.IsId(notepad["Id"]) "|" AppSettings.IsId(v7["Snippets"][1]["Id"]) "|" AppSettings.IsId(v7["SyncTasks"][1]["Id"]), "1|1|1")
         eq("groups", v7["Keyboard"]["SpaceToRun"] "|" v7["Window"]["KeepLastQuery"] "|" v7["Window"]["Placeholder"] "|" v7["Window"]["RecentCount"], "1|1|Go|3")
         pinned := v7["Features"]["Recent"]["Pinned"]
@@ -685,6 +685,110 @@ class CoreTests {
         back := Map("SchemaVersion", 7, "General", Map("SpaceToRun", 0), "Keyboard", Map("SpaceToRun", 1))
         AppSettings.MoveGroups(back)
         eq("after going back and forth", back["Keyboard"]["SpaceToRun"] "|" back["General"].Has("SpaceToRun"), "1|0")
+    }
+
+    ; 7 -> 8: ContentTypes (from SelectionTypes / a command's Selection), keys no longer read removed, 7-Zip out of Quick Switch's
+    ; excluded windows, the remote desktops added to the snippet exclusions. Upgrading, going back to 2026.11.23 and forward, a new installation
+    static SettingsVersion8() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsVersion8." n, a, e)
+        join := (list) => (list is Array) ? TextTools.JoinList(list, ",") : "<" Type(list) ">"
+        names(list) {                                                       ; the Name of each item, "a,b"
+            text := ""
+            for item in (list is Array) ? list : []
+                text .= (A_Index > 1 ? "," : "") item["Name"]
+            return text
+        }
+
+        ; upgrading from version 7
+        v7 := Map("SchemaVersion", 7
+            , "CustomCommands", [Map("Id", "erp00001", "Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Selection", "PO")
+                , Map("Id", "plain001", "Title", "Plain", "Type", "File", "Target", "notepad.exe")]
+            , "SelectionTypes", [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"), Map("Name", "MD", "Kind", "File", "Pattern", "md", "OpenCommand", "plain001")]
+            , "DelayedStart", [Map("Name", "Old task")]
+            , "Extensions", Map("PTTools", Map("RebarSpanWidth", 4000)
+                , "QuickSwitch", Map("ExcludeWindows", ["ahk_class SysListView32", " AHK_EXE 7zg.exe ", "ahk_exe Explorer.exe", "ahk_exe 7zFM.exe"]))
+            , "Features", Map("Snippets", Map("ExpandExclude", ["ahk_exe mstsc.exe", "AHK_EXE anydesk.exe", "ahk_exe Mine.exe"])))
+        v8 := SchemaMigration.Upgrade(v7, 7)
+        eq("version", v8["SchemaVersion"], 8)
+        eq("types renamed", v8.Has("SelectionTypes") "|" names(v8["ContentTypes"]) "|" v8["ContentTypes"][2]["OpenCommand"], "0|PO,MD|plain001")
+        eq("command field renamed", v8["CustomCommands"][1].Has("Selection") "|" v8["CustomCommands"][1]["ContentTypes"] "|" v8["CustomCommands"][2].Has("ContentTypes"), "0|PO|0")
+        eq("keys no longer read removed", v8.Has("DelayedStart") "|" v8["Extensions"].Has("PTTools"), "0|0")
+        eq("7-Zip's extract window out of the excluded windows (any case and spaces; 7zFM stays)", join(v8["Extensions"]["QuickSwitch"]["ExcludeWindows"])
+            , "ahk_class SysListView32,ahk_exe Explorer.exe,ahk_exe 7zFM.exe")
+        eq("remote desktops added, only the missing ones, the user's kept", join(v8["Features"]["Snippets"]["ExpandExclude"])
+            , "ahk_exe mstsc.exe,AHK_EXE anydesk.exe,ahk_exe Mine.exe,ahk_exe ToDesk.exe,ahk_exe SunloginClient.exe,ahk_exe TeamViewer.exe,ahk_exe rustdesk.exe")
+        eq("the 5 remote desktops are the ones added to the defaults by #574", join(SchemaMigration.AddedExpandExclude), "ahk_exe ToDesk.exe,ahk_exe SunloginClient.exe,ahk_exe AnyDesk.exe,ahk_exe TeamViewer.exe,ahk_exe rustdesk.exe")
+        emptied := SchemaMigration.Upgrade(Map("SchemaVersion", 7, "Features", Map("Snippets", Map("ExpandExclude", []))), 7)
+        eq("an emptied snippet list stays empty", emptied["Features"]["Snippets"]["ExpandExclude"].Length, 0)
+        eq("missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 7), 7).Count, 1)
+
+        ; a version 8 file read by 2026.11.23 (version 7): it fills "SelectionTypes" in with its defaults and may write "Selection" on a
+        ; command edited there; back on version 8 the new names win and the old keys go away
+        back := Map("SchemaVersion", 8, "ContentTypes", [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")]
+            , "SelectionTypes", [Map("Name", "Email", "Kind", "Text", "Pattern", "@")]
+            , "CustomCommands", [Map("Title", "Both", "ContentTypes", "PO", "Selection", "Email"), Map("Title", "Old only", "Selection", "IP"), Map("Title", "None")])
+        eq("back and forth: changed", AppSettings.RenameContentTypes(back), true)
+        eq("back and forth: ContentTypes kept, SelectionTypes removed", names(back["ContentTypes"]) "|" back.Has("SelectionTypes"), "PO|0")
+        commands := back["CustomCommands"]
+        eq("back and forth: commands", commands[1]["ContentTypes"] "|" commands[1].Has("Selection") "|" commands[2]["ContentTypes"] "|" commands[2].Has("Selection")
+            "|" commands[3].Has("ContentTypes"), "PO|0|IP|0|0")
+        eq("back and forth: nothing more to do", AppSettings.RenameContentTypes(back), false)
+
+        ; the whole start-up: a version 7 file is upgraded (with a backup), a version 8 file with the old keys is tidied before the
+        ; defaults fill it in, and a new installation is written with the new names
+        root := A_Temp "\ALTRun-v8-test"
+        try DirDelete(root, true)
+        DirCreate(root "\Data")
+        saved := {File: AppSettings.File, Legacy: AppSettings.LegacyFile, Data: AppSettings.Data, Good: AppSettings._fileGood, Newer: AppSettings.NewerVersion
+            , Migrated: AppSettings.MigratedFrom, Imported: AppSettings.ImportedFrom, Moved: AppSettings.MovedFrom, FirstRun: AppSettings.FirstRun}
+        write := (data) => (FileExist(AppSettings.File) && FileDelete(AppSettings.File), FileAppend(JSON.Stringify(data), AppSettings.File, "UTF-8-RAW"))
+        try {
+            AppSettings.File := root "\Data\ALTRun.json", AppSettings.LegacyFile := root "\ALTRun.json"
+            AppSettings.NewerVersion := 0, AppSettings.MigratedFrom := 0, AppSettings.ImportedFrom := "", AppSettings.MovedFrom := ""
+            old := AppSettings.Defaults()
+            old["SchemaVersion"] := 7, old["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")], old.Delete("ContentTypes")
+            old["CustomCommands"] := [Map("Id", "erp00001", "Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Selection", "PO")]
+            old["Extensions"]["QuickSwitch"]["ExcludeWindows"].Push("ahk_exe 7zG.exe")
+            old["DelayedStart"] := []
+            write(old)
+            AppSettings.Load()
+            data := AppSettings.Data
+            eq("load 7: upgraded, backed up", AppSettings.MigratedFrom "|" data["SchemaVersion"] "|" (FileExist(SchemaMigration.BackupFile(AppSettings.File, 7)) != ""), "7|8|1")
+            eq("load 7: the user's types, not the defaults", names(data["ContentTypes"]) "|" data.Has("SelectionTypes") "|" data["CustomCommands"][1]["ContentTypes"], "PO|0|PO")
+            eq("load 7: removed", data.Has("DelayedStart") "|" InStr(join(data["Extensions"]["QuickSwitch"]["ExcludeWindows"]), "7zG"), "0|0")
+            written := JSON.Parse(FileRead(AppSettings.File, "UTF-8"))
+            eq("load 7: written with the new names", written["SchemaVersion"] "|" written.Has("SelectionTypes") "|" names(written["ContentTypes"]), "8|0|PO")
+
+            back := AppSettings.Defaults()                                  ; as 2026.11.23 saves a version 8 file: its default types under the old name
+            back["ContentTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")], back["SelectionTypes"] := AppSettings._DefaultContentTypes()
+            back["CustomCommands"] := [Map("Id", "erp00001", "Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "ContentTypes", "PO", "Selection", "Email")]
+            write(back)
+            AppSettings.MigratedFrom := 0
+            AppSettings.Load()
+            data := AppSettings.Data
+            eq("back and forth: no upgrade", AppSettings.MigratedFrom, 0)
+            eq("back and forth: old keys removed", names(data["ContentTypes"]) "|" data.Has("SelectionTypes") "|" data["CustomCommands"][1].Has("Selection"), "PO|0|0")
+            written := JSON.Parse(FileRead(AppSettings.File, "UTF-8"))
+            eq("back and forth: written back", written.Has("SelectionTypes") "|" written["CustomCommands"][1].Has("Selection"), "0|0")
+
+            FileDelete(AppSettings.File)                                    ; a new installation
+            AppSettings.Load()
+            data := AppSettings.Data
+            eq("new: first run, version 8", AppSettings.FirstRun "|" data["SchemaVersion"], "1|8")
+            eq("new: the default types under the new name", names(data["ContentTypes"]) "|" data.Has("SelectionTypes"), "Email,IP,Coordinates,Text files,Images|0")
+            withTypes := 0, oldField := 0
+            for command in data["CustomCommands"]
+                withTypes += command.Has("ContentTypes"), oldField += command.Has("Selection")
+            eq("new: default commands with ContentTypes", withTypes "|" oldField, "5|0")
+            eq("new: no keys of old versions", data.Has("DelayedStart") "|" data["Extensions"].Has("PTTools"), "0|0")
+            eq("new: 7-Zip not excluded", InStr(join(data["Extensions"]["QuickSwitch"]["ExcludeWindows"]), "7zG"), 0)
+            eq("new: all remote desktops in the snippet exclusions", join(data["Features"]["Snippets"]["ExpandExclude"]), join(AppSettings.DefaultExpandExclude))
+        } finally {
+            AppSettings.File := saved.File, AppSettings.LegacyFile := saved.Legacy, AppSettings.Data := saved.Data, AppSettings._fileGood := saved.Good
+            AppSettings.NewerVersion := saved.Newer, AppSettings.MigratedFrom := saved.Migrated, AppSettings.ImportedFrom := saved.Imported
+            AppSettings.MovedFrom := saved.Moved, AppSettings.FirstRun := saved.FirstRun
+            try DirDelete(root, true)
+        }
     }
 
     ; Knowledge.json version 2: the Uids of custom commands, snippets, sync tasks (by Id) and scripts (by file name)

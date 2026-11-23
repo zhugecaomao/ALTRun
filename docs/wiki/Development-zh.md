@@ -31,7 +31,7 @@ Src\UI\             SearchWindow (+ SearchSession、SearchKeys 键盘、ResultRo
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框; + QuickSwitchPanel、QuickSwitchFavorites、
                     FileDialogs、FileManagers), AutoDate, CapsLockSwitch,
-                    AdminHelper (helper for administrator windows), SelectionActions, CurrencyRates, UpdateChecker,
+                    AdminHelper (helper for administrator windows), ContentTypes (选中内容或文件是什么类型), SelectionActions, CurrencyRates, UpdateChecker,
                     RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  单元测试的入口: 载入程序代码 (设置只在内存里), 运行所有测试类
@@ -155,6 +155,7 @@ ALTRun 空闲时应该不占 CPU。只要设置了**任何一个** `SetTimer` �
 - 只是加新的设置项: 加到 `AppSettings.Defaults()` 即可, 旧文件缺少的项会自动补上
 - 改名、移动或改变已有项的结构: `AppSettings.CurrentVersion + 1`, 在 `SchemaMigration` 里加一个 `_FromN(data)` 把版本 N 转换成 N+1。升级前会自动备份为 `ALTRun.vN.backup.json`
 - 把设置项挪到另一组: 加到 `AppSettings.MovedKeys`。`AppSettings.MoveGroups` 每次加载都跑, 不只在升级时: 旧版 ALTRun 读这个文件时会在旧位置补上默认值, 新版下次加载时删掉 (以新位置为准)
+- 改名的键旧版 ALTRun 会用默认值再补上时 (例如版本 8 的 `SelectionTypes` → `ContentTypes`): 改名也每次加载都做 (`AppSettings.RenameContentTypes`, 在补默认值之前); 两个名字都在时以新名字为准, 删掉旧的
 - 自定义命令、文字片段、同步任务有 `Id` (`AppSettings.EnsureIds`, 每次加载和保存前都跑): 热键按它引用命令 (`custom:<Id>`), 学到的排序也按它记 (`Knowledge.json` 有自己的 `Version`; `Knowledge.ConvertUids`)。有效的 Id 不改; 复制出来的条目去掉 Id (保存时生成新的)
 
 ## 修改清单
@@ -263,7 +264,7 @@ GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.
 
 
 ### 热键
-GitHub → Actions → **Hotkeys** 用 `Tests\Integration\HotkeyCheck.ahk` 在真实的 Windows 桌面上按运行自定义命令 (`custom:<Id>`) 的自定义热键。它启动一份 ALTRun 副本, 设两条用 `cmd.exe` 写标记文件的命令和三个热键: 一个运行没有 `{query}` 的命令 (标记文件必须写出来), 一个在检查自己的编辑框里选中文字时运行带 `{query}` 的命令 (标记文件里必须是这段文字, 剪贴板必须还是原来的内容), 一个指向不存在的命令 (什么都不运行, ALTRun 的日志里有说明)。每个试 3 次; 失败的那次打印 ALTRun 的日志。修改 `App.ahk`、`CustomCommandProvider.ahk`、`SelectionActions.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑 (会占用键盘半分钟左右): `HotkeyCheck.ahk <仓库副本> [次数]`。
+GitHub → Actions → **Hotkeys** 用 `Tests\Integration\HotkeyCheck.ahk` 在真实的 Windows 桌面上按运行自定义命令 (`custom:<Id>`) 的自定义热键。它启动一份 ALTRun 副本, 设两条用 `cmd.exe` 写标记文件的命令和三个热键: 一个运行没有 `{query}` 的命令 (标记文件必须写出来), 一个在检查自己的编辑框里选中文字时运行带 `{query}` 的命令 (标记文件里必须是这段文字, 剪贴板必须还是原来的内容), 一个指向不存在的命令 (什么都不运行, ALTRun 的日志里有说明)。每个试 3 次; 失败的那次打印 ALTRun 的日志。修改 `App.ahk`、`CustomCommandProvider.ahk`、`ScriptProvider.ahk`、`ContentTypes.ahk`、`SelectionActions.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑 (会占用键盘半分钟左右): `HotkeyCheck.ahk <仓库副本> [次数]`。
 ### 拖出文件
 GitHub → Actions → **File Drag** 用 `Tests\Integration\FileDragCheck.ahk` 在真实的 Windows 桌面上用鼠标拖出文件。它启动一份置顶了一个文件的 ALTRun 副本, 检查两种情况: 把这个文件 (空搜索框的第 1 行) 拖到资源管理器窗口上, 文件复制过去、原文件还在 (`FileDrag` 只提供复制和链接, 从不移动)、搜索窗口隐藏; 拖动中按 Esc, 什么都不复制, 窗口还在。改了 `Lib\FileDrag.ahk`、`SearchWindow.ahk` 或这个检查的 PR、main 上, 或手动运行。
 ### 首次启动

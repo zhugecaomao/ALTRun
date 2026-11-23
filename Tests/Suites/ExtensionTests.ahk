@@ -2098,12 +2098,12 @@ class ExtensionTests {
     ; in front before the panel opened (App.PreviousWindow, the window the selection came from), next to the selection itself
     static SelectionWindowArgs() {
         eq := (n, a, e) => TestRunner.Equal("SelectionWindowArgs." n, a, e)
-        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedTypes := AppSettings.Data.Has("ContentTypes") ? AppSettings.Data["ContentTypes"] : []
         savedCommands := AppSettings.Data["CustomCommands"]
-        AppSettings.Data["SelectionTypes"] := []
+        AppSettings.Data["ContentTypes"] := []
         AppSettings.Data["CustomCommands"] := [
-            Map("Title", "Info", "Type", "Command", "Target", "C:\Tools\info.exe", "Arguments", "{hwnd} {pid} {query}", "Keyword", "", "Selection", "Text"),
-            Map("Title", "Send", "Type", "File", "Target", "C:\Tools\send.exe", "Arguments", "--to {hwnd}", "Keyword", "", "Selection", "File")
+            Map("Title", "Info", "Type", "Command", "Target", "C:\Tools\info.exe", "Arguments", "{hwnd} {pid} {query}", "Keyword", "", "ContentTypes", "Text"),
+            Map("Title", "Send", "Type", "File", "Target", "C:\Tools\send.exe", "Arguments", "--to {hwnd}", "Keyword", "", "ContentTypes", "File")
         ]
         g := Gui("+ToolWindow", "ALTRun selection window test")
         g.Show("x-3000 y-3000 w120 h40 NoActivate")
@@ -2129,7 +2129,7 @@ class ExtensionTests {
         } finally {
             ActionCatalog.DefineProp("OpenFile", savedOpen)
             App.PreviousWindow := savedPrevious
-            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["ContentTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands
             try g.Destroy()
         }
@@ -2180,7 +2180,7 @@ class ExtensionTests {
         scripts := AppSettings.Feature("Scripts"), savedScripts := scripts["Enabled"]
         try {
             custom["Enabled"] := 1, scripts["Enabled"] := 0                  ; no scripts from the test PC's Scripts folder
-            AppSettings.Data["CustomCommands"] := [Map("Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Selection", "PO")]
+            AppSettings.Data["CustomCommands"] := [Map("Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "ContentTypes", "PO")]
             titles(info) {
                 list := ""
                 for row in SelectionActions.TrailActions(info)
@@ -2213,12 +2213,12 @@ class ExtensionTests {
         DirCreate(root "\notes.md")                                         ; a folder named like a file
         for name in ["a.md", "b.txt", "tool.exe", "c.log"]
             FileAppend("", root "\" name)
-        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedTypes := AppSettings.Data.Has("ContentTypes") ? AppSettings.Data["ContentTypes"] : []
         savedCommands := AppSettings.Data["CustomCommands"], custom := AppSettings.Feature("CustomCommands"), savedEnabled := custom["Enabled"]
         scripts := AppSettings.Feature("Scripts"), savedScripts := scripts["Enabled"]
         try {
             custom["Enabled"] := 1, scripts["Enabled"] := 0                  ; no scripts from the test PC's Scripts folder
-            AppSettings.Data["SelectionTypes"] := [
+            AppSettings.Data["ContentTypes"] := [
                 Map("Name", "Markdown", "Kind", "File", "Pattern", "md, markdown", "OpenCommand", "typora01"),
                 Map("Name", "Notes", "Kind", "File", "Pattern", "md txt", "OpenCommand", "code0001"),
                 Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$", "OpenCommand", "typora01"),   ; a Text type: ignored
@@ -2226,10 +2226,10 @@ class ExtensionTests {
                 Map("Name", "Programs", "Kind", "File", "Pattern", "exe", "OpenCommand", "typora01")   ; programs are never taken over
             ]
             AppSettings.Data["CustomCommands"] := [
-                Map("Id", "code0001", "Title", "Code", "Type", "File", "Target", "C:\Tools\Code.exe", "Arguments", "--reuse-window", "Selection", "Markdown, Notes"),
+                Map("Id", "code0001", "Title", "Code", "Type", "File", "Target", "C:\Tools\Code.exe", "Arguments", "--reuse-window", "ContentTypes", "Markdown, Notes"),
                 Map("Id", "typora01", "Title", "Typora", "Type", "File", "Target", "A_Temp\Sub\..\Typora\Typora.exe", "Arguments", ""),   ; no Selection: the open command counts anyway; a portable path
-                Map("Id", "web00001", "Title", "Web", "Type", "Url", "Target", "https://example.com/?q={query}", "Selection", "Logs"),
-                Map("Id", "other001", "Title", "Other", "Type", "File", "Target", "C:\Tools\Other.exe", "Arguments", "", "Selection", "PO"),
+                Map("Id", "web00001", "Title", "Web", "Type", "Url", "Target", "https://example.com/?q={query}", "ContentTypes", "Logs"),
+                Map("Id", "other001", "Title", "Other", "Type", "File", "Target", "C:\Tools\Other.exe", "Arguments", "", "ContentTypes", "PO"),
                 Map("Id", "budget01", "Title", "Budget", "Type", "File", "Target", "C:\Docs\Budget.xlsx", "Arguments", ""),   ; a document: not a program
                 Map("Id", "cmd00001", "Title", "Shell", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k")
             ]
@@ -2239,20 +2239,20 @@ class ExtensionTests {
                     text .= row.Title "|"
                 return text
             }
-            types := SelectionActions.UserTypes()
+            types := ContentTypes.UserTypes()
             eq("user types: the open command of File types only", types[1].OpenCommand "|" types[3].OpenCommand, "typora01|")
 
-            md := SelectionActions.Classify({Files: [root "\a.md"]})
-            eq("open command: the first type with one, set for it or not", SelectionActions.OpenCommand(md)["Title"], "Typora")
+            md := ContentTypes.Classify({Files: [root "\a.md"]})
+            eq("open command: the first type with one, set for it or not", ContentTypes.OpenCommand(md)["Title"], "Typora")
             eq("commands: the open command first", names(SelectionActions.CommandActions(md)), "Typora|Code|")
             eq("commands: the row knows its command", SelectionActions.CommandActions(md)[1].CommandId, "typora01")
-            txt := SelectionActions.Classify({Files: [root "\b.txt"]})
-            eq("open command: another type", SelectionActions.OpenCommand(txt)["Title"], "Code")
-            eq("open command: none for other files", SelectionActions.OpenCommand(SelectionActions.Classify({Files: [A_WinDir "\win.ini"]})), "")
-            eq("open command: a command that is gone", SelectionActions.OpenCommand({Kind: "file", Types: ["File", "Notes"], Path: root "\x.txt"}, , []), "")
-            eq("open command: not a Url command", SelectionActions.OpenCommand(SelectionActions.Classify({Files: [root "\c.log"]})), "")
-            eq("open command: not for programs", SelectionActions.OpenCommand(SelectionActions.Classify({Files: [root "\tool.exe"]})), "")
-            eq("open command: not for folders", SelectionActions.OpenCommand({Kind: "folder", Types: ["Folder", "Markdown"], Path: root "\notes.md"}), "")
+            txt := ContentTypes.Classify({Files: [root "\b.txt"]})
+            eq("open command: another type", ContentTypes.OpenCommand(txt)["Title"], "Code")
+            eq("open command: none for other files", ContentTypes.OpenCommand(ContentTypes.Classify({Files: [A_WinDir "\win.ini"]})), "")
+            eq("open command: a command that is gone", ContentTypes.OpenCommand({Kind: "file", Types: ["File", "Notes"], Path: root "\x.txt"}, , []), "")
+            eq("open command: not a Url command", ContentTypes.OpenCommand(ContentTypes.Classify({Files: [root "\c.log"]})), "")
+            eq("open command: not for programs", ContentTypes.OpenCommand(ContentTypes.Classify({Files: [root "\tool.exe"]})), "")
+            eq("open command: not for folders", ContentTypes.OpenCommand({Kind: "folder", Types: ["Folder", "Markdown"], Path: root "\notes.md"}), "")
 
             item := ResultItem("a.md", root, {Kind: "file", Arg: root "\a.md"})
             action := SelectionActions.OpenActionFor(item)
@@ -2286,17 +2286,17 @@ class ExtensionTests {
             eq("panel: the open command first, then Open, then the other commands", InStr(panel, "Typora|" I18n.T("Action.Open") "|Code|") = 1, true)
             panel := names(ResultActions.ListFor(ResultItem("b.txt", root, {Kind: "file", Arg: root "\b.txt"})))
             eq("panel: Code opens .txt", InStr(panel, "Code|" I18n.T("Action.Open") "|") = 1, true)
-            AppSettings.Data["CustomCommands"].InsertAt(1, Map("Id", "same0001", "Title", "Typora", "Type", "File", "Target", "C:\Tools\Copy.exe", "Selection", "Markdown"))
+            AppSettings.Data["CustomCommands"].InsertAt(1, Map("Id", "same0001", "Title", "Typora", "Type", "File", "Target", "C:\Tools\Copy.exe", "ContentTypes", "Markdown"))
             rows := ResultActions._TypeRows(item)
             eq("panel: the open command found by its Id, not its title", rows.Open "|" rows.Rows[1].CommandId, "1|typora01")
             AppSettings.Data["CustomCommands"].RemoveAt(1)
-            AppSettings.Data["SelectionTypes"][1].Delete("OpenCommand"), AppSettings.Data["SelectionTypes"][2].Delete("OpenCommand")
+            AppSettings.Data["ContentTypes"][1].Delete("OpenCommand"), AppSettings.Data["ContentTypes"][2].Delete("OpenCommand")
             panel := names(ResultActions.ListFor(item))
             eq("panel without an open command: Open (Enter) first, then the type's commands", InStr(panel, I18n.T("Action.Open") "|Code|" I18n.T("Action.OpenWith")) = 1, true)
             eq("panel without an open command: Open has Enter", ResultActions.ListFor(item)[1].Subtitle, "Enter")
             eq("Enter without an open command: as usual", SelectionActions.OpenActionFor(item), "")
-            AppSettings.Data["SelectionTypes"][1]["OpenCommand"] := "typora01"
-            AppSettings.Data["CustomCommands"].Push(Map("Id", "folder01", "Title", "Folder tool", "Type", "File", "Target", "C:\Tools\F.exe", "Selection", "Folder"))
+            AppSettings.Data["ContentTypes"][1]["OpenCommand"] := "typora01"
+            AppSettings.Data["CustomCommands"].Push(Map("Id", "folder01", "Title", "Folder tool", "Type", "File", "Target", "C:\Tools\F.exe", "ContentTypes", "Folder"))
             panel := names(ResultActions.ListFor(ResultItem("notes.md", root, {Kind: "folder", Arg: root "\notes.md"})))
             eq("panel: a folder's commands after Open", InStr(panel, I18n.T("Action.Open") "|Folder tool|") = 1, true)
             selected := ResultItem("a.md", root, {Kind: "file", Arg: root "\a.md", Provider: "Selection"})
@@ -2310,10 +2310,10 @@ class ExtensionTests {
             eq("editor: Windows, the type's commands, then the other programs (no Url)", choice.Key "|" labels
                 , "OpenCommand|:" I18n.T("SelType.OpenCommand.None") "|code0001:Code|typora01:Typora|other001:Other|cmd00001:Shell|folder01:Folder tool|")
             eq("editor: a new type gets every program", SelectionActions.TypeEditorFields().Get(4).Choices.Length, 6)
-            eq("program commands", SelectionActions.IsProgramCommand(Map("Id", "a", "Type", "File", "Target", "notepad")) "|"
-                . SelectionActions.IsProgramCommand(Map("Id", "a", "Type", "File", "Target", '"C:\My Tools\Run.ahk"')) "|"
-                . SelectionActions.IsProgramCommand(Map("Id", "a", "Type", "Folder", "Target", "C:\x")) "|"
-                . SelectionActions.IsProgramCommand(Map("Type", "File", "Target", "C:\x.exe")), "1|1|0|0")
+            eq("program commands", ContentTypes.IsProgramCommand(Map("Id", "a", "Type", "File", "Target", "notepad")) "|"
+                . ContentTypes.IsProgramCommand(Map("Id", "a", "Type", "File", "Target", '"C:\My Tools\Run.ahk"')) "|"
+                . ContentTypes.IsProgramCommand(Map("Id", "a", "Type", "Folder", "Target", "C:\x")) "|"
+                . ContentTypes.IsProgramCommand(Map("Type", "File", "Target", "C:\x.exe")), "1|1|0|0")
             eq("editor: empty is not saved", choice.OmitEmpty, true)
             eq("editor: a Text type warns", choice.Check.Call("typora01", Map("Kind", "Text")) != "", true)
             eq("editor: a File type is fine", choice.Check.Call("typora01", Map("Kind", "File")), "")
@@ -2322,7 +2322,7 @@ class ExtensionTests {
             eq("command editor: how it is run", InStr(CustomCommandProvider.TriggerText(AppSettings.Data["CustomCommands"][2], []), I18n.T("Cmd.Triggers.Open", "Markdown")) > 0, true)
             eq("command editor: not for another command", InStr(CustomCommandProvider.TriggerText(AppSettings.Data["CustomCommands"][1], []), I18n.T("Cmd.Triggers.Open", "Markdown")), 0)
         } finally {
-            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["ContentTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands, custom["Enabled"] := savedEnabled, scripts["Enabled"] := savedScripts
             try DirDelete(root, true)
         }
@@ -2331,9 +2331,9 @@ class ExtensionTests {
     static SelectionCommands() {
         eq := (n, a, e) => TestRunner.Equal("SelectionCommands." n, a, e)
         ok := (n, c) => TestRunner.True("SelectionCommands." n, c)
-        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedTypes := AppSettings.Data.Has("ContentTypes") ? AppSettings.Data["ContentTypes"] : []
         savedCommands := AppSettings.Data["CustomCommands"]
-        AppSettings.Data["SelectionTypes"] := [
+        AppSettings.Data["ContentTypes"] := [
             Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"),
             Map("Name", "Ticket", "Kind", "Text", "Pattern", "i)^[a-z]+-\d+$"),
             Map("Name", "Bad", "Kind", "Text", "Pattern", "(unclosed"),       ; not a valid regular expression: skipped, nothing breaks
@@ -2341,7 +2341,7 @@ class ExtensionTests {
             Map("Name", "text", "Kind", "Text", "Pattern", "x"),              ; named like a built-in type: left out
             Map("Name", "Empty", "Kind", "Text", "Pattern", " ")              ; no pattern: left out
         ]
-        cmd := (title, type, target, args, selection) => Map("Title", title, "Type", type, "Target", target, "Arguments", args, "Keyword", "", "Selection", selection)
+        cmd := (title, type, target, args, selection) => Map("Title", title, "Type", type, "Target", target, "Arguments", args, "Keyword", "", "ContentTypes", selection)
         AppSettings.Data["CustomCommands"] := [
             cmd("ERP", "Url", "https://erp.example.com/o?id={query}", "", "po"),
             cmd("WMS", "Url", "https://wms.example.com/{query}", "", ["PO", "Ticket"]),
@@ -2354,7 +2354,7 @@ class ExtensionTests {
         ]
         typesOf(selection) {
             text := ""
-            for name in SelectionActions.Classify(selection).Types
+            for name in ContentTypes.Classify(selection).Types
                 text .= name "|"
             return RTrim(text, "|")
         }
@@ -2373,7 +2373,7 @@ class ExtensionTests {
             return RTrim(text, "|")
         }
         try {
-            eq("user types", SelectionActions.UserTypes().Length, 4)
+            eq("user types", ContentTypes.UserTypes().Length, 4)
             eq("text + PO (trimmed)", typesOf({Text: " PO12345678`r`n"}), "Text|PO")
             eq("plain text", typesOf({Text: "hello"}), "Text")
             eq("ticket, any case", typesOf({Text: "abc-12"}), "Text|Ticket")
@@ -2431,7 +2431,7 @@ class ExtensionTests {
 
             ; #615: PowerShell started directly takes its special characters where the selection is only text to it
             ps := (args, target := "powershell.exe") => cmd("PS", "Command", target, args, "Text")
-            action := (command, text) => SelectionActions._CommandAction(command, SelectionActions.Classify({Text: text}))
+            action := (command, text) => SelectionActions._CommandAction(command, ContentTypes.Classify({Text: text}))
             psQuoted := ps("-NoProfile -Command `"Get-ChildItem D:\Videos -Filter '*{query}*'`"")
             psFile := ps("-NoProfile -ExecutionPolicy Bypass -File C:\Tools\find.ps1 `"{query}`"")
             for text in ["(測試)", "{測試}", "a; b & c | d $e @f <g> ^h %i% !j"] {
@@ -2478,8 +2478,8 @@ class ExtensionTests {
             eq("cmd in between: strict", IsObject(action(ps("/c powershell -Command `"Write-Output '{query}'`"", "cmd.exe"), "(x)")), 0)
             eq("cmd named in PowerShell's command line: strict", IsObject(action(ps("-Command `"cmd /c echo '{query}'`""), "(x)")), 0)
             eq("text ending in \ before a command-line quote: strict", IsObject(action(ps("-Command `"Write-Output 'x{query}`"'`""), "a(b)\")), 0)
-            eq("several files can't be single-quoted", SelectionActions.SafeArgument(SelectionActions.Classify({Files: ["C:\a (1).pdf", "C:\b.pdf"]}), psQuoted), false)
-            safe := (target, args, text) => SelectionActions.SafeArgument(SelectionActions.Classify({Text: text}), cmd("T", "Command", target, args, "Text"))
+            eq("several files can't be single-quoted", SelectionActions.SafeArgument(ContentTypes.Classify({Files: ["C:\a (1).pdf", "C:\b.pdf"]}), psQuoted), false)
+            safe := (target, args, text) => SelectionActions.SafeArgument(ContentTypes.Classify({Text: text}), cmd("T", "Command", target, args, "Text"))
             comSpec := EnvGet("ComSpec")
             if (comSpec = "")                                               ; Wine has no ComSpec; Windows always does
                 EnvSet("ComSpec", A_WinDir "\System32\cmd.exe")
@@ -2497,7 +2497,7 @@ class ExtensionTests {
             eq("cmd through wt allows plain text", safe("wt.exe", "cmd /k ping {query}", "10.0.0.1"), true)
             eq("not a shell: & allowed", safe("C:\Tools\grep.exe", "-n {query}", "a & b"), true)
             urlCommand := cmd("Q", "Url", "https://q.example.com/?q={query}", "", "Text")
-            eq("url: a double quote is encoded", SelectionActions._CommandAction(urlCommand, SelectionActions.Classify({Text: 'say "hi"'})).Arg
+            eq("url: a double quote is encoded", SelectionActions._CommandAction(urlCommand, ContentTypes.Classify({Text: 'say "hi"'})).Arg
                 , "https://q.example.com/?q=" Url.Encode('say "hi"'))
 
             ; custom commands turned off: none
@@ -2506,7 +2506,7 @@ class ExtensionTests {
             eq("custom commands off", leads({Text: "PO12345678"}), "")
             features["Enabled"] := enabled
         } finally {
-            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["ContentTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands
         }
         ; the test box and the type editor in Preferences (a list being edited, not the saved settings)
@@ -2517,31 +2517,31 @@ class ExtensionTests {
                 text .= each "|"
             return RTrim(text, "|")
         }
-        eq("sample: text", joined(SelectionActions.SampleTypes(" PO12345678 ", editing)), "Text|PO")
-        eq("sample: a path not on the disk", joined(SelectionActions.SampleTypes("Z:\nowhere\plan.pdf", editing)), "File|PDF")
-        eq("sample: a folder path", joined(SelectionActions.SampleTypes("Z:\nowhere\", editing)), "Folder")
-        eq("sample: url", joined(SelectionActions.SampleTypes("https://example.com", editing)), "Url")
-        eq("sample: empty", SelectionActions.SampleTypes("  ", editing).Length, 0)
-        eq("pattern: valid", SelectionActions.PatternProblem("Text", "^PO\d{8}$"), "")
-        ok("pattern: invalid", InStr(SelectionActions.PatternProblem("Text", "(unclosed"), "Not a valid regular expression") = 1)
-        eq("pattern: extensions aren't a regex", SelectionActions.PatternProblem("File", "(pdf"), "")
+        eq("sample: text", joined(ContentTypes.SampleTypes(" PO12345678 ", editing)), "Text|PO")
+        eq("sample: a path not on the disk", joined(ContentTypes.SampleTypes("Z:\nowhere\plan.pdf", editing)), "File|PDF")
+        eq("sample: a folder path", joined(ContentTypes.SampleTypes("Z:\nowhere\", editing)), "Folder")
+        eq("sample: url", joined(ContentTypes.SampleTypes("https://example.com", editing)), "Url")
+        eq("sample: empty", ContentTypes.SampleTypes("  ", editing).Length, 0)
+        eq("pattern: valid", ContentTypes.PatternProblem("Text", "^PO\d{8}$"), "")
+        ok("pattern: invalid", InStr(ContentTypes.PatternProblem("Text", "(unclosed"), "Not a valid regular expression") = 1)
+        eq("pattern: extensions aren't a regex", ContentTypes.PatternProblem("File", "(pdf"), "")
         fields := SelectionActions.TypeEditorFields()
         eq("editor fields", fields[1].Key "|" fields[2].Key "|" fields[3].Key, "Name|Kind|Pattern")
         ok("editor: built-in name warns", InStr(fields[1].Check.Call("url", Map()), "built-in") > 0)
         eq("editor: own name is fine", fields[1].Check.Call("PO", Map()), "")
         ok("editor: bad regex warns", fields[3].Check.Call("(x", Map("Kind", "Text")) != "")
-        commands := [Map("Title", "A", "Selection", "PO"), Map("Title", "B"), Map("Title", "C", "Selection", ["pdf", "po"])]
+        commands := [Map("Title", "A", "ContentTypes", "PO"), Map("Title", "B"), Map("Title", "C", "ContentTypes", ["pdf", "po"])]
         eq("command titles", joined(SelectionActions.CommandTitles(["Text", "PO"], commands, [])), "A|C")
         eq("kind text", SelectionActions.KindText("File") "|" SelectionActions.KindText("Text"), "File (extensions)|Text (regex)")
-        defaultTypes := AppSettings.Defaults()["SelectionTypes"]
+        defaultTypes := AppSettings.Defaults()["ContentTypes"]
         eq("defaults: typical types", PrefsPages.SelectionTypeKeys(defaultTypes[1])[1] "|" defaultTypes.Length, "Name: Email|5")
         allValid := true
         for each in defaultTypes
-            allValid := allValid && SelectionActions.PatternProblem(each["Kind"], each["Pattern"]) = "" && !SelectionActions.IsBuiltInType(each["Name"])
+            allValid := allValid && ContentTypes.PatternProblem(each["Kind"], each["Pattern"]) = "" && !ContentTypes.IsBuiltInType(each["Name"])
         eq("defaults: valid patterns", allValid, true)
-        eq("defaults: types", joined(SelectionActions.SampleTypes("192.168.1.10", defaultTypes)) "/" joined(SelectionActions.SampleTypes("me@example.com", defaultTypes))
-            "/" joined(SelectionActions.SampleTypes("1.3521, 103.8198", defaultTypes)) "/" joined(SelectionActions.SampleTypes("C:\a\b.LOG", defaultTypes))
-            "/" joined(SelectionActions.SampleTypes("C:\a\b.webp", defaultTypes)), "Text|IP/Text|Email/Text|Coordinates/File|Text files/File|Images")
+        eq("defaults: types", joined(ContentTypes.SampleTypes("192.168.1.10", defaultTypes)) "/" joined(ContentTypes.SampleTypes("me@example.com", defaultTypes))
+            "/" joined(ContentTypes.SampleTypes("1.3521, 103.8198", defaultTypes)) "/" joined(ContentTypes.SampleTypes("C:\a\b.LOG", defaultTypes))
+            "/" joined(ContentTypes.SampleTypes("C:\a\b.webp", defaultTypes)), "Text|IP/Text|Email/Text|Coordinates/File|Text files/File|Images")
         ; every example type has an example command that works with it (#434: the examples can be used as they are)
         defaultCommands := AppSettings._DefaultCommands()
         for each in defaultTypes {
@@ -2549,10 +2549,10 @@ class ExtensionTests {
             eq("defaults: a command for " each["Name"], titles.Length, 1)
         }
         sample(text, files := "") {                                         ; the first row of the panel with the default types and commands
-            savedTypes2 := AppSettings.Data["SelectionTypes"], savedCommands2 := AppSettings.Data["CustomCommands"]
-            AppSettings.Data["SelectionTypes"] := defaultTypes, AppSettings.Data["CustomCommands"] := defaultCommands
+            savedTypes2 := AppSettings.Data["ContentTypes"], savedCommands2 := AppSettings.Data["CustomCommands"]
+            AppSettings.Data["ContentTypes"] := defaultTypes, AppSettings.Data["CustomCommands"] := defaultCommands
             try lead := SelectionActions.ItemFor(IsObject(files) ? {Files: files} : {Text: text}).LeadActions
-            finally AppSettings.Data["SelectionTypes"] := savedTypes2, AppSettings.Data["CustomCommands"] := savedCommands2
+            finally AppSettings.Data["ContentTypes"] := savedTypes2, AppSettings.Data["CustomCommands"] := savedCommands2
             return lead.Length ? lead[1].Title "|" lead[1].Arg "|" lead[1].Arguments : ""
         }
         eq("example: email", sample("me@example.com"), "Send Email|mailto:me@example.com|")
@@ -2562,14 +2562,14 @@ class ExtensionTests {
         eq("example: image", sample("", ["C:\Pics\a.png"]), 'Paint|mspaint.exe|"C:\Pics\a.png"')
         ; "Add Examples" on the Selection page brings the example commands along
         mine := [Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping -t {query}", "Keyword", "")   ; mine, not set for a type
-               , Map("Title", "notepad", "Type", "File", "Target", "C:\Tools\np++.exe", "Arguments", "", "Keyword", "", "Selection", "Code")]   ; mine, already set
+               , Map("Title", "notepad", "Type", "File", "Target", "C:\Tools\np++.exe", "Arguments", "", "Keyword", "", "ContentTypes", "Code")]   ; mine, already set
         result := SelectionActions.AddExampleCommands(mine, defaultCommands)
         eq("examples: added / linked", result.Added "|" result.Linked, "3|1")
-        eq("examples: mine linked, kept", mine[1]["Selection"] "|" mine[1]["Arguments"], "IP|/k ping -t {query}")
-        eq("examples: set ones untouched", mine[2]["Selection"], "Code")
+        eq("examples: mine linked, kept", mine[1]["ContentTypes"] "|" mine[1]["Arguments"], "IP|/k ping -t {query}")
+        eq("examples: set ones untouched", mine[2]["ContentTypes"], "Code")
         eq("examples: again none", SelectionActions.AddExampleCommands(mine, defaultCommands).Added, 0)
         eq("mailto keeps @", CustomCommandProvider.UrlTerm("mailto:{query}", "a.b@c.com") "|" CustomCommandProvider.UrlTerm("https://x/?q={query}", "a@b"), "a.b@c.com|a%40b")
-        eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
+        eq("kept on reset", AppSettings.ResetData(Map("ContentTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["ContentTypes"].Length, 1)
     }
 
     ; #615 on Windows: PowerShell (5.1, and 7 when installed) really reads a selection with its special characters as text: single-quoted
@@ -2595,12 +2595,12 @@ class ExtensionTests {
             for program in programs {
                 SplitPath(program, &name)
                 commands := Map(
-                    "-Command", Map("Title", "Q", "Type", "Command", "Target", program, "Selection", "Text"
+                    "-Command", Map("Title", "Q", "Type", "Command", "Target", program, "ContentTypes", "Text"
                         , "Arguments", "-NoProfile -NonInteractive -Command `"[IO.File]::WriteAllText('" out "', '{query}')`""),
-                    "-File", Map("Title", "F", "Type", "Command", "Target", program, "Selection", "Text"
+                    "-File", Map("Title", "F", "Type", "Command", "Target", program, "ContentTypes", "Text"
                         , "Arguments", "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"" root "\echo.ps1`" `"{query}`""))
                 for way, command in commands {
-                    item := SelectionActions._CommandAction(command, SelectionActions.Classify({Text: payload}))
+                    item := SelectionActions._CommandAction(command, ContentTypes.Classify({Text: payload}))
                     if !IsObject(item) {
                         eq(name " " way ": shown", "refused", "shown")
                         continue

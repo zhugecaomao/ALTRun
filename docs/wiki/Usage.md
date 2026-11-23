@@ -165,15 +165,15 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
    The built-in types need no definition: `Text` (any text), `Url`, `File`, `Folder`, `Files` (several files or folders).
    In `ALTRun.json` (`F4`) the types are kept as:
    ```jsonc
-   "SelectionTypes": [
+   "ContentTypes": [
      { "Name": "PO",  "Kind": "Text", "Pattern": "^PO\\d{8}$" },
      { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "OpenCommand": "k3x9a2mq" }
    ]
    ```
-2. In a custom command's edit dialog, choose the types it is for in **Content types**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"Selection"`:
+2. In a custom command's edit dialog, choose the types it is for in **Content types**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"ContentTypes"`:
    ```jsonc
-   { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
-   { "Title": "Open in PDF tool", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }
+   { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "ContentTypes": "PO" },
+   { "Title": "Open in PDF tool", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "ContentTypes": "PDF" }
    ```
    `{query}` becomes the selected text or path (encoded in a `Url`); several files become `"a" "b"` (each quoted). A `File` / `Command` without `{query}` gets the selection added as its last argument, in quotes.
 

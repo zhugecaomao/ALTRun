@@ -19,14 +19,14 @@
 ;===============================================================================
 
 class ResultActions {
-    ; The commands and scripts for a search result's content types (SelectionActions.ForResult) -> {Rows, Open}: Open = the first row
+    ; The commands and scripts for a search result's content types (ContentTypes.ForResult) -> {Rows, Open}: Open = the first row
     ; is its file type's open command (found by the command's Id)
     static _TypeRows(item) {
         result := {Rows: [], Open: false}
-        if !IsObject(info := SelectionActions.ForResult(item))
+        if !IsObject(info := ContentTypes.ForResult(item))
             return result
         result.Rows := SelectionActions.CommandActions(info)
-        result.Open := result.Rows.Length && IsObject(command := SelectionActions.OpenCommand(info))
+        result.Open := result.Rows.Length && IsObject(command := ContentTypes.OpenCommand(info))
             && result.Rows[1].HasOwnProp("CommandId") && result.Rows[1].CommandId = command["Id"]
         return result
     }

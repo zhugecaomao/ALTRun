@@ -43,7 +43,7 @@ The menu provides the same commands as the buttons below the list and its **More
 ## Structure
 ```jsonc
 {
-  "SchemaVersion": 7,
+  "SchemaVersion": 8,
   "General":    { ... },          // general
   "Window":     { ... },          // the search window (Preferences → Search Window)
   "Keyboard":   { ... },          // Caps Lock, input method, Space / Tab keys (Preferences → Keyboard)
@@ -52,7 +52,7 @@ The menu provides the same commands as the buttons below the list and its **More
   "Extensions": { ... },          // extensions
   "Hotkeys":        [ ... ],      // custom hotkeys
   "CustomCommands": [ ... ],      // custom commands
-  "SelectionTypes": [ ... ],      // content types of a selection, see Usage → Actions on selected content
+  "ContentTypes":   [ ... ],      // content types, see Usage → Actions on selected content
   "Snippets":       [ ... ],      // snippets
   "SyncTasks":      [ ... ],      // folder sync tasks, see Folder sync
   "DataLocation":   "%OneDrive%\\ALTRun"   // optional: use this data folder instead
@@ -62,7 +62,7 @@ The menu provides the same commands as the buttons below the list and its **More
 `DataLocation` only works in the file at the default location (`Data\ALTRun.json`, or `%APPDATA%\ALTRun\Data\ALTRun.json`): when it's there, ALTRun uses the settings and data in that folder, and the file at the default location only points the way. Normally you set it in Preferences → Advanced → Settings and data → Change Location... rather than by hand; environment variables work (`%COMPUTERNAME%` gives each PC its own folder; a variable a PC doesn't have makes that PC use the default folder), and relative paths start from the program folder.
 
 ## General
-Preferences → General (`SelectionHotkey` is on the "Selection" page).
+Preferences → General (`SelectionHotkey` is on the "Content Types" page).
 
 ![Preferences → General](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-general.png)
 
@@ -278,9 +278,9 @@ See [Extensions](Extensions).
 "CustomCommands": [
   { "Id": "k3x9a2mq", "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
   { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" },
-  { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "Selection": "PO" }
+  { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "ContentTypes": "PO" }
 ],
-"SelectionTypes": [
+"ContentTypes": [
   { "Name": "PO", "Kind": "Text", "Pattern": "^PO\\d{8}$" },
   { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "OpenCommand": "k3x9a2mq" }
 ],

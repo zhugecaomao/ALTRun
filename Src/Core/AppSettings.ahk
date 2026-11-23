@@ -6,9 +6,9 @@
 ; the Data\ folder, each in a file of its own: deleting an index only makes it rebuild, the settings aren't affected.
 ; 3.x to v2026.09.26 kept ALTRun.json in the program folder; at start-up it is moved to Data\ (MoveLegacyFile).
 ;
-; File structure (SchemaVersion 7; the groups follow the Preferences pages):
+; File structure (SchemaVersion 8; the groups follow the Preferences pages):
 ; {
-;   "SchemaVersion" : 7,
+;   "SchemaVersion" : 8,
 ;   "General"       : { show hotkey / start with Windows / tray icon / language / file manager ... },
 ;   "Window"        : { hide on focus loss / keep the last search / tips / status bar / placeholder / recent items (Preferences → Search Window) },
 ;   "Keyboard"      : { Caps Lock / English input / Space and Tab keys / search history (Preferences → Keyboard) },
@@ -17,11 +17,10 @@
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...} },
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys. Action: a built-in command Id (Search, ToggleWindow,
 ;                     a system command), "custom:<Id>" = the user's custom command with that Id or "script:<file name>" = a script (SearchText, optional: what Search types into the search box)
-;   "CustomCommands": [ { "Id", "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
-;   "SelectionTypes": [ { "Name", "Kind", "Pattern", "DefaultCommand" } ],   the user's content types of a selection (Kind Text: regular expression /
-;                    File: extensions; DefaultCommand, optional, File types: the Id of the custom command Enter opens such files with), see SelectionActions
+;   "CustomCommands": [ { "Id", "Title", "Type", "Target", "Arguments", "Keyword", "ContentTypes" } ],   ContentTypes, optional: the content types the command is shown for
+;   "ContentTypes"  : [ { "Name", "Kind", "Pattern", "OpenCommand" } ],   the user's content types (Kind Text: regular expression / File: extensions;
+;                    OpenCommand, optional, File types: the Id of the custom command Enter opens such files with), see ContentTypes
 ;   "Snippets"      : [ { "Id", "Name", "Keyword", "Text", "AutoExpand" } ],
-;   "DelayedStart"  : no longer read (up to 2026.11.16.23: Preferences → Delayed Start, now the script library's Delayed Start.ahk); left as it is
 ;   "SyncTasks"     : [ { "Id", "Name", "Source", "Destination", "Mode", ... } ],    folder sync tasks run with robocopy (see RoboSync)
 ;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   optional, only in the file at the default location: use this data folder instead (see ResolveDataDir)
 ; }
@@ -40,7 +39,7 @@
 ;===============================================================================
 
 class AppSettings {
-    static CurrentVersion := 7
+    static CurrentVersion := 8
     static Portable := Path.IsWritable(A_ScriptDir)                          ; the program folder is writable: data goes in the program folder (portable)
     static UserDir := A_AppData "\ALTRun"                                   ; used when the program folder isn't writable (e.g. installed in Program Files)
     static DataLocation := ""                                                ; "DataLocation" as written (may have %environment variables%); "" = the default folder
@@ -122,7 +121,7 @@ class AppSettings {
     }
 
     ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
-    static KeptOnReset := [["CustomCommands"], ["SelectionTypes"], ["Snippets"], ["Hotkeys"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
+    static KeptOnReset := [["CustomCommands"], ["ContentTypes"], ["Snippets"], ["Hotkeys"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
         , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["DataLocation"]]
 
     ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
@@ -192,6 +191,8 @@ class AppSettings {
             Logger.Warn("AppSettings: DataLocation " AppSettings.DataLocation " has %" AppSettings.DataLocationMissing "%, which this PC doesn't have; the default data folder is used")
 
         if (data.Count && AppSettings.MoveGroups(data))                    ; before the defaults fill the new places in
+            changed := true
+        if (data.Count && AppSettings.RenameContentTypes(data))
             changed := true
         if (data.Count && AppSettings._KeepPrevious(data))
             changed := true
@@ -466,6 +467,28 @@ class AppSettings {
             changed := true
         }
         return changed
+    }
+
+    ; "SelectionTypes" -> "ContentTypes", and each custom command's "Selection" -> "ContentTypes" (settings version 8). Like MoveGroups it runs
+    ; at every load: an older ALTRun reading this file fills "SelectionTypes" in with its defaults (and the user may edit them there), so
+    ; when the new name is there too it wins and the old one is removed. Returns whether anything changed
+    static RenameContentTypes(data) {
+        changed := AppSettings._RenameKey(data, "SelectionTypes", "ContentTypes")
+        if (data.Has("CustomCommands") && data["CustomCommands"] is Array)
+            for command in data["CustomCommands"]
+                if (command is Map && AppSettings._RenameKey(command, "Selection", "ContentTypes"))
+                    changed := true
+        return changed
+    }
+
+    ; map[oldKey] -> map[newKey] unless newKey is there already; oldKey is removed either way. Returns whether anything changed
+    static _RenameKey(map, oldKey, newKey) {
+        if !map.Has(oldKey)
+            return false
+        if !map.Has(newKey)
+            map[newKey] := map[oldKey]
+        map.Delete(oldKey)
+        return true
     }
 
     ; The lists whose items have an Id (see the file structure above)
@@ -838,7 +861,7 @@ class AppSettings {
                 Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],
             "CustomCommands", AppSettings._DefaultCommands(),
-            "SelectionTypes", AppSettings._DefaultSelectionTypes(),         ; the user's content types of a selection (see SelectionActions)
+            "ContentTypes", AppSettings._DefaultContentTypes(),             ; the user's content types (see ContentTypes)
             "Snippets", AppSettings._DefaultSnippets(),
             "SyncTasks", []                                                 ; folder sync tasks run with robocopy (see RoboSync)
         )
@@ -869,15 +892,15 @@ class AppSettings {
         {
             command := Map("Title", row[1], "Type", row[2], "Target", row[3], "Arguments", row[4], "Keyword", row[5])
             if (row.Length >= 6)
-                command["Selection"] := row[6]                              ; shown first for a selection of these content types
+                command["ContentTypes"] := row[6]                          ; shown first for a selection of these content types
             commands.Push(command)
         }
         return commands
     }
 
-    ; Typical content types of a selection (see SelectionActions): text by a regular expression, files by extension.
+    ; Typical content types (see ContentTypes): text by a regular expression, files by extension.
     ; New installs get them; "Add Examples" on Preferences → Selection adds the missing ones
-    static _DefaultSelectionTypes() {
+    static _DefaultContentTypes() {
         types := []
         for row in [
             ["Email"      , "Text", "^[\w.+-]+@[\w-]+(\.[\w-]+)+$"],                ; the default "Send Email" is for it

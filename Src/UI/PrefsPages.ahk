@@ -520,7 +520,7 @@ class PrefsPages {
                 text .= (text = "" ? "" : ", ") title
             return text
         }
-        list := PrefsForm.List("SelectionTypes", 190
+        list := PrefsForm.List("ContentTypes", 190
             , [["Prefs.Col.Name", "Name", 95], ["Prefs.Col.Kind", "Kind", 105, (kind) => SelectionActions.KindText(kind)]
              , ["Prefs.Col.Pattern", "Pattern", 125], ["SelType.OpenCommand", "OpenCommand", 100, (id) => SelectionActions.CommandTitle(id, commandList())]
              , ["Prefs.Col.UsedBy", "Name", 135, usedBy]]
@@ -543,7 +543,7 @@ class PrefsPages {
         PrefsForm._current.Controls.Push(result)
         PrefsForm.Below(4, result)
         update(*) {
-            types := SelectionActions.SampleTypes(sample.Value, list.Items)
+            types := ContentTypes.SampleTypes(sample.Value, list.Items)
             result.Value := types.Length ? PrefsPages.SelectionTestText(types, commandList()) : ""
         }
         choose(*) {

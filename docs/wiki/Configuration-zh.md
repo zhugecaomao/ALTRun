@@ -43,7 +43,7 @@
 ## 结构
 ```jsonc
 {
-  "SchemaVersion": 7,
+  "SchemaVersion": 8,
   "General":    { ... },          // 通用
   "Window":     { ... },          // 搜索窗口 (偏好设置 → 搜索窗口)
   "Keyboard":   { ... },          // CapsLock、输入法、空格 / Tab 键 (偏好设置 → 键盘)
@@ -52,7 +52,7 @@
   "Extensions": { ... },          // 扩展功能
   "Hotkeys":        [ ... ],      // 自定义热键
   "CustomCommands": [ ... ],      // 自定义命令
-  "SelectionTypes": [ ... ],      // 选中内容的类型, 见 使用 → 选中内容的操作
+  "ContentTypes":   [ ... ],      // 内容类型, 见 使用 → 选中内容的操作
   "Snippets":       [ ... ],      // 文字片段
   "SyncTasks":      [ ... ],      // 文件夹同步任务, 见 文件夹同步
   "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹
@@ -62,7 +62,7 @@
 `DataLocation` 只在默认位置 (`Data\ALTRun.json`, 或 `%APPDATA%\ALTRun\Data\ALTRun.json`) 的文件里起作用: 有这一项时, ALTRun 改用那个文件夹里的设置和数据, 默认位置的文件只用来指路。一般在 偏好设置 → 高级 → 数据 → 更改位置 里设置, 不用手动写; 可以用环境变量 (加上 `%COMPUTERNAME%` 每台电脑各用一个文件夹; 某台电脑没有这个变量时, 那台电脑用默认位置), 相对路径从程序目录算起。
 
 ## General 通用
-偏好设置 → 通用 (`SelectionHotkey` 在 "选中内容" 页)。
+偏好设置 → 通用 (`SelectionHotkey` 在 "内容类型" 页)。
 
 ![偏好设置 → 通用](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-general.png)
 
@@ -278,9 +278,9 @@
 "CustomCommands": [
   { "Id": "k3x9a2mq", "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
   { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" },
-  { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "Selection": "PO" }
+  { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "ContentTypes": "PO" }
 ],
-"SelectionTypes": [
+"ContentTypes": [
   { "Name": "PO", "Kind": "Text", "Pattern": "^PO\\d{8}$" },
   { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx", "OpenCommand": "k3x9a2mq" }
 ],

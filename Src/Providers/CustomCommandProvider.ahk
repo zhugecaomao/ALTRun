@@ -281,9 +281,9 @@ class CustomCommandProvider {
               , CustomCommandProvider._SelectionField(hint("Selection"))]
     }
 
-    ; "Selection types": the content types the command comes first for (Ctrl+Alt+\), picked from a menu; saved only when set
+    ; "Content types" (ContentTypes): the content types the command comes first for (Ctrl+Alt+\), picked from a menu; saved only when set
     static _SelectionField(hintText) {
-        field := ItemEditor.Field("Selection", "Prefs.Col.Selection", "tags", false, () => SelectionActions.TypeNamesForEditor(), hintText)
+        field := ItemEditor.Field("ContentTypes", "Prefs.Col.Selection", "tags", false, () => SelectionActions.TypeNamesForEditor(), hintText)
         field.ButtonLabel := I18n.T("Cmd.Field.Selection.Button")
         field.OmitEmpty := true
         field.Check := (value, *) => SelectionActions.UnknownTypesWarning(value)
@@ -357,7 +357,7 @@ class CustomCommandProvider {
 
     ; A keyword ("ping 10.0.0.1"), content types (the selection panel) or a hotkey (the selection) fills in {query}
     static _CanTakeQuery(command, hotkeys) {
-        if (SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "").Length || SelectionActions.CommandTypes(command).Length)
+        if (SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "").Length || ContentTypes.CommandTypes(command).Length)
             return true
         for entry in CustomCommandProvider.HotkeysFor(command, hotkeys)
             if (entry.Has("Key") && LTrim(entry["Key"], "~") != "")
@@ -550,12 +550,12 @@ class CustomCommandProvider {
             keywords .= (keywords = "" ? "" : ", ") each
         if (keywords != "")
             parts.Push(I18n.T("Cmd.Triggers.Keyword", keywords))
-        types := ItemEditor.TagsText(command.Has("Selection") ? command["Selection"] : "")
+        types := ItemEditor.TagsText(command.Has("ContentTypes") ? command["ContentTypes"] : "")
         if (types != "")
             parts.Push(I18n.T("Cmd.Triggers.Selection", types))
         opens := ""                                                         ; the File types whose "Open (Enter)" is this command (being edited in Preferences)
         if (command.Has("Id") && command["Id"] != "")
-            for userType in SelectionActions.UserTypes(SelectionActions._EditingTypes())
+            for userType in ContentTypes.UserTypes(SelectionActions._EditingTypes())
                 if (userType.OpenCommand = command["Id"])
                     opens .= (opens = "" ? "" : ", ") userType.Name
         if (opens != "")
@@ -620,10 +620,10 @@ class CustomCommandProvider {
             return App.Notify(I18n.T("Hotkey.CommandMissing"), 3000)
         }
         takesQuery := CustomCommandProvider.TakesQuery(command), item := ""
-        if (takesQuery || SelectionActions.CommandTypes(command).Length) {
+        if (takesQuery || ContentTypes.CommandTypes(command).Length) {
             selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture()
             if IsObject(selection) {
-                item := SelectionActions._CommandAction(command, SelectionActions.Classify(selection))
+                item := SelectionActions._CommandAction(command, ContentTypes.Classify(selection))
                 if !IsObject(item)
                     return App.Notify(I18n.T("Hotkey.SelectionRefused", command["Title"]), 3000)
             } else if (takesQuery && CustomCommandProvider.QueryDefault(command)) {

@@ -23,6 +23,7 @@
 | `@altrun.mode filter` | 实时结果: 输入 "关键字 文字" 时一边输入一边运行脚本, 把它的输出显示成结果 (见下面的 [实时结果](#实时结果))。需要关键字; 只支持 `.ahk`、`.py`、`.ps1` |
 | `@altrun.filter altrun` | 和 `filter` 一起用: 输入关键字时只运行一次脚本, 之后输入时由 ALTRun 过滤它的输出 (见下面) |
 | `@altrun.selection Text, PDF` | [内容类型](Usage-zh#选中内容的操作) (内置的或自己的, 用逗号分开): 选中这些类型的内容按 `Ctrl+Alt+\` 时, 操作面板里出现这个脚本 (排在自定义命令后面), 选中的内容作为第一个参数传给它 (多个文件: 每个一个参数) |
+| `@altrun.types Text, PDF` | `@altrun.selection` 的另一个写法 (设置里叫 `ContentTypes`); 两行都写时, 两行的类型都算 |
 
 例子 (`Scripts\Hash.ps1`):
 ```powershell

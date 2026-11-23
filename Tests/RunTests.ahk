@@ -102,6 +102,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\SyncJobs.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\ContentTypes.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SelectionActions.ahk
 
 #Include %A_ScriptDir%\TestUtil.ahk
