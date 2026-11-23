@@ -9,7 +9,7 @@
 ;   title click   a click on the dialog's title bar, as the mouse does it
 ; Then the folder panel's ☆ menu: opened with a click on the star, or with Alt+↓ in the panel's search box, and closed with Esc:
 ; the dialog must be in front again within 2 s (so typing goes on in the dialog); a failure prints the windows in front before
-; and after Esc.
+; and after Esc. Its last item, "Edit favorites", must open Preferences in front.
 ; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later; opened with Ctrl+T as a user does):
 ; switching to the dialog must jump to Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G, sent at
 ; send level 1 like a person's keys); the tab is closed again (Ctrl+W) after each round.
@@ -52,6 +52,8 @@ try {
     for how in ["click", "alt+down"]
         Loop Rounds
             MenuRound(how, A_Index)
+    Loop Rounds
+        MenuEditRound(A_Index)
     for program in ["7-Zip", "WinRAR"]
         ExtractRound(program)
 } catch as setupError {
@@ -367,37 +369,9 @@ ExtractRound(program) {
 ; The panel's ☆ menu (how: "click" on the star, or "alt+down" in the search box), closed with Esc: the dialog is in front again
 MenuRound(how, n) {
     name := "menu " how " + esc"
-    WinActivate(Dialog)
-    if !WinWaitActive(Dialog, , 3)
-        return Fail(name, n, "the dialog didn't come to the front")
-    panel := 0
-    start := A_TickCount
-    while (!panel && A_TickCount - start < 3000)
-        panel := WinExist("ALTRun Quick Switch ahk_pid " AppPid), Sleep(50)
-    if !panel
-        return Fail(name, n, "the folder panel isn't shown")
-    star := "", panelW := 0
-    WinGetClientPos(&px, &py, &panelW, , panel)
-    for ctl in WinGetControls(panel)                                        ; the star: the small picture (the other Static is the full-width line)
-        if (InStr(ctl, "Static") = 1) {
-            ControlGetPos(&cx, &cy, &cw, &ch, ctl, panel)
-            if (cw < panelW // 4)
-                star := {X: px + cx + cw // 2, Y: py + cy + ch // 2}
-        }
-    if !IsObject(star)
-        return Fail(name, n, "no star button in the panel")
-    CoordMode("Mouse", "Screen")
-    if (how = "click")
-        Click(star.X, star.Y)
-    else {
-        ControlGetPos(&ex, &ey, &ew, &eh, "Edit1", panel)                   ; click into the panel's search box, then Alt+↓
-        Click(px + ex + ew // 2, py + ey + eh // 2)
-        Sleep(200)
-        Send("!{Down}")
-    }
-    popup := WinWait("ahk_class #32768", , 3)
+    popup := OpenStarMenu(name, n, how)
     if !popup
-        return Fail(name, n, "the menu didn't open")
+        return
     before := DllCall("GetForegroundWindow", "Ptr")                         ; with the menu open: ALTRun's hidden window, the menu's owner
     Send("{Esc}")
     start := A_TickCount
@@ -419,6 +393,63 @@ MenuRound(how, n) {
             . "`n     menu closed: " (closed < 0 ? "no" : "after " closed " ms") "`n     in front after Esc:" trace)
     Say("PASS " name " " n ": the dialog is in front again after " (A_TickCount - start) " ms")
     Sleep(300)                                                              ; a click on the star right after the menu closed doesn't open it again
+}
+
+; The ☆ menu of the dialog's folder panel, opened with a click on the star or with Alt+↓ in the panel's search box: the menu's
+; window, or 0 (the round failed)
+OpenStarMenu(name, n, how := "click") {
+    WinActivate(Dialog)
+    if !WinWaitActive(Dialog, , 3)
+        return (Fail(name, n, "the dialog didn't come to the front"), 0)
+    panel := 0
+    start := A_TickCount
+    while (!panel && A_TickCount - start < 3000)
+        panel := WinExist("ALTRun Quick Switch ahk_pid " AppPid), Sleep(50)
+    if !panel
+        return (Fail(name, n, "the folder panel isn't shown"), 0)
+    star := "", panelW := 0
+    WinGetClientPos(&px, &py, &panelW, , panel)
+    for ctl in WinGetControls(panel)                                        ; the star: the small Static furthest right (left: the search icon; the full-width one is the line)
+        if (InStr(ctl, "Static") = 1) {
+            ControlGetPos(&cx, &cy, &cw, &ch, ctl, panel)
+            if (cw < panelW // 4 && !(IsObject(star) && star.Left > cx))
+                star := {X: px + cx + cw // 2, Y: py + cy + ch // 2, Left: cx}
+        }
+    if !IsObject(star)
+        return (Fail(name, n, "no star button in the panel"), 0)
+    CoordMode("Mouse", "Screen")
+    if (how = "click")
+        Click(star.X, star.Y)
+    else {
+        ControlGetPos(&ex, &ey, &ew, &eh, "Edit1", panel)                   ; click into the panel's search box, then Alt+↓
+        Click(px + ex + ew // 2, py + ey + eh // 2)
+        Sleep(200)
+        Send("!{Down}")
+    }
+    popup := WinWait("ahk_class #32768", , 3)
+    if !popup
+        Fail(name, n, "the menu didn't open")
+    return popup
+}
+
+; The ☆ menu's last item, "Edit favorites" (chosen with ↑ Enter): Preferences must open, in front. Its WM_COMMAND used to arrive
+; after the menu object was freed, so the item did nothing
+MenuEditRound(n) {
+    name := "menu edit favorites"
+    if !OpenStarMenu(name, n)
+        return
+    Send("{Up}{Enter}")
+    prefs := WinWait("ALTRun Preferences ahk_pid " AppPid, , 5)
+    if !prefs
+        return Fail(name, n, "Preferences didn't open; in front: " Describe(DllCall("GetForegroundWindow", "Ptr")))
+    inFront := WinWaitActive(prefs, , 3)
+    front := DllCall("GetForegroundWindow", "Ptr")
+    WinClose(prefs)                                                         ; nothing was changed: it closes without asking
+    if !WinWaitClose(prefs, , 3)
+        try WinKill(prefs)
+    if !inFront
+        return Fail(name, n, "Preferences opened, but the window in front is " Describe(front))
+    Say("PASS " name " " n ": Preferences opened in front")
 }
 
 ; A window for the failure messages: its handle, class, process and whose it is (ALTRun's hidden main window, this check, ...)

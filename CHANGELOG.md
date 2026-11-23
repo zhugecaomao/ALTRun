@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.23.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框面板: 搜索框左边加了放大镜图标 (Windows 的图标字体, 跟随主题颜色; 点它也进入搜索框)
+
+### 修复
+- 对话框面板: ☆ 菜单的 "编辑收藏..." 没有打开偏好设置. 原因是菜单关闭后才处理选中的项, 那时菜单已经释放, 选中的项就丢了; 现在关菜单后马上执行选中的项 (☆ 菜单的其它项也一样)
+
 ## [2026.11.23.4]
 
 测试版。
@@ -1600,7 +1612,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...HEAD
+[2026.11.23.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...2026.11.23.5
 [2026.11.23.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...2026.11.23.4
 [2026.11.23.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...2026.11.23.3
 [2026.11.23.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...2026.11.23.2

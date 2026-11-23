@@ -1706,6 +1706,11 @@ class ExtensionTests {
                 eq("submenu: the first subfolders by name", text(sub, 2) "|" text(sub, 3), QuickSwitchPanel.FolderName(expected[1].Subfolders[1]) "|" QuickSwitchPanel.FolderName(expected[1].Subfolders[2]))
                 eq("submenu: more, disabled", text(sub, 4) "|" ((DllCall("GetMenuState", "Ptr", sub, "UInt", 4, "UInt", 0x400, "UInt") & 3) != 0)
                     , I18n.T("QuickSwitch.MoreFolders", expected[1].More) "|1")
+                ; the ☆ menu runs the chosen item itself (TPM_RETURNCMD, see ShowMenuBelow): every item that does something has its ID's action
+                itemId := (hm, pos) => DllCall("GetMenuItemID", "Ptr", hm, "Int", pos, "UInt")
+                eq("menu actions: the favorite and 2 subfolders, the other favorite, Add, Edit", built.Actions.Count, 6)
+                eq("menu actions: Edit, Add, a subfolder", built.Actions.Has(itemId(h, 4)) "|" built.Actions.Has(itemId(h, 3)) "|" built.Actions.Has(itemId(sub, 3)), "1|1|1")
+                eq("menu actions: not the disabled more", built.Actions.Has(itemId(sub, 4)), false)
                 built := QuickSwitchFavorites.BuildFavoritesMenu(menuRoot)
                 eq("menu: no Add when the dialog's folder is a favorite", count(built.Handle), 4)
                 QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])
@@ -1720,6 +1725,17 @@ class ExtensionTests {
             QuickSwitchPanel._panelStar.GetPos(&starX, , &starW)
             QuickSwitchPanel._panelSearch.GetPos(&searchX, , &searchW)
             eq("panel: star right of the search box", searchX + searchW < starX && starX + starW <= QuickSwitchPanel._panelWidth, true)
+            ink := QuickSwitchPanel.InkMiddle(QuickSwitchPanel._panelStar)         ; the star's ink: inside its picture
+            eq("panel: the star's ink middle inside its picture", ink > 0 && ink < QuickSwitchPanel.StarSize(), true)
+            if (NavIcons.FontName() != "") {                                    ; the magnifier left of the search box (only with an icon font)
+                QuickSwitchPanel._panelIcon.GetPos(&iconX, , &iconW)
+                eq("panel: search icon left of the search box", QuickSwitchPanel._panelIcon.Text "|" (iconX >= 0 && iconX + iconW < searchX), Chr(0xE721) "|1")
+                ; on the text's middle (TextMiddle): a few pixels from the box's top, not below the box
+                QuickSwitchPanel._panelIcon.GetPos(, &iconY), QuickSwitchPanel._panelSearch.GetPos(, &boxY, , &boxH)
+                eq("panel: search icon level with the box", Abs(iconY - boxY) <= boxH // 2, true)
+                eq("panel: glyph middles inside their lines", QuickSwitchPanel.GlyphMiddle(QuickSwitchPanel._panelSearch, Ord("H")) > 0 && QuickSwitchPanel.GlyphMiddle(QuickSwitchPanel._panelIcon, 0xE721) > 0, true)
+            } else
+                eq("panel: no icon font, no search icon", QuickSwitchPanel._panelIcon "|" searchX, "|" Win.Scale(10))
             QuickSwitchFavorites._ToggleFavorite("C:\Fav Test\", true)
             favoriteRows := 0
             for entry in QuickSwitchPanel._panelFolders
@@ -1728,7 +1744,7 @@ class ExtensionTests {
             QuickSwitchFavorites._ToggleFavorite("C:\Fav Test", false)
             eq("panel: removed", QuickSwitchFavorites.IsFavorite("C:\Fav Test"), 0)
             QuickSwitchPanel.HidePanel(), Hud.Hide()
-            eq("panel: star released", QuickSwitchPanel._panelStar, "")
+            eq("panel: star and icon released", QuickSwitchPanel._panelStar "|" QuickSwitchPanel._panelIcon, "|")
         } finally {
             QuickSwitch.Options := savedOptions, AppSettings.File := savedFile
             try FileDelete(A_Temp "\ALTRun-favorites-test.json")
