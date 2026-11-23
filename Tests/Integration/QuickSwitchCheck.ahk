@@ -345,12 +345,13 @@ ExtractRound(program) {
             Sleep(20)
         if (box() != target)
             return Fail(name " ctrl+g", 1, "the destination box has [" box() "], not [" target "]", logSize)
-        Sleep(1000)
+        filledMs := A_TickCount - start
+        Sleep(1000)                                                         ; extracting would close the window or write a.txt
         if !WinExist(window)
             return Fail(name " ctrl+g", 1, "the extract window closed: Ctrl+G must not start extracting", logSize)
         if FileExist(target "a.txt")
             return Fail(name " ctrl+g", 1, "a.txt was extracted into Folder A", logSize)
-        Say("PASS " name " ctrl+g: filled the destination in " (A_TickCount - start) " ms, still open, nothing extracted")
+        Say("PASS " name " ctrl+g: filled the destination in " filledMs " ms, still open, nothing extracted")
     } finally {
         for pid in pids
             try ProcessClose(pid)
