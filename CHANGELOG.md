@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.10]
+
+测试版。
+
+Test build.
+
+### 新增
+- 计算器: 结果和计算历史的行在动作面板 (`→`) 里多一行 "复制算式和结果", 复制成 `12*(3+4) = 84`, 方便写笔记和报告; 只有带运算符的算式才有 (#583)
+
 ## [2026.11.23.9]
 
 测试版。
@@ -1649,7 +1658,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...HEAD
+[2026.11.23.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...2026.11.23.10
 [2026.11.23.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...2026.11.23.9
 [2026.11.23.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...2026.11.23.8
 [2026.11.23.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...2026.11.23.7
