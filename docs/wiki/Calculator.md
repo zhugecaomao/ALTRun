@@ -2,7 +2,7 @@
 
 # Calculator
 
-Type an expression directly: `12*(3+4)`, `=2^10`; `Enter` copies the result. Supports `+ - * /`, powers `^` (or `**`) and parentheses; results keep at most two decimals (`10/3` shows `3.33`; numbers below 0.005 keep one digit after the first significant digit, for example `0.004`).
+Type an expression directly: `12*(3+4)`, `=2^10`; `Enter` copies the result. Supports `+ - * /` (or `×` `÷`; a letter `x` isn't a times sign, so `1920x1080` stays a file search), powers `^` (or `**`) and parentheses; results keep at most two decimals (`10/3` shows `3.33`; numbers below 0.005 keep one digit after the first significant digit, for example `0.004`).
 
 ![Calculator: the result shows as you type, unit conversions too](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-calculator.png)
 

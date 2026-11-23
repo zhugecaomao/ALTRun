@@ -925,7 +925,7 @@ class SelectionActions {
             preview := SubStr(preview, 1, 80) "..."
         actions := []
         ; an expression: give the result directly
-        expression := StrReplace(Trim(text), ",")
+        expression := StrReplace(StrReplace(StrReplace(Trim(text), ","), Chr(0xD7), "*"), Chr(0xF7), "/")    ; × ÷
         if (Calc.Looks(expression) && IsNumber(value := Calc.Eval(expression))) {
             result := CalculatorProvider.Format(value)
             actions.Push(ResultItem("= " result, I18n.T("Action.CopyResult"), {Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), OnRun: (*) => ActionCatalog.CopyText(result)}))

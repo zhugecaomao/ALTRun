@@ -282,6 +282,12 @@ class CoreTests {
         eq("unclosed", title("(1+2"), "(none)")
         eq("extra )", title("(1+2))"), "(none)")
         eq("two dots", title("1..2+1"), "(none)")
+        eq("× without =", title("3×4"), "12")
+        eq("÷ without =", title("8÷2"), "4")
+        eq("× with parens", title("2×(3+4)"), "14")
+        eq("letter x is not times", title("1920x1080"), "(none)")
+        TestRunner.True("Calculator.looks ×", Calc.Looks("3×4") && Calc.Looks("8 ÷ 2") && !Calc.Looks("1920x1080"))
+        eq("selected 2×(3+4)÷7", SelectionActions._TextItem("2×(3+4)÷7").Actions[1].Title, "= 2")
         TestRunner.True("Calculator.eval full precision", Abs(Calc.Eval("10/3") - 3.3333333333333335) < 1e-12)
         options := AppSettings.Feature("Calculator"), saved := Map()
         for key in ["StructuralCalc", "RebarCover", "MaxBarSpacing", "BarSizes", "BarPrefix"]
