@@ -17,7 +17,7 @@
 ;
 ; Settings (ALTRun.json -> Extensions.QuickSwitch):
 ;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / Favorites (folder paths, environment variables allowed) / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / AutoSwitchOnOpen /
-;   StandardDialogs (ahk_class #32770) / BrowseDialogs / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   StandardDialogs (ahk_class #32770) / BrowseDialogs / ExtractDialogs (WinRAR / 7-Zip) / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
 ; This file: start-up, the hotkeys and watching which window is in front (Windows events). The other parts, each its own class:
@@ -61,6 +61,8 @@ class QuickSwitch {
             GroupAdd("ALTRunDialogs", "ahk_class #32770")
         for window in options["DialogWindows"]
             GroupAdd("ALTRunDialogs", window)
+        for exe in ["7zG.exe", "7zFM.exe", "WinRAR.exe"]                    ; their extract windows (FileDialogs.ExtractPathBox)
+            GroupAdd("ALTRunExtractDialogs", "ahk_class #32770 ahk_exe " exe)
         QuickSwitch._hasExclude := false
         for window in options["ExcludeWindows"]
             GroupAdd("ALTRunDialogExclude", window), QuickSwitch._hasExclude := true
@@ -213,7 +215,8 @@ class QuickSwitch {
         if !(hwnd := hwnd || DllCall("GetForegroundWindow", "Ptr"))
             return false
         browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
-        if !(QuickSwitch._Matches("ahk_group ALTRunDialogs", hwnd) || browse && QuickSwitch._Matches("ahk_class #32770", hwnd))
+        if !(QuickSwitch._Matches("ahk_group ALTRunDialogs", hwnd) || browse && QuickSwitch._Matches("ahk_class #32770", hwnd)
+            || QuickSwitch._ExtractEnabled() && QuickSwitch._Matches("ahk_group ALTRunExtractDialogs", hwnd))
             return false
         return !(QuickSwitch._hasExclude && QuickSwitch._Matches("ahk_group ALTRunDialogExclude", hwnd))
     }
@@ -301,7 +304,7 @@ class QuickSwitch {
                 Logger.Debug(Format("QuickSwitch: a dialog opened (0x{:X}), jump to the file manager used last", active))
         }
         if (isDialog && ((QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager) || QuickSwitch._openJump = active)
-            && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
+            && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active) && !FileDialogs.ExtractPathBox(active))   ; extract windows: only by hand (the program suggests a folder named after the archive)
             QuickSwitch._AutoSwitch(active, switched ? previous : 0)
 
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitchPanel._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
@@ -381,6 +384,8 @@ class QuickSwitch {
     }
 
     static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"
+
+    static _ExtractEnabled() => QuickSwitch.Options.Has("ExtractDialogs") && QuickSwitch.Options["ExtractDialogs"]
 
     static _PanelEnabled() => QuickSwitch.Options.Has("ShowPanel") && QuickSwitch.Options["ShowPanel"]
 

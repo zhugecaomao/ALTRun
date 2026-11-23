@@ -813,8 +813,9 @@ class AppSettings {
                     "StandardDialogs"  , 1,                                 ; the standard Open / Save dialogs (ahk_class #32770)
                     "DialogWindows"    , [],                                ; dialogs programs draw themselves, e.g. "ahk_class Qt5QWindowIcon" (WPS)
                     "BrowseDialogs"    , 1,                                 ; also the old "Browse for Folder" dialog (folder tree only, SHBrowseForFolder)
+                    "ExtractDialogs"   , 1,                                 ; also the extract windows of WinRAR / 7-Zip: the folder goes into the path box, no Enter (Enter would extract), no automatic jump
                     "AdminDialogs"     , 0,                                 ; also dialogs of programs running as administrator: the helper with administrator rights jumps them (AdminHelper)
-                    "ExcludeWindows"   , ["ahk_class SysListView32", "ahk_exe Explorer.exe", "ahk_exe 7zG.exe", "ahk_exe TOTALCMD64.exe"],   ; 7-Zip's extract and Total Commander's dialogs are not Open / Save dialogs
+                    "ExcludeWindows"   , ["ahk_class SysListView32", "ahk_exe Explorer.exe", "ahk_exe TOTALCMD64.exe"],   ; Total Commander's dialogs are not Open / Save dialogs
                     "AutoSwitchExclude", []                                 ; no automatic jump in these dialogs (the hotkey still works)
                 ),
                 "AutoDate", Map(

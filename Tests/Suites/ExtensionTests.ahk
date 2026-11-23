@@ -1213,6 +1213,29 @@ class ExtensionTests {
         eq("browse dialog gone: not selected", FileDialogs.SelectInBrowseDialog("C:\Windows", 0x7FFFFFF0), false)   ; logged, no hint without a process
         eq("browse dialog is not a file dialog", FileDialogs.LooksLikeFileDialog("#32770", newStyle) FileDialogs.LooksLikeFileDialog("#32770", classic), "00")
         eq("browse dialogs on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["BrowseDialogs"], 1)
+        ; WinRAR / 7-Zip extract windows (#609): told apart by control IDs (trees read on Windows CI); only the destination box takes the folder
+        c(hwnd, cls, id, parent) => {Hwnd: hwnd, Class: cls, Id: id, Parent: parent}
+        sevenExtract := [c(11, "Static", 3401, 1), c(12, "ComboBox", 100, 1), c(13, "Edit", 1001, 12), c(14, "Button", 101, 1), c(15, "Edit", 130, 1)
+            , c(16, "ComboBox", 102, 1), c(17, "ComboBox", 103, 1), c(18, "Edit", 120, 1), c(19, "Button", 1, 1), c(20, "Button", 2, 1)]
+        sevenAdd := [c(11, "Static", 130, 1), c(12, "ComboBox", 100, 1), c(13, "Edit", 1001, 12), c(14, "Button", 101, 1), c(15, "ComboBox", 104, 1)
+            , c(16, "ComboBox", 102, 1), c(17, "ComboBox", 103, 1), c(19, "Button", 1, 1)]
+        sevenCopy := [c(11, "Static", 100, 1), c(12, "ComboBox", 101, 1), c(13, "Edit", 1001, 12), c(14, "Button", 102, 1), c(15, "Static", 103, 1), c(16, "Button", 1, 1)]
+        rarExtract := [c(10, "#32770", 0, 1), c(11, "Static", 115, 10), c(12, "ComboBox", 101, 10), c(13, "Edit", 1001, 12), c(14, "SysTreeView32", 104, 10)
+            , c(15, "Button", 102, 10), c(16, "Button", 1, 1), c(17, "Button", 2, 1), c(18, "SysTabControl32", 12320, 1)]
+        rarMain := [c(11, "ReBarWindow32", 15, 1), c(12, "ComboBoxEx32", 16, 11), c(13, "ComboBox", 16, 12), c(14, "Edit", 16, 13), c(15, "SysListView32", 11, 1)]
+        eq("extract: 7-Zip", FileDialogs.ExtractBoxIn("7zG.exe", 1, sevenExtract) " " FileDialogs.ExtractBoxIn("7zFM.exe", 1, sevenExtract), "12 12")
+        eq("extract: 7-Zip Add to Archive is not one", FileDialogs.ExtractBoxIn("7zG.exe", 1, sevenAdd), 0)
+        eq("extract: 7-Zip File Manager Copy, not in 7zG", FileDialogs.ExtractBoxIn("7zFM.exe", 1, sevenCopy) " " FileDialogs.ExtractBoxIn("7zG.exe", 1, sevenCopy), "12 0")
+        eq("extract: WinRAR's General page", FileDialogs.ExtractBoxIn("WinRAR.exe", 1, rarExtract), 12)
+        eq("extract: WinRAR's main window is not one", FileDialogs.ExtractBoxIn("WinRAR.exe", 1, rarMain), 0)
+        eq("extract: other programs", FileDialogs.ExtractBoxIn("Other.exe", 1, sevenExtract) " " FileDialogs.ExtractBoxIn("7zG.exe", 1, rarExtract), "0 0")
+        eq("extract windows are not file or browse dialogs", FileDialogs.LooksLikeFileDialog("#32770", ["Static1", "ComboBox1", "Edit1", "Button1", "SysTreeView321", "SysTabControl321"])
+            FileDialogs.LooksLikeBrowseDialog("#32770", ["Static1", "ComboBox1", "Edit1", "SysTreeView321"], 104), "00")
+        defaults := AppSettings.Defaults()["Extensions"]["QuickSwitch"]
+        excluded := 0
+        for window in defaults["ExcludeWindows"]
+            excluded += (window = "ahk_exe 7zG.exe")
+        eq("extract windows on by default, 7-Zip no longer excluded", defaults["ExtractDialogs"] " " excluded, "1 0")
         ; How the folder goes in: the file name box when there is one; Alt+D (address bar) only in system dialogs;
         ; dialogs that programs draw themselves get the path typed into the focused box, no Alt+D
         eq("jump: file name box", FileDialogs.JumpMethod("#32770", true) " " FileDialogs.JumpMethod("TMyOpenDialog", true), "edit edit")

@@ -166,7 +166,7 @@ class CoreTests {
             , "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD,ahk_class TSTDTREEDLG,ahk_class TCOMBOINPUT")
         eq("4->5 rename windows = new default", TextTools.JoinList(v5["Extensions"]["AutoDate"]["RenameWindows"], ","), TextTools.JoinList(defaults["Extensions"]["AutoDate"]["RenameWindows"], ","))
         eq("4->5 append windows = new default", TextTools.JoinList(v5["Extensions"]["AutoDate"]["AppendWindows"], ","), TextTools.JoinList(defaults["Extensions"]["AutoDate"]["AppendWindows"], ","))
-        eq("4->5 exclude windows = new default", TextTools.JoinList(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","), TextTools.JoinList(defaults["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","))
+        eq("4->5 exclude windows: 7-Zip and TC added (7-Zip left the defaults in 2026.11.23.1, #609)", TextTools.JoinList(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","), "ahk_class SysListView32,ahk_exe Explorer.exe,ahk_exe 7zG.exe,ahk_exe TOTALCMD64.exe")
         eq("4->5 old F1 hotkey removed, others kept", v5["Hotkeys"].Length "|" v5["Hotkeys"][1]["Key"], "1|~MButton")
         sizes := v5["Features"]["Calculator"]["BarSizes"]
         eq("4->5 bar sizes as numbers", (sizes[1] is Integer) "|" sizes[1] "|" sizes[3] "|" (sizes[3] is Integer) "|" sizes[4] "|" sizes[5], "1|13|20|1|25|abc")

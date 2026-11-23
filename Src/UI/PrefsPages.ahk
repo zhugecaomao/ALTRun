@@ -942,6 +942,7 @@ class PrefsPages {
         PrefsForm.Section("Prefs.Section.QSDialogs")
         PrefsForm.Check(base "StandardDialogs", "Prefs.QSStandard", , , "Prefs.Group.DialogWindows")            ; ahk_class #32770
         PrefsForm.Check(base "BrowseDialogs", "Prefs.QSBrowse")            ; "Browse for Folder": folder tree only (FileDialogs.LooksLikeBrowseDialog)
+        PrefsForm.Check(base "ExtractDialogs", "Prefs.QSExtract")          ; WinRAR / 7-Zip extract windows: the path box only, no Enter (FileDialogs.ExtractPathBox)
         PreferencesWindow._ShieldAfter(PrefsForm.Check(base "AdminDialogs", "Prefs.QSAdmin"))   ; programs running as administrator (AdminHelper); turning it on / off may ask for UAC
         PrefsForm.LinesButton(base "DialogWindows", "Prefs.QSOtherDialogs")
         PrefsForm.LinesButton(base "ExcludeWindows", "Prefs.QSExclude")

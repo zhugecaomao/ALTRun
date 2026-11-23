@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- Quick Switch 支持 WinRAR 和 7-Zip 的解压窗口 (WinRAR "解压路径和选项", 7-Zip "解压", 7-Zip 文件管理器的 "复制" / "移动"): `Ctrl+G` 或文件夹面板只把文件夹填进目标路径框, 不按回车、不点确定 (那样会直接开始解压), 由你检查其它选项后自己点确定; 这些窗口不会自动跳转。偏好设置 → Quick Switch → 生效的窗口 → "WinRAR / 7-Zip 解压窗口" (`ExtractDialogs`, 默认打开)。新安装的默认 "不生效的窗口" 去掉了 `ahk_exe 7zG.exe`; 老用户的设置里还有这一行, 7-Zip 的解压窗口要等下一次设置升级自动去掉 (或自己先删掉) (#609)
+
 ## [2026.11.23]
 
 ### Summary
@@ -1561,7 +1570,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...HEAD
+[2026.11.23.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...2026.11.23.1
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
