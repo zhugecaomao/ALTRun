@@ -366,8 +366,9 @@ class ActionCatalog {
             App.FocusPreviousWindow()
         Win.WaitModifiersUp()
         typed := keep ? mode = "Type" : ActionCatalog.TypesText(text, mode)
+        paced := ActionCatalog.NeedsPacedKeys()
         if (typed && !keep) {
-            SendInput("{Text}" text)
+            ActionCatalog._SendText(text, paced)
             return true
         }
         ClipboardData.Borrow(delay + 1000)
@@ -377,7 +378,10 @@ class ActionCatalog {
             A_Clipboard := text
             if !ClipWait(1)
                 return false
-            SendInput(typed ? "{Text}" text : "^v")
+            if typed
+                ActionCatalog._SendText(text, paced)
+            else
+                ActionCatalog._SendPaste(paced)
             if keep {                                                       ; Keep: the text stays on the clipboard
                 restore := false
                 return true
@@ -388,6 +392,31 @@ class ActionCatalog {
                 A_Clipboard := savedClipboard
         }
         return true
+    }
+
+    ; Windows 11's Notepad (its RichEditD2DPT text box) reads keys later than they arrive: with a whole batch sent at once (SendInput)
+    ; Ctrl is already up when it handles the V (only "v" appears) and every typed character comes out as the last one (#572).
+    ; There keys go one by one with a short pause (SendEvent with a key delay); everywhere else as one batch, which is faster
+    static PacedClasses := "^RichEditD2DPT"
+    static NeedsPacedKeys() {
+        className := ""
+        try className := ControlGetClassNN(ControlGetFocus("A"))
+        return ActionCatalog.IsPacedClass(className)
+    }
+    static IsPacedClass(className) => className != "" && RegExMatch(className, ActionCatalog.PacedClasses) > 0
+
+    static _SendText(text, paced) {
+        if !paced
+            return SendInput("{Text}" text)
+        SetKeyDelay(10, 10)
+        SendEvent("{Text}" text)
+    }
+
+    static _SendPaste(paced) {
+        if !paced
+            return SendInput("^v")
+        SetKeyDelay(30, 30)
+        SendEvent("^v")
     }
 
     ; Paste mode (Features.Snippets.PasteMode) -> whether this text is typed:
