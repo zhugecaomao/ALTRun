@@ -8,7 +8,7 @@ The folder panel is the visual way to use Quick Switch. It is enabled by default
 
 ## Contents and controls
 
-- Lists the current and opposite panels of each Total Commander window, the current tab (and the other side) of each Directory Opus window, open File Explorer windows and recently used folders. Your [favorite folders](#favorite-folders) are in the star menu at the top right.
+- Lists the current and opposite panels of each Total Commander window, the current tab (and the other side) of each Directory Opus window, the active pane (and, in split view, the other pane) of each [Arke](File-Managers#arke) window, open File Explorer windows and recently used folders. Your [favorite folders](#favorite-folders) are in the star menu at the top right.
 - The search box filters the list first, then searches matching folder and file names with Everything (or ALTRun's built-in file index); folders are listed before files.
 - Selecting a file jumps to its containing folder; it does not open or save the file.
 - Without Everything, the built-in index covers only the folders listed in Preferences → File Search (by default the Desktop, Documents and Downloads). When nothing is found, the panel shows a row naming them; press `Enter` (or click it) to open that page and add the folders you search.

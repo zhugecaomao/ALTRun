@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.7]
+
+测试版。
+
+Test build.
+
+### 新增
+- 支持 Arke 文件管理器 (0.8.0 及以上, 通过它的接口读写, 不经过剪贴板): 对话框里 `Ctrl+G`, 自动跳转和对话框打开时跳转都能跳到 Arke 当前窗格的文件夹; 对话框面板列出每个 Arke 窗口的当前窗格, 分屏时还有另一个窗格; "在此处打开终端" 和动作面板的 "复制 / 移动到 ... 当前的文件夹" 也认 Arke. 文件管理器设成 `arke.exe` 并勾选 "在新标签页中打开文件夹" 时, 文件夹在最近用过的 Arke 窗口里开新标签页打开, "在文件管理器中显示" 还会选中文件. 偏好设置的说明和 Wiki 新页面 "文件管理器" 写了各文件管理器支持什么 (#564)
+
 ## [2026.11.23.6]
 
 测试版。
@@ -1622,7 +1631,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...HEAD
+[2026.11.23.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...2026.11.23.7
 [2026.11.23.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...2026.11.23.6
 [2026.11.23.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...2026.11.23.5
 [2026.11.23.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...2026.11.23.4

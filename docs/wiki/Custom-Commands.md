@@ -53,7 +53,7 @@ Each field in the edit dialog has a line of gray help text below it.
 
 Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `D:\Demo\Projects\P1001 - Riverside Park` and the title `Tower A, B, C`, typing `riverside` or `1001` finds it too. At the same match quality, a title match ranks first.
 
-Folders open in Preferences → General → File manager (Explorer by default; Total Commander and others work too); "Open folders in a new tab" there opens them in a new tab of an Explorer window already open (Windows 11 22H2 or later) or of Total Commander.
+Folders open in Preferences → General → File manager (Explorer by default; Total Commander, Directory Opus, Arke and others work too, see [File managers](File-Managers)); "Open folders in a new tab" there opens them in a new tab of an Explorer window already open (Windows 11 22H2 or later), of Total Commander or of Arke.
 
 ## Commands with an argument ({query})
 Put `{query}` in the target or arguments and give the command a keyword; typing "keyword text" replaces `{query}` with the text (URL-encoded in web addresses). The rules are the same as for [web search](Web-Search#adding-and-editing) URLs, so a command and a search engine written the same way behave the same:

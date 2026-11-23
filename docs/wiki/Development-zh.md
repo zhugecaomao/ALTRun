@@ -17,7 +17,7 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             单元测试, 退�
 ALTRun.ahk          入口: #Include 所有模块, 调用 App.Start()
 Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目用
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
-                    Everything IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
+                    Everything IPC, Arke IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
                     TaskScheduler, TaskbarProgress, Sqlite: 通过 Windows 自带的 winsqlite3.dll 只读查询)
 Src\Core\           App (启动、单实例、退出), ErrorHandler (未捕获的错误), I18n (界面文字),
                     AppSettings + SchemaMigration (设置和版本升级),
@@ -65,6 +65,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 - `ResultItem` 统一结果数据; `FuzzyMatcher` 计算匹配分数; `Knowledge` 调整学习排序; `ActionCatalog` 执行打开、复制、运行等操作。
 - `PreferencesWindow` 在设置副本上编辑, 保存后由程序重新载入, 避免控件直接修改运行中的设置对象。
 - `FileSearchProvider` (`recent 报告`) 和 `QuickSwitch` (最近的文件夹) 通过 `Lib\WindowsRecent.ahk` 读 Windows 的 "最近使用的项目"。
+- `FileManagers` (Extensions) 读 Total Commander、Directory Opus、Arke 和资源管理器当前的文件夹。Arke 的接口客户端是 `Lib\Arke.ahk`, 放在 Core 下面, 因为 `ActionCatalog.OpenFolder` / `Reveal` (Core) 也要请 Arke 开新标签页, 和资源管理器用 `Lib\ExplorerTabs.ahk` 一样; 单元测试用 `Tests\FakeArke.ahk` (带 Arke 窗口类名的小窗口) 模拟 Arke 回复。
 - `ApplicationProvider` 与 `FileIndex` 共用 `Lib\FolderWatcher.ahk` 监视索引目录; 索引重建在后台进行, 新索引完成前继续使用旧索引。
 
 一次典型的生命周期是: 启动并加载设置 → 初始化 Provider 和窗口 → 接收搜索输入 → 解析查询并收集结果 → 排序和显示 → 执行选中项的操作。设置变更会保存后重新载入; 退出时停止文件夹监视和后台任务, 并完成待保存的缓存处理。

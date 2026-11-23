@@ -17,7 +17,7 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             unit tests; exit co
 ALTRun.ahk          Entry point: #Includes every module and calls App.Start()
 Lib\                Shared libraries with nothing ALTRun-specific, usable in other projects as is
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
-                    Everything IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
+                    Everything IPC, Arke IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
                     TaskScheduler, TaskbarProgress, Sqlite: read-only queries through Windows' winsqlite3.dll)
 Src\Core\           App (startup, single instance, shutdown), ErrorHandler (uncaught errors), I18n (UI text),
                     AppSettings + SchemaMigration (settings and version upgrades),
@@ -65,6 +65,7 @@ When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.js
 - `ResultItem` defines the common result model; `FuzzyMatcher` scores matches; `Knowledge` adjusts learned ranking; `ActionCatalog` performs actions such as opening, copying and running.
 - `PreferencesWindow` edits a working copy of the settings. Saving reloads the application so controls don't mutate the live settings object directly.
 - `FileSearchProvider` (`recent report`) and `QuickSwitch` (recent folders) read Windows' Recent items through `Lib\WindowsRecent.ahk`.
+- `FileManagers` (Extensions) reads the current folder of Total Commander, Directory Opus, Arke and Explorer. Arke's interface client is `Lib\Arke.ahk`, below Core, because `ActionCatalog.OpenFolder` / `Reveal` (Core) also ask Arke for a new tab, as they use `Lib\ExplorerTabs.ahk` for Explorer; the unit tests answer as Arke with `Tests\FakeArke.ahk` (a small window with Arke's class).
 - `ApplicationProvider` and `FileIndex` share `Lib\FolderWatcher.ahk` to watch indexed folders. Index rebuilds run in the background, and the previous index remains usable until the new one is ready.
 
 A typical lifecycle is: start and load settings → initialize providers and windows → receive search input → parse the query and collect results → rank and display them → execute the selected action. Settings changes are saved and then reloaded. Shutdown stops folder watchers and background work and handles pending cache saves.

@@ -130,15 +130,15 @@ Select a result and press `→` (or right-click) to list everything you can do w
 
 | Result type | Actions |
 |---|---|
-| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
-| Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Windows Context Menu, Properties, Move to Recycle Bin |
+| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC (or Opus, Arke, Explorer), Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
+| Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC (or Opus, Arke, Explorer), Windows Context Menu, Properties, Move to Recycle Bin |
 | URL | Open, Copy URL |
 | Text | Copy to Clipboard, Paste to Front Window |
 | All | Edit... / Add to Custom Commands... (`F3`), Delete (`Ctrl+Del`), Show in Large Type (`Ctrl+L`, when turned on) |
 
 File actions (like Listary):
 - **Copy File / Cut File**: puts the file itself on the clipboard; press `Ctrl+V` in TC or Explorer to paste it (a cut file is moved when pasted).
-- **Copy / Move to Current Folder in TC**: the target is the folder currently open in the frontmost Total Commander (or Explorer) window; not shown when the file is already in that folder. Uses Windows' own copy, with a progress window, a prompt when names clash, and undo.
+- **Copy / Move to Current Folder in TC**: the target is the folder currently open in the frontmost file manager window (Total Commander, Directory Opus, Arke or File Explorer; the name in the action says which, see [File managers](File-Managers)); not shown when the file is already in that folder. Uses Windows' own copy, with a progress window, a prompt when names clash, and undo.
 - **Move to Recycle Bin**: Windows asks first, and you can restore it from the Recycle Bin.
 - **Windows Context Menu** (off by default: turn it on in Preferences → Features): the menu Explorer shows when you right-click the file, with the items other programs add (7-Zip, Git, antivirus, Send to...); applications and custom commands that point to a file or folder have it too (Store apps: Pin to Start, Uninstall...). It opens at the selected row; the search window closes once you choose an item, and `Esc` goes back to the action panel. Choose it with `Shift+Enter` for Explorer's extended items too (as with `Shift`+right-click), for example "Copy as path". Marked files get it too when they are all in the same folder. To open it without the action panel: `Shift`+right-click the result, or press `Shift+→`, `Shift+F10` or the Menu key (`Shift`+right-click and the keys with `Shift` show the extended items too). `Esc` then goes back to the results.
 
