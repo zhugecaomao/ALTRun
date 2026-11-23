@@ -195,9 +195,9 @@ class ActionCatalog {
     }
 
     ; The file manager's command line. Its parameters (FileManager setting) can place the paths themselves: {path} = the folder
-    ; to show, {file} = the item itself (the file or folder to select; for Open Folder the folder, as for {path}); quoting is
-    ; up to the user, as the right quoting depends on the file manager. Without either, legacyArgs follow the parameters, as
-    ; before placeholders existed (so existing settings keep working)
+    ; to show, {file} = the item itself (the file or folder to select; for Open Folder the folder, as for {path}); quotes are
+    ; added when needed (see FillPaths). Without either, legacyArgs follow the parameters, as before placeholders existed
+    ; (so existing settings keep working)
     static FileManagerLine(manager, folder, item, legacyArgs) {
         args := ActionCatalog.TabArgs(manager)
         args := RegExMatch(args, "i)\{(path|file)\}") ? ActionCatalog.FillPaths(args, folder, item) : Trim(args " " legacyArgs)
@@ -205,11 +205,18 @@ class ActionCatalog {
     }
 
     ; {path} / {file} (any case) replaced in one pass, so a folder whose name contains "{file}" isn't replaced again.
-    ; Not RegExReplace: "$" in a path (C:\$Recycle.Bin, \\server\share$) would be read as a back-reference
+    ; A path with spaces is quoted unless the placeholder is already inside quotes (an odd number of " before it, as in
+    ; /R="{path}"): {path} and /R={path} both become /R="C:\My Folder". Only whitespace needs it, as Run starts the program
+    ; without cmd.exe, and a Windows path can't contain ". Not RegExReplace: "$" in a path (C:\$Recycle.Bin, \\server\share$)
+    ; would be read as a back-reference
     static FillPaths(args, folder, item) {
         out := "", pos := 1
         while (found := RegExMatch(args, "i)\{(path|file)\}", &m, pos)) {
-            out .= SubStr(args, pos, found - pos) ((m[1] = "path") ? folder : item)
+            value := (m[1] = "path") ? folder : item
+            StrReplace(SubStr(args, 1, found - 1), '"', '"', , &quotes)
+            if (Mod(quotes, 2) = 0 && RegExMatch(value, "\s") > 0)
+                value := '"' value '"'
+            out .= SubStr(args, pos, found - pos) value
             pos := found + m.Len
         }
         return out SubStr(args, pos)

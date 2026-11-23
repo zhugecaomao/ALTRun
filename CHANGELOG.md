@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.16.26]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文件管理器参数里的 `{path}` / `{file}`: 路径有空格时自动加引号, 已经写在引号里 (例如 `/R="{path}"`) 时不再加, 所以 `/R={path}` 和 `/R="{path}"` 都可以 (#610)
+
 ## [2026.11.16.25]
 
 测试版。
@@ -1730,7 +1739,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.25...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.26...HEAD
+[2026.11.16.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.25...2026.11.16.26
 [2026.11.16.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...2026.11.16.25
 [2026.11.16.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...2026.11.16.24
 [2026.11.16.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...2026.11.16.23
