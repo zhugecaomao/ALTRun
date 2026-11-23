@@ -33,7 +33,7 @@ class QuickSwitchPanel {
         if IsObject(QuickSwitchPanel._panel)
             try QuickSwitchPanel._panel.Destroy()
         QuickSwitchPanel._panel := "", QuickSwitchPanel._panelFor := 0, QuickSwitchPanel._panelPos := "", QuickSwitchPanel._panelRows := -1
-        QuickSwitchPanel._panelSearch := "", QuickSwitchPanel._panelList := "", QuickSwitchPanel._panelLine := "", QuickSwitchPanel._panelStar := ""   ; the controls are destroyed: no more references
+        QuickSwitchPanel._panelSearch := "", QuickSwitchPanel._panelList := "", QuickSwitchPanel._panelLine := "", QuickSwitchPanel._panelStar := "", QuickSwitchPanel._panelIcon := ""   ; the controls are destroyed: no more references
         QuickSwitchPanel._searchHwnd := 0, QuickSwitchPanel._listHwnd := 0
     }
 
@@ -51,8 +51,15 @@ class QuickSwitchPanel {
         panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border -DPIScale", "ALTRun Quick Switch")
         panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := colors.Background
         panel.SetFont("s10 c" colors.Text, QuickSwitchPanel._FontName())
-        search := panel.AddEdit("x" Win.Scale(10) " y" Win.Scale(8) " w" QuickSwitchPanel.SearchWidth(width) " r1 -Multi -E0x200 Background" colors.Background)
+        search := panel.AddEdit("x" QuickSwitchPanel.SearchX() " y" Win.Scale(8) " w" QuickSwitchPanel.SearchWidth(width) " r1 -Multi -E0x200 Background" colors.Background)
         search.GetPos(, &searchY, , &searchH)
+        icon := ""
+        if (NavIcons.FontName() != "") {                                    ; the magnifier left of the box, in the icon font (as Preferences' page list): follows the theme's colors
+            panel.SetFont("s10 c" colors.Subtitle, NavIcons.FontName())
+            icon := panel.AddText("x" Win.Scale(10) " y" searchY " w" QuickSwitchPanel.IconSize() " h" searchH " 0x200 Center Background" colors.Background, Chr(0xE721))   ; SS_CENTERIMAGE: centered vertically
+            icon.OnEvent("Click", (*) => search.Focus())
+            panel.SetFont("s10 c" colors.Text, QuickSwitchPanel._FontName())
+        }
         star := panel.AddPicture("x" QuickSwitchPanel.StarX(width) " y" (searchY + (searchH - QuickSwitchPanel.StarSize()) // 2) " w" QuickSwitchPanel.StarSize() " h" QuickSwitchPanel.StarSize() " Icon44", "shell32.dll")
         star.OnEvent("Click", (*) => QuickSwitchFavorites.ShowFavoritesMenu())       ; the favorite folders (like the favorites button of Listary's Quick Switch window)
         Win.AddTooltip(star.Hwnd, I18n.T("QuickSwitch.FavoritesButton") "  (Alt+↓, F4)")
@@ -80,7 +87,7 @@ class QuickSwitchPanel {
         panel.GetPos(, , , &outerH), panel.GetClientPos(, , , &clientH)
         QuickSwitchPanel._listY := listY, QuickSwitchPanel._frameH := outerH - clientH, QuickSwitchPanel._panelRows := -1
         QuickSwitchPanel._panel := panel, QuickSwitchPanel._panelList := list, QuickSwitchPanel._panelSearch := search, QuickSwitchPanel._panelWidth := width
-        QuickSwitchPanel._panelLine := line, QuickSwitchPanel._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitchPanel._panelColors := colors, QuickSwitchPanel._panelStar := star
+        QuickSwitchPanel._panelLine := line, QuickSwitchPanel._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitchPanel._panelColors := colors, QuickSwitchPanel._panelStar := star, QuickSwitchPanel._panelIcon := icon
         QuickSwitchPanel._searchHwnd := search.Hwnd, QuickSwitchPanel._listHwnd := list.Hwnd
         if colors.Dark
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
@@ -100,13 +107,16 @@ class QuickSwitchPanel {
             QuickSwitchPanel._ShowFolders(QuickSwitchPanel._panelBase)
     }
 
-    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelIcon := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
     static _listY := 40, _frameH := 2, _barHeight := 40, _panelRows := -1
 
-    ; The search box and the ☆ button right of it (real pixels): the box ends a gap before the button, the button keeps the box's right margin
+    ; The search icon, the search box and the ☆ button right of it (real pixels): the box starts a gap after the icon (no icon font, e.g.
+    ; Wine: no icon, the box at the margin) and ends a gap before the button, the button keeps the box's right margin
     static StarSize() => Win.Scale(20)
+    static IconSize() => Win.Scale(16)
     static StarX(width) => width - Win.Scale(10) - QuickSwitchPanel.StarSize()
-    static SearchWidth(width) => QuickSwitchPanel.StarX(width) - Win.Scale(8) - Win.Scale(10)
+    static SearchX() => Win.Scale(10) + (NavIcons.FontName() != "" ? QuickSwitchPanel.IconSize() + Win.Scale(6) : 0)
+    static SearchWidth(width) => QuickSwitchPanel.StarX(width) - Win.Scale(8) - QuickSwitchPanel.SearchX()
 
     ; Panel width = dialog width, at least 420 (converted by DPI) and at most maxWidth (the work area of the dialog's monitor); all real pixels
     static PanelWidthFor(dialogWidth, maxWidth := 0) => Max(Win.Scale(420), maxWidth > 0 ? Min(dialogWidth, maxWidth) : dialogWidth)

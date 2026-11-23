@@ -227,21 +227,23 @@ class QuickSwitchFavorites {
     }
 
     ; The ☆ menu: the favorites (their path on the right, as two may have the same name), each with subfolders as a submenu whose
-    ; first, default item is the favorite itself; "Add <dialog folder>" when it isn't a favorite yet; "Edit favorites"
+    ; first, default item is the favorite itself; "Add <dialog folder>" when it isn't a favorite yet; "Edit favorites".
+    ; favMenu.Actions: item ID -> what the item does (see ShowMenuBelow)
     static BuildFavoritesMenu(dialogFolder) {
-        favMenu := Menu()
+        favMenu := Menu(), favMenu.Actions := Map()
+        add := QuickSwitchFavorites._AddAction.Bind(QuickSwitchFavorites, favMenu.Actions)
         items := QuickSwitchFavorites.FavoritesMenuItems()
         for item in items {
             label := QuickSwitchFavorites.MenuLabel(item.Name) "`t" QuickSwitchFavorites.MenuLabel(Path.Compact(item.Path))
             jump := QuickSwitchPanel.JumpTo.Bind(QuickSwitch, item.Path)
             if item.Subfolders.Length {
                 subMenu := Menu()
-                subMenu.Add(label, jump), subMenu.Default := label
+                add(subMenu, label, jump), subMenu.Default := label
                 subMenu.SetIcon(label, "shell32.dll", 44)
                 subMenu.Add()
                 for folder in item.Subfolders {
                     name := QuickSwitchFavorites.MenuLabel(QuickSwitchPanel.FolderName(folder))
-                    subMenu.Add(name, QuickSwitchPanel.JumpTo.Bind(QuickSwitch, folder))
+                    add(subMenu, name, QuickSwitchPanel.JumpTo.Bind(QuickSwitch, folder))
                     subMenu.SetIcon(name, "shell32.dll", 4)
                 }
                 if item.More {
@@ -250,7 +252,7 @@ class QuickSwitchFavorites {
                 }
                 favMenu.Add(label, subMenu)
             } else
-                favMenu.Add(label, jump)
+                add(favMenu, label, jump)
             favMenu.SetIcon(label, "shell32.dll", 44)
         }
         if !items.Length {
@@ -259,22 +261,33 @@ class QuickSwitchFavorites {
         }
         favMenu.Add()
         if (dialogFolder != "" && !QuickSwitchFavorites.IsFavorite(dialogFolder))
-            favMenu.Add(QuickSwitchFavorites.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitchPanel.FolderName(dialogFolder))) "`tCtrl+D"
+            add(favMenu, QuickSwitchFavorites.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitchPanel.FolderName(dialogFolder))) "`tCtrl+D"
                 , (*) => QuickSwitchFavorites._ToggleFavorite(dialogFolder, true))
-        favMenu.Add(I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
+        add(favMenu, I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
         return favMenu
+    }
+
+    ; Adds the item to m (the last item) and notes its ID's action
+    static _AddAction(actions, m, label, action) {
+        m.Add(label, action)
+        position := DllCall("GetMenuItemCount", "Ptr", m.Handle, "Int") - 1
+        actions[DllCall("GetMenuItemID", "Ptr", m.Handle, "Int", position, "UInt")] := action
     }
 
     ; Shows m as a drop-down of a button at the right (button = screen RECT): its right edge at the button's, below it, or above it
     ; when there is no room below (TPMPARAMS keeps the button uncovered). Menu.Show can only align the left edge, so the menu would
-    ; run past the panel. The items run as with Menu.Show: TrackPopupMenuEx with the script's window sends it the item's WM_COMMAND
+    ; run past the panel. TPM_RETURNCMD: the chosen item's action (m.Actions) runs here, before the dialog comes back. Without it the
+    ; item's WM_COMMAND was only posted, and arrived after the caller had returned and the menu with its items was gone: the item
+    ; did nothing ("Edit favorites" didn't open Preferences). Run first, an item that opens a window (Preferences) keeps the front
     static ShowMenuBelow(m, button) {
         params := Buffer(20, 0), NumPut("UInt", 20, params)                 ; TPMPARAMS: cbSize, rcExclude
         DllCall("RtlMoveMemory", "Ptr", params.Ptr + 4, "Ptr", button, "Ptr", 16)
         DllCall("SetForegroundWindow", "Ptr", A_ScriptHwnd)                 ; else the menu doesn't close when clicking elsewhere
-        DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040   ; TPM_RIGHTALIGN | TPM_VERTICAL
-            , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params)
+        id := DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040 | 0x0100   ; TPM_RIGHTALIGN | TPM_VERTICAL | TPM_RETURNCMD
+            , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params, "UInt")
         DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0, "Ptr", 0, "Ptr", 0)   ; WM_NULL, as the TrackPopupMenu documentation asks
+        if (id && m.HasOwnProp("Actions") && m.Actions.Has(id))
+            m.Actions[id]()
         QuickSwitchFavorites._DialogAfterMenu()
     }
 }
