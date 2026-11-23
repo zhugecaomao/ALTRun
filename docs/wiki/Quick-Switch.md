@@ -10,16 +10,16 @@ Quick Switch jumps an Open / Save dialog to a folder you already have open, with
 
 In a standard Open / Save file dialog:
 
-- `Ctrl+G`: jump to the folder open in the file manager you used last: Total Commander, Directory Opus or File Explorer. ALTRun looks at the windows from front to back and takes the first of the three, so with several open it is the one you used most recently; the [folder panel](Quick-Switch-Panel) lists all of them
+- `Ctrl+G`: jump to the folder open in the file manager you used last: Total Commander, Directory Opus, Arke or File Explorer. ALTRun looks at the windows from front to back and takes the first of the four, so with several open it is the one you used most recently; the [folder panel](Quick-Switch-Panel) lists all of them
 - `Ctrl+Shift+G`: show the folder panel and focus its search box so you can pick a folder or file with the keyboard
 
 The existing file name is preserved when jumping. For example, a name suggested by a Save As dialog is not cleared.
 
 ## Automatic switching
 
-Enable **Auto switch** in Preferences → Quick Switch to jump automatically when you switch from Total Commander, Directory Opus or File Explorer to an Open / Save dialog: the dialog goes to the folder of the window you came from. It works however you switch (taskbar, Alt+Tab, a click on the dialog's title bar). In standard Open / Save dialogs the folder is put into the file name box and the dialog is told to go there with window messages, without simulated keys; a name Save As suggested stays in the box.
+Enable **Auto switch** in Preferences → Quick Switch to jump automatically when you switch from Total Commander, Directory Opus, Arke or File Explorer to an Open / Save dialog: the dialog goes to the folder of the window you came from. It works however you switch (taskbar, Alt+Tab, a click on the dialog's title bar). In standard Open / Save dialogs the folder is put into the file name box and the dialog is told to go there with window messages, without simulated keys; a name Save As suggested stays in the box.
 
-Tick **Also jump when a dialog opens, to the file manager used last** (`AutoSwitchOnOpen`, off by default) and a dialog that has just opened jumps once too, to the folder of the Total Commander / Directory Opus / Explorer window used last (the frontmost one), for example after browsing a folder in Explorer and pressing Ctrl+O in Word. It overrides the folder the program remembers (such as where Save As suggests saving), so it is off by default; **No auto jump in** applies to it too.
+Tick **Also jump when a dialog opens, to the file manager used last** (`AutoSwitchOnOpen`, off by default) and a dialog that has just opened jumps once too, to the folder of the Total Commander / Directory Opus / Arke / Explorer window used last (the frontmost one), for example after browsing a folder in Explorer and pressing Ctrl+O in Word. It overrides the folder the program remembers (such as where Save As suggests saving), so it is off by default; **No auto jump in** applies to it too.
 
 **Works in**: tick **Standard Open / Save dialogs** (`ahk_class #32770`, on by default; only dialogs with an Explorer file list count, so program windows that are dialogs themselves, such as System Information (msinfo32), are left alone); **Browse for Folder dialogs** (on by default) covers the older folder picker that only shows a folder tree (see below); dialogs that programs draw themselves go in **Other dialogs** (**Edit...**, one per line), for example WPS's `ahk_class Qt5QWindowIcon` (ALTRun types the folder into the dialog's file name box and presses Enter, which works in most Qt, GTK and Java file dialogs). Windows in **Never in** never switch (these lists are edited with **Edit...** too, one window per line); **No auto jump in** disables only automatic switching, and the hotkeys still work there.
 
@@ -42,7 +42,10 @@ The helper only jumps: it takes a request only for the dialog in front, a standa
 None of them go through the clipboard, so the paths don't appear in Windows clipboard history (`Win+V`):
 - **Total Commander**: asked directly through its `WM_COPYDATA` interface (TC 8.0 or later)
 - **Directory Opus**: Opus's own `dopusrt.exe /info …,paths`, which lists the tabs of every Opus window (found next to the running `dopus.exe`, nothing to set up). It runs only while an Opus window is open, when a folder is actually needed (the hotkey, auto switch, or the panel when a dialog opens; the panel shows the other folders first and adds Opus's a moment later), and a result is reused for 1.5 s. With logging on, the log shows how long each read took (`Perf: Directory Opus paths … ms`)
+- **Arke** (0.8.0 or later): asked directly through its `WM_COPYDATA` interface, one request for all its windows: the active pane of each window's active tab, and the other pane in split view. Home, search results, the Recycle Bin and remote locations aren't folders. See [File managers](File-Managers#arke)
 - **File Explorer**: the Shell windows list
+
+What works with each file manager, and how to set one up: [File managers](File-Managers).
 
 A network folder (`\\server\share`, a mapped drive) must answer within 0.5 s, or the dialog isn't jumped there: a server that is offline would otherwise keep ALTRun waiting about 20 s. With logging on, the log says which folder didn't answer.
 
@@ -55,8 +58,8 @@ Preferences → Quick Switch controls the hotkeys, eligible windows and automati
 | Setting | Default / purpose |
 |---|---|
 | `Enabled` | `1` = enable Quick Switch |
-| `Hotkey` | The jump hotkey, default `Ctrl+G`: the folder of the Total Commander / Directory Opus / File Explorer window used last (`TotalCmdHotkey` before settings version 6) |
-| `AutoSwitch` | Jump automatically when switching from Total Commander, Directory Opus or File Explorer to a dialog, default `0` (off) |
+| `Hotkey` | The jump hotkey, default `Ctrl+G`: the folder of the Total Commander / Directory Opus / Arke / File Explorer window used last (`TotalCmdHotkey` before settings version 6) |
+| `AutoSwitch` | Jump automatically when switching from Total Commander, Directory Opus, Arke or File Explorer to a dialog, default `0` (off) |
 | `AutoSwitchOnOpen` | A dialog that has just opened jumps once too, to the folder of the file manager used last, default `0` (off) |
 | `StandardDialogs` | `1` = in the standard Open / Save dialogs (`ahk_class #32770`) |
 | `DialogWindows` | Other dialogs where Quick Switch works (dialogs programs draw themselves), a list of window conditions, default `[]` |

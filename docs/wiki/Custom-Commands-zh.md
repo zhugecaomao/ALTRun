@@ -53,7 +53,7 @@
 
 搜索时除了名称和关键字, `File` / `Folder` 类型还会匹配目标的文件名 (不含扩展名) 或文件夹名: Target 是 `D:\Demo\Projects\P1001 - Riverside Park`, 名称是 `Tower A, B, C`, 输入 `riverside` 或 `1001` 也能找到。同样的匹配程度, 名称匹配排在前面。
 
-文件夹用 偏好设置 → 通用 → 文件管理器 打开 (默认资源管理器, 也可以设为 Total Commander 等); 那里勾选 "在新标签页中打开文件夹" 时, 在已打开的资源管理器窗口 (Windows 11 22H2 及以上) 或 Total Commander 里用新标签页打开。
+文件夹用 偏好设置 → 通用 → 文件管理器 打开 (默认资源管理器, 也可以设为 Total Commander、Directory Opus、Arke 等, 见 [文件管理器](File-Managers-zh)); 那里勾选 "在新标签页中打开文件夹" 时, 在已打开的资源管理器窗口 (Windows 11 22H2 及以上)、Total Commander 或 Arke 里用新标签页打开。
 
 ## 带参数的命令 ({query})
 目标或参数里写 `{query}`, 再设一个关键字, 输入 "关键字 文字" 时 `{query}` 换成后面的文字 (网址里自动编码). 规则和 [网页搜索](Web-Search-zh#添加和修改) 的网址一样, 同样写法的命令和搜索引擎用起来也一样:

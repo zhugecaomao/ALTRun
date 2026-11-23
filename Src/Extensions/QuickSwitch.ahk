@@ -2,11 +2,11 @@
 ; QuickSwitch.ahk - quick folder jumps in open / save dialogs (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Like Listary's "Quick Switch": in an Open / Save dialog, the hotkey (Ctrl+G by default) jumps the dialog to the
-; folder open in the file manager used last: Total Commander, Directory Opus or File Explorer (see FileManagerFolder).
+; folder open in the file manager used last: Total Commander, Directory Opus, Arke or File Explorer (see FileManagerFolder).
 ; AutoSwitch = 1: switching from one of them to a dialog jumps automatically. AutoSwitchOnOpen = 1: a dialog that has just opened
 ; jumps too, once, to the folder of the file manager used last (the frontmost one), e.g. Ctrl+O in Word after working in Explorer.
 ; The folder panel (ShowPanel, on by default, like Listary's Quick Switch window): as soon as a dialog appears, a search box +
-; folder list (favorite folders, both panels of every TC window, Explorer windows, recently used folders) sits below it, as wide as the dialog; one click jumps there, no hotkey to remember;
+; folder list (favorite folders, both panels of every TC window, both panes of every Arke window, Opus and Explorer windows, recently used folders) sits below it, as wide as the dialog; one click jumps there, no hotkey to remember;
 ; the search box also searches folders (with PanelSearch = all, files too: choosing a file jumps to its folder). Hidden when the dialog isn't in front,
 ; refreshed when back in the dialog (a folder change in TC shows right away). The colors follow ALTRun's theme.
 ; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off.
@@ -24,7 +24,7 @@
 ;   QuickSwitchPanel.ahk      the folder panel below the dialog (search box + folder list)
 ;   QuickSwitchFavorites.ahk  the folders in the panel, the favorite folders and the ☆ menu
 ;   FileDialogs.ahk           recognizing open / save / "Browse for Folder" dialogs and jumping them to a folder
-;   FileManagers.ahk          the current folder of Total Commander, Directory Opus and File Explorer; recent folders
+;   FileManagers.ahk          the current folder of Total Commander, Directory Opus, Arke and File Explorer; recent folders
 ;
 ; Usage:
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    at start-up
@@ -413,7 +413,7 @@ class QuickSwitch {
         return WinActive("ahk_id " panel) != 0
     }
 
-    ; The jump hotkey: the folder of the file manager used last (TC, Opus or Explorer, see FileManagerFolder)
+    ; The jump hotkey: the folder of the file manager used last (TC, Opus, Arke or Explorer, see FileManagerFolder)
     static SyncFileManagerPath(silent := false) {
         manager := FileManagers.FileManagerFolder()
         if !(IsObject(manager) && manager.Path != "")

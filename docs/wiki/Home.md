@@ -30,7 +30,8 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Web search](Web-Search) | Keywords such as `g` / `bd`, adding your own engines, fallback searches |
 | [Window switching](Window-Switching) | Find an open window and switch to it |
 | [Pinned and recent items](Recent) | Pinned and recently opened items shown when the search box is empty |
-| [Quick Switch](Quick-Switch) | Jump to a folder open in File Explorer or Total Commander |
+| [Quick Switch](Quick-Switch) | Jump to a folder open in File Explorer, Total Commander, Directory Opus or Arke |
+| [File managers](File-Managers) | Open folders in Total Commander, Directory Opus or Arke; what works with each |
 | [Dialog Folder Panel](Quick-Switch-Panel) | Search and pick folders in an Open / Save dialog |
 | [Date Stamp](Date-Stamp) | Add dates when renaming files or at the end of text |
 | [Calculator](Calculator) | Expressions, unit and currency conversion, structural calculations |
@@ -59,7 +60,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | Run a command | `>ipconfig /all` |
 | Lock / shut down | `lock` / `shutdown` |
 | Paste text you use often | type `;sig` in any program to expand your signature |
-| Jump an Open / Save dialog to a folder | click it in the [Dialog Folder Panel](Quick-Switch-Panel) below the dialog, or `Ctrl+G` for the current Total Commander folder |
+| Jump an Open / Save dialog to a folder | click it in the [Dialog Folder Panel](Quick-Switch-Panel) below the dialog, or `Ctrl+G` for the folder of the file manager you used last (File Explorer, Total Commander, Directory Opus or Arke) |
 | Edit the selected command | `F3` |
 | More actions | `→` or right-click |
 | Forgot the syntax | `?` lists every search syntax and shortcut |

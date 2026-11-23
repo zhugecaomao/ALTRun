@@ -850,9 +850,9 @@ class I18n {
         s["Prefs.SaveLog"]             := "Write a debug log"
         s["Prefs.SaveLog.Desc"]        := "Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off."
         s["Prefs.FileManager"]         := "File manager"
-        s["Prefs.FileManager.Desc"]     := "Program that opens folders; parameters can follow, with {path} for the path, e.g. C:\Apps\TOTALCMD64.exe /O /T /S or /R={path}. Default: explorer.exe"
+        s["Prefs.FileManager.Desc"]     := 'Program that opens folders, e.g. Total Commander, Directory Opus or Arke; parameters can follow, {path} = the path. Default: explorer.exe. <a href="{1}">Examples and what each supports</a>'
         s["Prefs.FolderNewTab"] := "Open folders in a new tab"
-        s["Prefs.FolderNewTab.Desc"] := "File Explorer: a new tab of the window used last (Windows 11 22H2 or later). Total Commander: adds /O /T. Others: put their own parameters above."
+        s["Prefs.FolderNewTab.Desc"] := "File Explorer (Windows 11 22H2 or later) and Arke (0.8.0 or later): a new tab of the window used last. Total Commander: adds /O /T. Others: put their own parameters above."
         s["Prefs.Browser"]             := "Browser"
         s["Prefs.Browser.Empty"]     := "Default browser"
         s["Prefs.HistorySize"]         := "Search history size"
@@ -1279,11 +1279,11 @@ class I18n {
         ; Extensions
         s["Prefs.QuickSwitch"]         := "File dialog quick switch"
         s["Prefs.QSHotkey"]             := "Hotkey"
-        s["Prefs.QSHotkey.Desc"]        := "Jumps to the folder of the Total Commander, Directory Opus or File Explorer window you used last."
+        s["Prefs.QSHotkey.Desc"]        := "Jumps to the folder of the Total Commander, Directory Opus, Arke or File Explorer window you used last."
         s["Prefs.QSMenu"]              := "Hotkey"
         s["Prefs.QSPanel"]             := "Show the folder panel below dialogs"
         s["Prefs.QSPanelSection"]      := "Folder panel"
-        s["Prefs.QSPanelSection.Desc"] := "Below Open / Save dialogs: both panels of every Total Commander window, Explorer windows, recent folders and a search box; favorite folders are in the star menu. Click a folder to jump there. Colors follow the ALTRun theme."
+        s["Prefs.QSPanelSection.Desc"] := "Below Open / Save dialogs: both panels of every Total Commander and Arke window, Directory Opus and Explorer windows, recent folders and a search box; favorite folders are in the star menu. Click a folder to jump there. Colors follow the ALTRun theme."
         s["Prefs.QSMenuSection"]       := "Keyboard"
         s["Prefs.QSMenuSection.Desc"]  := "In a dialog, press the hotkey to jump into the panel's search box, then ↑ ↓ to pick, Enter to jump, Esc to go back. Also works when the panel is not shown automatically."
         s["Prefs.QSPanelSearch"]       := "Search box finds"
@@ -1294,7 +1294,7 @@ class I18n {
         s["Prefs.QSRecent"]            := "Recent folders"
         s["Prefs.QSFavorites"] := "Favorite folders"
         s["Prefs.QSFavorites.Desc"] := "In the star menu at the top right of the panel, with their subfolders; the panel's search finds them too. Right-click a folder in the panel to add or remove it; Ctrl+D adds the dialog's current folder (with the caret in the panel: click it or press the hotkey below first)."
-        s["Prefs.QSAuto"]              := "Jump automatically when switching from TC / Opus / Explorer"
+        s["Prefs.QSAuto"]              := "Jump automatically when switching from TC / Opus / Arke / Explorer"
         s["Prefs.QSAutoOpen"]          := "Also jump when a dialog opens, to the file manager used last"
         s["Prefs.Section.QSDialogs"]    := "Dialogs"
         s["Prefs.Section.QSAuto"]       := "When a dialog opens"
@@ -1441,6 +1441,7 @@ class I18n {
         s["QuickSwitch.TagTCOther"]    := "Total Commander (other panel)"
         s["QuickSwitch.TagOpus"]       := "Directory Opus"
         s["QuickSwitch.TagOpusOther"]  := "Directory Opus (other side)"
+        s["QuickSwitch.TagArkeOther"]  := "Arke (other pane)"
         s["QuickSwitch.TagExplorer"]   := "File Explorer"
         s["QuickSwitch.TagRecent"]     := "Recent"
         s["QuickSwitch.SearchCue"]     := "Search folders and files"
@@ -1461,7 +1462,7 @@ class I18n {
         s["QuickSwitch.MoreFolders"] := "{1} more folders"
         s["QuickSwitch.NoDialogFolder"] := "Can't read the dialog's current folder."
         s["QuickSwitch.ElevatedDialog"] := "This dialog's program runs as administrator. To jump here, turn on Preferences → Quick Switch → Dialogs of programs running as administrator."
-        s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus or File Explorer window is open."
+        s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus, Arke or File Explorer window is open."
         return s
     }
 }

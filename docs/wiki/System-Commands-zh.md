@@ -26,7 +26,7 @@
 | `Mute` `VolumeUp` `VolumeDown` | 静音 / 音量 +10 / 音量 -10 |
 | `MediaPlayPause` `MediaNext` `MediaPrev` `MediaStop` | 播放 / 暂停、下一首、上一首、停止播放 (音乐和视频播放器) |
 | `ShowIP` | 显示 IP 地址 |
-| `TerminalHere` | 在当前文件夹 (资源管理器 / Total Commander) 打开终端 |
+| `TerminalHere` | 在前台窗口当前的文件夹打开终端 (资源管理器、Total Commander、Directory Opus、Arke; 见 [文件管理器](File-Managers-zh)) |
 | **剪贴板文字** (处理后放回剪贴板) | |
 | `TextUpper` `TextLower` `TextTitle` | 大写 / 小写 / 首字母大写 |
 | `TextSortAsc` `TextSortDesc` | 按行排序 |

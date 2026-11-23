@@ -30,7 +30,8 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [网页搜索](Web-Search-zh) | `g` / `bd` 等关键字、自己加搜索引擎、兜底搜索 |
 | [窗口切换](Window-Switching-zh) | 搜索已经打开的窗口并切换过去 |
 | [置顶和最近使用](Recent-zh) | 空搜索框显示的置顶项目和最近打开的项目 |
-| [对话框快速跳转](Quick-Switch-zh) | 跳到资源管理器或 Total Commander 已打开的文件夹 |
+| [对话框快速跳转](Quick-Switch-zh) | 跳到资源管理器、Total Commander、Directory Opus 或 Arke 已打开的文件夹 |
+| [文件管理器](File-Managers-zh) | 用 Total Commander、Directory Opus 或 Arke 打开文件夹; 各自支持什么 |
 | [对话框文件夹面板](Quick-Switch-Panel-zh) | 在打开 / 保存对话框附近搜索并选择文件夹 |
 | [一键加日期](Date-Stamp-zh) | 重命名文件或在文本末尾添加日期 |
 | [计算器](Calculator-zh) | 算式、单位和货币换算、附带的结构计算 |
@@ -59,7 +60,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | 运行命令 | `>ipconfig /all` |
 | 锁屏 / 关机 | `lock` / `shutdown` |
 | 粘贴常用文字 | 任何程序里输入 `;sig` 自动展开签名 |
-| 打开 / 保存对话框跳到某个文件夹 | 在[对话框文件夹面板](Quick-Switch-Panel-zh)里点一下, 或按 `Ctrl+G` 跳到 Total Commander 当前的文件夹 |
+| 打开 / 保存对话框跳到某个文件夹 | 在[对话框文件夹面板](Quick-Switch-Panel-zh)里点一下, 或按 `Ctrl+G` 跳到最近用过的文件管理器 (资源管理器、Total Commander、Directory Opus 或 Arke) 当前的文件夹 |
 | 修改选中的命令 | `F3` |
 | 更多操作 | `→` 或鼠标右键 |
 | 忘了怎么写 | `?` 查看所有输入语法和快捷键 |

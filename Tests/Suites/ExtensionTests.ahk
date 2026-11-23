@@ -1592,6 +1592,74 @@ class ExtensionTests {
         }
     }
 
+    ; Arke (0.8.0+) through its WM_COPYDATA JSON interface (Lib\Arke.ahk), answered by FakeArke as Arke answers: the folders of
+    ; every window (active pane, other pane in split view; only kind "folder"), the jump / terminal / panel entry points, and
+    ; "open" for folders in a new tab (General.FolderNewTab with arke.exe as the file manager)
+    static ArkeFileManager() {
+        eq := (n, a, e) => TestRunner.Equal("Arke." n, a, e)
+        cn := Chr(0x9879) Chr(0x76EE)                                       ; non-ASCII: UTF-8 both ways
+        state := '{"v":1,"windows":['
+            . '{"hwnd":"0x1A2B3C","active":true,"tabs":[{"active":false,"panes":[{"active":true,"location":{"kind":"folder","path":"F:\\Old"},"selection":[]}]},'
+            . '{"active":true,"panes":[{"active":true,"location":{"kind":"folder","path":"D:\\Work\\' cn '\\"},"selection":["D:\\Work\\a.txt"]},'
+            . '{"active":false,"location":{"kind":"folder","path":"\\\\server\\share"},"selection":[]}]}]},'
+            . '{"hwnd":"0x2B3C4D","active":false,"tabs":[{"active":true,"panes":[{"active":false,"location":{"kind":"folder","path":"E:\\"}},'
+            . '{"active":true,"location":{"kind":"search","query":"x","path":"C:\\Data"}}]}]},'
+            . '{"hwnd":"0x3C","active":false,"future":1,"tabs":[{"active":true,"panes":[{"active":true,"location":{"kind":"remote","url":"sftp://h/x"}},'
+            . '{"active":false,"location":{"kind":"home"}}]}]}]}'
+        windows := Arke.ParseState(state)
+        eq("windows in order", windows.Length "|" windows[1].Hwnd "|" windows[2].Hwnd "|" windows[3].Hwnd, "3|" 0x1A2B3C "|" 0x2B3C4D "|" 0x3C)
+        eq("active tab's active pane, trailing \ removed", windows[1].Folder, "D:\Work\" cn)
+        eq("other pane: a share", windows[1].Other, "\\server\share")
+        eq("search results aren't a folder; a drive keeps its \", windows[2].Folder "|" windows[2].Other, "|E:\")
+        eq("remote / home aren't folders", windows[3].Folder "|" windows[3].Other, "|")
+        eq("no reply / not JSON / an error", Arke.ParseState("").Length "|" Arke.ParseState("{x").Length "|"
+            . Arke.ParseState('{"v":1,"error":{"code":"bad_request","message":"m"}}').Length, "0|0|0")
+        if WinExist("ahk_class ArkeWindow")                                 ; a real Arke is open on this PC: leave it alone
+            return FileAppend("NOTE Arke: window tests skipped, an Arke window is open`n", "*")
+
+        general := AppSettings.General, saved := [general["FileManager"], general["FolderNewTab"]]
+        exeDir := A_Temp "\ALTRun Arke test"
+        fake := FakeArke(state)
+        try {
+            eq("window found by its class", WinExist("ahk_class ArkeWindow"), fake.Hwnd)
+            eq("is a file manager", FileManagers.IsFileManager(fake.Hwnd), true)
+            eq("its folder, asked with state", Arke.Folder() "|" fake.Requests[1], "D:\Work\" cn '|{"v":1,"cmd":"state"}')
+            eq("a given window / other pane", Arke.Folder(0x2B3C4D) "|" Arke.Folder(0x1A2B3C, true), "|\\server\share")
+            eq("terminal here", FileManagers.FolderOfWindow(fake.Hwnd), "D:\Work\" cn)
+            folders := ""
+            for entry in QuickSwitchFavorites.MenuFolders(false)
+                if (entry.Group = "open" && InStr(entry.Tag, "Arke") = 1)
+                    folders .= entry.Path " (" entry.Tag ") "
+            eq("panel: both panes of every window", folders, "D:\Work\" cn " (Arke) \\server\share (" I18n.T("QuickSwitch.TagArkeOther") ") E:\ (" I18n.T("QuickSwitch.TagArkeOther") ") ")
+
+            fake.Requests := []
+            eq("open: accepted", Arke.Open("D:\My Work\" cn, true, 0), true)
+            eq("open: the request", fake.Requests[1], '{"v":1,"cmd":"open","path":"D:\\My Work\\' cn '","new_tab":true}')
+            eq("open: same tab", (Arke.Open("D:\x"), fake.Requests[2]), '{"v":1,"cmd":"open","path":"D:\\x"}')
+            fake.OpenReply := '{"v":1,"error":{"code":"not_found","message":"no such folder"}}'
+            eq("open: an error reply", Arke.Open("D:\gone"), false)
+            fake.OpenReply := ""
+            eq("open: no reply (Arke before 0.8.0)", Arke.Open("D:\x"), false)
+            fake.OpenReply := '{"v":1,"ok":true}'
+
+            ; Open Folder / Reveal with arke.exe as the file manager and folders in a new tab: asked through the interface
+            DirCreate(exeDir)
+            FileAppend("", exeDir "\Arke.exe")
+            eq("IsArke by its file name, any case", ActionCatalog.IsArke({Exe: exeDir "\Arke.exe"}) "|" ActionCatalog.IsArke({Exe: "C:\arke\x.exe"}), "1|0")
+            general["FileManager"] := exeDir "\Arke.exe", general["FolderNewTab"] := 1
+            fake.Requests := []
+            ActionCatalog.OpenFolder(A_Temp)
+            eq("open folder: a new tab", fake.Requests.Length ? fake.Requests[1] : "", '{"v":1,"cmd":"open","path":"' JSON.Escape(A_Temp) '","new_tab":true}')
+            ActionCatalog.Reveal(A_WinDir "\win.ini")
+            eq("reveal: the file (Arke selects it)", fake.Requests.Length > 1 ? fake.Requests[2] : "", '{"v":1,"cmd":"open","path":"' JSON.Escape(A_WinDir "\win.ini") '","new_tab":true}')
+        } finally {
+            fake.Close()
+            general["FileManager"] := saved[1], general["FolderNewTab"] := saved[2]
+            try DirDelete(exeDir, true)
+        }
+        eq("closed: no windows", Arke.Windows().Length "|" Arke.Open("D:\x", true), "0|0")
+    }
+
     static QuickSwitchFavorites() {
         eq := (n, a, e) => TestRunner.Equal("QuickSwitchFavorites." n, a, e)
         savedOptions := QuickSwitch.Options, savedFile := AppSettings.File

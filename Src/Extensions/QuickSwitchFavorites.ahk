@@ -1,7 +1,7 @@
 ;===============================================================================
 ; QuickSwitchFavorites.ahk - Quick Switch's folders, favorite folders and ☆ menu (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; The folders listed in the panel (TC, Opus and Explorer windows, recent folders), the favorite folders
+; The folders listed in the panel (TC, Opus, Arke and Explorer windows, recent folders), the favorite folders
 ; (Extensions.QuickSwitch.Favorites in ALTRun.json), the ☆ menu with one level of subfolders and the rows' right-click menu.
 ; Part of QuickSwitch (Src\Extensions\QuickSwitch.ahk); reads and refreshes QuickSwitchPanel's state.
 ;
@@ -14,7 +14,8 @@ class QuickSwitchFavorites {
     ;---------------------------------------------------------------------------
     ; The folders in the panel
     ;---------------------------------------------------------------------------
-    ; [{Path, Group: "open" / "recent", Tag}]: the active and other panel of each TC window, each Explorer window,
+    ; [{Path, Group: "open" / "recent", Tag}]: the active and other panel of each TC window, the active and other pane of each
+    ; Arke window (its active tab), each Explorer window,
     ; recent folders (RecentFolders of them), without duplicates. The favorite folders are in the ☆ menu (and in searches, SearchBase)
     ; opus = false: without Directory Opus (the panel adds those a moment later, see _AddDOpusFolders)
     static MenuFolders(opus := true) {
@@ -28,6 +29,10 @@ class QuickSwitchFavorites {
         for hwnd in WinGetList("ahk_class TTOTAL_CMD") {
             add(FileManagers.TotalCmdFolder(hwnd), "open", I18n.T("QuickSwitch.TagTC"))
             add(FileManagers.TotalCmdFolder(hwnd, true), "open", I18n.T("QuickSwitch.TagTCOther"))
+        }
+        for window in Arke.Windows() {                                      ; one request answers for every Arke window
+            add(window.Folder, "open", "Arke")
+            add(window.Other, "open", I18n.T("QuickSwitch.TagArkeOther"))
         }
         if opus                                                             ; the source tab of each lister, then the other side
             for state in [1, 2]

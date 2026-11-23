@@ -26,7 +26,7 @@ Type the name in the search box (English, Chinese or the Id all work); they can 
 | `Mute` `VolumeUp` `VolumeDown` | Toggle Mute / Volume +10 / Volume -10 |
 | `MediaPlayPause` `MediaNext` `MediaPrev` `MediaStop` | Play / Pause, Next Track, Previous Track, Stop Media (music and video players) |
 | `ShowIP` | Show IP Address |
-| `TerminalHere` | Open a terminal in the current folder (Explorer / Total Commander) |
+| `TerminalHere` | Open a terminal in the current folder of the window in front (File Explorer, Total Commander, Directory Opus, Arke; see [File managers](File-Managers)) |
 | **Clipboard text** (converted and put back on the clipboard) | |
 | `TextUpper` `TextLower` `TextTitle` | UPPERCASE / lowercase / Title Case |
 | `TextSortAsc` `TextSortDesc` | Sort lines |

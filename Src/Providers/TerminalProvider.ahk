@@ -55,7 +55,7 @@ class TerminalProvider {
         }
     }
 
-    ; The folder open in Explorer / Total Commander (the window active before ALTRun was shown)
+    ; The folder open in Explorer / Total Commander / Directory Opus / Arke (the window active before ALTRun was shown)
     static OpenAtCurrentFolder() {
         folder := FileManagers.FolderOfWindow(App.PreviousWindow)
         if (folder = "")

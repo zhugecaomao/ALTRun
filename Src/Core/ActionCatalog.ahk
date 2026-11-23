@@ -162,7 +162,9 @@ class ActionCatalog {
     static AppVerbs := (target) => ShellContextMenu([target]).Verbs()
 
     ; General.FolderNewTab: File Explorer opens the folder in a new tab of a window already open (ExplorerTabs; a new window as
-    ; before when there is none or it fails), Total Commander gets /O /T (see TabArgs); other file managers use their own parameters
+    ; before when there is none or it fails), Total Commander gets /O /T (see TabArgs), Arke is asked for a new tab through its
+    ; interface (its command line has no switch for it; when no Arke window answers, the command line as before); other file
+    ; managers use their own parameters
     static OpenFolder(target) {
         resolved := Path.Resolve(target)
         manager := ActionCatalog.FileManagerCommand(AppSettings.General["FileManager"])
@@ -171,6 +173,8 @@ class ActionCatalog {
                 return
             return Run('explorer.exe "' resolved '"')
         }
+        if (AppSettings.General["FolderNewTab"] && ActionCatalog.IsArke(manager) && Arke.Open(resolved, true, App.PreviousWindow))
+            return
         Run(ActionCatalog.FileManagerLine(manager, resolved, '"' resolved '"'))
     }
 
@@ -183,6 +187,8 @@ class ActionCatalog {
                 return
             return Run('explorer.exe /select,"' resolved '"')
         }
+        if (AppSettings.General["FolderNewTab"] && ActionCatalog.IsArke(manager) && Arke.Open(resolved, true, App.PreviousWindow))
+            return                                                              ; a file's path: its folder, with the file selected
         Run(ActionCatalog.RevealLine(manager, resolved))
     }
 
@@ -225,6 +231,7 @@ class ActionCatalog {
     }
 
     static IsTotalCommander(manager) => InStr(Path.Leaf(manager.Exe), "totalcmd") > 0
+    static IsArke(manager) => Path.Leaf(manager.Exe) = "arke.exe"
 
     ; The file or folder that Reveal shows. A custom command's program given by name (notepad, chrome.exe) is looked up where Run
     ; finds it: in PATH (Path.Resolve), then under App Paths (Path.AppPath), so Ctrl+Enter opens the program's folder
