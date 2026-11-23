@@ -56,12 +56,14 @@ class QuickSwitchPanel {
         icon := ""
         if (NavIcons.FontName() != "") {                                    ; the magnifier left of the box, in the icon font (as Preferences' page list): follows the theme's colors
             panel.SetFont("s10 c" colors.Subtitle, NavIcons.FontName())
-            icon := panel.AddText("x" Win.Scale(10) " y" searchY " w" QuickSwitchPanel.IconSize() " h" searchH " 0x200 Center Background" colors.Background, Chr(0xE721))   ; SS_CENTERIMAGE: centered vertically
+            icon := panel.AddText("x" Win.Scale(10) " y" searchY " w" QuickSwitchPanel.IconSize() " h" searchH " Center Background" colors.Background, Chr(0xE721))
+            icon.Move(, Round(QuickSwitchPanel.TextMiddle(search) - QuickSwitchPanel.GlyphMiddle(icon, 0xE721)))
             icon.OnEvent("Click", (*) => search.Focus())
             panel.SetFont("s10 c" colors.Text, QuickSwitchPanel._FontName())
         }
         star := panel.AddPicture("x" QuickSwitchPanel.StarX(width) " y" (searchY + (searchH - QuickSwitchPanel.StarSize()) // 2) " w" QuickSwitchPanel.StarSize() " h" QuickSwitchPanel.StarSize() " Icon44", "shell32.dll")
         star.OnEvent("Click", (*) => QuickSwitchFavorites.ShowFavoritesMenu())       ; the favorite folders (like the favorites button of Listary's Quick Switch window)
+        star.Move(, Round(QuickSwitchPanel.TextMiddle(search) - QuickSwitchPanel.InkMiddle(star)))   ; the star's ink sits low in its icon
         Win.AddTooltip(star.Hwnd, I18n.T("QuickSwitch.FavoritesButton") "  (Alt+↓, F4)")
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
         DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: gray cue text
@@ -117,6 +119,53 @@ class QuickSwitchPanel {
     static StarX(width) => width - Win.Scale(10) - QuickSwitchPanel.StarSize()
     static SearchX() => Win.Scale(10) + (NavIcons.FontName() != "" ? QuickSwitchPanel.IconSize() + Win.Scale(6) : 0)
     static SearchWidth(width) => QuickSwitchPanel.StarX(width) - Win.Scale(8) - QuickSwitchPanel.SearchX()
+
+    ; The magnifier and the star are placed by their ink, on the middle of the search text's capitals (panel pixels). Centered in the
+    ; box instead, both sat 2-3 px below the text (Windows CI screenshot): the edit draws its text at the top of its formatting rect,
+    ; the icon font places its glyph differently in the line than Segoe UI, and shell32's star sits low in its icon
+    static TextMiddle(search) {
+        search.GetPos(, &editY)
+        rect := Buffer(16, 0), SendMessage(0xB2, 0, rect.Ptr, search)          ; EM_GETRECT: where the edit draws its text
+        return editY + NumGet(rect, 4, "Int") + QuickSwitchPanel.GlyphMiddle(search, Ord("H"))
+    }
+
+    ; The middle of a picture control's icon's ink below its top (the rows with alpha), half its height for an icon without alpha
+    static InkMiddle(pic) {
+        pic.GetPos(, , , &h)
+        info := Buffer(8 + A_PtrSize * 3, 0)                                 ; ICONINFO
+        if !DllCall("GetIconInfo", "Ptr", SendMessage(0x173, 1, 0, pic), "Ptr", info)   ; STM_GETIMAGE, IMAGE_ICON
+            return h / 2
+        mask := NumGet(info, A_PtrSize = 8 ? 16 : 12, "Ptr"), color := NumGet(info, A_PtrSize = 8 ? 24 : 16, "Ptr")
+        bm := Buffer(A_PtrSize = 8 ? 32 : 24, 0), DllCall("GetObject", "Ptr", color, "Int", bm.Size, "Ptr", bm)
+        w := NumGet(bm, 4, "Int"), rows := NumGet(bm, 8, "Int")
+        bmi := Buffer(40, 0), NumPut("UInt", 40, "Int", w, "Int", -rows, "UShort", 1, "UShort", 32, bmi)   ; BITMAPINFOHEADER, top-down 32 bpp
+        bits := Buffer(w * rows * 4, 0), hdc := DllCall("GetDC", "Ptr", 0, "Ptr")
+        DllCall("GetDIBits", "Ptr", hdc, "Ptr", color, "UInt", 0, "UInt", rows, "Ptr", bits, "Ptr", bmi, "UInt", 0)
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdc), DllCall("DeleteObject", "Ptr", mask), DllCall("DeleteObject", "Ptr", color)
+        top := -1, bottom := -1
+        Loop rows {
+            y := A_Index - 1
+            Loop w
+                if NumGet(bits, (y * w + A_Index - 1) * 4 + 3, "UChar") {
+                    top := (top < 0) ? y : top, bottom := y
+                    break
+                }
+        }
+        return (top < 0) ? h / 2 : (top + bottom + 1) / 2 * h / rows
+    }
+
+    ; The middle of a character's ink below the top of the line, in the control's font (pixels): ascent - the ink's top above the
+    ; baseline + half its height (GetGlyphOutline's metrics). Half the line height if Windows can't tell
+    static GlyphMiddle(ctrl, char) {
+        hdc := DllCall("GetDC", "Ptr", ctrl.Hwnd, "Ptr")
+        old := DllCall("SelectObject", "Ptr", hdc, "Ptr", SendMessage(0x31, 0, 0, ctrl), "Ptr")   ; WM_GETFONT
+        tm := Buffer(60, 0), DllCall("GetTextMetricsW", "Ptr", hdc, "Ptr", tm)
+        gm := Buffer(20, 0), mat := Buffer(16, 0)
+        NumPut("UShort", 0, "Short", 1, "UShort", 0, "Short", 0, "UShort", 0, "Short", 0, "UShort", 0, "Short", 1, mat)   ; MAT2: the identity
+        found := DllCall("GetGlyphOutlineW", "Ptr", hdc, "UInt", char, "UInt", 0, "Ptr", gm, "UInt", 0, "Ptr", 0, "Ptr", mat, "UInt") != 0xFFFFFFFF   ; GGO_METRICS
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", old), DllCall("ReleaseDC", "Ptr", ctrl.Hwnd, "Ptr", hdc)
+        return found ? NumGet(tm, 4, "Int") - NumGet(gm, 12, "Int") + NumGet(gm, 4, "UInt") / 2 : NumGet(tm, 0, "Int") / 2   ; tmAscent, gmptGlyphOrigin.y, gmBlackBoxY / tmHeight
+    }
 
     ; Panel width = dialog width, at least 420 (converted by DPI) and at most maxWidth (the work area of the dialog's monitor); all real pixels
     static PanelWidthFor(dialogWidth, maxWidth := 0) => Max(Win.Scale(420), maxWidth > 0 ? Min(dialogWidth, maxWidth) : dialogWidth)

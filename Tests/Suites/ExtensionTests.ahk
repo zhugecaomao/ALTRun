@@ -1725,9 +1725,15 @@ class ExtensionTests {
             QuickSwitchPanel._panelStar.GetPos(&starX, , &starW)
             QuickSwitchPanel._panelSearch.GetPos(&searchX, , &searchW)
             eq("panel: star right of the search box", searchX + searchW < starX && starX + starW <= QuickSwitchPanel._panelWidth, true)
+            ink := QuickSwitchPanel.InkMiddle(QuickSwitchPanel._panelStar)         ; the star's ink: inside its picture
+            eq("panel: the star's ink middle inside its picture", ink > 0 && ink < QuickSwitchPanel.StarSize(), true)
             if (NavIcons.FontName() != "") {                                    ; the magnifier left of the search box (only with an icon font)
                 QuickSwitchPanel._panelIcon.GetPos(&iconX, , &iconW)
                 eq("panel: search icon left of the search box", QuickSwitchPanel._panelIcon.Text "|" (iconX >= 0 && iconX + iconW < searchX), Chr(0xE721) "|1")
+                ; on the text's middle (TextMiddle): a few pixels from the box's top, not below the box
+                QuickSwitchPanel._panelIcon.GetPos(, &iconY), QuickSwitchPanel._panelSearch.GetPos(, &boxY, , &boxH)
+                eq("panel: search icon level with the box", Abs(iconY - boxY) <= boxH // 2, true)
+                eq("panel: glyph middles inside their lines", QuickSwitchPanel.GlyphMiddle(QuickSwitchPanel._panelSearch, Ord("H")) > 0 && QuickSwitchPanel.GlyphMiddle(QuickSwitchPanel._panelIcon, 0xE721) > 0, true)
             } else
                 eq("panel: no icon font, no search icon", QuickSwitchPanel._panelIcon "|" searchX, "|" Win.Scale(10))
             QuickSwitchFavorites._ToggleFavorite("C:\Fav Test\", true)
