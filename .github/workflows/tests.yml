@@ -162,6 +162,45 @@ jobs:
           if ((Get-ItemProperty $key).AppsUseLightTheme -ne 0) { throw "Dark Mode: still light" }
           $null = Invoke-Library 'Dark Mode.ahk' ''
           if ((Get-ItemProperty $key).AppsUseLightTheme -ne 1 -or (Get-ItemProperty $key).SystemUsesLightTheme -ne 1) { throw "Dark Mode: didn't switch back to light" }
+      - name: Run the library's OCR script on a picture of text (offline Windows OCR; with a made-up key, the online call fails and it falls back)
+        shell: pwsh
+        run: |
+          # A path with a space, an apostrophe and Chinese: the engines get it through -EncodedCommand
+          $dir = New-Item -ItemType Directory (Join-Path $env:RUNNER_TEMP "ocr 测试 it's") -Force
+          $png = Join-Path $dir 'text.png'
+          Add-Type -AssemblyName System.Drawing
+          $bmp = [Drawing.Bitmap]::new(900, 160); $g = [Drawing.Graphics]::FromImage($bmp)
+          $g.Clear([Drawing.Color]::White); $g.TextRenderingHint = 'AntiAliasGridFit'
+          $g.DrawString('Hello ALTRun 2026', [Drawing.Font]::new('Arial', 48), [Drawing.Brushes]::Black, 20, 40)
+          $bmp.Save($png, [Drawing.Imaging.ImageFormat]::Png); $g.Dispose(); $bmp.Dispose()
+          function Invoke-Ocr([hashtable]$vars) {
+            $vars['ALTRUN_OCR_IMAGE'] = $png
+            foreach ($key in $vars.Keys) { Set-Item "env:$key" $vars[$key] }
+            Set-Clipboard -Value 'before'
+            & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Out ocr.log -Err ocr.err -TimeoutSeconds 90 `
+              -Arguments '/ErrorStdOut', "`"$((Resolve-Path 'docs\scripts\OCR.ahk').Path)`""
+            $code = $LASTEXITCODE
+            foreach ($key in $vars.Keys) { Remove-Item "env:$key" }
+            $out = "$(Get-Content ocr.log -Raw -Encoding utf8)$(Get-Content ocr.err -Raw -Encoding utf8)".Trim()
+            $clip = "$(Get-Clipboard -Raw)"
+            Write-Host "--- OCR $($vars.Keys -join ', ') exit $code`n$out`nclipboard: $clip"
+            if ($code -eq 124) { throw "OCR.ahk didn't finish" }
+            if ($out -match '[^\x20-\x7E]') { throw "OCR.ahk printed non-ASCII text (ALTRun may decode it as GBK)" }
+            return [pscustomobject]@{ Code = $code; Out = $out; Clip = $clip }
+          }
+          $r = Invoke-Ocr @{ ALTRUN_OCR_ENGINE = 'windows' }
+          if ($r.Out -match 'No OCR language pack') {
+            Write-Host "INFO: this runner has no Windows OCR language, so the recognition itself isn't checked"
+            $hasOcr = $false
+          } else {
+            if ($r.Code -ne 0 -or $r.Out -notmatch '^OCR copied \d+ chars - result on clipboard$') { throw "Offline OCR: $($r.Out)" }
+            if ($r.Clip -notmatch 'Hello\s*ALTRun\s*2026') { throw "Offline OCR recognized: $($r.Clip)" }
+            $hasOcr = $true
+          }
+          # Made-up keys: Volcengine refuses them (or can't be reached); the reason is in the notification
+          $r = Invoke-Ocr @{ VOLC_AK = 'AKLTtest'; VOLC_SK = 'test' }
+          if ($r.Out -notmatch '\(online failed: .+\)$' -and $r.Out -notmatch '\(offline - online failed: .+\)$') { throw "No fallback reason: $($r.Out)" }
+          if ($hasOcr -and $r.Clip -notmatch 'Hello\s*ALTRun\s*2026') { throw "Fallback OCR recognized: $($r.Clip)" }
       - name: Unit tests
         shell: pwsh
         run: |
