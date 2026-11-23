@@ -1,0 +1,91 @@
+# After a release is published, comments on the open issues its notes refer to with "(#N)" that the changes are out
+# (packaging/Release-Notice.sh: one comment per issue and release, in the issue's language; the issues stay open).
+# A separate workflow so that only this job can write to issues, and a failure here never touches the release itself.
+# Test builds have no GitHub release and get no comment.
+# By hand (Actions → Release notice → Run workflow): for a release whose run failed after publishing, or to retry issues that
+# failed; "dry_run" (on by default) only lists what it would comment. Pull requests that change it run a dry run on the latest release.
+name: Release notice
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Released version (empty = the latest release)"
+        type: string
+        default: ""
+      dry_run:
+        description: "Only list the comments it would post"
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - .github/workflows/release-notice.yml
+      - packaging/Release-Notice.sh
+
+permissions: {}
+
+concurrency:
+  group: release-notice
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    # Release runs are named by the publish input (as in pages.yml): test builds don't get here
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.display_title == 'Publish release')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read                                                     # the release and Src/Core/App.ahk of the released commit
+      issues: write                                                      # read the issues and their comments, and comment
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      VERSION_INPUT: ${{ inputs.version }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Comment on the issues
+        run: |
+          set -euo pipefail
+          version=$(echo "$VERSION_INPUT" | tr -d '[:space:]')
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+            # the version of the commit that was released, not of the newest main
+            version=$(gh api "repos/$GITHUB_REPOSITORY/contents/Src/Core/App.ahk?ref=$HEAD_SHA" -H "Accept: application/vnd.github.raw" \
+              | sed -nE 's/^\s*static Version\s*:=\s*"([^"]+)".*/\1/p' | head -n 1)
+          elif [ -z "$version" ]; then
+            version=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          fi
+          if [ "$DRY_RUN" = true ]; then
+            bash packaging/Release-Notice.sh "$version" dry-run
+          else
+            bash packaging/Release-Notice.sh "$version"
+          fi
+
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Dry run on the latest release
+        run: |
+          set -euo pipefail
+          bash packaging/Release-Notice.sh "$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" dry-run

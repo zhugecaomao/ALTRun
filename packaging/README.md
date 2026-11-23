@@ -5,6 +5,7 @@
 | `../bucket/altrun.json` | Scoop 清单。仓库本身就是一个 bucket: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun` |
 | `winget/*.yaml` | winget 清单 (zip 里的便携版 ALTRun.exe)。2026-11 已收录到 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs): `winget install zhugecaomao.ALTRun` |
 | `Update-Manifests.ps1` | 把两个清单更新到新版本 (版本号、下载地址、SHA256) |
+| `Release-Notice.sh` | 正式版发布后, 在 Release 说明里 `(#N)` 引用的开着的 issue 下评论 (`.github/workflows/release-notice.yml`, 见 Wiki Development 的 "发布流程") |
 | `Submit-Winget.ps1` | 向 winget-pkgs 提交新版本: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR |
 
 ## 发布新版本时

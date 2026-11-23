@@ -182,7 +182,7 @@ Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 
 - `CONTRIBUTING.md` 和 `SECURITY.md`: 一个文件里英文在前、中文在后, 开头有跳到两种语言的链接。`CONTRIBUTING.md` 只写反馈问题和提交 PR 的要点, 详细内容在这一页
 - Wiki: 每页两个文件, 英文 `Usage.md` (默认, 和 `README.md` 一样) 和中文 `Usage-zh.md`; 每页开头链接到另一种语言, 中文页之间的链接写 `-zh` 的页面名。侧边栏 `_Sidebar.md` 分中英两组。程序里的帮助 (速查表、偏好设置的 `F1`) 按界面语言打开: 中文界面 (简体、繁体) 打开 `-zh` 页, 其它语言打开英文页 (`HelpProvider.WikiPage`)。`WikiPages` 测试检查每页都有中文页、链接指向存在的页面
 - 2026.10.20 以前英文页叫 `en-Usage`、中文页叫 `Usage`。为了旧链接和旧版本的 ALTRun, `.github/workflows/wiki.yml` 曾发布一行的 `en-Usage` 页面指向新的名字, 2026.10.20 之后发布满三个正式版后已停止, 这些页面已经删除
-- CHANGELOG: 测试版各节用中文写; 正式版那一节英文在前、中文在后, 也是 Release 的说明 (格式见下面的 "发布流程")
+- CHANGELOG: 测试版各节用中文写; 正式版那一节英文在前、中文在后, 也是 Release 的说明 (格式见下面的 "发布流程"). 用户报的 issue 写在条目末尾 `(#N)` (几个: `(#N, #M)`): 正式版发布后 Release notice 工作流会在这些 issue 下评论
 - Wiki 页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes-zh)`, 英文页写 `[Themes](Themes)`)。英文不熟悉的话可以只改中文, 在 PR 里说明, 维护者会补上英文
 
 官网 (https://zhugecaomao.github.io/ALTRun/) 的源文件在 `site/`: `index.html` 是中英文模板, `build.py` 填入最新版本号、下载链接和大小、下载次数、主题截图和最新版本的更新内容, 生成到 `_site/`。`.github/workflows/pages.yml` 在 main 上相关文件变化、Release 成功后和每天一次自动生成, 用 GitHub Pages 的官方 Actions 部署 (Settings → Pages → Source 选 "GitHub Actions")。本地预览: `python3 site/build.py && python3 -m http.server -d _site`。
@@ -228,6 +228,7 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
    - `### 中文说明` (中文摘要一段) / `#### 升级` / `#### 新增` / `#### 改进` / `#### 修复`
    - 这一节里不要用 `##` 标题 (Release workflow 取到下一个 `##` 为止); 删掉测试版各节和它们的比较链接; 文件末尾 `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD`, `[未发布]: .../compare/YYYY.MM.DD...HEAD`
 3. 合并到 main 后会自动跑一次检查构建 (`publish = false`); 再在 main 上运行 **Release**, `publish = true`
+4. 这次运行成功后, **Release notice** 工作流 (`.github/workflows/release-notice.yml`, `packaging/Release-Notice.sh`) 在 Release 说明里用 `(#N)` 引用的每个 issue 下评论: 只发给开着的 issue (不想通知就先关掉), 不发给 PR 和仓库所有者开的 issue; issue 标题或正文有汉字就用中文, 否则用英文; 每个 issue 每个版本只发一次 (评论里有隐藏标记); 不关 issue. 只有这个 job 能写 issue, 在 Release 之后单独运行, 失败不影响发布; 运行摘要列出每个 issue 的结果. 发布后 Release 运行失败、或有 issue 评论失败时, 手动运行 (Actions → Release notice, `dry_run` 默认开着, 只列出要发的评论). 测试版不评论
 
 Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe (固定版本, 核对 SHA256) → 单元测试 (只在发布正式版时; 测试版的同一个提交由 Tests workflow 测试) → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 用 VirusTotal 扫描 `ALTRun.exe` (`packaging/Scan-VirusTotal.ps1`, secret `VT_API_KEY`; 扫的就是要发布的那个文件: 有引擎报恶意、或 15 分钟没出结果就停在这里, 什么都不发布; 看过运行摘要里的报告确认是误报后, 勾 `allow_detections` 重新运行; `virustotal` 可以在测试版上也扫; 结果和报告链接只在运行摘要里, 不写进 Release 说明) → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
 
