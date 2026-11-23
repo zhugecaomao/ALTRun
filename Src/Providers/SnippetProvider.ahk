@@ -11,6 +11,7 @@
 ;   {date} {time} {datetime} {clipboard} {cursor} (the caret stays here after pasting)
 ;   {date:yyyy-MM-dd} {time:HH:mm:ss} with your own format (FormatTime's syntax); {date+7} {date-1:dddd} days before / after
 ;   {uuid} a random UUID; {clipboard:1} {clipboard:2} the previous and the one before in the clipboard history (as in Alfred)
+;   {enter} {tab} press the key there (e.g. to confirm a combo box after the text), unlike a line break or tab in the text
 ; Auto expansion (typing ";keyword"): see Src\Extensions\SnippetExpander.ahk.
 ;===============================================================================
 
@@ -90,7 +91,7 @@ class SnippetProvider {
         keyword.Check := (value, edited) => SnippetProvider.CheckKeyword(value, edited, prefix)
         return [ItemEditor.Field("Name", "Prefs.Col.Name", "text", true, "", I18n.T("Snippet.Hint.Name"))
               , keyword
-              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", I18n.T("Snippet.Hint.Text") "`n{date} {date:yyyy-MM-dd} {date+7} {time} {datetime} {clipboard} {clipboard:1} {uuid} {cursor}")
+              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", I18n.T("Snippet.Hint.Text") "`n{date} {date:yyyy-MM-dd} {date+7} {time} {datetime} {clipboard} {clipboard:1} {uuid} {cursor} {enter} {tab}")
               , ItemEditor.Field("AutoExpand", "Prefs.Col.AutoExpand", "check", , , I18n.T("Snippet.Hint.AutoExpand", prefix))]
     }
 
@@ -214,12 +215,36 @@ class SnippetProvider {
 
     ; focusPrevious = false: auto expansion pastes into the current window directly
     static Paste(text, focusPrevious := true) {
-        text := SnippetProvider.Expand(text)
-        caretBack := SnippetProvider.CaretBack(&text)
-        if !ActionCatalog.PasteText(text, focusPrevious)
-            return
-        if (caretBack > 0)
-            SendInput("{Left " caretBack "}")
+        parts := SnippetProvider.KeyParts(text)                             ; split first: {enter} in the clipboard text is only text
+        for index, part in parts {
+            text := SnippetProvider.Expand(part.Text)
+            if (index < parts.Length)                                       ; {cursor} counts only after the last key: the caret can't go back past one
+                text := StrReplace(text, "{cursor}")
+            caretBack := SnippetProvider.CaretBack(&text)
+            if (text != "") {
+                if !ActionCatalog.PasteText(text, focusPrevious)
+                    return
+                focusPrevious := false
+            } else if focusPrevious {
+                App.FocusPreviousWindow(), Win.WaitModifiersUp(), focusPrevious := false
+            }
+            if (caretBack > 0)
+                SendInput("{Left " caretBack "}")
+            if (part.Key != "")
+                SendInput("{" part.Key "}")
+        }
+    }
+
+    ; The text split at {enter} / {tab} (any case): [{Text, Key}], Key = "Enter" / "Tab" pressed after Text, "" for the last part.
+    ; A key, not a character: a line break typed or pasted doesn't confirm a combo box (PowerPoint's font box) or move to the next field
+    static KeyParts(text) {
+        parts := [], pos := 1
+        while (found := RegExMatch(text, "i)\{(enter|tab)\}", &m, pos)) {
+            parts.Push({Text: SubStr(text, pos, found - pos), Key: StrTitle(m[1])})
+            pos := found + m.Len
+        }
+        parts.Push({Text: SubStr(text, pos), Key: ""})
+        return parts
     }
 
     ; Takes {cursor} out of the text; returns how many times Left moves the caret back there after pasting (0 = no {cursor}).

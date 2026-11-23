@@ -1,6 +1,6 @@
 # Custom hotkeys that run a custom command or a script, pressed for real on a Windows desktop (Tests\Integration\HotkeyCheck.ahk): a command
 # without {query}, a {query} command with text selected in another window (and the clipboard put back), a hotkey whose command
-# was deleted, and a script for selected text. On pull requests that change how these hotkeys run, on main, or run by hand
+# was deleted, a script for selected text, and a snippet with {tab} / {enter} typed into a form. On pull requests that change how these hotkeys run, on main, or run by hand
 name: Hotkeys
 
 on:
@@ -11,6 +11,8 @@ on:
       - Src/Providers/ScriptProvider.ahk
       - Src/Extensions/ContentTypes.ahk
       - Src/Extensions/SelectionActions.ahk
+      - Src/Extensions/SnippetExpander.ahk
+      - Src/Providers/SnippetProvider.ahk
       - Tests/Integration/HotkeyCheck.ahk
       - .github/workflows/hotkeys.yml
       - .github/actions/setup-ahk/**
@@ -22,6 +24,8 @@ on:
       - Src/Providers/ScriptProvider.ahk
       - Src/Extensions/ContentTypes.ahk
       - Src/Extensions/SelectionActions.ahk
+      - Src/Extensions/SnippetExpander.ahk
+      - Src/Providers/SnippetProvider.ahk
       - Tests/Integration/HotkeyCheck.ahk
       - .github/workflows/hotkeys.yml
       - .github/actions/setup-ahk/**
