@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.11]
+
+测试版。
+
+Test build.
+
+### 修复
+- 文字片段在 Windows 11 的记事本里展开出错: 粘贴时只出来一个 `v`, 逐字输入时全变成最后一个字. 新版记事本读取按键比按键到达晚, 一次发出的一整串按键对不上; 现在在它的文本框里一个一个发送, 中间稍停 (其他程序不变). 剪贴板历史粘贴也一样 (#572)
+
 ## [2026.11.23.10]
 
 测试版。
@@ -1658,7 +1667,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...HEAD
+[2026.11.23.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...2026.11.23.11
 [2026.11.23.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...2026.11.23.10
 [2026.11.23.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...2026.11.23.9
 [2026.11.23.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...2026.11.23.8

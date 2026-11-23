@@ -273,6 +273,14 @@ class ExtensionTests {
         eq("auto: emoji pasted", types("ok " Chr(0x1F600), "Auto"), false)
         eq("clipboard: never typed", types("hi", "Clipboard"), false)
         eq("type: always typed", types("Dear Sir,`nThanks", "Type"), true)
+        ; Windows 11 Notepad's text box gets the keys one by one (#572); other boxes in one batch
+        paced := (cls) => ActionCatalog.IsPacedClass(cls)
+        eq("paced: Windows 11 Notepad", paced("RichEditD2DPT1") "|" paced("RichEditD2DPT3"), "1|1")
+        eq("not paced: classic Notepad, other boxes, none", paced("Edit1") "|" paced("RICHEDIT50W1") "|" paced("Chrome_RenderWidgetHostHWND1") "|" paced(""), "0|0|0|0")
+        g := Gui(), box := g.AddEdit("w100")
+        g.Show("NA x-3000 y-3000"), box.Focus()
+        eq("this edit box isn't paced", ActionCatalog.IsPacedClass(ControlGetClassNN(box)), false)
+        g.Destroy()
         eq("unknown mode: clipboard", types("hi", "Other"), false)
 
         ; really typed into an edit box: the text appears and the clipboard is unchanged

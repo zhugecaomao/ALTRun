@@ -72,6 +72,8 @@ Preferences → Snippets → "Don't expand in" (`Features.Snippets.ExpandExclude
 
 The clipboard history uses the same setting, but what it pastes stays on the clipboard: with `Auto` and `Clipboard` it always goes through the clipboard (nothing is restored, so there is no wait); with `Type` it is typed and also put on the clipboard.
 
+**Windows 11 Notepad** reads keys later than they arrive: when a whole batch is sent at once, `Ctrl+V` comes out as a single `v` and typed text as the last character over and over. In its text box (`RichEditD2DPT`) ALTRun sends the keys one by one with a short pause instead (about 20 ms per character when typing, 60 ms for `Ctrl+V`); everywhere else they go in one batch, which is faster.
+
 ## Importing and exporting
 Preferences → Snippets → "More ▾":
 - **Import from a table**: paste cells copied from Excel, or click "Open File" to read a CSV / TSV file (UTF-8, or the system's default encoding). Columns: Name | Keyword | Text | Expand automatically (optional, `1` / `0`, blank = on). A header row is skipped, rows without text are skipped, and a missing name is taken from the keyword or the first line of the text
