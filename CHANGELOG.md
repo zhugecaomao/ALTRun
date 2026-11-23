@@ -5,286 +5,87 @@
 
 ## [未发布]
 
-## [2026.11.16.28]
-
-测试版。
-
-Test build.
-
-### 修复
-- 选中内容里有 `( ) { } ' $ ;` 等字符时, 运行 PowerShell 的自定义命令不再从选中内容的操作面板里消失: 直接启动的 PowerShell (`powershell.exe` / `pwsh.exe`) 在 `-Command` 里把 `{query}` 放在单引号中 (`'{query}'`, 选中内容里的单引号自动写成两个), 或者用 `-File` 传给脚本时, 这些字符只当文字, 可以运行 (#615)
-
-### 改进
-- 选中内容因为换行、双引号或 shell 的特殊字符不能传给某个命令或脚本时, 这一行仍留在面板里, 说明是哪些字符; 按 Enter 只显示这条说明, PowerShell 命令还会说明怎样写才能接收 (#615)
-
-## [2026.11.16.27]
-
-测试版。
-
-Test build.
-
-### 改进
-- 文件管理器参数只留一个占位符 `{path}`, 去掉测试版 .25 加的 `{file}`: 打开文件夹时是这个文件夹; 在文件管理器中显示 (`Ctrl+Enter`) 时, Total Commander 是那个文件或文件夹本身, ALTRun 自动加 `/P`, 所以用 `/R={path}` 也能在右侧面板打开并选中它; 其他文件管理器是所在的文件夹。偏好设置 → 通用 → 文件管理器 的说明里加了 `{path}` 和 `/R={path}` 的例子 (#610)
-
-## [2026.11.16.26]
-
-测试版。
-
-Test build.
-
-### 改进
-- 文件管理器参数里的 `{path}` / `{file}`: 路径有空格时自动加引号, 已经写在引号里 (例如 `/R="{path}"`) 时不再加, 所以 `/R={path}` 和 `/R="{path}"` 都可以 (#610)
-
-## [2026.11.16.25]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 通用 → 文件管理器 的参数里可以用 `{path}` (要打开的文件夹) 和 `{file}` (文件或文件夹本身) 指定路径放在哪里, 例如 Total Commander 总在右侧面板打开: `TOTALCMD64.exe /O /T /R="{path}"`; 在文件管理器中显示 (`Ctrl+Enter`) 时 `{path}` 是所在的文件夹, `{file}` 是这个文件。不写时和以前一样把路径加在参数后面 (#610)
-
-### 修复
-- 自定义命令的目标只写了程序名, 而程序登记在 App Paths 里 (例如 `chrome.exe`、`winword`) 时, `Ctrl+Enter` 现在打开程序所在的文件夹 
-
-## [2026.11.16.24]
-
-测试版。
-
-Test build.
-
-### 新增
-- 脚本库加了 `Delayed Start.ahk` (关键字 `delayedstart`): 登录 Windows 几分钟后再启动 OneDrive 等程序, 功能和原来的 偏好设置 → 延迟启动 一样 (任务计划程序里的任务、启动项...、关掉 / 重新打开程序自己的启动)。列表直接读任务计划程序, 不另存设置; 改动点确定时就生效; 中文 Windows (简体) 上界面是中文, 其他是英文
-
-### 移除
-- 偏好设置 → 延迟启动 移到了脚本库, 需要的话从 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 下载 `Delayed Start.ahk` 到 `Scripts\` 文件夹。已经建好的任务照常运行, 脚本窗口里原样列出, 不用迁移; ALTRun 启动后不再按列表补齐任务 (多台电脑共用设置文件时, 在另一台电脑上运行一次脚本添加)。ALTRun.json 里旧的 `DelayedStart` 不再使用, 留着无害
-
-## [2026.11.16.23]
-
-测试版。
-
-Test build.
-
-### 改进
-- 文字片段默认不在常见远程桌面程序里自动展开 (ToDesk、向日葵、AnyDesk、TeamViewer、RustDesk, 原来已有 Windows 远程桌面): 在远程桌面窗口里打字时, 本机的 ALTRun 也会展开, 传到远程电脑时只剩一个 `v` 或者什么都没有, 应该由远程电脑上的 ALTRun 展开。只对新安装和恢复默认设置生效; 已有的设置在 偏好设置 → 文字片段 → 不展开的窗口 里自己加; 浏览器里的 Chrome 远程桌面用 "远程电脑名 ahk_exe msedge.exe" 这样的写法 (见 Wiki 文字片段) (#572)
-
-## [2026.11.16.22]
-
-测试版。
-
-Test build.
-
-### 修复
-- 两个屏幕缩放比例不同时 (例如笔记本 150%、外接显示器 100%), 打开 / 保存对话框下方的文件夹面板跑到很远的地方、宽度只有对话框的 2/3 (#567)
-
-## [2026.11.16.21]
-
-测试版。
-
-Test build.
-
-### 新增
-- 文件类型的 "打开 (回车)" (类似 Total Commander 的内部关联): 选一条运行程序的自定义命令, 在搜索结果里的这类文件上按回车就用它打开, 它也排在操作面板最前面; 适合 Windows 不认识这类文件的便携环境 (例如 .md)。两步设好: 自定义命令里加程序, 内容类型里选 "打开 (回车)"。程序和快捷方式 (.exe .lnk 等) 不受影响; 标记多个文件后 "全部打开" 也按类型
-- 搜索结果里的文件和文件夹 (也包括置顶、最近使用、浏览文件夹) 按 → 时, 它的内容类型的自定义命令和脚本排在 "打开" 后面, 和 Ctrl+Alt+\ 一样
-
-### 改进
-- 偏好设置页 "选中内容" 改名 "内容类型", 命令编辑窗口的 "选中内容类型" 改名 "内容类型"; 类型列表加 "打开 (回车)" 一列, 命令编辑窗口的 "触发方式" 也显示它
-
-## [2026.11.16.20]
-
-测试版。
-
-Test build.
-
-### 修复
-- 偏好设置里的列表 (自定义命令、热键等) 右键菜单打不开, 报错 "This value of type String has no method named Call" (测试版 2026.11.16.13 起)
-
-## [2026.11.16.19]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 脚本: 列表的类型列标题改回 "选中内容类型", 意思更清楚 (列窄时标题显示不全)
-
-## [2026.11.16.18]
-
-测试版。
-
-Test build.
-
-### 新增
-- 搜索窗口里的文件 / 文件夹结果可以用鼠标拖到别的程序 (微信、邮件、资源管理器的文件夹、桌面), 就是复制过去, 原文件不会被移走; 放下后窗口自动隐藏, 拖动中按 Esc 取消; 用 Insert 标记的几个文件一起拖
-
-## [2026.11.16.17]
-
-测试版。
-
-Test build.
-
-### 新增
-- [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 新增 5 个脚本 (下载到 `Scripts\` 文件夹就能用): Kill Process (`kill`, 列出正在运行的程序和内存, 回车结束)、World Clock (`tz`, 60 个城市的当地时间和时差)、Unix Timestamp (`ts`, 时间戳和日期互转)、Dark Mode (`dark`, 切换 Windows 深浅色)、Quick Note (`note`, 把一行笔记追加到 `文档\Notes.md`)
-
-### 移除
-- 系统命令 "列出运行中的进程" / "列出运行中的服务" (`ListProcesses` / `ListServices`, 把 tasklist / net start 的输出用记事本打开): 用到它们的自定义热键、置顶和最近使用改为打开任务管理器 / 服务; 想搜索正在运行的程序并结束它, 用脚本库的 Kill Process (`kill`)
-
-## [2026.11.16.16]
-
-测试版。
-
-Test build.
-
-### 修复
-- 偏好设置 → 脚本: 点 "打开脚本文件夹" 后列表重新读一遍, 没有选中的行, 下面却还显示刚才选中的脚本的说明和路径; 现在会清空 
-
-## [2026.11.16.15]
-
-测试版。
-
-Test build.
-
-### 新增
-- 脚本库加了两个脚本: `PT Tools.ahk` (钢筋和钢筋网面积、所需钢筋根数、计算器; 关键字 `pttools`) 和 `SPF2M.ahk` (后张预应力束线型计算; 关键字 `spf2m`)。功能和计算结果和原来内置的一样 (139 组 SPF2M 对照数据照旧逐个比对); 输入和窗口位置存在脚本旁边的 `PT Tools.ini` / `SPF2M.ini`
-
-### 移除
-- 内置的 PT 工具箱和 SPF2M (系统命令 `PTTools` / `SPF2M`) 移到了脚本库, 需要的话从 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 下载到 `Scripts\` 文件夹, 用上面的关键字打开。上次的输入和窗口位置不会带过来 (恢复成默认值); 动作是 `PTTools` / `SPF2M` 的自定义热键不再起作用, 要在热键编辑窗口里改成运行脚本。ALTRun.json 里旧的 `Extensions.PTTools` 不再使用, 留着无害 
-
-## [2026.11.16.14]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 脚本: 选中一个脚本, 列表下面显示它的说明 (脚本库的脚本有中英文说明)、需要什么、会不会联网和文件路径; 右键菜单有 编辑 / 运行 / 在文件管理器中显示 / 复制路径; 双击编辑改用 Windows 给这种文件登记的编辑程序 (和搜索窗口里按 `F3` 一样), 没有登记的才用记事本
-
-## [2026.11.16.13]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置里可以编辑的列表 (自定义命令、内容类型、文字片段、网页搜索引擎、热键、延迟启动、同步任务) 都有右键菜单: 在一行上右键是 编辑 (同双击) / 删除, 然后是 添加 和这一页自己的按钮 (例如 检查路径、导入 / 导出、添加示例); 菜单键或 `Shift+F10` 也能打开
-
-## [2026.11.16.12]
-
-测试版。
-
-Test build.
-
-### 修复
-- 脚本开头的中文标题、关键字等 (`@altrun.title` 之类) 在记事本默认的 UTF-8 (不带 BOM) 文件里显示成乱码: 现在按 UTF-8 读, 带 BOM 的 UTF-8 / UTF-16 也认; 不是 UTF-8 的文件 (例如 GBK) 仍按系统编码读
-
-## [2026.11.16.11]
-
-测试版。
-
-Test build.
-
-### 移除
-- 不再提供 Microsoft Store 版 (没有上架): 去掉 MSIX 打包和商店版专用的代码 (更新检查打开商店页、执行别名启动、开始菜单快捷方式和检查更新选项变灰)。便携版、winget、Scoop 不受影响; 搜索里索引 Microsoft Store 应用照旧
-
-## [2026.11.16.10]
-
-测试版。
-
-Test build.
-
-### 改进
-- 第一次打开脚本文件夹时不再自动放 4 个示例脚本: 其中 3 个 (端口占用、IP 地址、环境变量) 放进了网站的 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts), 需要时下载; "今天的日期" 留在 Wiki 当写法示例。还没有脚本时, 偏好设置 → 脚本 的列表显示 "还没有脚本: 双击浏览脚本库"。已经生成的示例不受影响 (#544)
-
-## [2026.11.16.9]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 脚本 多了 **浏览脚本库** 按钮: 打开网站上的脚本库, 里面是现成的脚本 (翻译、Total Commander 命令面板、文件哈希), 下载到 `Scripts\` 文件夹就能用 (#544)
-
-## [2026.11.16.8]
-
-测试版。
-
-Test build.
-
-### 改进
-- 操作面板 (`→`、选中内容的操作) 输入文字过滤时也认拼音首字母, 以及搜索引擎、自定义命令、脚本的关键字: 例如 `bd` → 用 百度 搜索; 想用 `bs`, 给百度加上关键字 `bs` (#541)
-
-## [2026.11.16.7]
-
-测试版。
-
-Test build.
-
-### 修复
-- Quick Switch: 文件管理器里开着一个服务器已离线的网络文件夹时, 跳转会让 ALTRun 卡住约 20 秒; 管理员程序的对话框里, 后台助手也会卡住同样长的时间, 期间 Caps Lock 和热键都不响应。现在网络文件夹 0.5 秒内没有响应就不跳转
-
-## [2026.11.16.6]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转: 别的程序把对话框调到前面时 (例如用 ALTRun 切换到窗口), Windows 有时不发 "前台窗口变了" 的通知, 对话框要 1.5 s 后才跳, 偶尔不跳; 现在打开着文件对话框时每 0.25 s 对比一次前台窗口, 漏掉的切换也能及时跳
-
-## [2026.11.16.5]
-
-测试版。
-
-Test build.
-
-### 改进
-- 后台脚本 (`@altrun.mode silent` / `output`) 直接启动, 不再经过 cmd 和重定向: `.ahk` `.ps1` `.py` 的参数里可以有双引号和 `& | >` (选中内容也能传给它们了); `.bat` / `.cmd` 仍经过 cmd, 双引号照旧不传
-- 后台脚本也拿到 `ALTRUN_HWND` / `ALTRUN_PID` / `ALTRUN_PROCESS` (之前在前面的窗口)、`ALTRUN_ACTION=run`、`ALTRUN_ARG`、`ALTRUN_KEYWORD`、`ALTRUN_VERSION`, 和实时结果脚本一样
-- silent 脚本失败时 (退出码不是 0、启动不了、超时) 通知显示错误输出的第一行或原因, 不再是错误输出的最后一行; `.ahk` 的语法错误进通知, 不再弹框
-- output 脚本的错误输出空一行接在输出后面; 文字以 UTF-8 打开, 西文系统上 PowerShell / 批处理输出的重音字母等不再乱码
-- 注意: 后台脚本运行超过 2 分钟会被结束 (以前只是不再等, 脚本仍在后台运行); 它启动的程序不受影响。读输入的命令 (`pause` 等) 不再卡住
-
-## [2026.11.16.4]
-
-测试版。
-
-Test build.
-
-### 新增
-- Total Commander 命令面板的示例脚本 `TC Commands.ahk` (#520; 关键字 `tc`, 不默认安装, 见 Wiki 的脚本页): 输入 `tc ` 和命令名 (英文或 TC 界面语言, 也认拼音首字母), `Enter` 在 TC 里执行。列出 TC 的内部命令 (cm_, 读 TOTALCMD.INC, 有语言文件就用译名) 和自己的命令 (em_, 读 usercmd.ini); 作用于打开 ALTRun 之前的 TC 窗口, 没有就用最近用过的那个
-
-### 改进
-- 由 ALTRun 过滤的实时结果脚本 (`@altrun.filter altrun`) 最多读 2000 条 (以前 200 条, 多出的看不到); 边输入边运行的仍是 200 条
-
-## [2026.11.16.3]
-
-测试版。
-
-Test build.
-
-### 新增
-- 实时结果脚本的结果可以是 `"type": "script"` (#520): 按 `Enter` 关掉搜索窗口, 在后台用结果的 `arg` 再运行这个脚本 (第一个参数和 `ALTRUN_ARG`; `ALTRUN_ACTION` 是 `run`, 列结果时是 `filter`; 输入的文字和 `ALTRUN_HWND` 等窗口变量一样)。一个脚本就能做前台程序的命令面板: 按当前程序列出命令, 选中后对那个窗口执行。脚本启动的程序在它结束后照常运行; 结束后打印的最后一行显示成通知, 失败时显示原因; `→` 动作面板里可以运行或复制 `arg` (`Alt+Enter`)
-
-## [2026.11.16.2]
-
-测试版。
-
-Test build.
-
-### 新增
-- 实时结果脚本 (`@altrun.mode filter`) 能拿到 ALTRun 弹出前在前台的窗口 (#520): 环境变量 `ALTRUN_HWND` (窗口句柄, 和自定义命令的 `{hwnd}` 一样)、`ALTRUN_PID`、`ALTRUN_PROCESS` (程序文件名, 例如 `TOTALCMD64.EXE`), 脚本可以按当前程序列出不同的结果
-
-### 改进
-- 后台运行脚本时, 传给它的环境变量 (`ALTRUN_QUERY` 等) 只放进它自己的环境, ALTRun 自己的环境变量不再临时改动 (以前同一时刻启动的别的程序可能带上输入的文字)
-
-## [2026.11.16.1]
-
-测试版。
-
-Test build.
-
-### 改进
-- 新安装第一次启动时先问 "开机时自动启动 ALTRun?" (默认按钮是 "是"), 点 "是" 才在 "启动" 文件夹建快捷方式; 点 "否" 或没回答就关掉算关, 以后不再问。已有的设置和从 `ALTRun.ini` 升级的不受影响, 也不会问 (发送到 / 开始菜单快捷方式照旧)
+## [2026.11.23]
+
+### Summary
+
+**Open a file type with the program you choose** (like Total Commander's internal associations): pick a custom command as a content type's "Open (Enter)", and Enter on such a file in the results opens it with that program, handy for `.md` and other types Windows doesn't know on a portable setup. **Drag files and folders out of the search window** into WeChat, an e-mail, an Explorer folder or the desktop: a copy, the original never moves. A new **script library** on the website has ready-made scripts (translation, OCR, a Total Commander command palette, ending processes, world clock, Unix timestamps, dark mode, quick notes and more): download one into `Scripts\` and use it by its keyword. PT Tools, SPF2M and Delayed Start moved there too, so ALTRun itself stays focused on search and launch. Live-result scripts now see the window that was in front and can run their own items, enough for a command palette of the current program. The file manager takes a `{path}` placeholder (for example Total Commander's right panel), the actions panel filters by pinyin initials and keywords, and selected text with `( ) { } '` now goes to PowerShell commands. Fixes for the folder panel of Open / Save dialogs on monitors with different scaling and a ~20 s hang on offline network folders.
+
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- **PT Tools, SPF2M and Delayed Start are now scripts** in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts): download `PT Tools.ahk`, `SPF2M.ahk` or `Delayed Start.ahk` into the `Scripts\` folder and open it by its keyword (`pttools`, `spf2m`, `delayedstart`). Delayed start tasks already created keep running and the script lists them as they are; ALTRun no longer re-creates them from its list at start (with one settings file on several computers, run the script once on each). PT Tools and SPF2M start with default inputs and window positions; custom hotkeys with the action `PTTools` / `SPF2M` no longer work: change them to run the script. The old `Extensions.PTTools` and `DelayedStart` entries in ALTRun.json are no longer used and do no harm
+- The system commands "List running processes" / "List running services" (`ListProcesses` / `ListServices`) are gone: hotkeys, pinned and recent items using them open Task Manager / Services instead; to search running programs and end one, use the Kill Process script (`kill`)
+- Background scripts (`@altrun.mode silent` / `output`) are now ended after 2 minutes (before, ALTRun only stopped waiting for them); programs they start keep running
+
+### New
+- **Open (Enter) by content type**, like Total Commander's internal associations: add the program as a custom command, then pick it in Preferences → Content Types → **Open (Enter)**. Enter on such a file in the search results opens it with that program, and it comes first in the actions panel; "Open All N Items" on marked files follows the types too. Programs and shortcuts (`.exe`, `.lnk`...) are not affected. → on a file or folder (also pinned, recent and folder browsing) lists the commands and scripts of its content type after "Open", as `Ctrl+Alt+\` does
+- **Drag files and folders from the search window** to other programs (WeChat, e-mail, an Explorer folder, the desktop): always a copy, the original is never moved; several files marked with Insert go together. The window hides after the drop; Esc cancels the drag (#587)
+- **Script library** (#544): Preferences → Scripts → **Browse Script Library** opens the [script library](https://zhugecaomao.github.io/ALTRun/#scripts) on the website. Download a script into the `Scripts\` folder and it works: Translate, OCR, TC Commands (`tc`), Kill Process (`kill`, running programs with their memory, Enter ends one), World Clock (`tz`, local time and offset of 60 cities), Unix Timestamp (`ts`), Dark Mode (`dark`, switches Windows between light and dark), Quick Note (`note`, adds a line to `Documents\Notes.md`), File Hash, IP Addresses, Who Uses a Port, Environment Variables, and PT Tools / SPF2M / Delayed Start (see Upgrade)
+- **Live-result scripts know the window in front and can run their items** (#520): `ALTRUN_HWND` (as `{hwnd}` in custom commands), `ALTRUN_PID` and `ALTRUN_PROCESS` (for example `TOTALCMD64.EXE`) tell a script which window was in front before ALTRun appeared, so it can list different results per program. A result with `"type": "script"` runs the same script again in the background when Enter is pressed, with the result's `arg` (first argument and `ALTRUN_ARG`; `ALTRUN_ACTION` is `run`, and `filter` while listing); its last printed line shows as a notification, a failure shows the reason. The `TC Commands.ahk` script uses both: type `tc ` and a command name (English, the TC interface language or pinyin initials), Enter runs it in Total Commander (internal `cm_` commands and your own `em_` commands)
+- **`{path}` in the file manager's parameters** (#610): Preferences → General → File manager, for example Total Commander always in the right panel: `TOTALCMD64.exe /O /T /R={path}`. Opening a folder, `{path}` is that folder; Reveal in File Manager (`Ctrl+Enter`) gives Total Commander the item itself and adds `/P`, so it is selected; other file managers get its folder. Quotes are added when the path has spaces (`/R="{path}"` works too). Without `{path}` the path goes at the end, as before
+- Lists in Preferences that can be edited (custom commands, content types, snippets, web search engines, hotkeys, sync jobs) have a right-click menu: Edit (as a double-click) / Delete on a row, then Add and the page's own buttons (Check Paths, Import / Export, Add Examples...); the Menu key and `Shift+F10` open it too
+
+### Improvements
+- **A new installation asks at the first start "Start ALTRun automatically when you sign in to Windows?"** (Yes is the default) and only then creates the shortcut in the Startup folder; No, or no answer, leaves it off and it isn't asked again. Existing settings and upgrades from `ALTRun.ini` are not affected and not asked
+- **The actions panel** (→, actions on the selection) **filters by pinyin initials and keywords** of search engines, custom commands and scripts too: `bd` → Search 百度; to use `bs`, give Baidu the keyword `bs` (#541)
+- **Selected text with `( ) { } ' $ ;` and similar characters goes to PowerShell commands** started directly (`powershell.exe` / `pwsh.exe`) when `{query}` is in single quotes in `-Command` (`'{query}'`; single quotes in the selection are doubled) or is passed to a script with `-File`. A command or script that can't take the selection (a line break, a double quote, or a shell's special characters) stays in the panel and says which characters; Enter shows that, and for PowerShell how to write the command so it can (#615)
+- Snippets no longer expand by default in common remote desktop programs (ToDesk, Sunlogin, AnyDesk, TeamViewer, RustDesk, besides Windows Remote Desktop already): the local ALTRun expanded there and the remote computer got a lone `v` or nothing; the ALTRun on the remote computer should expand them. For new installations and restored defaults only; add them yourself in Preferences → Snippets → Don't expand in. For Chrome Remote Desktop in a browser write e.g. "computer name ahk_exe msedge.exe" (see the Snippets wiki page) (#572)
+- Background scripts (`silent` / `output`) start directly, not through cmd and redirection: `.ahk`, `.ps1` and `.py` arguments can contain double quotes and `& | >` (the selection can go to them now); `.bat` / `.cmd` still go through cmd and get no double quotes. They get `ALTRUN_HWND` / `ALTRUN_PID` / `ALTRUN_PROCESS`, `ALTRUN_ACTION=run`, `ALTRUN_ARG`, `ALTRUN_KEYWORD` and `ALTRUN_VERSION` like live-result scripts. A failure (exit code not 0, can't start, time-out) shows the first line of the error output or the reason; `.ahk` syntax errors go into the notification, not a message box. Output scripts put the error output after the output, opened as UTF-8 (accented letters from PowerShell or batch files on Western systems are no longer garbled). Commands that read input (`pause`...) no longer hang
+- Variables passed to a script (`ALTRUN_QUERY`...) go only into the script's environment; ALTRun's own environment no longer changes for a moment (a program started at the same moment could get the typed text)
+- Live-result scripts that ALTRun filters (`@altrun.filter altrun`) read up to 2000 items (200 before); scripts run on every keystroke still read 200
+- Preferences → Scripts: selecting a script shows its description below the list (library scripts have English and Chinese ones), what it needs, whether it goes online, and its path; right-click for Edit / Run / Reveal in File Manager / Copy Path; double-click edits with the editor Windows has for that file type (as `F3` in the search window), Notepad only when there is none. The page "Selection" is renamed **Content Types**, with an "Open (Enter)" column
+- The script folder no longer gets 4 sample scripts the first time it opens: three of them are in the script library, "Today's date" stays in the wiki as an example. With no scripts yet, the list in Preferences → Scripts says "(no scripts yet: double-click to browse the script library)"; samples already created stay (#544)
+
+### Fixes
+- **Open / Save dialogs on two monitors with different scaling** (for example a laptop at 150% and a monitor at 100%): the folder panel below the dialog showed up far away and only 2/3 as wide as the dialog (#567)
+- Quick Switch: a network folder whose server is offline, open in a file manager, made ALTRun hang ~20 s when jumping; in dialogs of programs running as administrator the helper hung as long, and Caps Lock and hotkeys didn't respond meanwhile. A network folder that doesn't answer within 0.5 s is now skipped
+- Auto switch: when another program brought a dialog to the front (for example switching to it with ALTRun), Windows sometimes sent no "foreground window changed" notice, so the dialog jumped only after 1.5 s or not at all; while a file dialog is open the foreground window is now compared every 0.25 s
+- Chinese titles, keywords and other `@altrun.xxx` lines at the top of a script were garbled in UTF-8 files without a BOM (Notepad's default); they are read as UTF-8 now, UTF-8 with a BOM and UTF-16 too, and files that aren't UTF-8 (GBK...) still in the system code page
+- `Ctrl+Enter` on a custom command whose target is only a program name registered under App Paths (`chrome.exe`, `winword`...) now opens the program's folder
+- Preferences → Scripts: after "Open Scripts Folder" the list is read again with no row selected, but the description and path of the script selected before stayed below; now they are cleared
+
+---
+
+### 中文说明
+
+**按文件类型用指定的程序打开** (类似 Total Commander 的内部关联): 给内容类型选一条自定义命令作为 "打开 (回车)", 在搜索结果里的这类文件上按回车就用它打开, 适合便携环境里 Windows 不认识的 `.md` 等类型。**搜索窗口里的文件和文件夹可以用鼠标拖到别的程序** (微信, 邮件, 资源管理器的文件夹, 桌面), 是复制, 原文件不会被移走。网站上新开了**脚本库**, 有现成的脚本 (翻译, OCR, Total Commander 命令面板, 结束进程, 世界时钟, Unix 时间戳, 深浅色切换, 快速笔记等): 下载到 `Scripts\` 文件夹, 用关键字就能用。PT 工具箱, SPF2M 和延迟启动也移到了脚本库, ALTRun 本身专注于搜索和启动。实时结果脚本现在能知道之前在前台的窗口, 也能运行自己的结果, 一个脚本就能做当前程序的命令面板。文件管理器参数可以用 `{path}` 占位符 (例如 Total Commander 总在右侧面板打开), 操作面板认拼音首字母和关键字, 选中内容里有 `( ) { } '` 时也能传给 PowerShell 命令。另外修复了两个屏幕缩放不同时打开 / 保存对话框的文件夹面板位置不对, 以及网络文件夹离线时卡住约 20 秒。
+
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- **PT 工具箱, SPF2M 和延迟启动改成了脚本**, 在 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts) 里: 把 `PT Tools.ahk`, `SPF2M.ahk` 或 `Delayed Start.ahk` 下载到 `Scripts\` 文件夹, 用关键字打开 (`pttools`, `spf2m`, `delayedstart`)。已经建好的延迟启动任务照常运行, 脚本窗口里原样列出; ALTRun 启动后不再按列表补齐任务 (多台电脑共用设置文件时, 在每台电脑上运行一次脚本)。PT 工具箱和 SPF2M 的输入和窗口位置恢复成默认值; 动作是 `PTTools` / `SPF2M` 的自定义热键不再起作用, 要改成运行脚本。ALTRun.json 里旧的 `Extensions.PTTools` 和 `DelayedStart` 不再使用, 留着无害
+- 去掉了系统命令 "列出运行中的进程" / "列出运行中的服务" (`ListProcesses` / `ListServices`): 用到它们的自定义热键, 置顶和最近使用改为打开任务管理器 / 服务; 想搜索正在运行的程序并结束它, 用脚本库的 Kill Process (`kill`)
+- 后台脚本 (`@altrun.mode silent` / `output`) 运行超过 2 分钟会被结束 (以前只是不再等, 脚本仍在后台运行); 它启动的程序不受影响
+
+#### 新增
+- **按内容类型 "打开 (回车)"**, 类似 Total Commander 的内部关联: 先在自定义命令里加程序, 再在 偏好设置 → 内容类型 里给类型选 **打开 (回车)**。在搜索结果里的这类文件上按回车就用它打开, 它也排在操作面板最前面; 标记多个文件后 "全部打开 (N 项)" 也按类型。程序和快捷方式 (`.exe`, `.lnk` 等) 不受影响。在文件或文件夹上 (也包括置顶, 最近使用, 浏览文件夹) 按 →, 它的内容类型的自定义命令和脚本排在 "打开" 后面, 和 `Ctrl+Alt+\` 一样
+- **搜索窗口里的文件和文件夹可以用鼠标拖到别的程序** (微信, 邮件, 资源管理器的文件夹, 桌面): 总是复制, 原文件不会被移走; 用 Insert 标记的几个文件一起拖。放下后窗口自动隐藏, 拖动中按 Esc 取消 (#587)
+- **脚本库** (#544): 偏好设置 → 脚本 → **浏览脚本库** 打开网站上的 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts), 下载到 `Scripts\` 文件夹就能用: 翻译 (Translate), OCR, TC Commands (`tc`), Kill Process (`kill`, 列出正在运行的程序和内存, 回车结束), World Clock (`tz`, 60 个城市的当地时间和时差), Unix Timestamp (`ts`), Dark Mode (`dark`, 切换 Windows 深浅色), Quick Note (`note`, 把一行笔记追加到 `文档\Notes.md`), 文件哈希, IP 地址, 端口占用, 环境变量, 以及 PT Tools / SPF2M / Delayed Start (见升级)
+- **实时结果脚本能知道前台窗口, 也能运行自己的结果** (#520): 环境变量 `ALTRUN_HWND` (和自定义命令的 `{hwnd}` 一样), `ALTRUN_PID`, `ALTRUN_PROCESS` (程序文件名, 例如 `TOTALCMD64.EXE`) 告诉脚本 ALTRun 弹出前在前台的窗口, 脚本可以按当前程序列出不同的结果。结果是 `"type": "script"` 时, 按回车在后台用结果的 `arg` 再运行这个脚本 (第一个参数和 `ALTRUN_ARG`; `ALTRUN_ACTION` 是 `run`, 列结果时是 `filter`), 打印的最后一行显示成通知, 失败时显示原因。`TC Commands.ahk` 两样都用到: 输入 `tc ` 和命令名 (英文, TC 界面语言或拼音首字母), 回车在 Total Commander 里执行 (内部命令 `cm_` 和自己的命令 `em_`)
+- **文件管理器参数里的 `{path}`** (#610): 偏好设置 → 通用 → 文件管理器, 例如 Total Commander 总在右侧面板打开: `TOTALCMD64.exe /O /T /R={path}`。打开文件夹时 `{path}` 是这个文件夹; 在文件管理器中显示 (`Ctrl+Enter`) 时, Total Commander 拿到的是这个文件或文件夹本身, ALTRun 自动加 `/P` 选中它, 其他文件管理器是所在的文件夹。路径有空格时自动加引号 (写成 `/R="{path}"` 也可以)。不写 `{path}` 时和以前一样把路径加在参数后面
+- 偏好设置里可以编辑的列表 (自定义命令, 内容类型, 文字片段, 网页搜索引擎, 热键, 同步任务) 都有右键菜单: 在一行上右键是 编辑 (同双击) / 删除, 然后是 添加 和这一页自己的按钮 (检查路径, 导入 / 导出, 添加示例等); 菜单键或 `Shift+F10` 也能打开
+
+#### 改进
+- **新安装第一次启动时先问 "开机时自动启动 ALTRun?"** (默认按钮是 "是"), 点 "是" 才在 "启动" 文件夹建快捷方式; 点 "否" 或没回答就算关, 以后不再问。已有的设置和从 `ALTRun.ini` 升级的不受影响, 也不会问
+- **操作面板** (→, 选中内容的操作) **输入文字过滤时也认拼音首字母**, 以及搜索引擎, 自定义命令, 脚本的关键字: 例如 `bd` → 用 百度 搜索; 想用 `bs`, 给百度加上关键字 `bs` (#541)
+- **选中内容里有 `( ) { } ' $ ;` 等字符时也能传给 PowerShell 命令**: 直接启动的 PowerShell (`powershell.exe` / `pwsh.exe`) 在 `-Command` 里把 `{query}` 放在单引号中 (`'{query}'`, 选中内容里的单引号自动写成两个), 或者用 `-File` 传给脚本时, 这些字符只当文字。因为换行, 双引号或 shell 的特殊字符不能传给某个命令或脚本时, 这一行仍留在面板里, 说明是哪些字符; 按回车只显示这条说明, PowerShell 命令还会说明怎样写才能接收 (#615)
+- 文字片段默认不在常见远程桌面程序里自动展开 (ToDesk, 向日葵, AnyDesk, TeamViewer, RustDesk, 原来已有 Windows 远程桌面): 在远程桌面窗口里打字时本机的 ALTRun 也会展开, 传到远程电脑时只剩一个 `v` 或者什么都没有, 应该由远程电脑上的 ALTRun 展开。只对新安装和恢复默认设置生效; 已有的设置在 偏好设置 → 文字片段 → 不展开的窗口 里自己加; 浏览器里的 Chrome 远程桌面用 "远程电脑名 ahk_exe msedge.exe" 这样的写法 (见 Wiki 文字片段) (#572)
+- 后台脚本 (`silent` / `output`) 直接启动, 不再经过 cmd 和重定向: `.ahk`, `.ps1`, `.py` 的参数里可以有双引号和 `& | >` (选中内容也能传给它们了); `.bat` / `.cmd` 仍经过 cmd, 双引号照旧不传。它们也拿到 `ALTRUN_HWND` / `ALTRUN_PID` / `ALTRUN_PROCESS`, `ALTRUN_ACTION=run`, `ALTRUN_ARG`, `ALTRUN_KEYWORD`, `ALTRUN_VERSION`, 和实时结果脚本一样。失败时 (退出码不是 0, 启动不了, 超时) 通知显示错误输出的第一行或原因; `.ahk` 的语法错误进通知, 不再弹框。output 脚本的错误输出空一行接在输出后面, 以 UTF-8 打开 (西文系统上 PowerShell / 批处理输出的重音字母等不再乱码)。读输入的命令 (`pause` 等) 不再卡住
+- 传给脚本的环境变量 (`ALTRUN_QUERY` 等) 只放进脚本自己的环境, ALTRun 自己的环境变量不再临时改动 (以前同一时刻启动的别的程序可能带上输入的文字)
+- 由 ALTRun 过滤的实时结果脚本 (`@altrun.filter altrun`) 最多读 2000 条 (以前 200 条); 边输入边运行的仍是 200 条
+- 偏好设置 → 脚本: 选中一个脚本, 列表下面显示它的说明 (脚本库的脚本有中英文说明), 需要什么, 会不会联网和文件路径; 右键菜单有 编辑 / 运行 / 在文件管理器中显示 / 复制路径; 双击编辑改用 Windows 给这种文件登记的编辑程序 (和搜索窗口里按 `F3` 一样), 没有登记的才用记事本。偏好设置页 "选中内容" 改名 **内容类型**, 加了 "打开 (回车)" 一列
+- 第一次打开脚本文件夹时不再自动放 4 个示例脚本: 其中 3 个放进了脚本库, "今天的日期" 留在 Wiki 当写法示例。还没有脚本时, 偏好设置 → 脚本 的列表显示 "(还没有脚本: 双击浏览脚本库)"; 已经生成的示例不受影响 (#544)
+
+#### 修复
+- **两个屏幕缩放比例不同时** (例如笔记本 150%, 外接显示器 100%), 打开 / 保存对话框下方的文件夹面板跑到很远的地方, 宽度只有对话框的 2/3 (#567)
+- 对话框跳转: 文件管理器里开着一个服务器已离线的网络文件夹时, 跳转会让 ALTRun 卡住约 20 秒; 管理员程序的对话框里后台助手也会卡住同样长的时间, 期间 Caps Lock 和热键都不响应。现在网络文件夹 0.5 秒内没有响应就跳过
+- 自动跳转: 别的程序把对话框调到前面时 (例如用 ALTRun 切换到窗口), Windows 有时不发 "前台窗口变了" 的通知, 对话框要 1.5 秒后才跳, 偶尔不跳; 现在打开着文件对话框时每 0.25 秒对比一次前台窗口
+- 脚本开头的中文标题, 关键字等 (`@altrun.xxx`) 在记事本默认的 UTF-8 (不带 BOM) 文件里显示成乱码: 现在按 UTF-8 读, 带 BOM 的 UTF-8 / UTF-16 也认; 不是 UTF-8 的文件 (例如 GBK) 仍按系统编码读
+- 自定义命令的目标只写了程序名, 而程序登记在 App Paths 里 (例如 `chrome.exe`, `winword`) 时, `Ctrl+Enter` 现在打开程序所在的文件夹
+- 偏好设置 → 脚本: 点 "打开脚本文件夹" 后列表重新读一遍, 没有选中的行, 下面却还显示刚才选中的脚本的说明和路径; 现在会清空
 
 ## [2026.11.16]
 
@@ -1760,35 +1561,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.28...HEAD
-[2026.11.16.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.27...2026.11.16.28
-[2026.11.16.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.26...2026.11.16.27
-[2026.11.16.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.25...2026.11.16.26
-[2026.11.16.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.24...2026.11.16.25
-[2026.11.16.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.23...2026.11.16.24
-[2026.11.16.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.22...2026.11.16.23
-[2026.11.16.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.21...2026.11.16.22
-[2026.11.16.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.20...2026.11.16.21
-[2026.11.16.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.19...2026.11.16.20
-[2026.11.16.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.18...2026.11.16.19
-[2026.11.16.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.17...2026.11.16.18
-[2026.11.16.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.16...2026.11.16.17
-[2026.11.16.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.15...2026.11.16.16
-[2026.11.16.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.14...2026.11.16.15
-[2026.11.16.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.13...2026.11.16.14
-[2026.11.16.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.12...2026.11.16.13
-[2026.11.16.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.11...2026.11.16.12
-[2026.11.16.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.10...2026.11.16.11
-[2026.11.16.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.9...2026.11.16.10
-[2026.11.16.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.8...2026.11.16.9
-[2026.11.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.7...2026.11.16.8
-[2026.11.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.6...2026.11.16.7
-[2026.11.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.5...2026.11.16.6
-[2026.11.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.4...2026.11.16.5
-[2026.11.16.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.3...2026.11.16.4
-[2026.11.16.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.2...2026.11.16.3
-[2026.11.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16.1...2026.11.16.2
-[2026.11.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.16...2026.11.16.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...HEAD
+[2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
