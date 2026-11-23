@@ -4,8 +4,8 @@
 # Run by .github/workflows/release-notice.yml after "Publish release"; see packaging/README.md.
 #
 # Which issues: the "(#N)" / "(#N, #M)" at the end of entries in the release notes (the CHANGELOG section). Only issues that are
-# still open (closing one first opts it out), not pull requests, and not opened by the repository owner (issues transcribed
-# from forums: their reporters aren't on GitHub). The issue is left open: whether it is done is decided by hand.
+# still open (closing one first opts it out) and not pull requests; issues the owner opened (transcribed from forums) get one
+# too, as a record of the release. The issue is left open: whether it is done is decided by hand.
 # Each comment ends with a hidden marker naming the release, so running again for the same release skips issues already told.
 set -uo pipefail
 
@@ -14,7 +14,6 @@ dryRun=false
 [[ "${2:-}" == dry-run ]] && dryRun=true
 [[ "$version" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]] || { echo "Not a version: $version"; exit 1; }
 repo=${GITHUB_REPOSITORY:?}
-owner=${GITHUB_REPOSITORY_OWNER:-${repo%%/*}}
 bot="github-actions[bot]"
 summary=${GITHUB_STEP_SUMMARY:-/dev/null}
 
@@ -40,10 +39,9 @@ for n in $numbers; do
     if ! issue=$(gh api "repos/$repo/issues/$n" 2>&1); then
         echo "#$n: could not read the issue: $issue"; echo "- #$n: **failed** to read" >>"$summary"; failed=$((failed + 1)); continue
     fi
-    skip=$(jq -r --arg owner "$owner" '
+    skip=$(jq -r '
         if has("pull_request") then "a pull request"
         elif .state != "open" then "closed"
-        elif .user.login == $owner then "opened by the owner"
         else "" end' <<<"$issue")
     if [[ -n "$skip" ]]; then
         echo "#$n: skipped ($skip)"; echo "- #$n: skipped ($skip)" >>"$summary"; continue
