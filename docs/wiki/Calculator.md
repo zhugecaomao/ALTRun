@@ -4,6 +4,16 @@
 
 Type an expression directly: `12*(3+4)`, `=2^10`; `Enter` copies the result. Supports `+ - * /` (or `×` `÷`; a letter `x` isn't a times sign, so `1920x1080` stays a file search), powers `^` (or `**`) and parentheses; results keep at most two decimals (`10/3` shows `3.33`; numbers below 0.005 keep one digit after the first significant digit, for example `0.004`).
 
+What you can do with a result (`→` or right-click opens the actions panel):
+
+| Key / action | Puts | Example for `12*(3+4)` |
+|---|---|---|
+| `Enter` | the result on the clipboard | `84` |
+| `Ctrl+Enter` | the result into the window you came from | `84` |
+| **Copy Calculation** (actions panel) | the calculation and the result on the clipboard, for notes and reports | `12*(3+4) = 84` |
+
+**Copy Calculation** is there for calculations with an operator (not for `=5` alone), and for the rows of the calculation history too (see below). The calculation is copied as you typed it (`3×4 = 12`, `1,000*2 = 2,000`).
+
 ![Calculator: the result shows as you type, unit conversions too](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-calculator.png)
 
 With "Add structural results (main bars / rebar area)" (`Features.Calculator.StructuralCalc`) turned on in Preferences → Calculator, two lines of structural results are added below when the result is more than 2 × the cover:

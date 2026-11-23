@@ -14,6 +14,7 @@
   "Action.CopyName": "複製名稱",
   "Action.CopyPath": "複製路徑",
   "Action.CopyPaths": "複製 {1} 個路徑",
+  "Action.CopyCalculation": "複製算式和結果",
   "Action.CopyResult": "複製結果",
   "Action.CopyTo": "複製到 {1} 目前的資料夾",
   "Action.CopyUrl": "複製網址",

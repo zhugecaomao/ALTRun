@@ -13,6 +13,7 @@
   "Action.CopyName": "名前をコピー",
   "Action.CopyPath": "パスをコピー",
   "Action.CopyPaths": "{1} 個のパスをコピー",
+  "Action.CopyCalculation": "計算式と結果をコピー",
   "Action.CopyResult": "結果をコピー",
   "Action.CopyTo": "{1} の現在のフォルダーにコピー",
   "Action.CopyUrl": "URL をコピー",
