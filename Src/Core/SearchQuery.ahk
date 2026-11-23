@@ -10,6 +10,7 @@
 ;   if q.MatchKeyword(["g", "google"], &term)   ; term = "hello"
 ;   SearchQuery("scrip").StartsKeyword(["script"], &keyword)   ; true, keyword = "script" (a keyword not typed in full yet)
 ;   SearchQuery.Keywords("g, ㅎ, google")        ["g", "ㅎ", "google"] (the keyword field can hold several, separated by commas)
+;   SearchQuery.FillPlaceholder("x/?q={query|a}", "b")   "x/?q=b" (the {query} rules shared by web searches and custom commands)
 ;===============================================================================
 
 class SearchQuery {
@@ -61,6 +62,34 @@ class SearchQuery {
         }
         return cache[text]
     }
+
+    ;---------------------------------------------------------------------------
+    ; {query} placeholders: one set of rules for web search URLs and custom commands (target / arguments)
+    ;   {query}           the text typed after "keyword " (or the selection); nothing typed yet: wait for it (Enter completes "keyword ")
+    ;   {query|default}   nothing typed after "keyword ": use the default; {query|clipboard} (any case): the text on the clipboard
+    ;   {query|}          an empty default: run with nothing in its place
+    ; Any case. All placeholders in a text get the same text; the first default written counts. The default ends at the first }
+    ;---------------------------------------------------------------------------
+    static PlaceholderPattern := "i)\{query(?:\|[^}]*)?\}"
+
+    static HasPlaceholder(text) => RegExMatch(text, SearchQuery.PlaceholderPattern) > 0
+
+    ; true when text has a {query|...}, its default put into value ("" for {query|}); false when there is only {query} or none
+    static PlaceholderDefault(text, &value := "") {
+        value := ""
+        if !RegExMatch(text, "i)\{query\|([^}]*)\}", &m)
+            return false
+        value := m[1]
+        return true
+    }
+
+    static IsClipboardDefault(value) => (value = "clipboard")
+
+    ; every {query} / {query|...} replaced by term, as given (encode it first for URLs)
+    static FillPlaceholder(text, term) => RegExReplace(text, SearchQuery.PlaceholderPattern, StrReplace(term, "$", "$$"))
+
+    ; {query|...} written as {query}: for code that looks at where {query} is in a command line (SelectionActions)
+    static PlainPlaceholder(text) => RegExReplace(text, "i)\{query\|[^}]*\}", "{query}")
 
     ; true when it starts with prefix (no space needed after the prefix, e.g. ">dir" or "'report")
     MatchPrefix(prefix, &term) {

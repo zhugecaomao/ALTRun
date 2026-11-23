@@ -9,6 +9,8 @@
 ; Target / Arguments can contain {query}: typing "keyword text" replaces it with the text (encoded in URLs), e.g.
 ;   { "Title": "Jira", "Type": "Url", "Target": "https://jira.example.com/browse/{query}", "Keyword": "jira" }
 ;   typing "jira ABC-123" opens .../browse/ABC-123; when the command is found but no text typed yet, Enter completes to "jira "
+; {query|default}: "keyword " with nothing after it runs with the default ({query|clipboard}: the text on the clipboard, checked like
+;   a selection), {query|} runs with nothing in its place; the same rules as web searches (SearchQuery.PlaceholderDefault)
 ; {hwnd} / {pid} become the handle / process id of the window in front before ALTRun was shown, when the command runs
 ;   (e.g. Arguments "C:\Tools\WindowInfo.ahk {hwnd}"; see ActionCatalog.ForWindow)
 ; Searched: name, keyword, pinyin initials of the name; for File / Folder also the target's file name
@@ -54,7 +56,7 @@ class CustomCommandProvider {
             keyword := command.Has("Keyword") ? command["Keyword"] : ""
             exact := (keyword != "") && query.MatchKeyword(SearchQuery.Keywords(keyword), &rest, &typed)
             if (exact && query.HasRest && CustomCommandProvider.TakesQuery(command)) {
-                item := CustomCommandProvider._ToItem(command, 150, rest, typed)  ; "jira ABC-123": only commands that take arguments
+                item := CustomCommandProvider._ToItem(command, 150, rest, typed, true)   ; "jira ABC-123": only commands that take arguments; "jira ": the default
                 item.Exclusive := true
                 withQuery.Push(item)
                 continue
@@ -168,17 +170,25 @@ class CustomCommandProvider {
     ; The text for {query} in a URL: encoded; right after "mailto:" an address keeps its @ (mail programs don't all decode %40 there)
     static UrlTerm(target, term) {
         encoded := Url.Encode(term)
-        return RegExMatch(target, "i)^mailto:\{query\}") ? StrReplace(encoded, "%40", "@") : encoded
+        return RegExMatch(target, "i)^mailto:\{query[|}]") ? StrReplace(encoded, "%40", "@") : encoded
     }
 
-    ; Target / Arguments contain {query}
+    ; Target / Arguments contain {query} / {query|...}
     static TakesQuery(command) {
-        return InStr(command["Target"], "{query}") || (command.Has("Arguments") && InStr(command["Arguments"], "{query}"))
+        return SearchQuery.HasPlaceholder(command["Target"]) || (command.Has("Arguments") && SearchQuery.HasPlaceholder(command["Arguments"]))
     }
 
-    ; term: the typed argument, replacing {query} (encoded in URLs); a {query} command without an argument yet: with a keyword Enter completes "keyword ", otherwise it becomes empty
+    ; true when Target / Arguments have {query|...}, its default put into value (the target's first)
+    static QueryDefault(command, &value := "") {
+        return SearchQuery.PlaceholderDefault(command["Target"], &value)
+            || (command.Has("Arguments") && SearchQuery.PlaceholderDefault(command["Arguments"], &value))
+    }
+
+    ; term: the typed argument, replacing {query} (encoded in URLs). A {query} command without an argument: with a keyword Enter
+    ; completes "keyword " (useDefault: "keyword " typed, or a hotkey with nothing selected: the {query|default} instead), without
+    ; a keyword the default, or empty when there is none
     ; keyword: the keyword that was typed (completion keeps it when there are several), the first if none
-    static _ToItem(command, score, term := "", keyword := "") {
+    static _ToItem(command, score, term := "", keyword := "", useDefault := false) {
         target := command["Target"]
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
         commandType := command.Has("Type") ? command["Type"] : "File"
@@ -186,14 +196,24 @@ class CustomCommandProvider {
             keywords := SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "")
             keyword := keywords.Length ? keywords[1] : ""
         }
-        title := command["Title"], extra := {}
+        title := command["Title"], extra := {}, notRunnable := ""
         if CustomCommandProvider.TakesQuery(command) {
-            if (term = "" && keyword != "")
+            if (term = "" && (useDefault || keyword = "") && CustomCommandProvider.QueryDefault(command, &defaultText)) {
+                extra := {AutoComplete: (keyword != "") ? keyword " " : ""}
+                if SearchQuery.IsClipboardDefault(defaultText) {
+                    term := CustomCommandProvider._ClipboardTerm(command, &problem)
+                    if (term != "")
+                        title .= ": " WebSearchProvider.Preview(term)
+                    else
+                        notRunnable := (problem != "") ? problem : I18n.T("Web.ClipboardEmpty"), extra.Valid := false
+                } else if (defaultText != "")
+                    title .= ": " (term := defaultText)
+            } else if (term = "" && keyword != "")
                 extra := {Valid: false, AutoComplete: keyword " "}
             else if (term != "")
                 title .= ": " term, extra := {AutoComplete: keyword " " term}
-            target := StrReplace(target, "{query}", (commandType = "Url") ? CustomCommandProvider.UrlTerm(target, term) : term)
-            arguments := StrReplace(arguments, "{query}", term)
+            target := SearchQuery.FillPlaceholder(target, (commandType = "Url") ? CustomCommandProvider.UrlTerm(target, term) : term)
+            arguments := SearchQuery.FillPlaceholder(arguments, term)
         }
         switch commandType, false {
             case "Folder": kind := "folder", icon := CustomCommandProvider._FolderIcon(CustomCommandProvider._Resolve(target))
@@ -202,7 +222,9 @@ class CustomCommandProvider {
         }
         displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
         subtitle := Trim(displayTarget " " arguments)
-        if (extra.HasOwnProp("Valid") && !extra.Valid)                     ; waiting for an argument: say what to type next
+        if (notRunnable != "")                                              ; {query|clipboard}: why the clipboard can't be used now
+            subtitle := notRunnable
+        else if (extra.HasOwnProp("Valid") && !extra.Valid)                 ; waiting for an argument: say what to type next
             subtitle := I18n.T("Search.TypeAfter", keyword) " · " subtitle
         item := ResultItem(title, subtitle, {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
@@ -211,6 +233,25 @@ class CustomCommandProvider {
         for name, value in extra.OwnProps()
             item.%name% := value
         return item
+    }
+
+    ; {query|clipboard}: the text on the clipboard as web searches read it (one line, at most WebSearchProvider.MaxTermChars). Not
+    ; seen before it runs, so outside URLs it passes the selection's checks (SelectionActions.ArgumentProblem): "" and problem set
+    ; (the refusal text) when it can't go into the command line, or "" and problem "" when the clipboard has no text
+    static _ClipboardTerm(command, &problem) {
+        problem := ""
+        if ((text := WebSearchProvider.ClipboardText()) = "")
+            return ""
+        if ((command.Has("Type") ? command["Type"] : "File") = "Url")
+            return text
+        info := {Kind: "text", Types: [], Term: text, Quoted: SelectionActions.Quote(text)}
+        if IsObject(refused := SelectionActions.ArgumentProblem(info, command)) {
+            problem := (refused.Shell = "") ? I18n.T("Cmd.Clipboard.Refused", refused.Chars) : I18n.T("Cmd.Clipboard.Refused.Shell", refused.Chars, refused.Shell)
+            return ""
+        }
+        if (SelectionActions.PowerShellMode(command) = "quoted")
+            text := RegExReplace(text, "['‘’‚‛]", "$0$0")                  ; inside PowerShell's single quotes: a quote doubled is one quote
+        return text
     }
 
     ; folders on network locations use the generic folder icon directly (no network access, and a dot in the name doesn't make it a file)
@@ -262,7 +303,7 @@ class CustomCommandProvider {
         raw := Trim(command.Has("Target") ? command["Target"] : "", "`" `t")
         if (raw = "")
             return "Missing"
-        if (InStr(raw, "{query}") || ActionCatalog.UsesWindow(raw))         ; the path contains an argument, known only once typed or run
+        if (SearchQuery.HasPlaceholder(raw) || ActionCatalog.UsesWindow(raw))   ; the path contains an argument, known only once typed or run
             return "Skipped"
         target := Path.Resolve(raw)
         if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:, ms-settings:, http: etc. (not "C:")
@@ -285,8 +326,8 @@ class CustomCommandProvider {
     ; Placeholders in the target / arguments that won't work (a read-only check: the Commands page's Status column and the edit
     ; dialog's question on OK), in this order:
     ;   {Kind: "Selection"}        {selection} is written: a command gets the selected text through {query}
-    ;   {Kind: "Query"}            {query} gets no text: no keyword, no content type and no hotkey runs the command
-    ;   {Kind: "Unknown", Name}    any other {word}, which stays as written; only {query} {hwnd} {pid} are replaced (any case).
+    ;   {Kind: "Query"}            {query} gets no text: no keyword, no content type and no hotkey runs the command ({query|...} has a default)
+    ;   {Kind: "Unknown", Name}    any other {word}, which stays as written; only {query} ({query|...}) {hwnd} {pid} are replaced (any case).
     ;                              GUIDs ("shell:::{20D04FE0-...}") have hyphens, so they aren't taken for placeholders
     ; hotkeys: the custom hotkeys (the ones with Action "custom:<the command's Id>" count). Returns [] when all is well
     static PlaceholderProblems(command, hotkeys) {
@@ -307,7 +348,7 @@ class CustomCommandProvider {
         }
         if selection
             problems.Push({Kind: "Selection"})
-        if (CustomCommandProvider.TakesQuery(command) && !CustomCommandProvider._CanTakeQuery(command, hotkeys))
+        if (CustomCommandProvider.TakesQuery(command) && !CustomCommandProvider.QueryDefault(command) && !CustomCommandProvider._CanTakeQuery(command, hotkeys))
             problems.Push({Kind: "Query"})
         for each in unknown
             problems.Push(each)
@@ -567,8 +608,9 @@ class CustomCommandProvider {
     ; A custom hotkey whose Action is "custom:<Id>". A command that takes something (it has {query}, or content types) gets the
     ; selection as from the selection panel (SelectionActions._CommandAction): {query} becomes the selected text or path; a File /
     ; Command without {query} gets it as its last argument. The panel's checks keep selected text out of a shell; the content types
-    ; aren't checked (the hotkey was set for this command on purpose). Nothing selected: a {query} command with a keyword opens the
-    ; search window with "keyword " to type the rest, one without a keyword says so, one with only content types runs as it is.
+    ; aren't checked (the hotkey was set for this command on purpose). Nothing selected: a {query|default} command runs with the default
+    ; ({query|clipboard}: the clipboard, checked as a selection), a {query} command with a keyword opens the search window with
+    ; "keyword " to type the rest, one without a keyword says so, one with only content types runs as it is.
     ; Any other command runs directly, without copying the selection (the clipboard isn't touched).
     ; capture: replaces SelectionActions.Capture in the tests
     static RunFromHotkey(id, capture := "") {
@@ -584,6 +626,10 @@ class CustomCommandProvider {
                 item := SelectionActions._CommandAction(command, SelectionActions.Classify(selection))
                 if !IsObject(item)
                     return App.Notify(I18n.T("Hotkey.SelectionRefused", command["Title"]), 3000)
+            } else if (takesQuery && CustomCommandProvider.QueryDefault(command)) {
+                item := CustomCommandProvider._ToItem(command, 0, "", "", true)
+                if !item.Valid                                              ; {query|clipboard}: no text, or text it can't take
+                    return App.Notify(item.Subtitle, 3000)
             } else if takesQuery {
                 keywords := SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "")
                 return keywords.Length ? SearchWindow.Show(keywords[1] " ") : App.Notify(I18n.T("Selection.None"), 2000)

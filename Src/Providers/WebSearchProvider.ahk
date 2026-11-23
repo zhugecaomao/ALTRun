@@ -6,7 +6,9 @@
 ; "g words" searches with that engine; typing only the keyword "g" offers completion. Keyword can hold several, separated by commas ("g, ㅎ").
 ; With {query|default} in the Url it opens even without search words after the keyword, using the default, e.g. "http://localhost:{query|8000}".
 ; A default of clipboard ({query|clipboard}) searches the text on the clipboard (text only, joined into one line, at most MaxTermChars characters).
+; {query|} (an empty default) opens the URL with nothing in place of {query}, e.g. "https://www.baidu.com/s?wd={query|}" opens the site.
 ; The default is used only with a space after the keyword and no search words ("g "); only the keyword ("g") offers completion.
+; The rules are shared with custom commands (SearchQuery.PlaceholderDefault / FillPlaceholder).
 ; Icon: the result's icon, a .ico / .png / .exe etc. file (relative paths start from the Data folder) or an IconCache form
 ; (res:, ext: etc.); if not given, built-in engines (by Id) use the icons in Resources\Icons\Web, others the default browser's icon.
 ; "Download site icon" in the edit dialog: only when the user clicks does it visit the URL's site (no third-party icon service); the icon found goes into Data\Icons.
@@ -51,16 +53,22 @@ class WebSearchProvider {
         if (keyword = "")
             keyword := WebSearchProvider.FirstKeyword(engine)
         autoComplete := keyword " " term
-        fromClipboard := false
-        if (term = "" && !hintOnly) {
-            if WebSearchProvider.UsesClipboard(engine["Url"]) {
+        fromClipboard := false, empty := false
+        if (term = "" && !hintOnly && SearchQuery.PlaceholderDefault(engine["Url"], &defaultText)) {
+            if SearchQuery.IsClipboardDefault(defaultText) {
                 term := WebSearchProvider.ClipboardText(), fromClipboard := true
                 if (term = "")
                     return ResultItem(I18n.T("Web.SearchClipboard", engine["Title"]), I18n.T("Web.ClipboardEmpty"), {
                         Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
                     })
             } else
-                term := WebSearchProvider.DefaultTerm(engine["Url"])
+                term := defaultText, empty := (defaultText = "")          ; {query|}: open it with nothing in place of {query}
+        }
+        if empty {
+            target := WebSearchProvider.Fill(engine["Url"], "")
+            return ResultItem(I18n.T("Web.Open", engine["Title"]), target, {
+                Kind: "url", Arg: target, Icon: icon, AutoComplete: autoComplete, Source: engine
+            })
         }
         if (term = "") {
             return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), I18n.T("Search.TypeAfter", keyword), {
@@ -84,19 +92,20 @@ class WebSearchProvider {
     static Fill(template, term, readClipboard := true) {
         if (term = "") {
             term := WebSearchProvider.DefaultTerm(template)
-            if (term = "clipboard")
+            if SearchQuery.IsClipboardDefault(term)
                 term := readClipboard ? WebSearchProvider.ClipboardText() : ""
         }
-        return RegExReplace(template, "\{query(?:\|[^}]*)?\}", Url.Encode(term))   ; after encoding only letters, digits and %-_.~ remain, no $
+        return SearchQuery.FillPlaceholder(template, Url.Encode(term))
     }
 
-    ; The default in {query|default}, "" if none
+    ; The default in {query|default}, "" if none (or {query|})
     static DefaultTerm(template) {
-        return RegExMatch(template, "\{query\|([^}]*)\}", &m) ? m[1] : ""
+        SearchQuery.PlaceholderDefault(template, &value)
+        return value
     }
 
     ; the default is clipboard (case-insensitive)
-    static UsesClipboard(template) => WebSearchProvider.DefaultTerm(template) = "clipboard"
+    static UsesClipboard(template) => SearchQuery.IsClipboardDefault(WebSearchProvider.DefaultTerm(template))
 
     static MaxTermChars := 200
 
