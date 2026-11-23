@@ -63,7 +63,7 @@ You can also install with winget or Scoop, or run `ALTRun.ahk` with AutoHotkey v
 - **Learned ranking**: remembers which result you picked for each query and moves frequent picks up.
 - **Pinned and recent items**: before you type anything, the window lists your pinned items and recently opened ones. Drag a file result out to WeChat, an email or a folder to copy it there.
 - **Usage statistics**: counts per day and per feature (only counts are recorded).
-- **Calculator**: type an expression directly; supports unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`) and optional currency conversion (`100 usd to sgd`).
+- **Calculator**: type an expression directly; supports unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`), optional currency conversion (`100 usd to sgd`) and an optional history of calculations.
 - **Web search**: `g keywords` (Google), `bd keywords` (Baidu) and more; search engines are customizable (`g` and a space with nothing after it searches the clipboard text), and web search is offered when nothing else matches.
 - **Browser bookmarks and history**: searches Chrome, Edge, Brave and Vivaldi bookmarks (`bm keywords` searches bookmarks only); `h keywords` searches the browser history, most recently visited first.
 - **Window switcher**: type a window title or program name to switch to an open window; `w keywords` searches windows only, `w ` lists them all.

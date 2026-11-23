@@ -72,6 +72,7 @@ All data stays on your computer, in the `Data` folder next to `ALTRun.exe` (or `
 | Settings, custom commands, snippets, pinned items | `ALTRun.json` | The previous version is kept as `ALTRun.json.bak` |
 | Learned ranking, search history, recent items | `Knowledge.json` | Reset in Preferences → Advanced |
 | Usage statistics | `Usage.json` | Counts per feature only; no typed text or opened items |
+| Calculation history (off by default) | `CalcHistory.json` | Clear in Preferences → Calculator |
 | Clipboard history | `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json`; images and very long entries in `%LOCALAPPDATA%\ALTRun\Clipboard` | Stays on this computer by default even when the `Data` folder is synced or carried on a USB stick; can be kept in the `Data` folder instead (Preferences → Clipboard → Save in), or in memory only; can be cleared at any time |
 | Search indexes | `AppIndex.json`, `FileIndex.bin` | Names and paths of applications and files, used for searching |
 | Icon cache | `%LOCALAPPDATA%\ALTRun\IconCache` | Result icons and the paths they belong to, so icons show at once after a restart; kept on this computer only, safe to delete |
@@ -158,6 +159,7 @@ ALTRun 本身只在以下情况联网:
 | 设置、自定义命令、片段、置顶的项目 | `ALTRun.json` | 上一个版本保留为 `ALTRun.json.bak` |
 | 学习排序、搜索历史、最近使用 | `Knowledge.json` | 可在 偏好设置 → 高级 里重置 |
 | 使用统计 | `Usage.json` | 只记录每个功能用了几次, 不记录输入的文字和打开的内容 |
+| 计算历史 (默认关) | `CalcHistory.json` | 可在 偏好设置 → 计算器 里清空 |
 | 剪贴板历史 | `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json`; 图片和很长的条目在 `%LOCALAPPDATA%\ALTRun\Clipboard` | 默认只存在这台电脑上, Data 文件夹放在同步盘或 U 盘里也不会跟着走; 也可以改成放在 Data 文件夹 (偏好设置 → 剪贴板 → 保存位置), 或者只保存在内存里; 随时可以清空 |
 | 搜索索引 | `AppIndex.json`、`FileIndex.bin` | 应用和文件的名称、路径, 用于搜索 |
 | 图标缓存 | `%LOCALAPPDATA%\ALTRun\IconCache` | 结果的图标和对应的路径, 重启后图标马上显示; 只存在这台电脑上, 可以随时删除 |

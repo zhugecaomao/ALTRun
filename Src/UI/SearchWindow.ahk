@@ -790,6 +790,7 @@ class SearchWindow {
                 return SearchWindow._Later(() => SearchWindow._SafeRun(() => item.OnRun.Call(source)))
             Knowledge.Record(SearchWindow.Session.SavedQuery, source.Uid)
             RecentProvider.Remember(source)
+            CalculatorProvider.Remember(source)
             Usage.CountItem(source)
             SearchWindow.Session.Marked := Map()
             SearchWindow.Hide("run")
@@ -804,6 +805,7 @@ class SearchWindow {
         }
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
         RecentProvider.Remember(item)
+        CalculatorProvider.Remember(item)                                   ; the calculation history: only when a result is used, not while typing
         Usage.CountItem(item)
         if (item.WaitKeysUp || (modifier = "admin" && ActionCatalog.CanRunElevated(item)))   ; as administrator: the UAC prompt takes the screen, not a window of the program
             App.WaitForEnterUp(450)                                         ; before hiding: Enter's key-up comes here, not to the window that comes back to the front
@@ -1189,6 +1191,7 @@ class SearchWindow {
             return SearchWindow._Later(() => SearchWindow._SafeRun(() => action.OnRun.Call(item)))
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
         RecentProvider.Remember(item)
+        CalculatorProvider.Remember(item)
         Usage.CountItem(item)
         SearchWindow.Session.SavedQuery := SearchWindow.Input.Value
         SearchWindow.Hide("run")

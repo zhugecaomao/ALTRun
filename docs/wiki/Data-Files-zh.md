@@ -24,6 +24,7 @@
 | `AppIndex.json` | 应用索引 | 启动时重新扫描 |
 | `FileIndex.bin` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
 | `Knowledge.json` | 学习排序、搜索历史、最近使用的项目 (置顶的项目在 `ALTRun.json` 里) | 排序要重新学, 最近使用清空 |
+| `CalcHistory.json` | 计算历史 (偏好设置 → 计算器 勾选 "记住计算" 时才有), 最多 50 条 | 历史清空 |
 | `Knowledge.v1.backup.json` | 转换成设置版本 7 的格式 (自定义命令、文字片段、同步任务按 `Id` 记) 之前的 `Knowledge.json` | 没有影响; 和 `ALTRun.v6.backup.json` 一起用来退回旧版本, 见 [常见问题](FAQ-zh#怎样退回旧版本) |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) | 统计从零开始 |
 | `ClipboardHistory.json` | 剪贴板历史 (文字; 只在 偏好设置 → 剪贴板 → "保存位置" 不是 "全部只存本机" 时在这里)。启动时打不开就先不动它, 保存之前再读一次; 格式有错误的留成 `ClipboardHistory.json.bad` | 历史清空 |

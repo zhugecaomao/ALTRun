@@ -178,6 +178,16 @@ class PrefsPages {
             RecentProvider.ClearRecent()
     }
 
+    ; Clear... next to "Remember calculations": asks first, with how many; done at once (like the recently used items)
+    static ClearCalcHistory() {
+        count := CalculatorProvider.History().Length
+        owner := " Owner" PreferencesWindow.Gui.Hwnd
+        if !count
+            return MsgBox(I18n.T("Prefs.ClearCalcHistory.Nothing"), App.Name, "Iconi" owner)
+        if (MsgBox(I18n.T("Prefs.ClearCalcHistory.Confirm", count), App.Name, "YesNo Icon? Default2" owner) = "Yes")
+            CalculatorProvider.ClearHistory()
+    }
+
     ; Keyboard: input method switching (Caps Lock, English when shown) and the keys in the search box.
     ; A two-column form like the General page: labels right-aligned on the left, every control starting on one line
     static BuildKeyboard() {
@@ -750,6 +760,19 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.Calculator", 150)
         PrefsForm.Section("Prefs.Section.Calculator")
         PrefsForm.Check(base "Currency", "Prefs.Currency")
+        ; the calculation history (#583): [x] Remember calculations [Clear...] / Rows below a result [N]; Clear... at the right end of the row
+        PrefsForm.Section("Prefs.Section.CalcHistory")
+        x := PrefsForm.InputX(), clearX := PrefsForm.ContentX + PrefsForm.ContentW - PrefsForm.WidthS
+        remember := PrefsForm.Add("Checkbox", "x" x " w" (clearX - 8 - x), I18n.T("Prefs.CalcHistory"))
+        remember.Value := PreferencesWindow.GetPath(PreferencesWindow.Working, base "History") ? 1 : 0
+        PrefsForm.Bind(base "History", () => remember.Value)
+        clear := PrefsPages._RowButton(remember, clearX, "Prefs.ClearRecent", (*) => PrefsPages.ClearCalcHistory())
+        PrefsForm.Below(6, remember, clear)
+        count := PrefsForm.Field(base "HistoryCount", "Prefs.CalcHistoryCount", "S", "number")
+        update := (*) => (count.Enabled := remember.Value = 1)              ; the number only matters while the box is checked
+        update()
+        remember.OnEvent("Click", (*) => ((remember.Value && !(IsInteger(count.Value) && count.Value > 0))
+            ? (count.Value := AppSettings.Defaults()["Features"]["Calculator"]["HistoryCount"]) : 0, update()))   ; checked with no number: the default
         PrefsForm.Section("Prefs.Section.Structural")
         PrefsForm.Check(base "StructuralCalc", "Prefs.StructuralCalc")
         PrefsForm.Field(base "RebarCover", "Prefs.RebarCover", "S", "number")               ; one row per item: labels and input boxes each aligned

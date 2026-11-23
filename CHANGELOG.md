@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- 计算历史 (默认关, 偏好设置 → 计算器 → "记住计算 (按 Enter 时)"): 用到计算结果时 (`Enter` 复制, `Ctrl+Enter` 粘贴, 动作面板) 记下算式, 打字过程中不记, 单位 / 进制 / 日期换算和单个数字不记. 输入算式时结果下面列出最近几条 ("显示条数", 默认 3), 只输入 `=` 列出全部 (最多 50 条); 历史上 `Enter` 复制结果, `Tab` 把算式填回搜索框, `Ctrl+Del` 删除; "清空..." 删除全部. 保存在 `Data\CalcHistory.json`; 计算结果不进 "最近使用" (感谢 @sfcboy 提议, #583)
+
 ## [2026.11.23.3]
 
 测试版。
@@ -1591,7 +1600,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...HEAD
+[2026.11.23.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...2026.11.23.4
 [2026.11.23.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...2026.11.23.3
 [2026.11.23.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...2026.11.23.2
 [2026.11.23.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...2026.11.23.1

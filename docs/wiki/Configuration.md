@@ -178,6 +178,8 @@ The index updates itself by watching the `Folders`: when a shortcut is added, re
 | BarSizes | `[13, 16, 20, 25, 32]` | Structural results: bar diameters (mm) listed in the rebar area line |
 | BarPrefix | `H` | Structural results: bar designation prefix (`T`, `Y`, `Φ`...) |
 | Currency | 0 | Currency conversion (`100 usd to sgd`); downloads exchange rates from frankfurter.dev once a day, see [Unit and currency conversion](Calculator#unit-and-currency-conversion) |
+| History | 0 | Remember calculations whose result is used (`Data\CalcHistory.json`, at most 50), see [Calculation history](Calculator#calculation-history) |
+| HistoryCount | 3 | History rows below a result (1-50); `=` alone lists all |
 
 ### Bookmarks
 | Key | Default | Description |

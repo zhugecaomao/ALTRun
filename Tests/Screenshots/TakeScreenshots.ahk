@@ -65,6 +65,8 @@ class Shots {
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: with the two rows of structural calculation
+            ["calculator-history", "Light", "", () => Shots.Search("1250*0.8"), () => Shots.CalcHistory()],   ; Wiki: calculation history below the result (#583)
+            ["calculator-history-all", "Light", "", () => Shots.Search("="), () => Shots.CalcHistory()],   ; "=" alone lists the whole history
             ["clipboard",   "Light", "", () => Shots.Search("clip "), () => Shots.WriteClipboard()],
             ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
             ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\Annual Report 2026\")],
@@ -1217,6 +1219,20 @@ class Shots {
     }
 
     ; The action panel's "Windows Context Menu" is off by default
+    ; Calculation history on (structural rows off, as a new installation), with a few made-up calculations
+    static CalcHistory() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        calculator := settings["Features"]["Calculator"]
+        calculator["StructuralCalc"] := 0, calculator["History"] := 1, calculator["HistoryCount"] := 3
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+        items := []
+        for entry in [["(1200+350)*12", "18,600"], ["2^10", "1,024"], ["86.5*1.1", "95.15"], ["3600/24", "150"], ["45*(1+0.2)", "54"]]
+            items.Push(Map("Expr", entry[1], "Result", entry[2], "Time", "20261123" Format("{:02}", 18 - A_Index) "0000"))
+        FileAppend(JSON.Stringify(Map("Version", 1, "Items", items), 2), Shots.AppDir "\Data\CalcHistory.json", "UTF-8")
+    }
+
     static EnableContextMenu() {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))

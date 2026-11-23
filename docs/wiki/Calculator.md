@@ -21,6 +21,18 @@ For example `300*2` (600) shows `Beam width 600 mm: 3 main bars @ 260 c/c` and `
 
 ![Preferences → Calculator](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-calculator.png)
 
+### Calculation history
+Turn on "Remember calculations (on Enter)" (`Features.Calculator.History`, off by default) in Preferences → Calculator, and a calculation is remembered when you use its result (`Enter` to copy, `Ctrl+Enter` to paste, or an action), never while you type. Unit, number base and date conversions and single numbers aren't remembered.
+
+- While you type a calculation, the newest calculations are listed below its result ("Rows shown", `HistoryCount`, default 3)
+- Type `=` alone to list all of them (at most 50, newest first; using one again moves it to the top)
+- On a history row: `Enter` copies the result, `Tab` puts the calculation back in the search box to change it, `Ctrl+Del` deletes it
+- "Clear..." next to the check box deletes all of them; the history is kept in `Data\CalcHistory.json`
+
+Calculation results never go into the recently used items of the empty search box.
+
+![Calculation history below the result](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/calculator-history.png)
+
 ### Unit and currency conversion
 Syntax: number + unit + `in` / `to` / `=` / `->` / `转` + target unit; units are case-insensitive, and `m²` can be written `m2`. For example `10 km in mi`, `5ft to cm`, `100 f to c`, `3 亩 in m2`, `1 GB to MB`, `300 kN to kip`, `20 MPa in psi`. `Enter` copies the number.
 
