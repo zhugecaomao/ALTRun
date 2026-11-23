@@ -207,9 +207,10 @@ To run from source, install [AutoHotkey v2](https://www.autohotkey.com/) and lau
 For upgrading from an older version or from 2.x, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation).
 
 
-## Reporting problems
-- Report a problem: [open an issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) (please include your Windows version and the steps to reproduce)
-- Start a discussion: [open a discussion](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml)
+## Feedback
+- Report a bug: [bug report](https://github.com/zhugecaomao/ALTRun/issues/new?template=bug_report.yml) (please include your Windows version and the steps to reproduce)
+- Suggest a feature: [feature request](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml)
+- Questions, ideas and other topics: [start a discussion](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml)
 
 ## Contributing
 - Scripts: contribute one to the [script library](docs/scripts/README.md#contributing-a-script--投稿脚本) with a pull request
