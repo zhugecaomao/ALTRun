@@ -459,10 +459,18 @@ class CoreTests {
             eq("open folder {file}: the folder", ActionCatalog.FileManagerLine(tc, folder, folder, '"' folder '"'), tcExe ' /O /T /R="' folder '"')
             eq("reveal a folder {file}: the folder itself, {path} its parent", ActionCatalog.FillPaths("{path}|{file}", "C:\Demo", "C:\Demo\Sub"), "C:\Demo|C:\Demo\Sub")
             other.Args := "{PATH} --select {File} {path}"
-            eq("any case, every occurrence", ActionCatalog.RevealLine(other, item), opusExe " " folder " --select " item " " folder)
+            eq("any case, every occurrence, quoted for the spaces", ActionCatalog.RevealLine(other, item), opusExe ' "' folder '" --select "' item '" "' folder '"')
             eq("one pass: a name with {file} isn't replaced again", ActionCatalog.FillPaths("{path}", "C:\a{file}b", "x"), "C:\a{file}b")
             eq("$ in a path stays", ActionCatalog.FillPaths('"{file}"', "\\srv\share$", "\\srv\share$\$1.txt"), '"\\srv\share$\$1.txt"')
             eq("unknown braces stay", ActionCatalog.FillPaths("{paths} {path}", "C:\a", "x"), "{paths} C:\a")
+            ; Quotes added only when needed: spaces (or a tab) outside quotes; the user's own quotes are kept, not doubled
+            eq("auto quotes: bare", ActionCatalog.FillPaths("{path}", "C:\My Folder", "x"), '"C:\My Folder"')
+            eq("auto quotes: after /R=", ActionCatalog.FillPaths("/R={path}", "C:\My Folder", "x"), '/R="C:\My Folder"')
+            eq("auto quotes: already quoted", ActionCatalog.FillPaths('/R="{path}"', "C:\My Folder", "x"), '/R="C:\My Folder"')
+            eq("auto quotes: inside a longer quoted part", ActionCatalog.FillPaths('"/R={path}"', "C:\My Folder", "x"), '"/R=C:\My Folder"')
+            eq("auto quotes: after a closed quote pair", ActionCatalog.FillPaths('"{path}" {file}', "C:\a b", "C:\a b\c d.txt"), '"C:\a b" "C:\a b\c d.txt"')
+            eq("auto quotes: no spaces, none added", ActionCatalog.FillPaths("/R={path}", "C:\Data", "x"), "/R=C:\Data")
+            eq("auto quotes: a tab", ActionCatalog.FillPaths("{file}", "x", "C:\a`tb.txt"), '"C:\a`tb.txt"')
             general["FolderNewTab"] := 1
             tc.Args := '/R="{path}"'
             eq("placeholder: TC still gets /O /T", ActionCatalog.RevealLine(tc, item), tcExe ' /R="' folder '" /O /T')
