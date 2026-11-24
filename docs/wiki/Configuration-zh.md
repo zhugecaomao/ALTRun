@@ -60,7 +60,7 @@
   "Extensions": { ... },          // 扩展功能
   "Hotkeys":        [ ... ],      // 自定义热键
   "CustomCommands": [ ... ],      // 自定义命令
-  "ContentTypes":   [ ... ],      // 内容类型, 见 使用 → 选中内容的操作
+  "ContentTypes":   [ ... ],      // 内容类型, 见 "内容类型" 页
   "Snippets":       [ ... ],      // 文字片段
   "SyncTasks":      [ ... ],      // 文件夹同步任务, 见 文件夹同步
   "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹

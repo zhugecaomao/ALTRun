@@ -60,7 +60,7 @@ The menu provides the same commands as the buttons below the list and its **More
   "Extensions": { ... },          // extensions
   "Hotkeys":        [ ... ],      // custom hotkeys
   "CustomCommands": [ ... ],      // custom commands
-  "ContentTypes":   [ ... ],      // content types, see Usage → Actions on selected content
+  "ContentTypes":   [ ... ],      // content types, see the Content types page
   "Snippets":       [ ... ],      // snippets
   "SyncTasks":      [ ... ],      // folder sync tasks, see Folder sync
   "DataLocation":   "%OneDrive%\\ALTRun"   // optional: use this data folder instead

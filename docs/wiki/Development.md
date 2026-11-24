@@ -18,7 +18,7 @@ ALTRun.ahk          Entry point: #Includes every module and calls App.Start()
 Lib\                Shared libraries with nothing ALTRun-specific, usable in other projects as is
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
                     Everything IPC, Arke IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
-                    TaskScheduler, TaskbarProgress, Sqlite: read-only queries through Windows' winsqlite3.dll)
+                    FileDrag, StartupApproved, TaskbarProgress, Sqlite: read-only queries through Windows' winsqlite3.dll)
 Src\Core\           App (startup, single instance, shutdown), ErrorHandler (uncaught errors), I18n (UI text),
                     AppSettings + SchemaMigration (settings and version upgrades),
                     SearchQuery / ResultItem (search model), FuzzyMatcher (match scoring),
@@ -45,6 +45,28 @@ docs\               Wiki sources (docs\wiki, published after merging) and screen
 site\               Website template and build script (published to GitHub Pages)
 .github\            GitHub Actions (tests, screenshots, release, wiki, website, Gitee sync), issue / PR templates
 ```
+
+The providers in `Src\Providers\` (`Id` becomes the `Provider` of their results, and for most it is also their key under `Features` in the settings):
+
+| File | `Id` | Searches | User page |
+|---|---|---|---|
+| `ApplicationProvider` | `Applications` | Start menu, desktop and Microsoft Store apps | [Usage](Usage) |
+| `CustomCommandProvider` | `CustomCommands` | Your custom commands, `{query}` arguments | [Custom-Commands](Custom-Commands) |
+| `FileSearchProvider` | `FileSearch` | Files and folders (Everything or `FileIndex`), folder browsing, `recent` | [File-Search](File-Search) |
+| `SystemProvider` | `System` | System commands, Windows tools, ALTRun commands, text tools | [System-Commands](System-Commands) |
+| `CalculatorProvider` | `Calculator` | Expressions, units, bases, dates, currency, calculation history | [Calculator](Calculator) |
+| `WebSearchProvider` | `WebSearch` | Web search keywords and the fallback searches | [Web-Search](Web-Search) |
+| `BookmarkProvider` | `Bookmarks` | Browser bookmarks (`bm`) | [Bookmarks](Bookmarks) |
+| `BrowserHistoryProvider` | `BrowserHistory` | Browser history (`h`), read with `Lib\Sqlite` | [Bookmarks](Bookmarks) |
+| `ClipboardProvider` | `Clipboard` | Clipboard history (`clip`); recording is in the same file | [Clipboard](Clipboard) |
+| `SnippetProvider` | `Snippets` | Snippets (`snip`); expansion is `Extensions\SnippetExpander` | [Snippets](Snippets) |
+| `WindowProvider` | `Windows` | Open windows (`w`) | [Window-Switching](Window-Switching) |
+| `RecentProvider` | `Recent` | Pinned and recent items in the empty search box | [Recent](Recent) |
+| `ScriptProvider` | `Scripts` | Scripts in the `Scripts\` folder as commands | [Scripts](Scripts) |
+| `ScriptFilter` | (Scripts) | Live results of `@altrun.mode filter` scripts | [Scripts](Scripts) |
+| `SyncProvider` | `Sync` | Folder sync tasks in the results | [Sync-Tasks](Sync-Tasks) |
+| `TerminalProvider` | `Terminal` | `>command` in a terminal | [System-Commands](System-Commands) |
+| `HelpProvider` | `Help` | The cheat sheet (`?`) and usage tips | [Usage](Usage) |
 
 Layers: `Lib` uses nothing from `Src`; `Src\Core` uses nothing from `UI`, `Providers` or `Extensions` (only `App.ahk`, which starts everything, does). Where Core needs to know something from above, the upper layer sets a callback or calls Core, for example `BackgroundWork.IsBusy` (set by the search window) and `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (called by `App`). The `Layers` test checks this. Above Core, `UI`, `Providers` and `Extensions` call each other directly (a provider opens `ItemEditor`, `SyncJobs` opens the sync window); `App` is the one place that wires everything together at startup and shutdown, so a new module is started in `App.Start()` and, if it holds anything, stopped or saved in `App._OnExit()`.
 

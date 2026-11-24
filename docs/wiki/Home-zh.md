@@ -39,6 +39,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | 页面 | 内容 |
 |---|---|
 | [自定义命令](Custom-Commands-zh) | 命令类型、带参数的命令、路径变量 |
+| [内容类型](Content-Types-zh) | 给某类文字或文件设命令和脚本: 订单号、PDF...; 选中内容的操作 (`Ctrl+Alt+\`) |
 | [文字片段](Snippets-zh) | 占位符、自动展开、不展开的窗口、导入 / 导出 |
 | [剪贴板历史](Clipboard-zh) | 文字、图片和文件的历史, 粘贴、合并、排除的程序 |
 | [自定义热键](Hotkeys-zh) | 给热键指定系统命令、CapsLock 切换输入法、怎样设置热键 |

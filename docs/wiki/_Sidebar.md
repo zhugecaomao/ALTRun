@@ -18,6 +18,7 @@
 
 *Your commands and text*
 - [Custom commands](Custom-Commands)
+- [Content types](Content-Types)
 - [Snippets](Snippets)
 - [Clipboard history](Clipboard)
 - [Custom hotkeys](Hotkeys)
@@ -65,6 +66,7 @@
 
 *自己的命令和文字*
 - [自定义命令](Custom-Commands-zh)
+- [内容类型](Content-Types-zh)
 - [文字片段](Snippets-zh)
 - [剪贴板历史](Clipboard-zh)
 - [自定义热键](Hotkeys-zh)

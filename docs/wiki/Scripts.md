@@ -28,7 +28,7 @@ Comments at the top of a script can hold these settings (the comment markers `;`
 | `@altrun.mode output` | Runs in the background and opens all of its output with the default program for `.txt` files (usually Notepad) when done; its error output follows after an empty line |
 | `@altrun.mode filter` | Live results: typing "keyword text" runs the script while you type and shows what it prints as results (see [Live results](#live-results) below). Needs a keyword; `.ahk`, `.py` and `.ps1` only |
 | `@altrun.filter altrun` | With `filter`: run the script once when you type the keyword, then let ALTRun filter what it printed while you type (see below) |
-| `@altrun.selection Text, PDF` | [Content types](Usage#actions-on-selected-content) (built-in or your own, separated by commas): the script is offered in the actions panel (`Ctrl+Alt+\`) of such a selection, after the custom commands, and the selection is passed to it as its first argument (several files: one argument each) |
+| `@altrun.selection Text, PDF` | [Content types](Content-Types) (built-in or your own, separated by commas): the script is offered in the actions panel (`Ctrl+Alt+\`) of such a selection, after the custom commands, and the selection is passed to it as its first argument (several files: one argument each) |
 | `@altrun.types Text, PDF` | Another name for `@altrun.selection` (the settings call them `ContentTypes`); with both lines, the types of both count |
 
 ### Examples

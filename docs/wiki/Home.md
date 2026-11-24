@@ -39,6 +39,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | Page | Contents |
 |---|---|
 | [Custom commands](Custom-Commands) | Command types, commands with an argument, path variables |
+| [Content types](Content-Types) | Commands and scripts for a kind of text or file: order numbers, PDFs...; actions on a selection (`Ctrl+Alt+\`) |
 | [Snippets](Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
 | [Clipboard history](Clipboard) | Text, image and file history, pasting, merging, excluded programs |
 | [Custom hotkeys](Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
