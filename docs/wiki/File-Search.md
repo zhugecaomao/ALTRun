@@ -52,6 +52,27 @@ Custom commands set for a file's content type (for example `Markdown` = `md, mar
 
 These are the defaults; change them as described above. The leading dot is optional, commas or semicolons also separate extensions, and lines without `=` are ignored.
 
+## Continuing in Everything
+ALTRun shows a short list for opening things quickly. To filter by size or date, sort, or look through many results, hand the search to Everything's own window:
+
+- **`Ctrl+F`** in the search window: what you typed goes to Everything, whatever result is selected. Works in file search mode and in a normal search
+- **"Search '...' in Everything"** in the action panel (`→`, or right-click) of a file or folder found by file search
+- The last row of a file search, as before
+
+A keyword becomes Everything syntax, so Everything shows the same kind of results:
+
+| You type | Everything searches |
+|---|---|
+| `Space` + `tower plan`, `'tower plan`, `find tower plan` | `tower plan` |
+| `folder budget` | `folder:budget` |
+| `doc report` | `ext:doc;docx;pdf;... report` (the extensions of that file type) |
+| `report` (normal search) | `report` |
+| nothing | Opens Everything's window |
+
+- Everything is found where it is usually installed (Program Files, `%LocalAppData%\Everything`, next to ALTRun.exe); set **EverythingPath** if yours is elsewhere (see [Settings](#settings)). Everything doesn't need to be running: it starts
+- Without Everything, `Ctrl+F` and the action search with Windows Search instead (`folder budget` becomes `kind:folder budget`)
+- Quotes are removed from what you typed, as Everything's command line can't take them
+
 ## Everything search syntax
 When Everything is running, file searches go to it unchanged (over IPC): ALTRun doesn't parse this syntax, and the built-in index doesn't understand it. Type it in file search mode (`Space` first, or a keyword such as `file `). The most useful parts:
 

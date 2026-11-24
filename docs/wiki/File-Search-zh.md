@@ -52,6 +52,27 @@ Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空�
 
 这是默认值, 修改方法见上面. 扩展名前的点可以省略, 也可以用逗号或分号分隔; 没有 `=` 的行不算.
 
+## 在 Everything 里继续找
+ALTRun 只显示一个短列表, 用来快速打开. 要按大小或日期筛选, 排序, 或者翻看很多结果时, 把搜索交给 Everything 自己的窗口:
+
+- 在搜索窗口按 **`Ctrl+F`**: 不管选中哪一行, 都把输入的内容交给 Everything. 文件搜索模式和普通搜索都可以用
+- 文件搜索找到的文件或文件夹, 操作面板 (`→` 或右键) 里有 **"在 Everything 中搜索 '...'"**
+- 文件搜索的最后一行, 和以前一样
+
+关键字会换成 Everything 的语法, Everything 里看到的是同一类结果:
+
+| 输入 | Everything 里搜索 |
+|---|---|
+| `空格` + `塔楼 平面`, `'塔楼 平面`, `find 塔楼 平面` | `塔楼 平面` |
+| `folder 预算` | `folder:预算` |
+| `doc 报告` | `ext:doc;docx;pdf;... 报告` (这类文件的扩展名) |
+| `报告` (普通搜索) | `报告` |
+| 什么都没输入 | 打开 Everything 的窗口 |
+
+- Everything 在常见的安装位置找 (Program Files, `%LocalAppData%\Everything`, ALTRun.exe 旁边); 装在别处时设置 **EverythingPath** (见 [设置](#设置)). Everything 不用先运行, 会自动启动
+- 没有 Everything 时, `Ctrl+F` 和面板里的这一项改用 Windows 搜索 (`folder 预算` 换成 `kind:folder 预算`)
+- 输入里的引号会去掉, Everything 的命令行不能带引号
+
 ## Everything 搜索语法
 Everything 运行时, 文件搜索原样交给它 (通过 IPC): ALTRun 不解析这些语法, 内置索引也不支持. 在文件搜索模式里输入 (先按 `空格`, 或用 `file ` 等关键字). 最常用的:
 

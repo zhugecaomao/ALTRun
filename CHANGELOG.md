@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.14]
+
+测试版。
+
+Test build.
+
+### 新增
+- 在 Everything 中搜索: 在搜索窗口按 `Ctrl+F`, 把输入的内容交给 Everything 自己的窗口, 在那里筛选, 按大小或日期排序; 文件搜索找到的文件或文件夹, 操作面板 (`→`) 里也有这一项. 关键字换成 Everything 的写法 (`folder 预算` → `folder:预算`, `doc 报告` → `ext:doc;docx;... 报告`); 什么都没输入时打开 Everything; 没装 Everything 时用 Windows 搜索. 见 Wiki "文件搜索 → 在 Everything 里继续找" (#566)
+
 ## [2026.11.23.13]
 
 测试版。
@@ -1685,7 +1694,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...HEAD
+[2026.11.23.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...2026.11.23.14
 [2026.11.23.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...2026.11.23.13
 [2026.11.23.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...2026.11.23.12
 [2026.11.23.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...2026.11.23.11

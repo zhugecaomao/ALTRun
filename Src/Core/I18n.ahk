@@ -339,6 +339,8 @@ class I18n {
         s["Help.LargeType.Text"]       := "show in large type"
         s["Help.EditFile.Key"]         := "Ctrl+E"
         s["Help.EditFile.Text"]        := "edit the selected file in its editor (e.g. a script)"
+        s["Help.Everything.Key"]       := "Ctrl+F"
+        s["Help.Everything.Text"]      := "search what you typed in Everything (filter, sort by size or date)"
         s["Help.Prefs.Key"]            := "F2  /  Ctrl+,"
         s["Help.Prefs.Text"]           := "open Preferences"
         s["Help.EditJson.Key"]         := "F4"

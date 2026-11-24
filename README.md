@@ -162,6 +162,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `Ctrl+Del` | Delete the selected result (with confirmation); apps: hide from results |
 | `Ctrl+C` / `Ctrl+L` | Copy the selected result / large type |
 | `Ctrl+E` | Edit the selected file in its editor (e.g. an .ahk script) |
+| `Ctrl+F` | Search what you typed in Everything (filter, sort by size or date) |
 | `F2` or `Ctrl+,` / `F4` | Preferences / edit ALTRun.json in Notepad |
 | `F1` | About ALTRun (version, check for updates, project page) |
 | `Ctrl+Alt+C` | Clipboard history |

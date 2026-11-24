@@ -176,6 +176,8 @@
   "Help.LargeType.Text": "大字顯示",
   "Help.EditFile.Key": "Ctrl+E",
   "Help.EditFile.Text": "用編輯程式開啟選中的檔案 (例如腳本)",
+  "Help.Everything.Key": "Ctrl+F",
+  "Help.Everything.Text": "在 Everything 裡搜尋輸入的內容 (篩選, 按大小或日期排序)",
   "Help.Mark.Key": "Insert",
   "Help.Mark.Text": "標記檔案和資料夾, → 對所有標記的一起操作",
   "Help.Number.Key": "Ctrl+1 ~ Ctrl+9",

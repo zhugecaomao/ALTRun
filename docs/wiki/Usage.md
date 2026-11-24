@@ -114,6 +114,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Ctrl+C` | Copy the selected result (copies text as usual when text is selected in the input box) |
 | `Ctrl+L` | Large type: shows the selected result in huge text in the middle of the screen (phone numbers, codes, calculation results...); any key closes it. Turn it on in Preferences → Features first (off by default on new installations) |
 | `Ctrl+E` | Edit the selected file in the editor registered for its type (for example, open an .ahk script in an editor instead of running it) |
+| `Ctrl+F` | Search what you typed in Everything's own window, to filter and sort by size or date there; Windows Search when Everything isn't installed. See [File search](File-Search#continuing-in-everything) |
 | `Ctrl+Backspace` | Delete the previous word |
 | `F2` / `Ctrl+,` | Preferences |
 | `F4` | Edit ALTRun.json in Notepad (reloaded automatically when saved) |

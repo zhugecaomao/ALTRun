@@ -761,6 +761,18 @@ class ProviderTests {
         eq("not a keyword", FileSearchProvider.Search(SearchQuery("cadence")).Length, 0)
         eq("everything prefix", FileSearchProvider._ScopePrefix(parsed), "ext:doc;docx;pdf ")
         eq("everything folder prefix", FileSearchProvider._ScopePrefix(true), "folder:")
+        ; Ctrl+F / "Search in Everything" (#566): the words typed and the keyword's scope
+        scoped(text) => (term := FileSearchProvider.TypedScope(text, &scope)) "|" (IsObject(scope) ? scope.Keyword : scope)
+        eq("typed: plain", scoped(" tower plan "), "tower plan|0")
+        eq("typed: quote", scoped("'tower"), "tower|0")
+        eq("typed: file keyword", scoped("find tower"), "tower|0")
+        eq("typed: folder keyword", scoped("folder tower"), "tower|1")
+        eq("typed: type filter", scoped("cad tower"), "tower|cad")
+        eq("typed: keyword without space", scoped("cad"), "cad|0")
+        eq("typed: recent keyword", scoped("recent tower"), "tower|0")
+        found := FileSearchProvider.Search(SearchQuery("cad tower"))
+        action := (found.Length && found[1].Actions.Length) ? found[1].Actions[found[1].Actions.Length] : ""
+        eq("result action: the fallback search with the scope", IsObject(action) ? action.Subtitle "|" (InStr(action.Title, "tower") > 0) "|" IsObject(action.OnRun) : "", "Ctrl+F|1|1")
         options["TypeFilters"].Push("dwgonly = dwg")                        ; a changed setting applies at once
         eq("settings change", titles(FileSearchProvider.Search(SearchQuery("dwgonly tower"))), "Tower Plan.dwg")
         options["TypeFilters"].Pop()
