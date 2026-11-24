@@ -3,7 +3,7 @@
 # 开发指南
 
 ## 环境
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。所有 workflow (单元测试、集成检查、基准测试、发布构建) 使用同一个固定版本, 目前是 v2.0.31 和 Ahk2Exe 1.1.37.02a2, 版本和 SHA256 写在 `.github/actions/setup-ahk/action.yml` (版本和哈希一起改); Tests workflow 每周一还用最新的稳定版跑一次, 所以 AutoHotkey 新版本先经过测试再固定
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。所有 workflow (单元测试、集成检查、基准测试、发布构建) 使用同一个固定版本, 目前是 v2.0.32 和 Ahk2Exe 1.1.37.02a2, 版本和 SHA256 写在 `.github/actions/setup-ahk/action.yml` (版本和哈希一起改); Tests workflow 每周一还用最新的稳定版跑一次, 所以 AutoHotkey 新版本先经过测试再固定
 - 任意编辑器; 推荐 VS Code + AutoHotkey v2 Language Support 插件
 
 ```

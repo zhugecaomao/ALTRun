@@ -21,8 +21,8 @@ runs:
       shell: pwsh
       env:
         GH_TOKEN: ${{ github.token }}
-        AHK_TAG: v2.0.31
-        AHK_SHA256: ca1a595aca4528755d8d4cd7fed23d497a37bd9a0b6892072612d68dee1bd00a
+        AHK_TAG: v2.0.32
+        AHK_SHA256: 384a4c125e8d7b5b77ddbd5a593ec761d3e9e96e97a95931cf56e9a077fda114
         AHK2EXE_TAG: Ahk2Exe1.1.37.02a2
         AHK2EXE_SHA256: c29b8c3a5124850d79fc9e66e2ca79677c377d7f31631ad3022ba159c5d9e3be
         WANT_AHK2EXE: ${{ inputs.ahk2exe }}

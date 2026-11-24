@@ -3,7 +3,7 @@
 # Development guide
 
 ## Environment
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later. Every workflow (unit tests, integration checks, benchmarks, release builds) uses one pinned version, currently v2.0.31 with Ahk2Exe 1.1.37.02a2, set with their SHA256 in `.github/actions/setup-ahk/action.yml` (change the tag and the hash together); the Tests workflow also runs on Mondays with the newest stable release, so a new AutoHotkey version is tested before it is pinned
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later. Every workflow (unit tests, integration checks, benchmarks, release builds) uses one pinned version, currently v2.0.32 with Ahk2Exe 1.1.37.02a2, set with their SHA256 in `.github/actions/setup-ahk/action.yml` (change the tag and the hash together); the Tests workflow also runs on Mondays with the newest stable release, so a new AutoHotkey version is tested before it is pinned
 - Any editor; VS Code with the AutoHotkey v2 Language Support extension is recommended
 
 ```
