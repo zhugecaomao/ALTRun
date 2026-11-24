@@ -1053,19 +1053,25 @@ class ExtensionTests {
 
         ; The edit window: opens with the task, shows the command, OK returns the task as edited
         owner := Gui()
-        seen := {Command: "", Error: ""}
+        seen := {Command: "", Error: "", Until: A_TickCount + 15000}
         task := RoboSync.NewTask()
         task["Name"] := "Team", task["Source"] := "\\srv\team", task["Destination"] := "D:\Sync\Team"
-        SetTimer(PressOk, -400)
+        SetTimer(PressOk, -200)
+        SetTimer(GiveUp, -15000)                                            ; still open then: closed, so the test fails instead of hanging the run
         edited := SyncEditor.Edit(owner, "Sync test", task, "", [])
+        SetTimer(GiveUp, 0)
         eq("editor: command shown", (InStr(seen.Command, "robocopy \\srv\team D:\Sync\Team *.* /MIR") = 1) ? 1 : seen.Command seen.Error, 1)
         defaultLog := " /UNILOG+:" RoboSync.Quote(SyncJobs.LogDir "\Team_" FormatTime(, "yyyyMMdd") ".log")
         eq("editor: command with the log it runs with (the default one)", InStr(seen.Command, defaultLog) ? 1 : seen.Command, 1)
         eq("editor: OK returns the task", IsObject(edited) ? edited["Name"] "|" edited["Mode"] "|" edited["Destination"] : "cancelled", "Team|Mirror|D:\Sync\Team")
         owner.Destroy()
+        ; Looks again until the window is shown: on a slow runner it isn't there yet when a single timer fires, and the run hung for 600 s (CI, 11-23)
         PressOk() {
+            DetectHiddenWindows(false)
+            hwnd := WinExist("Sync test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())
+            if !(hwnd && DllCall("IsWindowVisible", "Ptr", hwnd))
+                return (A_TickCount < seen.Until) ? SetTimer(PressOk, -100) : ""
             try {
-                hwnd := WinExist("Sync test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())
                 for ctrl in WinGetControlsHwnd(hwnd)
                     if (WinGetClass(ctrl) = "Edit" && InStr(ControlGetText(ctrl), "robocopy ") = 1)
                         seen.Command := ControlGetText(ctrl)
@@ -1073,6 +1079,13 @@ class ExtensionTests {
             } catch as e {
                 seen.Error := e.Message
                 try WinClose(hwnd)
+            }
+        }
+        GiveUp() {
+            DetectHiddenWindows(true)
+            if (hwnd := WinExist("Sync test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) {
+                seen.Error := "(still open after 15 s)"
+                GuiFromHwnd(hwnd).Destroy()
             }
         }
 
