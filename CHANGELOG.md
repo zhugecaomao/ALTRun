@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.15]
+
+测试版。
+
+Test build.
+
+### 修复
+- 企业微信的发送文件对话框: 对话框跳转不再把文件夹当成要发送的文件加到聊天窗口, 改用地址栏跳转 (`Alt+D`, 输入路径, 回车)。其它程序有同样问题时可以加到 ALTRun.json 的 `Extensions.QuickSwitch.AddressBarDialogs` (#600)
+
 ## [2026.11.23.14]
 
 测试版。
@@ -1694,7 +1703,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...HEAD
+[2026.11.23.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...2026.11.23.15
 [2026.11.23.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...2026.11.23.14
 [2026.11.23.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...2026.11.23.13
 [2026.11.23.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...2026.11.23.12

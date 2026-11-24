@@ -842,7 +842,8 @@ class AppSettings {
                     "ExtractDialogs"   , 1,                                 ; also the extract windows of WinRAR / 7-Zip: the folder goes into the path box, no Enter (Enter would extract), no automatic jump
                     "AdminDialogs"     , 0,                                 ; also dialogs of programs running as administrator: the helper with administrator rights jumps them (AdminHelper)
                     "ExcludeWindows"   , ["ahk_class SysListView32", "ahk_exe Explorer.exe", "ahk_exe TOTALCMD64.exe"],   ; Total Commander's dialogs are not Open / Save dialogs
-                    "AutoSwitchExclude", []                                 ; no automatic jump in these dialogs (the hotkey still works)
+                    "AutoSwitchExclude", [],                                ; no automatic jump in these dialogs (the hotkey still works)
+                    "AddressBarDialogs", ["ahk_exe WXWork.exe"]             ; standard dialogs that jump through the address bar: WeCom sends a folder put in the file name box (#600); not in Preferences
                 ),
                 "AutoDate", Map(
                     "Enabled"      , 1,
