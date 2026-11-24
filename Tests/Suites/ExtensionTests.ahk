@@ -1516,15 +1516,29 @@ class ExtensionTests {
             dialog := WinWait("ALTRun pick probe ahk_class #32770 ahk_pid " dialogPid, , 10)
             hadAddressBar := QuickSwitch._hasAddressBar
             GroupAdd("ALTRunAddressBarDialogs", "ALTRun pick probe ahk_class #32770"), QuickSwitch._hasAddressBar := true
-            jumpMethod := "", open := "no dialog", shown := ""
+            jumpMethod := "", open := "no dialog", shown := "", typed := "", last := "", jumpOrder := "", firstTyped := ""
+            first := target "\One", second := target "\Two"
+            DirCreate(first), DirCreate(second)
             try {
                 if dialog {
                     jumpMethod := FileDialogs.DialogJumpMethod(dialog)
                     WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(300)
                     FileDialogs.SetDialogPath(target "\", dialog)
+                    typed := FileDialogs.LastTyped
                     Sleep(800)
                     open := WinExist("ahk_id " dialog) ? "open" : "closed"
                     shown := (open = "open") ? FileDialogs.DialogFolder(dialog) : ""
+                    ; a second jump (a timer, like a second click in the panel) is due while the first one waits after Alt+D. Without
+                    ; Critical it started there (measured: the timer at +31 ms, the second jump done at +109 ms, the first only at
+                    ; +140 ms, the rest of it typed into the file list); now it waits until the first jump is done
+                    if (open = "open") {
+                        SetTimer(() => (jumpOrder .= "second ", FileDialogs.SetDialogPath(second "\", dialog)), -30)
+                        FileDialogs.SetDialogPath(first "\", dialog)
+                        jumpOrder .= "first-done "
+                        firstTyped := FileDialogs.LastTyped
+                        Sleep(1000)
+                        last := WinExist("ahk_id " dialog) ? FileDialogs.DialogFolder(dialog) : "the dialog closed"
+                    }
                     if (open = "open")
                         DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 2, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; Cancel
                 }
@@ -1537,6 +1551,10 @@ class ExtensionTests {
             eq("address bar jump: listed dialog", jumpMethod, "address")
             eq("address bar jump: the dialog stays open", open, "open")
             eq("address bar jump: the dialog shows the folder", shown, target)
+            eq("address bar jump: the folder is put in, not typed", typed, false)
+            eq("address bar jump: a second jump waits for the first", Trim(jumpOrder), "first-done second")
+            eq("address bar jump: the first one isn't typed either", firstTyped, false)
+            eq("address bar jump: the dialog ends in the second folder", last, second)
             eq("address bar jump: nothing chosen after Cancel", chosen, "[]")
             try DirDelete(target, true)
             try FileDelete(helper)

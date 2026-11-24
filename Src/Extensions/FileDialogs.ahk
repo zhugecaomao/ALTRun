@@ -243,7 +243,20 @@ class FileDialogs {
     ; The jump itself, with the method that suits the dialog (DialogJumpMethod); also run by the helper for administrator windows.
     ; Before simulating keyboard input, make sure it is the foreground window, otherwise the text would go to another window (e.g.
     ; switching back to the dialog failed and the panel is still in front). false when it surely didn't go there
+    ; One jump at a time (Critical): a jump that types takes a moment, longer when SendInput falls back to single key events (another
+    ; program's keyboard hook), and a second click in the panel meanwhile started a second jump whose path was typed into the middle
+    ; of the first (#600). Now it waits until this one is done, then runs
     static Jump(folder, dialog) {
+        wasCritical := A_IsCritical
+        Critical
+        try return FileDialogs._Jump(folder, dialog)
+        finally Critical(wasCritical)
+    }
+
+    static LastTyped := false                                               ; whether the last jump typed the folder (for the tests)
+
+    static _Jump(folder, dialog) {
+        FileDialogs.LastTyped := false
         method := FileDialogs.DialogJumpMethod(dialog)
         if (method = "fill")                                                ; an extract window: Enter there would extract
             return FileDialogs.FillExtractPath(folder, dialog)
@@ -278,9 +291,46 @@ class FileDialogs {
         if (method = "address") {                                           ; a system dialog without the box: its address bar
             SendInput("!d")
             Sleep(60)
+            if FileDialogs._FillFocusedBox(folder, dialog) {                ; the whole folder at once, nothing typed
+                SendInput("{Enter}")
+                return FileDialogs._WaitForFolder(folder, dialog)
+            }
         }
+        FileDialogs.LastTyped := true
         SendText(folder)                                                    ; dialogs a program draws itself (WPS / Qt, GTK, Java...): the
         SendInput("{Enter}")                                                ; file name box has the focus; a folder path + Enter goes there
+        if (method = "address")
+            return FileDialogs._WaitForFolder(folder, dialog)
+    }
+
+    ; After Enter in the address bar: wait until the dialog shows the folder (at most WaitForFolderMs), so the jump is over when Jump returns.
+    ; A jump right after it (a second click in the panel) otherwise ran while the dialog was still going to this folder: when it got there
+    ; it put this folder back into the address bar over the next one, and the dialog stayed here (measured on Windows CI)
+    static WaitForFolderMs := 1000
+
+    static _WaitForFolder(folder, dialog) {
+        folder := RTrim(folder, "\"), started := A_TickCount
+        while (A_TickCount - started < FileDialogs.WaitForFolderMs) {
+            if !WinExist("ahk_id " dialog)
+                return
+            if (FileDialogs.DialogFolder(dialog) = folder)
+                return
+            Sleep(30)
+        }
+        Logger.Debug("QuickSwitch: the dialog didn't show [" folder "] within " FileDialogs.WaitForFolderMs " ms after Enter in the address bar")
+    }
+
+    ; Puts the folder into the dialog's focused edit box (the address bar after Alt+D) with WM_SETTEXT; false if the focus isn't on an
+    ; edit box or it doesn't hold exactly the folder afterwards (then the folder is typed)
+    static _FillFocusedBox(folder, dialog) {
+        try {
+            box := ControlGetFocus("ahk_id " dialog)
+            if !(box && WinGetClass("ahk_id " box) = "Edit")
+                return false
+            ControlSetText(folder, box)
+            return ControlGetText(box) = folder
+        }
+        return false
     }
 
     ; A system dialog's file name box gets the folder and the dialog its OK command, all as messages, no keys: the jump works while Alt or a
@@ -391,9 +441,10 @@ class FileDialogs {
     ; How to put the folder into a dialog:
     ;   message = a system dialog (#32770) with a file name box and an OK button (IDOK): the folder and OK as messages (see _JumpByMessage)
     ;   edit    = into its file name box (Edit1) + Enter: programs with real edit controls that aren't system dialogs
-    ;   address = a system dialog (#32770) without that box: Alt+D (address bar), type, Enter. Also the standard dialogs of the programs in
-    ;             AddressBarDialogs (DialogJumpMethod): they take a folder in the file name box + OK as the item chosen, not as a place
-    ;             to go (WeCom WXWork.exe sends that folder to the chat, #600); Enter in the address bar only goes there
+    ;   address = a system dialog (#32770) without that box: Alt+D (address bar), the folder put in (typed if that fails), Enter.
+    ;             Also the standard dialogs of the programs in AddressBarDialogs (DialogJumpMethod): they take a folder in the file
+    ;             name box + OK as the item chosen, not as a place to go (WeCom WXWork.exe sends that folder to the chat, #600);
+    ;             Enter in the address bar only goes there
     ;   type    = a dialog a program draws itself (WPS / Qt, GTK, Java...): type into the focused file name box, Enter.
     ;             No Alt+D there: it isn't the address bar and may press some button of the dialog
     static JumpMethod(className, hasEdit, hasOk := false) {
