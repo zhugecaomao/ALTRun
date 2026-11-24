@@ -35,10 +35,18 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 
 Lists that use the standard Preferences list editor share the same context menu. Right-click a row, or focus the list and press the Menu key or `Shift+F10`. Right-clicking a row selects it before opening the menu.
 
-- With a row selected: **Edit** (the default command, also available by double-clicking), **Delete**, **Add**, then any actions specific to that page.
-- With no row selected: **Add** and the page-specific actions remain available; **Edit** and **Delete** are omitted.
+- With a row selected: **Edit** (the default command, also available by double-clicking), **Delete**, **Move Up** / **Move Down**, **Add**, then any actions specific to that page.
+- With no row selected: **Add** and the page-specific actions remain available; **Edit**, **Delete** and the moves are omitted.
 
-The menu provides the same commands as the buttons below the list and its **More** menu. Page-specific actions vary by list and may include checking entries, importing or other operations.
+**Changing the order** (since test build 2026.11.23.21): select a row and press `Alt+↑` / `Alt+↓`, or use **Move Up** / **Move Down** in the menu (the menu shows the keys). The order is the order in the settings file, and for example the order of your commands in the [actions panel of a selection](Usage#actions-on-selected-content) and of the "Search with" rows. Moving works in every list on this page's editor (custom commands, content types, snippets, web search engines, hotkeys, folder sync), and is saved with OK / Apply like any other change.
+
+| Situation | Move Up / Move Down |
+|---|---|
+| The first row / the last row | Move Up / Move Down is grayed, the key does nothing |
+| Text in the filter box | both are grayed: the row above on screen may not be the item before; clear the filter first |
+| No row selected | not in the menu |
+
+The menu provides the same commands as the buttons below the list and its **More** menu (Move Up / Move Down are only in the menu). Page-specific actions vary by list and may include checking entries, importing or other operations.
 
 ## Structure
 ```jsonc

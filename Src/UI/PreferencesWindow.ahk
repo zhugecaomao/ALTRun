@@ -54,6 +54,7 @@ class PreferencesWindow {
         PreferencesWindow.ShowActualStartup(PreferencesWindow.Working)
         HotkeyBox.Sides := PreferencesWindow.GetPath(PreferencesWindow.Working, "General.HotkeySides") ? true : false
         PreferencesWindow.Binds := [], PrefsForm.Wider := Map(), PreferencesWindow._lists := Map(), PreferencesWindow._helpButton := ""
+        PrefsForm.ForgetMoveKeys()
         PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
         ; Pages are built when needed (_BuildPage): opening builds only the page shown, the others when first clicked. Opening used to build all 19 pages,
         ; over 300 ms each time (a second or two on old PCs), and most pages are never looked at
@@ -328,6 +329,7 @@ class PreferencesWindow {
         if IsObject(PreferencesWindow.Gui)
             PreferencesWindow.Gui.Destroy()
         PreferencesWindow.Gui := "", PreferencesWindow._lists := Map()
+        PrefsForm.ForgetMoveKeys()
     }
 
     ; "Send to" while Preferences is open: switch to the Commands page and add the files / folders to the list; they are saved by OK / Apply

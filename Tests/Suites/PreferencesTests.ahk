@@ -63,6 +63,52 @@ class PreferencesTests {
         eq("no page actions", show(PrefsForm.ListMenuEntries(false, [])), "Add:" addText)
         entries := PrefsForm.ListMenuEntries(true, page)
         eq("page click kept", entries[entries.Length].Click = fn, true)
+        ; Move Up / Move Down after Delete, with their keys; grayed where the item can't move (#653)
+        upText := I18n.T("Prefs.MoveUp") "`tAlt+↑", downText := I18n.T("Prefs.MoveDown") "`tAlt+↓"
+        entries := PrefsForm.ListMenuEntries(true, [], {Up: false, Down: true})
+        eq("move entries", show(entries), "Edit:" editText "* Delete:" deleteText " - MoveUp:" upText " MoveDown:" downText " - Add:" addText)
+        eq("move up grayed on the first row", entries[4].Enabled "|" entries[5].Enabled, "0|1")
+        eq("no move entries on no row", show(PrefsForm.ListMenuEntries(false, [], {Up: true, Down: true})), "Add:" addText)
+        items := ["a", "b", "c"]
+        eq("move down", PrefsForm.MoveIndex(items, 1, 1) "|" items[1] items[2] items[3], "2|bac")
+        eq("move up", PrefsForm.MoveIndex(items, 3, -1) "|" items[1] items[2] items[3], "2|bca")
+        eq("first can't move up", PrefsForm.MoveIndex(items, 1, -1) "|" items[1] items[2] items[3], "0|bca")
+        eq("last can't move down", PrefsForm.MoveIndex(items, 3, 1) "|" items[1] items[2] items[3], "0|bca")
+    }
+
+    ; Preferences → Custom Commands: Alt+↑ / Alt+↓ in the list move the selected command; the change can be applied (#653)
+    static PreferencesListMove() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesListMove." n, a, e)
+        savedCommands := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["CustomCommands"] := [Map("Id", "mv1k2m4x", "Title", "One", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "")
+            , Map("Id", "mv2k2m4x", "Title", "Two", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "")
+            , Map("Id", "mv3k2m4x", "Title", "Three", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "")]
+        PreferencesWindow.Show("Prefs.Page.Commands", -3000, -3000)
+        try {
+            list := PreferencesWindow._lists["CustomCommands"]
+            titles() {
+                text := ""
+                for item in list.Items
+                    text .= item["Title"] " "
+                return Trim(text) "|" list.View.GetText(1, 1) "|" list.View.GetNext()
+            }
+            sendKey(vk) {                                                   ; as the keyboard does: posted to the focused list, Alt held (bit 29)
+                PostMessage(0x104, vk, 0x20000001, list.View)               ; WM_SYSKEYDOWN
+                Sleep(100)
+            }
+            list.View.Modify(2, "Select Focus")
+            sendKey(0x26)                                                   ; Alt+↑
+            eq("alt+up", titles(), "Two One Three|Two|1")
+            eq("a change", PreferencesWindow._dirty, true)
+            sendKey(0x26)
+            eq("alt+up on the first row: nothing", titles(), "Two One Three|Two|1")
+            sendKey(0x28), sendKey(0x28)                                    ; Alt+↓ twice
+            eq("alt+down", titles(), "One Three Two|One|3")
+            eq("move from the list object", list.Move.Call(-1) "|" titles(), "1|One Two Three|One|2")
+        } finally {
+            AppSettings.Data["CustomCommands"] := savedCommands
+            PreferencesWindow.Close()
+        }
     }
 
     ; Preferences → Scripts, below the list: the selected script's description, then what it needs, where it connects and its path
