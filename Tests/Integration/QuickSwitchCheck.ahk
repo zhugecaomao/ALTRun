@@ -158,15 +158,32 @@ TabRound(n) {
     WinActivate(Explorer)
     if !WinWaitActive(Explorer, , 3)
         return TabFail(name, n, "Explorer didn't come to the front")
-    Send("^t")
-    Sleep(1000)
-    Send("^l")
-    Sleep(300)
-    SendText(folderB)
-    Send("{Enter}")
     try {
-        SetTitleMatchMode(2)
-        shown := WinWait("Folder B ahk_id " Explorer, , 5)                  ; the title is the name of the tab shown
+        before := WinGetTitle(Explorer)
+        Send("^t")
+        start := A_TickCount                                                ; the title counts the tabs: "Home and 1 more tab - File Explorer"
+        while (A_TickCount - start < 5000 && !((title := WinGetTitle(Explorer)) != before && RegExMatch(title, "i)\bmore tabs?\b")))
+            Sleep(50)
+        if (A_TickCount - start >= 5000)
+            return TabFail(name, n, "no new tab came (title '" WinGetTitle(Explorer) "')")
+        Sleep(500)
+        SetTitleMatchMode("RegEx")
+        ; The new tab's address bar sometimes takes no typing yet (a runner where 4 of 5 rounds stayed at Home, #646): try again
+        ; as a user would. It is Explorer, not ALTRun, so the tries only say how often (INFO)
+        shown := false
+        Loop 3 {
+            WinActivate(Explorer)
+            WinWaitActive(Explorer, , 3)
+            Send("^l")
+            Sleep(300)
+            SendText(folderB)
+            Send("{Enter}")
+            if (shown := WinWait("i)^Folder B\b ahk_id " Explorer, , A_Index = 1 ? 5 : 3))
+                break
+            Say("INFO " name " " n ": try " A_Index " didn't go to Folder B (title '" WinGetTitle(Explorer) "')")
+            Send("{Esc}")
+            Sleep(300)
+        }
         SetTitleMatchMode(3)
         if !shown
             return TabFail(name, n, "Explorer doesn't show Folder B (title '" WinGetTitle(Explorer) "')")
@@ -199,15 +216,33 @@ TabRound(n) {
             return TabFail(name " ctrl+g", n, "Ctrl+G didn't jump to Folder B of the tab shown" (ShowsFolder("Folder A") ? " (it went to Folder A of the first tab)" : ""), logSize)
         Say("PASS " name " ctrl+g " n ": jumped to the tab shown in " (A_TickCount - start) " ms")
     } finally {
-        WinActivate(Explorer)                                               ; close the Folder B tab (Ctrl+W): Explorer shows Folder A again
-        if WinWaitActive(Explorer, , 3) {
-            SetTitleMatchMode(2)
-            if WinActive("Folder B ahk_id " Explorer)
-                Send("^w")
-            SetTitleMatchMode(3)
-        }
-        Sleep(800)
+        SetTitleMatchMode(3)
+        CloseNewTabs(name, n)
     }
+}
+
+; Closes the round's new tab whatever it shows, with Ctrl+W as a user does: a tab left at Home would be the folder Explorer shows
+; for the rounds after it (#646: "dialog opens" and the extract windows then failed too). The first tab (Folder A) is never closed
+CloseNewTabs(name, n) {
+    title := ""
+    Loop 3 {
+        try title := WinGetTitle(Explorer)
+        catch
+            break
+        if (!RegExMatch(title, "i)\bmore tabs?\b") || RegExMatch(title, "i)^Folder A\b"))
+            break
+        WinActivate(Explorer)
+        if !WinWaitActive(Explorer, , 3)
+            break
+        Send("^w")
+        start := A_TickCount
+        while (A_TickCount - start < 2000 && WinGetTitle(Explorer) == title)
+            Sleep(50)
+    }
+    try title := WinGetTitle(Explorer)
+    if RegExMatch(title, "i)\bmore tabs?\b")
+        Say("INFO " name " " n ": a second tab is still open (title '" title "')")
+    Sleep(800)
 }
 
 ; A tab round's failure with what it needs to be told apart: every new line of ALTRun's log (an error isn't a QuickSwitch line),
