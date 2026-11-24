@@ -247,7 +247,7 @@ class FileDialogs {
     ; program's keyboard hook), and a second click in the panel meanwhile started a second jump whose path was typed into the middle
     ; of the first (#600). Now it waits until this one is done, then runs
     static Jump(folder, dialog) {
-        return FileDialogs._Jump(folder, dialog)                            ; TEMP probe: without Critical, the new check should fail
+        return FileDialogs._Jump(folder, dialog)                            ; TEMP probe: without Critical, the order check should fail
     }
 
     static LastTyped := false                                               ; whether the last jump typed the folder (for the tests)
