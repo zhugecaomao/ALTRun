@@ -650,6 +650,20 @@ class PrefsForm {
             PreferencesWindow.MarkDirty()
             Refresh(row)
         }
+        ; Move Up / Move Down (right-click menu, Alt+↑ / Alt+↓ in the list; #653): e.g. the order of the commands in the selection's
+        ; actions panel. Not while filtered: the row above on screen may not be the item before
+        CanMove(delta) {
+            row := listView.GetNext()
+            return row && !(IsObject(filterBox) && filterBox.Value != "") && shown[row] + delta >= 1 && shown[row] + delta <= items.Length
+        }
+        MoveItem(delta) {
+            if !CanMove(delta)
+                return false
+            PrefsForm.MoveIndex(items, shown[listView.GetNext()], delta)
+            PreferencesWindow.MarkDirty(true)                               ; a change even right after opening
+            Refresh(listView.GetNext() + delta)
+            return true
+        }
         Option(name) => IsObject(options) && options.HasOwnProp(name) && IsObject(options.%name%)
         RowDraw(lParam) {                                                   ; NM_CUSTOMDRAW: RowColor's text color for the rows that have one
             static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001, CDRF_NEWFONT := 0x2, CDRF_NOTIFYITEMDRAW := 0x20
@@ -696,13 +710,16 @@ class PrefsForm {
             for action in (actions is Array ? actions : actions.Call())
                 pageActions.Push(IsObject(action) ? {Label: action.Label, Click: action.Click, Button: actionButton, Checked: action.HasOwnProp("Checked") && action.Checked} : "-")
             popup := Menu()
-            for entry in PrefsForm.ListMenuEntries(row > 0, pageActions) {
+            for entry in PrefsForm.ListMenuEntries(row > 0, pageActions, {Up: CanMove(-1), Down: CanMove(1)}) {
                 if !IsObject(entry) {
                     popup.Add()
                     continue
                 }
                 popup.Add(entry.Label, ((entry, *) => (entry.Kind = "Edit") ? EditItem() : (entry.Kind = "Delete") ? DeleteItem()
-                    : (entry.Kind = "Add") ? AddItem() : entry.Click.Call(list, entry.Button)).Bind(entry))
+                    : (entry.Kind = "Add") ? AddItem() : (entry.Kind = "MoveUp") ? MoveItem(-1) : (entry.Kind = "MoveDown") ? MoveItem(1)
+                    : entry.Click.Call(list, entry.Button)).Bind(entry))
+                if !entry.Enabled
+                    popup.Disable(entry.Label)
                 if entry.Default
                     popup.Default := entry.Label
                 if entry.Checked
@@ -720,7 +737,8 @@ class PrefsForm {
             Refresh()
         }
         RedrawList() => Refresh(listView.GetNext())                          ; the texts again (e.g. a state column), keeping the filter and the selection
-        list := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting, Reload: ReloadList, Redraw: RedrawList, Selected: SelectedItem, View: listView}
+        list := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting, Reload: ReloadList, Redraw: RedrawList, Selected: SelectedItem, View: listView, Move: MoveItem}
+        PrefsForm.WatchMoveKeys(listView.Hwnd, MoveItem)
         PreferencesWindow._lists[path] := list                              ; items added from outside (AddCommands)
         PrefsForm._y += height - 34
         PrefsForm.Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
@@ -759,20 +777,51 @@ class PrefsForm {
         return list
     }
 
-    ; The right-click menu of a PrefsForm.List: onRow -> Edit (default) and Delete first; then Add; then pageActions
-    ; ([{Label, Click, Button[, Checked]} or "-"]), after a separator. Entries: {Kind: Edit / Delete / Add / Page, Label, Default, Checked, Click, Button} or "-"
-    static ListMenuEntries(onRow, pageActions) {
-        entry(kind, label, action := "") => {Kind: kind, Label: label, Default: kind = "Edit", Checked: IsObject(action) && action.HasOwnProp("Checked") && action.Checked
-            , Click: IsObject(action) ? action.Click : "", Button: IsObject(action) && action.HasOwnProp("Button") ? action.Button : ""}
+    ; The right-click menu of a PrefsForm.List: onRow -> Edit (default) and Delete first, then Move Up / Move Down (with their keys;
+    ; grayed where move = {Up, Down} says it can't); then Add; then pageActions ([{Label, Click, Button[, Checked]} or "-"]), after a separator.
+    ; Entries: {Kind: Edit / Delete / MoveUp / MoveDown / Add / Page, Label, Default, Checked, Enabled, Click, Button} or "-"
+    static ListMenuEntries(onRow, pageActions, move := "") {
+        entry(kind, label, action := "", enabled := true) => {Kind: kind, Label: label, Default: kind = "Edit", Checked: IsObject(action) && action.HasOwnProp("Checked") && action.Checked
+            , Enabled: enabled, Click: IsObject(action) ? action.Click : "", Button: IsObject(action) && action.HasOwnProp("Button") ? action.Button : ""}
         entries := []
-        if onRow
+        if onRow {
             entries.Push(entry("Edit", I18n.T("Prefs.Edit")), entry("Delete", I18n.T("Prefs.Delete")), "-")
+            if IsObject(move)
+                entries.Push(entry("MoveUp", I18n.T("Prefs.MoveUp") "`tAlt+↑", , move.Up), entry("MoveDown", I18n.T("Prefs.MoveDown") "`tAlt+↓", , move.Down), "-")
+        }
         entries.Push(entry("Add", I18n.T("Prefs.Add")))
         if pageActions.Length
             entries.Push("-")
         for action in pageActions
             entries.Push(IsObject(action) ? entry("Page", action.Label, action) : "-")
         return entries
+    }
+
+    ; Swaps items[index] with its neighbour index + delta; returns the new index, 0 when there is no such neighbour
+    static MoveIndex(items, index, delta) {
+        target := index + delta
+        if (index < 1 || index > items.Length || target < 1 || target > items.Length)
+            return 0
+        item := items[index], items[index] := items[target], items[target] := item
+        return target
+    }
+
+    ; Alt+↑ / Alt+↓ in a list: Windows sends them as WM_SYSKEYDOWN to the focused list, which does nothing with them (no beep either,
+    ; since the key is handled here). Lists are forgotten when Preferences closes (ForgetMoveKeys)
+    static _movers := Map()
+    static WatchMoveKeys(hwnd, move) {
+        static watching := false
+        if !watching
+            OnMessage(0x104, (p*) => PrefsForm._OnSysKeyDown(p*)), watching := true    ; WM_SYSKEYDOWN
+        PrefsForm._movers[hwnd] := move
+    }
+    static ForgetMoveKeys() => PrefsForm._movers := Map()
+    static _OnSysKeyDown(wParam, lParam, msg, hwnd) {
+        static VK_UP := 0x26, VK_DOWN := 0x28
+        if ((wParam != VK_UP && wParam != VK_DOWN) || !PrefsForm._movers.Has(hwnd))
+            return
+        PrefsForm._movers[hwnd].Call(wParam = VK_UP ? -1 : 1)
+        return 0
     }
 
     ; A button that opens a menu below it: a split button (BS_SPLITBUTTON), Windows draws the drop-down arrow and the line before it.

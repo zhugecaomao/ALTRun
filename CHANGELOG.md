@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.21]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置的列表 (自定义命令, 内容类型, 片段, 网页搜索, 自定义热键, 文件夹同步) 可以调整顺序: 选中一行按 `Alt+↑` / `Alt+↓`, 或右键菜单 "上移" / "下移" (菜单里标着快捷键); 筛选时不能移动 (#653)
+
 ## [2026.11.23.20]
 
 测试版。
@@ -1748,7 +1757,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...HEAD
+[2026.11.23.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...2026.11.23.21
 [2026.11.23.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...2026.11.23.20
 [2026.11.23.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...2026.11.23.19
 [2026.11.23.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...2026.11.23.18
