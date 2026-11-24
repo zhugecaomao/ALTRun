@@ -106,6 +106,8 @@ class SearchWindowTests {
         for action in ResultActions.ListFor(drive)
             titles .= action.Title "|"
         eq("drive: no recycle", InStr(titles, "|" I18n.T("Action.Recycle") "|") ? 1 : 0, 0)
+        eq("paste hint names the file manager", ResultActions._PasteHint({Path: root, Tag: "Arke", Hwnd: 0}), I18n.T("Action.CopyFile.Hint", "Arke"))
+        eq("paste hint without a file manager", ResultActions._PasteHint(""), I18n.T("Action.CopyFile.HintFolder"))
         ClipboardData.Borrow(3000)
         TestRunner.True("FileActions.copy file", ActionCatalog.CopyFiles([root "\plan.dwg"]))
         eq("copied path", ClipboardData.Files().Length ? ClipboardData.Files()[1] : "", root "\plan.dwg")

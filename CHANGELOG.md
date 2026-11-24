@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.17]
+
+测试版。
+
+Test build.
+
+### 改进
+- 动作面板: "复制文件" / "剪切文件" 右边的提示显示最近用过的文件管理器 (Arke、Directory Opus、资源管理器等), 不再总是 "然后在 Total Commander 里粘贴"; 没有打开文件管理器时显示 "然后在文件夹里粘贴" (#564)
+
 ## [2026.11.23.16]
 
 测试版。
@@ -1712,7 +1721,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...HEAD
+[2026.11.23.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...2026.11.23.17
 [2026.11.23.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...2026.11.23.16
 [2026.11.23.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...2026.11.23.15
 [2026.11.23.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...2026.11.23.14
