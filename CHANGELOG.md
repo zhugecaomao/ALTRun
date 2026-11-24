@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.18]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置: 左侧页面列表偶尔同时出现横竖两个滚动条, 最后一页被挡住 (排版过程中列表内容一度比列表高 1 px, 滚动条出现后就不再消失)
+
 ## [2026.11.23.17]
 
 测试版。
@@ -1721,7 +1730,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...HEAD
+[2026.11.23.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...2026.11.23.18
 [2026.11.23.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...2026.11.23.17
 [2026.11.23.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...2026.11.23.16
 [2026.11.23.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...2026.11.23.15
