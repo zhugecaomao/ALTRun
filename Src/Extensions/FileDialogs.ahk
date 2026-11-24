@@ -382,6 +382,8 @@ class FileDialogs {
             return "browse"
         className := "", hasEdit := false
         try className := WinGetClass("ahk_id " dialog)
+        if (className = "#32770" && QuickSwitch._hasAddressBar && QuickSwitch._Matches("ahk_group ALTRunAddressBarDialogs", dialog))
+            return "address"
         try hasEdit := ControlGetHwnd("Edit1", "ahk_id " dialog) != 0
         return FileDialogs.JumpMethod(className, hasEdit, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr") != 0)
     }
@@ -389,7 +391,9 @@ class FileDialogs {
     ; How to put the folder into a dialog:
     ;   message = a system dialog (#32770) with a file name box and an OK button (IDOK): the folder and OK as messages (see _JumpByMessage)
     ;   edit    = into its file name box (Edit1) + Enter: programs with real edit controls that aren't system dialogs
-    ;   address = a system dialog (#32770) without that box: Alt+D (address bar), type, Enter
+    ;   address = a system dialog (#32770) without that box: Alt+D (address bar), type, Enter. Also the standard dialogs of the programs in
+    ;             AddressBarDialogs (DialogJumpMethod): they take a folder in the file name box + OK as the item chosen, not as a place
+    ;             to go (WeCom WXWork.exe sends that folder to the chat, #600); Enter in the address bar only goes there
     ;   type    = a dialog a program draws itself (WPS / Qt, GTK, Java...): type into the focused file name box, Enter.
     ;             No Alt+D there: it isn't the address bar and may press some button of the dialog
     static JumpMethod(className, hasEdit, hasOk := false) {

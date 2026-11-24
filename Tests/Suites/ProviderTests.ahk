@@ -2230,6 +2230,7 @@ class ProviderTests {
             ids[command["Id"]] := true
         eq("about command exists", ids.Has("About"), true)
         eq("auto switch exclude default", defaults["Extensions"]["QuickSwitch"]["AutoSwitchExclude"].Length, 0)
+        eq("address bar dialogs default (WeCom, #600)", TextTools.JoinList(defaults["Extensions"]["QuickSwitch"]["AddressBarDialogs"], ","), "ahk_exe WXWork.exe")
         eq("standard dialogs default", defaults["Extensions"]["QuickSwitch"]["StandardDialogs"] "|" defaults["Extensions"]["QuickSwitch"]["DialogWindows"].Length, "1|0")
     }
 

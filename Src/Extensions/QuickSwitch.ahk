@@ -17,7 +17,8 @@
 ;
 ; Settings (ALTRun.json -> Extensions.QuickSwitch):
 ;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / Favorites (folder paths, environment variables allowed) / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / AutoSwitchOnOpen /
-;   StandardDialogs (ahk_class #32770) / BrowseDialogs / ExtractDialogs (WinRAR / 7-Zip) / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   StandardDialogs (ahk_class #32770) / BrowseDialogs / ExtractDialogs (WinRAR / 7-Zip) / DialogWindows / ExcludeWindows / AutoSwitchExclude /
+;   AddressBarDialogs (standard dialogs that jump through the address bar, see FileDialogs.DialogJumpMethod; not in Preferences)
 ;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
 ; This file: start-up, the hotkeys and watching which window is in front (Windows events). The other parts, each its own class:
@@ -32,7 +33,7 @@
 ;===============================================================================
 
 class QuickSwitch {
-    static Options := Map(), _hasExclude := false
+    static Options := Map(), _hasExclude := false, _hasAddressBar := false
 
     static Init(options) {
         QuickSwitch.Options := options
@@ -68,6 +69,10 @@ class QuickSwitch {
             GroupAdd("ALTRunDialogExclude", window), QuickSwitch._hasExclude := true
         for window in options["AutoSwitchExclude"]
             GroupAdd("ALTRunAutoSwitchExclude", window)
+        QuickSwitch._hasAddressBar := false
+        if options.Has("AddressBarDialogs")
+            for window in options["AddressBarDialogs"]
+                GroupAdd("ALTRunAddressBarDialogs", window), QuickSwitch._hasAddressBar := true
     }
 
     ;---------------------------------------------------------------------------

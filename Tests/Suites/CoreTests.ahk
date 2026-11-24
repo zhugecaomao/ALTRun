@@ -211,7 +211,7 @@ class CoreTests {
         eq("5->6 compact theme without density", v6["Appearance"]["Theme"] "|" v6["Appearance"]["Density"], "Light|Normal")
         eq("5->6 other theme left alone", SchemaMigration.Upgrade(Map("SchemaVersion", 5, "Appearance", Map("Theme", "Midnight", "Density", "Comfortable")), 5)["Appearance"]["Density"], "Comfortable")
         eq("5->6 missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 5), 5).Count, 1)
-        for setting in ["Extensions.QuickSwitch.DialogWindows", "Extensions.QuickSwitch.ExcludeWindows", "Extensions.QuickSwitch.AutoSwitchExclude"
+        for setting in ["Extensions.QuickSwitch.DialogWindows", "Extensions.QuickSwitch.ExcludeWindows", "Extensions.QuickSwitch.AutoSwitchExclude", "Extensions.QuickSwitch.AddressBarDialogs"
                    , "Extensions.AutoDate.RenameWindows", "Extensions.AutoDate.AppendWindows", "Features.Snippets.ExpandExclude"]
             eq("defaults: " setting " is an array", PreferencesWindow.GetPath(defaults, setting) is Array, true)
         TestRunner.True("Migration.defaults filled", !AppSettings._MergeDefaults(data, AppSettings.Defaults()))

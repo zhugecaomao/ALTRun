@@ -1506,6 +1506,45 @@ class ExtensionTests {
                 eq("message jump (" held " held): saved in the folder jumped to", RegExReplace(saved, "\.txt$"), target "\Report 2026")
                 try FileDelete(A_WinDir "\Report 2026*")                    ; only if a jump went wrong and saved in the old folder
             }
+            ; A dialog that takes a folder in the file name box + OK as the item chosen, as WeCom does (#600), copied by a folder picker:
+            ; without AddressBarDialogs the message jump chooses the folder (only shown as INFO: it shows the copy behaves like WeCom);
+            ; listed there, the jump goes through the address bar, the dialog stays open and shows the folder
+            for listed in [false, true] {
+                try FileDelete(helper)
+                try FileDelete(result)
+                FileAppend('#NoTrayIcon`nFileAppend("[" FileSelect("D", A_WinDir, "ALTRun pick probe") "]", "' result '", "UTF-8")`n', helper, "UTF-8")
+                Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
+                dialog := WinWait("ALTRun pick probe ahk_class #32770 ahk_pid " dialogPid, , 10)
+                hadAddressBar := QuickSwitch._hasAddressBar
+                if listed
+                    GroupAdd("ALTRunAddressBarDialogs", "ALTRun pick probe ahk_class #32770"), QuickSwitch._hasAddressBar := true
+                jumpMethod := "", open := "no dialog", shown := ""
+                try {
+                    if dialog {
+                        jumpMethod := FileDialogs.DialogJumpMethod(dialog)
+                        WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(300)
+                        FileDialogs.SetDialogPath(target "\", dialog)
+                        Sleep(800)
+                        open := WinExist("ahk_id " dialog) ? "open" : "closed"
+                        shown := (open = "open") ? FileDialogs.DialogFolder(dialog) : ""
+                        if (open = "open")
+                            DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 2, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; Cancel
+                    }
+                } finally
+                    QuickSwitch._hasAddressBar := hadAddressBar
+                if !ProcessWaitClose(dialogPid, 5)
+                    try ProcessClose(dialogPid)
+                chosen := ""
+                try chosen := FileRead(result, "UTF-8")
+                if !listed {
+                    FileAppend("INFO folder picker, message jump: method " jumpMethod ", dialog " open ", chosen " chosen "`n", "*")
+                    continue
+                }
+                eq("address bar jump: listed dialog", jumpMethod, "address")
+                eq("address bar jump: the folder isn't chosen, the dialog stays open", open, "open")
+                eq("address bar jump: the dialog shows the folder", shown, target)
+                eq("address bar jump: nothing chosen after Cancel", chosen, "[]")
+            }
             try DirDelete(target, true)
             try FileDelete(helper)
             try FileDelete(result)
