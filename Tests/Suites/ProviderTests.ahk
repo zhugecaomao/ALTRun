@@ -2535,6 +2535,42 @@ class ProviderTests {
         }
     }
 
+    ; Text with line breaks, double quotes, backslashes and cmd's characters reaches a script started directly exactly as it was
+    ; (#653): each kind of script writes its first argument to the file named by the second, run with the command lines ALTRun uses
+    ; (BackgroundLine for silent / output, CommandLine for window). PowerShell and Python only where they are installed (not in Wine)
+    static ScriptArgumentRoundTrip() {
+        eq := (n, a, e) => TestRunner.Equal("ScriptArgumentRoundTrip." n, a, e)
+        note := (text) => FileAppend("NOTE ScriptArgumentRoundTrip: " text "`n", "*")
+        root := A_Temp "\ALTRun-script-roundtrip"
+        try DirDelete(root, true)
+        DirCreate(root)
+        try {
+            sent := 'line 1`r`nline 2 "quoted" \"escaped\" & | % ^ < > 中文`ttab \\server\share\'   ; ends in a backslash, before the closing quote
+            FileAppend('FileAppend(A_Args[1], A_Args[2], "UTF-8-RAW")`n', root "\echo.ahk", "UTF-8")
+            FileAppend('[IO.File]::WriteAllText($args[1], $args[0], (New-Object System.Text.UTF8Encoding $false))`n', root "\echo.ps1", "UTF-8")
+            FileAppend('import sys`nopen(sys.argv[2], "w", encoding="utf-8", newline="").write(sys.argv[1])`n', root "\echo.py", "UTF-8")
+            received(name, background) {
+                script := ScriptProvider.ReadScript(root "\" name), out := root "\" name ".txt"
+                try FileDelete(out)
+                line := background ? ScriptProvider.BackgroundLine(script, [sent, out]) : ScriptProvider.CommandLine(script, [sent, out])
+                RunWait(line, root, "Hide")
+                return FileExist(out) ? FileRead(out, "UTF-8") : "(nothing written)"
+            }
+            eq(".ahk, background", received("echo.ahk", true), sent)
+            eq(".ahk, window", received("echo.ahk", false), sent)
+            if FileExist(A_WinDir "\System32\WindowsPowerShell\v1.0\powershell.exe")
+                eq(".ps1", received("echo.ps1", true), sent)
+            else
+                note("no powershell.exe, .ps1 not run")
+            if FileExist(A_WinDir "\py.exe")
+                eq(".py", received("echo.py", true), sent)
+            else
+                note("no py launcher, .py not run")
+        } finally {
+            try DirDelete(root, true)
+        }
+    }
+
     ; Scripts extension: @altrun.xxx read from the leading comments, found by name / keyword, arguments, command lines, output of background runs
     ; Script headers in each encoding a script can be saved in: UTF-8 without a byte order mark (Notepad's default) and with one,
     ; UTF-16 with one, and the ANSI code page (bytes that aren't valid UTF-8, read as CP0); a long first part is cut at a line break
@@ -3167,7 +3203,11 @@ class ProviderTests {
             psText := {Kind: "text", Types: ["Text"], Term: "(x) {y}; 'z' & $w", Quoted: "", Text: ""}
             eq("ps1 after -File: PowerShell's characters are only text", SelectionActions.SafeArgument(psText, ScriptProvider.ShellCommand(byName["lookup.ps1"])), true)
             psText.Term := "two`nlines"
-            eq("ps1: a line break still refused", SelectionActions.SafeArgument(psText, ScriptProvider.ShellCommand(byName["lookup.ps1"])), false)
+            eq("command line check: a line break refused", SelectionActions.SafeArgument(psText, ScriptProvider.ShellCommand(byName["lookup.ps1"])), false)
+            psText.Term := 'two`r`nlines "quoted"'                         ; scripts started directly: ALTRun quotes the argument itself (#653)
+            eq("scripts: line breaks and quotes for .ps1 / .ahk / .py", ScriptProvider.ArgumentProblem(psText, byName["lookup.ps1"]) "|"
+                ScriptProvider.ArgumentProblem(psText, byName["pdf.ahk"]) "|" ScriptProvider.ArgumentProblem(psText, byName["noword.py"]), "||")
+            eq("scripts: still refused for a batch file (cmd)", IsObject(ScriptProvider.ArgumentProblem(psText, byName["ip.bat"])), true)
 
             scripts["Enabled"] := 1
             titles(info) {
@@ -3183,6 +3223,7 @@ class ProviderTests {
             refused := ScriptProvider.ActionsFor(text("10.0.0.1 & del x", ["IP"]))[1]
             eq("panel: the refused row says why", refused.Subtitle, I18n.T("Selection.Refused.Shell", "&", "cmd"))
             eq("panel: no type, no script", titles(text("hello", ["Url"])), "")
+            eq("panel: text on two lines for the ahk, not the batch file", titles(text("10.0.0.1`r`n10.0.0.2", ["Text", "IP"])), "Ping IP (refused)|Quiet")
             files := ["C:\a b\1.pdf", "C:\2.pdf"]
             argument := ScriptProvider.SelectionArgument({Kind: "files", Files: files, Term: '"C:\a b\1.pdf" "C:\2.pdf"'})
             eq("several files: one argument each", (argument is Array) "|" ScriptProvider.CommandLine(byName["pdf.ahk"], argument)

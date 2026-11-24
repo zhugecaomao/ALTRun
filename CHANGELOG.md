@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- 选中内容和剪贴板历史的文字有换行或双引号时, 也能交给 .ahk / .ps1 / .py 脚本 (参数由 ALTRun 自己按 Windows 规则加引号, 原样传过去); .bat / .cmd 要经过 cmd, 仍然不传 (#653)
+
 ## [2026.11.23.22]
 
 测试版。
@@ -1766,7 +1775,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.23...HEAD
+[2026.11.23.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.22...2026.11.23.23
 [2026.11.23.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...2026.11.23.22
 [2026.11.23.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...2026.11.23.21
 [2026.11.23.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...2026.11.23.20

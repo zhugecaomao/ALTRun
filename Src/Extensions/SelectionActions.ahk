@@ -491,9 +491,10 @@ class SelectionActions {
     ; Paths have no double quotes; text can't have a line break or a double quote; shells also refuse their special characters. A shell
     ; is looked for in the target after expanding it (%ComSpec%, A_WinDir, a name found on PATH) and anywhere in the arguments, so a
     ; shell started through another program ("wt.exe cmd /k ...", "conhost.exe powershell ...") is caught too. PowerShell started
-    ; directly takes them where the selection is only text to it (PowerShellMode)
-    static ArgumentProblem(info, command) {
-        if ((info.Kind = "text" || info.Kind = "url") && RegExMatch(info.Term, '[\r\n"]'))
+    ; directly takes them where the selection is only text to it (PowerShellMode). quoted: ALTRun itself quotes the selection as one
+    ; argument (Win.QuoteArg, a script started directly), so a line break or a double quote arrives as it is; the shell checks still apply
+    static ArgumentProblem(info, command, quoted := false) {
+        if (!quoted && (info.Kind = "text" || info.Kind = "url") && RegExMatch(info.Term, '[\r\n"]'))
             return {Chars: SelectionActions._CharsIn(info.Term, '[\r\n"]'), Shell: ""}
         target := SearchQuery.PlainPlaceholder(command.Has("Target") ? command["Target"] : "")   ; a {query|default} isn't read as part of the command line
         arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
