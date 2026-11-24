@@ -338,10 +338,11 @@ class WebSearchProvider {
               , WebSearchProvider._IconField()]
     }
 
-    ; The Url field: a few lines, one address per line; long addresses don't wrap, so each line is one address
+    ; The Url field: a few lines, one address per line; long addresses don't wrap (each line is one address) and scroll
+    ; sideways with the caret, without a horizontal scroll bar (always shown, even when not needed)
     static _UrlField() {
         field := ItemEditor.Field("Url", "Prefs.Col.Url", "multiline", true, "", I18n.T("Web.Field.Url"))
-        field.EditOptions := "r3 -Wrap +HScroll"
+        field.EditOptions := "r3 -Wrap"
         return field
     }
 

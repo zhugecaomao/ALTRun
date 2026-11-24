@@ -20,7 +20,7 @@
 ; OmitEmpty: true = an empty value removes the key instead of saving "" (an optional key most records don't have)
 ; A file field can have FolderWhen: ["Type", "Folder"] = when another field (Type) is set to Folder, "Browse" chooses a folder instead
 ; hotkey: a hotkey recording box (HotkeyBox, can record middle / side buttons) + a check box "keep the key's own function" (the ~ in front)
-; A multiline field can have EditOptions: the box's options instead of "r8 +WantTab" (e.g. "r3 -Wrap +HScroll")
+; A multiline field can have EditOptions: the box's options instead of "r8 +WantTab" (e.g. "r3 -Wrap")
 ; Hint: gray description below the box; Check: (value, editedMap) => warning text; on OK a warning asks "Save anyway?"
 ;
 ; Usage:
