@@ -94,7 +94,7 @@ class PreferencesWindow {
             PreferencesWindow._tileOver := 0
             layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height - spare)
             if SendMessage(0x1022, 0, view, pageList) {                    ; LVM_GETVIEWRECT
-                PreferencesWindow._tileOver := NumGet(view, 12, "Int") - tiles.Height
+                PreferencesWindow._tileOver := Max(0, NumGet(view, 12, "Int") - tiles.Height)
                 if ((margin := NumGet(view, 12, "Int") - layout.Bottom) != spare && margin >= 0) {
                     layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height - margin)
                     if SendMessage(0x1022, 0, view, pageList)
