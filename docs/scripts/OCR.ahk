@@ -78,8 +78,8 @@ image := EnvGet("ALTRUN_OCR_IMAGE")                  ; for tests: recognize this
 if (image = "") {
     ; No @altrun.selection / argument, so ALTRun never passes a file to this script.
     ; Always start by selecting a screen region.
-    if !SelectRegion(&x, &y, &w, &h)                 ; Esc or a too-small selection cancels silently
-        ExitApp
+    if !SelectRegion(&x, &y, &w, &h)                  ; Esc or a too-small selection cancels
+        Finish("OCR: 取消 (Esc or 未选取识别区域)")
     if !CaptureRegion(x, y, w, h, tmpPng)
         Fail("Could not capture the screen")
     image := tmpPng
@@ -89,19 +89,17 @@ if (image = "") {
 
 text := Ocr(image, lang)
 
-if (text = "") {
-    FileAppend("OCR: no text found" (fallbackReason != "" ? " (offline - " fallbackReason ")" : ""), "*", "UTF-8-RAW")
-    ExitApp
-}
+if (text = "")
+    Finish("OCR: 未识别到文字" (fallbackReason != "" ? " (offline - " fallbackReason ")" : ""))
 
 A_Clipboard := text                                  ; the result is ready to paste anywhere
 ; Keep the notification pure ASCII. ALTRun's ChildProcess decodes stdout as UTF-8
 ; only when the whole buffer is valid UTF-8; other bytes can force an OEM/GBK
 ; decode and garble Chinese. The full recognized text is on the clipboard already.
-notice := "OCR copied " StrLen(text) " chars - result on clipboard"
+notice := "OCR 保存了 " StrLen(text) " 个字符 - 到剪贴板"
 if (fallbackReason != "")
     notice .= " (offline - " fallbackReason ")"
-FileAppend(notice, "*", "UTF-8-RAW")                 ; silent mode shows the last line as a notification
+Finish(notice)                                       ; silent mode shows the last line as a notification
 
 ;-------------------------------------------------------------------------------
 ; A setting from the process environment, else from HKCU\Environment: Windows does not refresh a running process'
@@ -444,6 +442,15 @@ try {
 Ascii(str) {
     str := RegExReplace(RegExReplace(str, "\s+", " "), "[^\x20-\x7E]", "?")
     return StrLen(str) > 120 ? SubStr(str, 1, 117) "..." : str
+}
+
+; Every terminal path goes through here. A silent script that prints nothing ends
+; as "Title: done", so always print one line saying what actually happened.
+; ALTRun decodes stdout as UTF-8 only when the whole buffer is valid UTF-8, so
+; this writes raw UTF-8 with no BOM; errors use Fail() and stderr instead.
+Finish(message) {
+    FileAppend(message, "*", "UTF-8-RAW")
+    ExitApp                                          ; success (0); Fail() uses 1
 }
 
 Fail(message) {
