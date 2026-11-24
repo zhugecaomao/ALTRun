@@ -18,10 +18,8 @@
 
 <p align="center">
   <a href="https://zhugecaomao.github.io/ALTRun/">Website</a> ·
-  <a href="#why-altrun">Why ALTRun</a> ·
-  <a href="#getting-started">Getting started</a> ·
   <a href="#features">Features</a> ·
-  <a href="#keyboard-shortcuts">Shortcuts</a> ·
+  <a href="#getting-started">Getting started</a> ·
   <a href="https://github.com/zhugecaomao/ALTRun/wiki/Home">Documentation (Wiki)</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
@@ -31,193 +29,76 @@
 </p>
 
 
-## Why ALTRun
-- **Tiny**: about 2.5 MB, with one `ALTRun.exe` and a few resource files; no .NET, Electron or other runtime to install.
-- **Fast**: results appear as you type. With [Everything](https://www.voidtools.com/) running, file searches cover all disks in milliseconds; otherwise, ALTRun uses its built-in index.
-- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信; file names too: `cs` → 测试文件.zip), and highlights the matched characters.
-- **Beyond launching**: [Quick Switch](#features) jumps Open / Save dialogs to folders open in Total Commander, Directory Opus, Arke or Explorer; act on selected text, files or URLs in any app; expand snippets with `;keyword`.
-- **All in one**: calculate and convert units, search the web, browse bookmarks, manage clipboard history and snippets, run system commands, or open a terminal—without separate tools for each task.
-- **Keyboard first**: use `→` for the action panel, see what `Enter` will do in the status bar, edit in place with `F3`, open a result directly with `Ctrl+1`–`Ctrl+9`, or use `Ctrl+Enter` to open a file’s containing folder or paste text into the active window.
-- **Portable and private**: no installer, registry entries, admin rights, background service or driver. Data stays local by default; the clipboard history is stored in `%LOCALAPPDATA%\ALTRun`, so it doesn't travel with a synced or portable copy. No telemetry; internet access is used for updates, optional exchange rates and site icons you request.
-- **Automatic updates**: new versions appear in the search window; press `Enter` to install. Packages are SHA256-verified and settings are kept; Scoop is also supported.
-- **Customizable**: four interface languages—English, Simplified Chinese, Traditional Chinese and Japanese—and 22 built-in themes, each in three densities. Follow Windows light / dark mode or customize themes and settings through plain JSON files.
-- **Free and open source**: GPL-3.0 licensed, with more than 8,000 tests run automatically on Windows for every pull request.
+## Features
+- **Search as you type**: apps (Start menu, desktop, Microsoft Store), custom commands, open windows and system commands in one list; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信), and learns which result you pick. [More](https://github.com/zhugecaomao/ALTRun/wiki/Usage)
+- **Files and folders**: `Space` + a name searches all disks in milliseconds with [Everything](https://www.voidtools.com/) running, or the built-in index otherwise; type a path to browse folder by folder. [More](https://github.com/zhugecaomao/ALTRun/wiki/File-Search)
+- **Actions, not just launching**: `→` lists what you can do with a result (run as administrator, open its folder, copy the path, open a terminal there...); `Ctrl+Alt+\` does the same for text, files or a URL selected in any program. [More](https://github.com/zhugecaomao/ALTRun/wiki/Usage#action-panel)
+- **Calculator**: `12*(3+4)`, `10 km in mi`, `255 in hex`, `today + 30 days`, `100 usd to sgd`, with an optional calculation history. [More](https://github.com/zhugecaomao/ALTRun/wiki/Calculator)
+- **Web search and bookmarks**: `g keywords`, `bd keywords` or your own engines; search Chrome, Edge, Brave and Vivaldi bookmarks and history. [More](https://github.com/zhugecaomao/ALTRun/wiki/Web-Search)
+- **Clipboard history and snippets**: `Ctrl+Alt+C` for copied text, files and images; type `;keyword` in any program to expand a snippet. [More](https://github.com/zhugecaomao/ALTRun/wiki/Clipboard)
+- **Quick Switch**: jump an Open / Save dialog to a folder open in File Explorer, Total Commander, Directory Opus or Arke with `Ctrl+G` or the folder panel next to the dialog. [More](https://github.com/zhugecaomao/ALTRun/wiki/Quick-Switch)
+- **Make it yours**: custom commands with an argument (`{query}`), custom hotkeys, and `.ahk` / `.ps1` / `.py` / `.bat` scripts that can show live results, with a [script library](https://zhugecaomao.github.io/ALTRun/#scripts) to start from. [More](https://github.com/zhugecaomao/ALTRun/wiki/Scripts)
+- **Small, portable and private**: about 2.5 MB, with no installer, registry entries, admin rights or background service; your data stays on your PC and there is no telemetry. [More](https://github.com/zhugecaomao/ALTRun/wiki/Privacy)
+- **Customizable and up to date**: English, Simplified Chinese, Traditional Chinese and Japanese; 22 [themes](https://github.com/zhugecaomao/ALTRun/wiki/Themes) that can follow the Windows light / dark mode; one-key updates that keep your settings.
+
 
 ## Getting started
-1. [Download the latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` — no installation or AutoHotkey required.
-2. Press `Alt+Space` (or `Alt+R`), type an app or file name, then press `Enter`.
-3. Type `?` to see all search syntax and shortcuts; press `Ctrl+,` to open Preferences.
+1. [Download the latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` (no installation or AutoHotkey needed). Or install it with a package manager:
+   ```powershell
+   winget install zhugecaomao.ALTRun
+   # or
+   scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+   scoop install altrun
+   ```
+2. Press `Alt+Space` (or `Alt+R`), type a few letters and press `Enter`.
+3. Type `?` for every search syntax and shortcut; press `Ctrl+,` for Preferences.
 
-If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#my-antivirus-flags-it).
+If Windows SmartScreen blocks it, choose **More info** → **Run anyway**; for antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#my-antivirus-flags-it). Upgrading, running from source with AutoHotkey v2 and uninstalling: [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation).
 
-You can also install with winget or Scoop, or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) for details.
+| To do this | Type |
+|---|---|
+| Open a program | `word` → `Enter` |
+| Find a file or folder | `Space`, then `report` |
+| Calculate | `12*(3+4)`; `Enter` copies the result |
+| Search the web | `g keywords` |
+| Paste from the clipboard history | `Ctrl+Alt+C` |
+| Run a command in a terminal | `>ipconfig /all` |
+| See what you can do with a result | `→` or right-click |
+| Edit the selected command | `F3` |
 
-
-## Features
-**Search**
-- **Search window**: results update as you type, with a title and path for each; the window grows with the results, can be dragged and remembers its position, and opens on the screen with the mouse pointer when you have several monitors.
-- **Apps**: Start menu, desktop and Microsoft Store apps are indexed automatically, and newly installed programs show up within seconds; press `Ctrl+Del` to hide apps or built-in commands you don't want, and restore them in Preferences.
-- **Match highlighting**: the parts of a title that match what you typed (consecutive characters, word initials, pinyin initials) are highlighted.
-- **Files and folders**: in an empty search box, press `Space` first and then type a name (or use `'report` or `open report`). With Everything running it searches all disks, otherwise the built-in index; type a path such as `D:\Projects\` to browse folder by folder; `recent report` searches the files you opened recently in any program. Files can also show in normal results, matched by the start of a name or anywhere in it (Preferences → File Search).
-- **Custom commands**: files, folders, programs (with arguments) and web addresses, each with optional keywords (several, separated by commas, if you switch keyboard layouts). Add them from Explorer with right-click → Send to → ALTRun (several at once works too), and check for commands whose path no longer exists.
-- **Learned ranking**: remembers which result you picked for each query and moves frequent picks up.
-- **Pinned and recent items**: before you type anything, the window lists your pinned items and recently opened ones. Drag a file result out to WeChat, an email or a folder to copy it there.
-- **Usage statistics**: counts per day and per feature (only counts are recorded).
-- **Calculator**: type an expression directly; supports unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`), optional currency conversion (`100 usd to sgd`) and an optional history of calculations.
-- **Web search**: `g keywords` (Google), `bd keywords` (Baidu) and more; search engines are customizable (`g` and a space with nothing after it searches the clipboard text; one keyword can open several sites at once), and web search is offered when nothing else matches.
-- **Browser bookmarks and history**: searches Chrome, Edge, Brave and Vivaldi bookmarks (`bm keywords` searches bookmarks only); `h keywords` searches the browser history, most recently visited first.
-- **Window switcher**: type a window title or program name to switch to an open window; `w keywords` searches windows only, `w ` lists them all.
-- **System commands**: lock, sleep, shut down, empty the Recycle Bin, volume and media control, Windows tools, more than 40 Windows Settings pages (Display, Bluetooth, Wi-Fi and so on), and text conversions (case, sorting, Simplified / Traditional Chinese and more).
-
-**Productivity**
-- **Action panel**: select a result and press `→` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here, show properties or (when turned on) open the Windows context menu with the items 7-Zip, Git and other programs add (also directly with `Shift`+right-click or `Shift+→`).
-- **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text; your own commands for content types you define (an order number pattern, PDF files...) come first.
-- **Edit in place**: press `F3` to edit a command, snippet or search engine; apps and files can be turned into custom commands in one step.
-- **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; what you paste stays on the clipboard for the next `Ctrl+V`; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.
-- **Text snippets**: search by name, keyword or content; placeholders such as `{date}`, `{clipboard}`, `{cursor}` and `{enter}`; type `;keyword` in any program to expand a snippet; import them in bulk from Excel / CSV, or export them.
-- **Terminal**: type `>ipconfig /all` to run it in a terminal.
-- **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results (turn it on in Preferences → Features).
-
-**Extensions**
-- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the folder of the file manager you used last (Total Commander, Directory Opus, Arke or Explorer); a folder panel next to the dialog lists every open and recently used folder, with your favorite folders (and their subfolders) in its star menu (`Alt+↓` or `F4` in the panel's search box opens it too). Also works in the older Browse for Folder dialog (folder tree only). Optionally also in dialogs of programs running as administrator, through a small helper (ALTRun itself keeps normal rights).
-- **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
-- **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs; or select text anywhere and press `Ctrl+Alt+F` to search folders with that name (`folder {selection}`).
-- **Examples on demand**: the hotkey, custom command, snippet and web search lists in Preferences can add back the built-in examples you don't have yet ("Add Examples"), without touching your own items.
-- **Folder sync**: keep a folder in step with another one (for example a server share and your OneDrive) with Windows' robocopy: set up in Preferences, run in the task's sync window (live progress) or from the search window; a preview lists what a mirror would delete before anything is deleted.
-- **Delayed start**: start programs such as OneDrive a few minutes after signing in to Windows, so the desktop is ready sooner (Windows Task Scheduler starts them, no administrator rights needed; the `Delayed Start.ahk` script in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts)).
-- **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown; give them a hotkey, offer them for selected content of a type (`@altrun.selection`), or let one show live results while you type (`@altrun.mode filter`), such as commands for the program in front that run when chosen.
-
-**For structural engineers**
-- **Structural calculations** (off by default): the calculator can add beam main bars and rebar area below its result.
-- **PT Tools**: rebar / mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel (two scripts in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts)).
+Every shortcut: [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage#shortcuts).
 
 
 ## Screenshots
 | Search window | Action panel (`→`) |
 |:---:|:---:|
 | <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/actions.png" alt="Action panel"> |
-| **File search (`Space` + name)** | **Search by file type (`doc` + name)** |
-| <img src="docs/images/screenshots/files.png" alt="File search"> | <img src="docs/images/screenshots/filetype.png" alt="Search by file type"> |
-| **Calculator and unit conversion** | **Pinyin initials (`jsb` finds 记事本, Notepad)** |
-| <img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"> | <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> |
-| **Clipboard history (`Ctrl+Alt+C` / `clip`): find and paste** | **Pinned and recent items (empty search box)** |
-| <img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"> | <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> |
-| **Browse folders: `Tab` goes in, `Backspace` goes up** | **Web search (`g` + keywords)** |
-| <img src="docs/images/screenshots/demo-browse.png" alt="Browse folders: type a path, Tab, filter, Backspace"> | <img src="docs/images/screenshots/websearch.png" alt="Web search"> |
-| **Quick Switch: jump an Open / Save dialog to a folder you have open** | **Themes (Preferences → Appearance)** |
-| <img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
-| **Window switching (`w` + Space)** | **Add commands from Explorer (right-click → Send to → ALTRun)** |
-| <img src="docs/images/screenshots/windows.png" alt="Window switching"> | <img src="docs/images/screenshots/sendto.png" alt="Send to ALTRun"> |
-| **Preferences** | **Custom commands** |
-| <img src="docs/images/screenshots/prefs-general.png" alt="Preferences"> | <img src="docs/images/screenshots/prefs-commands.png" alt="Custom commands"> |
-| **Snippets: type `;thx` in any program** | **Scripts** |
-| <img src="docs/images/screenshots/demo-snippets.png" alt="Snippets: ;thx expands into an email reply"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
+| **File search (`Space` + name)** | **Calculator and unit conversion** |
+| <img src="docs/images/screenshots/files.png" alt="File search"> | <img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"> |
+| **Clipboard history (`Ctrl+Alt+C`)** | **Quick Switch in an Open / Save dialog** |
+| <img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"> | <img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"> |
 
-<details>
-<summary><b>Built-in themes</b> (22 in total, each in three densities; click to expand)</summary>
-
-| Dark | Classic | Midnight |
-|:---:|:---:|:---:|
-| <img src="docs/images/screenshots/theme-dark.png" alt="Dark"> | <img src="docs/images/screenshots/theme-classic.png" alt="Classic"> | <img src="docs/images/screenshots/theme-midnight.png" alt="Midnight"> |
-| **Frost** | **Graphite** | **Ocean** |
-| <img src="docs/images/screenshots/theme-frost.png" alt="Frost"> | <img src="docs/images/screenshots/theme-graphite.png" alt="Graphite"> | <img src="docs/images/screenshots/theme-ocean.png" alt="Ocean"> |
-| **Paper** | **Lavender** | **Rose** |
-| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-lavender.png" alt="Lavender"> | <img src="docs/images/screenshots/theme-rose.png" alt="Rose"> |
-| **Forest** | **Sunset** | **HighContrast** |
-| <img src="docs/images/screenshots/theme-forest.png" alt="Forest"> | <img src="docs/images/screenshots/theme-sunset.png" alt="Sunset"> | <img src="docs/images/screenshots/theme-highcontrast.png" alt="HighContrast"> |
-| **Dark · Compact** | **TokyoNight** | **Dracula** |
-| <img src="docs/images/screenshots/theme-compact.png" alt="Dark · Compact"> | <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> |
-| **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
-| <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> | <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> |
-| **DarkModern** | **LightModern** | **Monokai** |
-| <img src="docs/images/screenshots/theme-darkmodern.png" alt="DarkModern"> | <img src="docs/images/screenshots/theme-lightmodern.png" alt="LightModern"> | <img src="docs/images/screenshots/theme-monokai.png" alt="Monokai"> |
-| **OneDark** | |  |
-| <img src="docs/images/screenshots/theme-onedark.png" alt="OneDark"> | |  |
-
-</details>
-
-The screenshots are generated automatically by [Tests/Screenshots](Tests/Screenshots/TakeScreenshots.ahk) on a Windows runner in GitHub Actions.
-
-
-## Keyboard shortcuts
-| Key | Action |
-|---|---|
-| `Alt+Space` | Show / hide the search window (configurable) |
-| `Enter` | Open the selected result |
-| `Ctrl+Enter` | Files / folders: open the containing folder; text: paste into the active window |
-| `Alt+Enter` | Copy the path, URL or text |
-| `Ctrl+Shift+Enter` | Run the selected program as administrator |
-| `Ctrl+1`–`Ctrl+9` | Open the Nth result |
-| `↑` `↓` / `Ctrl+P` `Ctrl+N` | Move up / down one row |
-| `PgUp` `PgDn` | Previous / next page |
-| `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history |
-| `Tab` | Autocomplete; folders: browse into them (or select the next result, see Preferences → Keyboard) |
-| `Backspace` (browsing a folder) | Up a level |
-| `Insert` | Mark several files / folders, then press `→` to act on all of them |
-| `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
-| `folder name` | Search folders only |
-| `?` | Cheat sheet: every syntax and shortcut |
-| `→` / right-click | Action panel / action menu |
-| `F3` | Edit the selected result, or add an app, file or URL as a custom command |
-| `Ctrl+Del` | Delete the selected result (with confirmation); apps: hide from results |
-| `Ctrl+C` / `Ctrl+L` | Copy the selected result / large type |
-| `Ctrl+E` | Edit the selected file in its editor (e.g. an .ahk script) |
-| `Ctrl+F` | Search what you typed in Everything (filter, sort by size or date) |
-| `F2` or `Ctrl+,` / `F4` | Preferences / edit ALTRun.json in Notepad |
-| `F1` | About ALTRun (version, check for updates, project page) |
-| `Ctrl+Alt+C` | Clipboard history |
-| `Esc` | Close the action panel / hide the window |
-
-For the full syntax (`'file`, `>command`, `clip`, `snip`, web search keywords and more), see [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) in the wiki.
+Each Wiki page shows its feature in screenshots, and the [Themes](https://github.com/zhugecaomao/ALTRun/wiki/Themes) page shows all 22 themes. The screenshots are made automatically by [Tests/Screenshots](Tests/Screenshots/TakeScreenshots.ahk) on a Windows runner in GitHub Actions.
 
 
 ## Documentation
-The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wiki/Home):
-
-| Page | Contents |
-|---|---|
-| [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | Download, winget / Scoop, start with Windows, automatic updates, upgrading from 2.x, uninstalling |
-| [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | Search syntax, shortcuts, action panel, learned ranking, usage statistics |
-| [Custom commands](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands) | Command types, commands with an argument, path variables |
-| [Snippets](https://github.com/zhugecaomao/ALTRun/wiki/Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
-| [File search](https://github.com/zhugecaomao/ALTRun/wiki/File-Search) | Everything integration, built-in index, exclusion rules |
-| [Themes](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | Built-in themes, custom themes, every available key |
-| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | Quick Switch, date stamp, custom hotkeys, system commands |
-| [PT Tools](https://github.com/zhugecaomao/ALTRun/wiki/PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles (script library) |
-| [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) | Every ALTRun.json setting and its default value |
-| [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
-| [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) | Architecture, adding a search feature, code style, tests |
+The [Wiki](https://github.com/zhugecaomao/ALTRun/wiki/Home) covers every feature in detail, with examples. Good places to start:
+[Getting started](https://github.com/zhugecaomao/ALTRun/wiki/Getting-Started) ·
+[Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) ·
+[Custom commands](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands) ·
+[Snippets](https://github.com/zhugecaomao/ALTRun/wiki/Snippets) ·
+[Quick Switch](https://github.com/zhugecaomao/ALTRun/wiki/Quick-Switch) ·
+[Scripts](https://github.com/zhugecaomao/ALTRun/wiki/Scripts) ·
+[Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) ·
+[FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ)
 
 
-## Installation options and upgrades
-**winget** (built into Windows 10 / 11; new versions arrive after Microsoft's review, usually 1–3 days):
-```powershell
-winget install zhugecaomao.ALTRun
-winget upgrade zhugecaomao.ALTRun    # upgrade (quit ALTRun first)
-```
-
-**Scoop** (new versions the day they are released; adds a Start menu shortcut and keeps settings across upgrades):
-```powershell
-scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
-scoop install altrun
-scoop update altrun    # upgrade (quit ALTRun first)
-```
-
-To run from source, install [AutoHotkey v2](https://www.autohotkey.com/) and launch `ALTRun.ahk`.
-
-For upgrading from an older version or from 2.x, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation).
-
-
-## Feedback
-- Report a bug: [bug report](https://github.com/zhugecaomao/ALTRun/issues/new?template=bug_report.yml) (please include your Windows version and the steps to reproduce)
-- Suggest a feature: [feature request](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml)
-- Questions, ideas and other topics: [start a discussion](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml)
-
-## Contributing
+## Feedback and contributing
+- [Report a bug](https://github.com/zhugecaomao/ALTRun/issues/new?template=bug_report.yml) (with your Windows version and the steps to reproduce), [suggest a feature](https://github.com/zhugecaomao/ALTRun/issues/new?template=feature_request.yml) or [start a discussion](https://github.com/zhugecaomao/ALTRun/issues/new?template=discussion.yml), in English or Chinese
+- Code: read [CONTRIBUTING.md](CONTRIBUTING.md) first; the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) covers the project structure, the tests and adding a search feature
 - Scripts: contribute one to the [script library](docs/scripts/README.md#contributing-a-script--投稿脚本) with a pull request
-- Code contributions: please read [CONTRIBUTING.md](CONTRIBUTING.md) first; the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) covers the project structure, running the tests and adding a search feature
 
-Issues and pull requests are welcome in English or Chinese. If ALTRun is useful to you, a star ⭐ is much appreciated.
+If ALTRun is useful to you, a star ⭐ is much appreciated.
 
 
 ## Code signing policy
