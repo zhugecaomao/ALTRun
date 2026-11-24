@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.19]
+
+测试版。
+
+Test build.
+
+### 修复
+- 货币换算改用 Frankfurter v2 汇率, 支持新台币 (TWD) 等约 160 种货币 (之前只有欧洲央行的 30 种); 货币可写 新台幣 / 台幣 / 臺幣 / 美金 等繁简中文名; 汇率已下载但没有某个货币时提示 "没有 XXX 的汇率", 不再说 "还没有下载汇率" (#649)
+
 ## [2026.11.23.18]
 
 测试版。
@@ -1730,7 +1739,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...HEAD
+[2026.11.23.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...2026.11.23.19
 [2026.11.23.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...2026.11.23.18
 [2026.11.23.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...2026.11.23.17
 [2026.11.23.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...2026.11.23.16

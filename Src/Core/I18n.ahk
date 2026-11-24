@@ -237,6 +237,7 @@ class I18n {
         s["Calc.Currency"]             := "Currency conversion"
         s["Calc.CurrencyOff"]          := "Press Enter to turn it on in Preferences → Calculator (downloads exchange rates once a day)"
         s["Calc.RatesNotYet"]          := "Exchange rates have not been downloaded yet. Try again in a minute."
+        s["Calc.NoRate"]               := "No exchange rate for {1}"
         s["Calc.BeamWidth"]            := "Beam width {1} mm: {2} main bars @ {3} c/c"
         s["Calc.RebarArea"]            := "As = {1} mm²: {2}"
         s["Calc.History"]              := "Calculation history"

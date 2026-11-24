@@ -2419,6 +2419,23 @@ Func | PTTools | PT Tools (AHK)=99
         eq("chinese currency name", fmt(Units.Convert(110, "美元", "人民币")), "780")
         results := CalculatorProvider.Search(SearchQuery("100 usd to sgd"))
         ok("currency result", results.Length && results[1].Title = "130 SGD" && InStr(results[1].Subtitle, "2026-09-26"))
+        ; Frankfurter v2 (#649): rows with their own dates, the newest is shown; TWD and the traditional Chinese names
+        CurrencyRates.Apply(JSON.Parse('[{"date": "2026-11-23", "base": "EUR", "quote": "BTC", "rate": 0.000012}, {"date": "2026-11-24", "base": "EUR", "quote": "USD", "rate": 1.1}, {"date": "2026-11-24", "base": "EUR", "quote": "TWD", "rate": 36}]'))
+        eq("v2 rates date: the newest", CurrencyRates.Date, "2026-11-24")
+        eq("v2 twd usd", fmt(Units.Convert(360, "twd", "usd")), "11")
+        eq("traditional chinese names", fmt(Units.Convert(1.1, "美金", "新台幣")), "36")
+        eq("v2 eur base", fmt(Units.Convert(1, "eur", "twd")), "36")
+        options := AppSettings.Feature("Calculator"), savedCurrency := options["Currency"]
+        try {
+            options["Currency"] := 1
+            results := CalculatorProvider.Search(SearchQuery("100 usd to sgd"))
+            ok("no rate hint names the currency", results.Length = 1 && !results[1].Valid && InStr(results[1].Subtitle, "SGD") && !InStr(results[1].Subtitle, "USD"))
+            eq("not a currency: no hint", CalculatorProvider.Search(SearchQuery("100 usd to km")).Length, 0)
+            Units.Rates := Map()
+            results := CalculatorProvider.Search(SearchQuery("100 usd to sgd"))
+            ok("rates not yet hint", results.Length = 1 && !results[1].Valid && results[1].Subtitle = I18n.T("Calc.RatesNotYet"))
+        } finally
+            options["Currency"] := savedCurrency
         Units.Rates := saved
         ok("stale: never", CurrencyRates.IsStale("", "20260929120000"))
         ok("stale: 13 h", CurrencyRates.IsStale("20260928230000", "20260929120000"))

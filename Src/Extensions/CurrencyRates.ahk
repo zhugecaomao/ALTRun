@@ -2,7 +2,8 @@
 ; CurrencyRates.ahk - exchange rates for currency conversion (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Only used with Features.Calculator.Currency on (off by default): the only site besides GitHub that ALTRun ever visits.
-; Rates come from Frankfurter (https://frankfurter.dev, reference rates published by the ECB and other central banks, free, no key needed),
+; Rates come from Frankfurter (https://frankfurter.dev, reference rates published by the ECB and other central banks, free, no key needed;
+; v2: v1 only has the ECB's 30 currencies, without TWD and many others, #649),
 ; updated once per working day. The download is stored in Data\Currency.json; 1.5 minutes after start-up and every hour after,
 ; it downloads again when the last download is 12 hours old. Failures only go to the log, and the last rates stay in use.
 ;
@@ -13,7 +14,7 @@
 ;===============================================================================
 
 class CurrencyRates {
-    static Url   := "https://api.frankfurter.dev/v1/latest?base=EUR"
+    static Url   := "https://api.frankfurter.dev/v2/rates?base=EUR"
     static File  := AppSettings.DataDir "\Currency.json"
     static Date  := "", Fetched := ""
     static StaleHours := 12
@@ -46,9 +47,22 @@ class CurrencyRates {
         }
     }
 
-    ; Frankfurter's reply ({"base": "EUR", "date": "...", "rates": {...}}) or the cache ({"Date", "Rates"}) -> Units.Rates
+    ; Frankfurter v2's reply ([{"date", "base": "EUR", "quote", "rate"}...]), v1's ({"date", "rates": {...}}) or the cache ({"Date", "Rates"}) -> Units.Rates.
+    ; v2 gives each currency the date of its own source (crypto currencies lag a day): Date is the newest one
     static Apply(data) {
-        rates := data.Has("rates") ? data["rates"] : data.Has("Rates") ? data["Rates"] : ""
+        rates := Map(), newest := ""
+        if (data is Array) {
+            for row in data {
+                if !(row is Map) || !row.Has("quote") || !row.Has("rate") || (row.Has("base") && row["base"] != "EUR")
+                    continue
+                rates[row["quote"]] := row["rate"]
+                if (row.Has("date") && StrCompare(row["date"], newest) > 0)
+                    newest := row["date"]
+            }
+        } else if (data is Map) {
+            rates := data.Has("rates") ? data["rates"] : data.Has("Rates") ? data["Rates"] : ""
+            newest := data.Has("date") ? data["date"] : data.Has("Date") ? data["Date"] : ""
+        }
         if !(rates is Map) || !rates.Count
             throw Error("No exchange rates in the data.")
         table := Map("EUR", 1)
@@ -56,7 +70,7 @@ class CurrencyRates {
             if (IsNumber(rate) && rate > 0)
                 table[StrUpper(code)] := rate + 0
         Units.Rates := table
-        CurrencyRates.Date := data.Has("date") ? data["date"] : data.Has("Date") ? data["Date"] : ""
+        CurrencyRates.Date := newest
     }
 
     ; Downloads in the background (ALTRun doesn't hang) and swaps in the new rates when done

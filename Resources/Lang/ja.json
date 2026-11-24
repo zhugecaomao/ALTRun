@@ -63,6 +63,7 @@
   "Calc.Currency": "通貨換算",
   "Calc.CurrencyOff": "Enter で 環境設定 → 電卓 を開いてオンにします (為替レートを 1 日 1 回ダウンロード)",
   "Calc.Days": "{1} 日",
+  "Calc.NoRate": "{1} の為替レートはありません",
   "Calc.RatesNotYet": "為替レートはまだダウンロードされていません。しばらくしてからもう一度お試しください。",
   "Calc.RatesOf": "{1} のレート",
   "Calc.RebarArea": "As = {1} mm²: {2}",

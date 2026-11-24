@@ -205,15 +205,24 @@ class CalculatorProvider {
                 subtitle .= " · " I18n.T("Calc.RatesOf", CurrencyRates.Date)
             return [ResultItem(text " " label, subtitle, {Kind: "text", Arg: text, Icon: icon, Score: 200, LargeText: text " " label})]
         }
-        ; both sides look like currency codes (3 letters) but aren't units: hint to turn on currency conversion / rates not downloaded yet
-        if (RegExMatch(conversion.From, "^[a-z]{3}$") && RegExMatch(conversion.To, "^[a-z]{3}$")
-                && !IsObject(Units._Lookup(conversion.From)) && !IsObject(Units._Lookup(conversion.To))) {
-            if AppSettings.Feature("Calculator")["Currency"]
-                return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.RatesNotYet"), {Icon: icon, Score: 150, Valid: false})]
+        ; both sides are currencies (3-letter codes or Chinese names, not units) and one has no rate: say why there is no result
+        missing := []
+        for unit in [conversion.From, conversion.To] {
+            info := Units._Lookup(unit)
+            if (IsObject(info) && info.Kind != "currency") || (code := Units.CurrencyCode(unit)) = ""
+                return []
+            if !IsObject(info)
+                missing.Push(code)
+        }
+        if !missing.Length
+            return []
+        if !AppSettings.Feature("Calculator")["Currency"]
             return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.CurrencyOff"), {Icon: icon, Score: 150   ; Enter: opens the Calculator settings page
                 , OnRun: (*) => App.OpenPreferences("Prefs.Page.Calculator")})]
-        }
-        return []
+        if !Units.Rates.Count
+            return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.RatesNotYet"), {Icon: icon, Score: 150, Valid: false})]
+        codes := (missing.Length = 2 && missing[1] != missing[2]) ? missing[1] ", " missing[2] : missing[1]
+        return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.NoRate", codes), {Icon: icon, Score: 150, Valid: false})]
     }
 
     static _Item(text, subtitle, score := 200) {
