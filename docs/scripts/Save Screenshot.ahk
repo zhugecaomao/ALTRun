@@ -21,10 +21,8 @@
 #NoTrayIcon
 
 Chinese := RegExMatch(A_Language, "i)^(0804|0404|0C04|1004|1404)$") > 0
-; Output is best-effort: if ALTRun still has this script cached with the default "window" mode
-; (a plain Reload of the script process does NOT refresh ALTRun's metadata cache), stdout has no
-; handle and FileAppend throws error 6. Never let a notification break a save that already worked.
-; Restart ALTRun once to pick up @altrun.mode silent and enable the notification.
+; In silent mode ALTRun shows the last line printed as a notification (read as UTF-8). try: run any other way
+; (double-clicked, or the mode changed to window) there is no standard output, and the save has already worked.
 Say(msg) {
     try FileAppend(msg "`n", "*", "UTF-8-RAW")
 }
@@ -44,8 +42,10 @@ ActiveFolder() {
     for window in shell.Windows() {
         try {
             p := window.Document.Folder.Self.Path
-            if (p != "")
-                paths[window.HWND] := p
+            h := window.HWND
+            ; Windows 11 tabs: each tab is an item with the window's HWND; the tab shown wins
+            if (p != "" && (!paths.Has(h) || TabOf(window) = CurrentTab(h)))
+                paths[h] := p
         }
     }
     ; Only VISIBLE (not minimized) Explorer windows count. A minimized folder window is not the
@@ -71,6 +71,17 @@ ActiveFolder() {
         }
     }
     return ""                                           ; no visible folder -> caller falls back to Desktop
+}
+
+; The tab view shown in an Explorer window: its frontmost ShellTabWindowClass child
+CurrentTab(hwnd) => DllCall("FindWindowExW", "Ptr", hwnd, "Ptr", 0, "Str", "ShellTabWindowClass", "Ptr", 0, "Ptr")
+
+; The tab view of a Shell.Application window item: IShellBrowser::GetWindow (IOleWindow, the fourth method)
+TabOf(window) {
+    static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
+    tab := 0
+    try ComCall(3, ComObjQuery(window, IID_IShellBrowser, IID_IShellBrowser), "Ptr*", &tab)
+    return tab
 }
 
 ; --- The image is read from the current clipboard, not from ALTRun's data folder ---
@@ -117,94 +128,86 @@ if FileExist(dest) {
 }
 
 ; --- Save the clipboard image to the chosen path (overwrite already confirmed above) ---
-if !SaveClipboardImage(dest)
+ok := false
+try ok := SaveClipboardImage(dest)                  ; throws when the clipboard is busy or the file can't be written
+if !ok
     Fail((Chinese ? "保存失败: " : "Failed to save: ") dest)
 
-; --- Notify via stdout. Keep it ASCII: ALTRun's silent mode can mis-decode non-ASCII stdout ---
-; (the file itself is already on disk, so a short confirmation is enough)
 SplitPath(dest, &name)
-Say("Saved: " name)
+Say((Chinese ? "已保存: " : "Saved: ") name)
 
 ;-------------------------------------------------------------------------------
-; Does the current clipboard contain any image format?
+; Does the current clipboard contain an image? CF_BITMAP is also reported when a program put only
+; CF_DIB / CF_DIBV5 there (Windows converts between them).
 ;-------------------------------------------------------------------------------
 ClipboardHasImage() {
-    static CF_BITMAP := 2, CF_DIB := 8
+    static CF_BITMAP := 2
     pngFmt := DllCall("RegisterClipboardFormat", "Str", "PNG", "UInt")
     return DllCall("IsClipboardFormatAvailable", "UInt", CF_BITMAP)
-        || DllCall("IsClipboardFormatAvailable", "UInt", CF_DIB)
         || (pngFmt && DllCall("IsClipboardFormatAvailable", "UInt", pngFmt))
 }
 
 ;-------------------------------------------------------------------------------
-; Save the current clipboard image as a PNG. No temp files, no ALTRun data folder.
-; Tries CF_BITMAP (what screenshot tools normally put on the clipboard), then
-; CF_DIB, then a registered "PNG" format. Returns true on success.
+; Save the current clipboard image as a PNG, with no temporary file. A "PNG" format (browsers, Office)
+; is written as it is, which keeps transparency; otherwise CF_BITMAP is encoded with GDI+.
 ;-------------------------------------------------------------------------------
 SaveClipboardImage(file) {
+    loop 10 {                                       ; another program may hold the clipboard for a moment
+        if DllCall("OpenClipboard", "Ptr", 0, "Int")
+            break
+        if (A_Index = 10)
+            throw Error("Cannot open the clipboard")
+        Sleep(20)
+    }
+    try {
+        if SavePngFormat(file)
+            return true
+        if (hBitmap := DllCall("GetClipboardData", "UInt", 2, "Ptr"))      ; CF_BITMAP
+            return SaveBitmap(hBitmap, file)
+        return false
+    } finally {
+        DllCall("CloseClipboard")
+    }
+}
+
+; Writes the clipboard's "PNG" format to the file; false when there is none or it isn't PNG data
+SavePngFormat(file) {
+    pngFmt := DllCall("RegisterClipboardFormat", "Str", "PNG", "UInt")
+    if !(pngFmt && (hPng := DllCall("GetClipboardData", "UInt", pngFmt, "Ptr")))
+        return false
+    if !(pPng := DllCall("GlobalLock", "Ptr", hPng, "Ptr"))
+        return false
+    try {
+        size := DllCall("GlobalSize", "Ptr", hPng, "UPtr")
+        if (size < 8 || NumGet(pPng, 0, "UInt") != 0x474E5089)            ; signature 89 50 4E 47 ("\x89PNG")
+            return false
+        f := FileOpen(file, "w")                    ; overwrite was confirmed by the caller
+        f.RawWrite(pPng, size)
+        f.Close()
+        return true
+    } finally {
+        DllCall("GlobalUnlock", "Ptr", hPng)
+    }
+}
+
+; Encodes an HBITMAP as PNG with GDI+. The HBITMAP belongs to the clipboard, so it isn't deleted here.
+SaveBitmap(hBitmap, file) {
     clsid := Buffer(16, 0)                          ; PNG encoder, built into GDI+
     DllCall("ole32\CLSIDFromString", "Str", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "Ptr", clsid)
-
     DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
     input := Buffer(24, 0)                          ; GdiplusStartupInput: version 1
     NumPut("UInt", 1, input)
-    token := 0
-    DllCall("gdiplus\GdiplusStartup", "Ptr*", &token, "Ptr", input, "Ptr", 0)
-
-    bitmap := 0, ok := false
+    token := 0, bitmap := 0
+    if DllCall("gdiplus\GdiplusStartup", "Ptr*", &token, "Ptr", input, "Ptr", 0)
+        return false
     try {
-        opened := false
-        loop 10 {                                   ; another app may briefly own the clipboard
-            if DllCall("OpenClipboard", "Ptr", 0, "Int") {
-                opened := true
-                break
-            }
-            Sleep(20)
-        }
-        if !opened
-            throw Error("Cannot open the clipboard")
-        try {
-            if (hBitmap := DllCall("GetClipboardData", "UInt", 2, "Ptr")) {   ; CF_BITMAP
-                ; The HBITMAP belongs to the clipboard: GDI+ makes its own copy, so it
-                ; must NOT be deleted here.
-                DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hBitmap, "Ptr", 0, "Ptr*", &bitmap)
-            } else if (hDib := DllCall("GetClipboardData", "UInt", 8, "Ptr")) { ; CF_DIB
-                pDib := DllCall("GlobalLock", "Ptr", hDib, "Ptr")
-                DllCall("gdiplus\GdipCreateBitmapFromGdiDib", "Ptr", pDib, "Ptr", DibPixelPtr(pDib), "Ptr*", &bitmap)
-                DllCall("GlobalUnlock", "Ptr", hDib)
-            } else {                                ; some apps expose only a "PNG" format
-                pngFmt := DllCall("RegisterClipboardFormat", "Str", "PNG", "UInt")
-                if (hPng := DllCall("GetClipboardData", "UInt", pngFmt, "Ptr")) {
-                    pPng := DllCall("GlobalLock", "Ptr", hPng, "Ptr")
-                    size := DllCall("GlobalSize", "Ptr", hPng, "Ptr")
-                    f := FileOpen(file, "w")        ; overwrite was confirmed by the caller
-                    f.RawWrite(pPng, size)
-                    f.Close()
-                    DllCall("GlobalUnlock", "Ptr", hPng)
-                    ok := true
-                }
-            }
-        } finally {
-            DllCall("CloseClipboard")
-        }
-        if bitmap {
-            try FileDelete(file)                    ; overwrite was confirmed by the caller
-            ok := DllCall("gdiplus\GdipSaveImageToFile", "Ptr", bitmap, "WStr", file, "Ptr", clsid, "Ptr", 0) = 0
-        }
+        if DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hBitmap, "Ptr", 0, "Ptr*", &bitmap)
+            return false
+        try FileDelete(file)                        ; overwrite was confirmed by the caller
+        return DllCall("gdiplus\GdipSaveImageToFile", "Ptr", bitmap, "WStr", file, "Ptr", clsid, "Ptr", 0) = 0
     } finally {
         if bitmap
             DllCall("gdiplus\GdipDisposeImage", "Ptr", bitmap)
         DllCall("gdiplus\GdiplusShutdown", "Ptr", token)
     }
-    return ok
-}
-
-; Pointer to the pixel data in a CF_DIB: BITMAPINFOHEADER + optional colour table.
-DibPixelPtr(pDib) {
-    headerSize := NumGet(pDib, 0, "UInt")
-    bpp := NumGet(pDib, 14, "UShort")
-    colours := NumGet(pDib, 32, "UInt")             ; biClrUsed
-    if (bpp <= 8 && colours = 0)
-        colours := 1 << bpp
-    return pDib + headerSize + colours * 4
 }
