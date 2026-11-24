@@ -2,13 +2,10 @@
 ; @altrun.keyword        shot
 ; @altrun.mode           silent
 ; @altrun.author         sfcboy
-; @altrun.description    Save the most recent clipboard screenshot as a PNG file; Save As opens in the current Explorer folder
-; @altrun.description_zh 把剪贴板里最近的一张截图另存为 PNG 文件; "另存为"对话框默认打开当前资源管理器所在文件夹
+; @altrun.description    Save the current clipboard image as a PNG file; Save As opens in the current Explorer folder
+; @altrun.description_zh 把剪贴板里当前的图片另存为 PNG 文件; "另存为"对话框默认打开当前资源管理器所在文件夹
 ; @altrun.network        none
 ;
-; Why a script: ALTRun already stores every screenshot it sees in the clipboard history as
-; %LOCALAPPDATA%\ALTRun\Clipboard\img-*.png. This script just takes the newest one and copies it
-; to a location you pick in a Save As dialog - no changes to ALTRun's core code needed.
 ;
 ; Trigger options (pick one or both):
 ;   1) Keyword: type "shot" in ALTRun and press Enter.
@@ -19,7 +16,7 @@
 ;   ALTRUN_SHOT_DIR   default folder the Save As dialog opens in (e.g. D:\Pictures\Screenshots)
 ;   ALTRUN_SHOT_PREFIX default filename prefix (default: screenshot)
 ; If ALTRUN_SHOT_DIR is set, the file name is auto-generated as <prefix>_yyyyMMdd_HHmmss.png
-; and the dialog opens there; otherwise it opens in Pictures with the same suggested name.
+; and the dialog opens there; otherwise it opens in the current Explorer folder (or the Desktop).
 #Requires AutoHotkey v2.0
 #NoTrayIcon
 
@@ -76,23 +73,9 @@ ActiveFolder() {
     return ""                                           ; no visible folder -> caller falls back to Desktop
 }
 
-; --- Locate ALTRun's screenshot folder (where the running app stores clipboard images) ---
-dir := EnvGet("LOCALAPPDATA")
-clipFolder := (dir != "") ? dir "\ALTRun\Clipboard" : ""
-if (clipFolder = "" || !DirExist(clipFolder))
-    Fail(Chinese ? "找不到 ALTRun 的剪贴板截图目录" : "ALTRun clipboard image folder not found")
-
-; --- Find the newest img-*.png ---
-newest := "", newestTime := 0
-loop Files clipFolder "\img-*.png" {
-    t := FileGetTime(A_LoopFileFullPath, "M")
-    if (t > newestTime) {
-        newestTime := t
-        newest := A_LoopFileFullPath
-    }
-}
-if (newest = "")
-    Fail(Chinese ? "剪贴板里还没有截图" : "No screenshot in the clipboard history yet")
+; --- The image is read from the current clipboard, not from ALTRun's data folder ---
+if !ClipboardHasImage()
+    Fail(Chinese ? "剪贴板里没有图片" : "No image in the clipboard")
 
 ; --- Decide starting folder and default file name ---
 startDir := EnvGet("ALTRUN_SHOT_DIR")
@@ -108,23 +91,13 @@ if (startDir = "" || !DirExist(startDir)) {
     else
         startDir := A_MyDocuments
 }
-defaultName := prefix "_" FormatTime(newestTime, "yyyyMMdd_HHmmss") ".png"
+defaultName := prefix "_" FormatTime(A_Now, "yyyyMMdd_HHmmss") ".png"
 
-; --- Temp diagnostic: record what folder logic resolved (remove once confirmed) ---
-try {
-    diag := "ALTRUN_HWND=[" EnvGet("ALTRUN_HWND") "]`nstartDir=[" startDir "]`n"
-    for window in ComObject("Shell.Application").Windows() {
-        mm := 0
-        try mm := WinGetMinMax("ahk_id " window.HWND)
-        try diag .= "  win " window.HWND " [minmax=" mm "] = " window.Document.Folder.Self.Path "`n"
-    }
-    FileAppend(diag, A_Temp "\altrun_shot_diag.txt", "UTF-8")
-}
-
-; --- Ask where to save ("S" = Save As, 24 = prompt to create / overwrite) ---
+; --- Ask where to save. Overwrite is checked below, after the extension is normalized:
+;     FileSelect only sees the name as typed (e.g. "a") and cannot know that "a.png" exists. ---
 title := Chinese ? "保存截图" : "Save Screenshot"
 filter := Chinese ? "PNG 图片 (*.png)" : "PNG Images (*.png)"
-dest := FileSelect("S24", startDir "\" defaultName, title, filter)
+dest := FileSelect("S", startDir "\" defaultName, title, filter)
 if (dest = "")                                      ; user cancelled
     ExitApp(0)
 
@@ -132,13 +105,106 @@ if (dest = "")                                      ; user cancelled
 if !RegExMatch(dest, "i)\.png$")
     dest .= ".png"
 
-; --- Copy the already-stored PNG to the chosen path (Windows copy, with conflict prompt) ---
-try FileCopy(newest, dest, true)
-catch as e {
-    Fail((Chinese ? "保存失败: " : "Failed to save: ") e.Message)
+; The real path is known only now, so this is the one place to confirm an overwrite.
+if FileExist(dest) {
+    if Chinese
+        question := "文件已存在: " dest "`n要覆盖吗?"
+    else
+        question := "File already exists: " dest "`nOverwrite?"
+    answer := MsgBox(question, title, 4)             ; 4 = Yes/No
+    if (answer = "No")
+        ExitApp(0)
 }
+
+; --- Save the clipboard image to the chosen path (overwrite already confirmed above) ---
+if !SaveClipboardImage(dest)
+    Fail((Chinese ? "保存失败: " : "Failed to save: ") dest)
 
 ; --- Notify via stdout. Keep it ASCII: ALTRun's silent mode can mis-decode non-ASCII stdout ---
 ; (the file itself is already on disk, so a short confirmation is enough)
 SplitPath(dest, &name)
 Say("Saved: " name)
+
+;-------------------------------------------------------------------------------
+; Does the current clipboard contain any image format?
+;-------------------------------------------------------------------------------
+ClipboardHasImage() {
+    static CF_BITMAP := 2, CF_DIB := 8
+    pngFmt := DllCall("RegisterClipboardFormat", "Str", "PNG", "UInt")
+    return DllCall("IsClipboardFormatAvailable", "UInt", CF_BITMAP)
+        || DllCall("IsClipboardFormatAvailable", "UInt", CF_DIB)
+        || (pngFmt && DllCall("IsClipboardFormatAvailable", "UInt", pngFmt))
+}
+
+;-------------------------------------------------------------------------------
+; Save the current clipboard image as a PNG. No temp files, no ALTRun data folder.
+; Tries CF_BITMAP (what screenshot tools normally put on the clipboard), then
+; CF_DIB, then a registered "PNG" format. Returns true on success.
+;-------------------------------------------------------------------------------
+SaveClipboardImage(file) {
+    clsid := Buffer(16, 0)                          ; PNG encoder, built into GDI+
+    DllCall("ole32\CLSIDFromString", "Str", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "Ptr", clsid)
+
+    DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
+    input := Buffer(24, 0)                          ; GdiplusStartupInput: version 1
+    NumPut("UInt", 1, input)
+    token := 0
+    DllCall("gdiplus\GdiplusStartup", "Ptr*", &token, "Ptr", input, "Ptr", 0)
+
+    bitmap := 0, ok := false
+    try {
+        opened := false
+        loop 10 {                                   ; another app may briefly own the clipboard
+            if DllCall("OpenClipboard", "Ptr", 0, "Int") {
+                opened := true
+                break
+            }
+            Sleep(20)
+        }
+        if !opened
+            throw Error("Cannot open the clipboard")
+        try {
+            if (hBitmap := DllCall("GetClipboardData", "UInt", 2, "Ptr")) {   ; CF_BITMAP
+                ; The HBITMAP belongs to the clipboard: GDI+ makes its own copy, so it
+                ; must NOT be deleted here.
+                DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hBitmap, "Ptr", 0, "Ptr*", &bitmap)
+            } else if (hDib := DllCall("GetClipboardData", "UInt", 8, "Ptr")) { ; CF_DIB
+                pDib := DllCall("GlobalLock", "Ptr", hDib, "Ptr")
+                DllCall("gdiplus\GdipCreateBitmapFromGdiDib", "Ptr", pDib, "Ptr", DibPixelPtr(pDib), "Ptr*", &bitmap)
+                DllCall("GlobalUnlock", "Ptr", hDib)
+            } else {                                ; some apps expose only a "PNG" format
+                pngFmt := DllCall("RegisterClipboardFormat", "Str", "PNG", "UInt")
+                if (hPng := DllCall("GetClipboardData", "UInt", pngFmt, "Ptr")) {
+                    pPng := DllCall("GlobalLock", "Ptr", hPng, "Ptr")
+                    size := DllCall("GlobalSize", "Ptr", hPng, "Ptr")
+                    f := FileOpen(file, "w")        ; overwrite was confirmed by the caller
+                    f.RawWrite(pPng, size)
+                    f.Close()
+                    DllCall("GlobalUnlock", "Ptr", hPng)
+                    ok := true
+                }
+            }
+        } finally {
+            DllCall("CloseClipboard")
+        }
+        if bitmap {
+            try FileDelete(file)                    ; overwrite was confirmed by the caller
+            ok := DllCall("gdiplus\GdipSaveImageToFile", "Ptr", bitmap, "WStr", file, "Ptr", clsid, "Ptr", 0) = 0
+        }
+    } finally {
+        if bitmap
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", bitmap)
+        DllCall("gdiplus\GdiplusShutdown", "Ptr", token)
+    }
+    return ok
+}
+
+; Pointer to the pixel data in a CF_DIB: BITMAPINFOHEADER + optional colour table.
+DibPixelPtr(pDib) {
+    headerSize := NumGet(pDib, 0, "UInt")
+    bpp := NumGet(pDib, 14, "UShort")
+    colours := NumGet(pDib, 32, "UInt")             ; biClrUsed
+    if (bpp <= 8 && colours = 0)
+        colours := 1 << bpp
+    return pDib + headerSize + colours * 4
+}
