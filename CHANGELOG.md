@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.22]
+
+测试版。
+
+Test build.
+
+### 新增
+- 剪贴板历史的文字项按 `→` 打开操作面板, 在 复制 / 粘贴 后面列出为它的内容类型设置的自定义命令和脚本 (和选中这段文字时一样), 以前复制过的文字不用再找出来重新选中; 在这一项上按 `Enter` 仍是粘贴 (#653)
+
 ## [2026.11.23.21]
 
 测试版。
@@ -1757,7 +1766,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.22...HEAD
+[2026.11.23.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...2026.11.23.22
 [2026.11.23.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...2026.11.23.21
 [2026.11.23.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...2026.11.23.20
 [2026.11.23.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...2026.11.23.19

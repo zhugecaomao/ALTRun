@@ -230,6 +230,50 @@ class ExtensionTests {
         eq("no layouts", Win.NextLayout([], 0x4090409), 0)
     }
 
+    ; Text in the clipboard history: its actions panel has the commands for its content types after Copy / Paste (#653);
+    ; text from other providers doesn't get them
+    static ClipboardHistoryCommands() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardHistoryCommands." n, a, e)
+        hadTypes := AppSettings.Data.Has("ContentTypes"), savedTypes := hadTypes ? AppSettings.Data["ContentTypes"] : ""
+        savedCommands := AppSettings.Data["CustomCommands"], custom := AppSettings.Feature("CustomCommands"), savedEnabled := custom["Enabled"]
+        scripts := AppSettings.Feature("Scripts"), savedScripts := scripts["Enabled"]
+        try {
+            custom["Enabled"] := 1, scripts["Enabled"] := 0                  ; no scripts from the test PC's Scripts folder
+            AppSettings.Data["ContentTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")]
+            AppSettings.Data["CustomCommands"] := [Map("Id", "po000001", "Title", "Open PO", "Type", "Url", "Target", "https://erp.example.com/po/{query}"
+                , "Arguments", "", "Keyword", "", "ContentTypes", "PO")]
+            clip(text) {
+                item := ClipboardProvider._ToItem(Map("Text", text, "Time", A_Now, "App", "notepad.exe"), "", 100)
+                item.Provider := ClipboardProvider.Id
+                return item
+            }
+            rowsOf(item) {
+                text := ""
+                for row in ResultActions.ListFor(item)
+                    text .= row.Title "|"
+                return "|" text
+            }
+            rows := rowsOf(clip("PO12345"))
+            commandAt := InStr(rows, "|Open PO|")
+            eq("matching text: its command is offered", commandAt > 0, true)
+            eq("after Copy and Paste", commandAt > InStr(rows, "|" I18n.T("Action.Copy") "|") && commandAt > InStr(rows, "|" I18n.T("Action.Paste") "|"), true)
+            row := ""
+            for each in ResultActions.ListFor(clip("PO12345"))
+                if (each.Title = "Open PO")
+                    row := each
+            eq("the command gets the text", IsObject(row) && InStr(row.Arg, "po/PO12345") > 0, true)
+            eq("other text: not offered", InStr(rowsOf(clip("hello")), "|Open PO|"), 0)
+            eq("text from another provider: not offered", InStr(rowsOf(ResultItem("PO12345", "", {Kind: "text", Arg: "PO12345"})), "|Open PO|"), 0)
+        } finally {
+            if hadTypes
+                AppSettings.Data["ContentTypes"] := savedTypes
+            else
+                AppSettings.Data.Delete("ContentTypes")
+            AppSettings.Data["CustomCommands"] := savedCommands
+            custom["Enabled"] := savedEnabled, scripts["Enabled"] := savedScripts
+        }
+    }
+
     static AutoDate() {
         eq := (n, a, e) => TestRunner.Equal("AutoDate." n, a, e)
         today := "23.09.2026"
