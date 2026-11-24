@@ -1396,7 +1396,13 @@ class ExtensionTests {
             try FileDelete(helper)
             FileAppend('#NoTrayIcon`nFileSelect(, A_WinDir, "Open")`n', helper, "UTF-8")
             Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
+            waited := A_TickCount
             dialog := WinWait("Open ahk_class #32770 ahk_pid " dialogPid, , 10)
+            waited := A_TickCount - waited, inFront := dialog && WinWaitActive("ahk_id " dialog, , 2)
+            if (dialog && !inFront) {                                       ; (a new process's window may not get the front): as a user clicks it
+                FileAppend("NOTE QuickSwitch: the Open dialog of another process wasn't in front (in front: " ExtensionTests._WindowText(WinExist("A")) "), activated`n", "*")
+                try WinActivate("ahk_id " dialog)
+            }
             panelShown := false
             Loop 50 {
                 if (panelShown := IsObject(QuickSwitchPanel._panel) && DllCall("IsWindowVisible", "Ptr", QuickSwitchPanel._panel.Hwnd))
@@ -1405,6 +1411,10 @@ class ExtensionTests {
             }
             Sleep(QuickSwitch.SettleMs + 300)
             pollingWhileOpen := QuickSwitch._polling, phaseWhileOpen := QuickSwitch._phase, comparedWhileOpen := QuickSwitch._openDialog = dialog
+            if !(dialog && panelShown && comparedWhileOpen)                 ; what tells the causes apart (a failure seen once, #621)
+                FileAppend("NOTE QuickSwitch: Open dialog " ExtensionTests._WindowText(dialog) " found in " waited " ms, in front at first " (inFront ? 1 : 0)
+                    . "; compared " ExtensionTests._WindowText(QuickSwitch._openDialog) "; in front " ExtensionTests._WindowText(WinExist("A"))
+                    . "; panel " (IsObject(QuickSwitchPanel._panel) ? Format("0x{:X} visible {}", QuickSwitchPanel._panel.Hwnd, DllCall("IsWindowVisible", "Ptr", QuickSwitchPanel._panel.Hwnd)) : "none") "`n", "*")
             try WinClose("ahk_id " dialog)
             if !ProcessWaitClose(dialogPid, 3)
                 try ProcessClose(dialogPid)
@@ -2766,5 +2776,16 @@ class ExtensionTests {
         } finally {
             try DirDelete(root, true)
         }
+    }
+
+    ; A window for a NOTE: handle, class, process and title ("none" for 0)
+    static _WindowText(hwnd) {
+        if !hwnd
+            return "none"
+        text := Format("0x{:X}", hwnd)
+        try text .= " " WinGetClass("ahk_id " hwnd) " of " WinGetProcessName("ahk_id " hwnd) " '" WinGetTitle("ahk_id " hwnd) "'"
+        catch
+            text .= " (gone)"
+        return text
     }
 }
