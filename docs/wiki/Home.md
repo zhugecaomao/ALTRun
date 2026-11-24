@@ -16,36 +16,65 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 ![ALTRun: type to search, open the action panel, convert units and search files](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo.png)
 
 ## Start here
+
+### Getting started
 | Page | Contents |
 |---|---|
 | [Getting started](Getting-Started) | First steps: open the window, launch programs, everyday features, your own commands |
 | [Installation and upgrades](Installation) | Download, winget / Scoop, start with Windows, one-key updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](Usage) | Every search syntax, shortcuts, action panel, learned ranking, usage statistics |
+| [Pinned and recent items](Recent) | Pinned and recently opened items shown when the search box is empty |
+
+### Search
+| Page | Contents |
+|---|---|
+| [File search](File-Search) | Everything integration, built-in index, exclusion rules |
+| [Web search](Web-Search) | Keywords such as `g` / `bd`, adding your own engines, fallback searches |
+| [Browser bookmarks](Bookmarks) | Search, open and copy bookmark URLs; search the browser history (`h`) |
+| [Window switching](Window-Switching) | Find an open window and switch to it |
+| [Calculator](Calculator) | Expressions, unit and currency conversion, structural calculations |
+| [System commands and terminal](System-Commands) | Every system command (lock, shut down...); `>` runs a command |
+
+### Your commands and text
+| Page | Contents |
+|---|---|
 | [Custom commands](Custom-Commands) | Command types, commands with an argument, path variables |
 | [Snippets](Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
 | [Clipboard history](Clipboard) | Text, image and file history, pasting, merging, excluded programs |
-| [File search](File-Search) | Everything integration, built-in index, exclusion rules |
-| [Themes](Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
-| [Browser bookmarks](Bookmarks) | Search, open and copy bookmark URLs; search the browser history (`h`) |
-| [Web search](Web-Search) | Keywords such as `g` / `bd`, adding your own engines, fallback searches |
-| [Window switching](Window-Switching) | Find an open window and switch to it |
-| [Pinned and recent items](Recent) | Pinned and recently opened items shown when the search box is empty |
-| [Quick Switch](Quick-Switch) | Jump to a folder open in File Explorer, Total Commander, Directory Opus or Arke |
-| [File managers](File-Managers) | Open folders in Total Commander, Directory Opus or Arke; what works with each |
-| [Dialog Folder Panel](Quick-Switch-Panel) | Search and pick folders in an Open / Save dialog |
-| [Date Stamp](Date-Stamp) | Add dates when renaming files or at the end of text |
-| [Calculator](Calculator) | Expressions, unit and currency conversion, structural calculations |
-| [Scripts](Scripts) | Turn your own scripts into commands in the search results |
-| [System commands and terminal](System-Commands) | Every system command (lock, shut down...); `>` runs a command |
 | [Custom hotkeys](Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
-| [Delayed start](Delayed-Start) | Start programs such as OneDrive a few minutes after signing in (script library) |
+
+### Dialogs and file managers
+| Page | Contents |
+|---|---|
+| [Quick Switch](Quick-Switch) | Jump to a folder open in File Explorer, Total Commander, Directory Opus or Arke |
+| [Dialog Folder Panel](Quick-Switch-Panel) | Search and pick folders in an Open / Save dialog |
+| [File managers](File-Managers) | Open folders in Total Commander, Directory Opus or Arke; what works with each |
+| [Date Stamp](Date-Stamp) | Add dates when renaming files or at the end of text |
+
+### Scripts and automation
+| Page | Contents |
+|---|---|
+| [Scripts](Scripts) | Turn your own scripts into commands in the search results |
 | [Folder sync](Sync-Tasks) | Keep folders in step with robocopy: run from the search, previews before mirrors, logs |
-| [Extensions](Extensions) | Links to the extension pages |
+| [Delayed start](Delayed-Start) | Start programs such as OneDrive a few minutes after signing in (script library) |
 | [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles (two scripts in the script library) |
+
+### Appearance and settings
+| Page | Contents |
+|---|---|
+| [Themes](Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
 | [Settings reference](Configuration) | Every ALTRun.json setting and its default value |
 | [Data files](Data-Files) | Where the data folder is, what each file is, backups and moving to another PC |
+
+### Help
+| Page | Contents |
+|---|---|
 | [Privacy and network access](Privacy) | When ALTRun goes online, where to, and what is stored on your PC |
 | [FAQ](FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
+
+### Development
+| Page | Contents |
+|---|---|
 | [Development guide](Development) | Architecture, adding a search feature, code style, tests |
 | [Contributing](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md) | Contribution guidelines and pull request workflow |
 

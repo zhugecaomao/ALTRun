@@ -2,11 +2,17 @@
 
 # Scripts
 
+## Script library
+
 **Ready-made scripts** (translation, a Total Commander command palette, file hashes and more) are in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts) on the website: download one into the `Scripts\` folder and use it. Wrote one others could use? [Contribute it to the library](https://github.com/zhugecaomao/ALTRun/blob/main/docs/scripts/README.md#contributing-a-script--投稿脚本) with a pull request.
+
+## Your own scripts
 
 Put your own scripts into the `Scripts\` folder (beside the program when its folder is writable; otherwise `%APPDATA%\ALTRun\Scripts`; Preferences → Scripts → "Open Scripts Folder", or search for "Open Scripts Folder"; it starts empty: ready-made scripts are in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts), Preferences → Scripts → "Browse Script Library") and you can find and run them by name or keyword in the search window, like Raycast's Script Commands. To see only scripts, type **`script `** (all of them) or **`script name`** (typing just `script`, without the space, shows a hint after the names that start with "script"; `Enter` on it completes `script `; while typing, e.g. `scr`, the hint is at the end of the list); change the keyword in Preferences → Scripts → "Search keyword". Supported: `.ahk` (run with the AutoHotkey inside ALTRun, nothing else to install), `.ps1`, `.bat` / `.cmd`, `.py` (needs Python). Preferences → Scripts lists the scripts found. Select a script to see its description (when provided), requirements, declared network access and full path. Double-click a script to edit it with the program registered for the file type's **Edit** action; if no editor is registered, ALTRun opens it in Notepad. Right-click a script, or press the Menu key / `Shift+F10`, for **Edit**, **Run**, **Reveal in File Manager** and **Copy Path**:
 
 ![Preferences → Scripts](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
+
+## Settings in the script
 
 The optional script-library metadata in the first 30 lines can provide `@altrun.description`, `@altrun.description_zh`, `@altrun.requires`, `@altrun.requires_zh` and `@altrun.network`. The selected-script details show the description, requirements and declared hosts; set `@altrun.network none` to state that a script does not connect to the network. The `_zh` fields provide Chinese text when available. These fields describe the script; they do not change how it runs.
 
@@ -25,6 +31,8 @@ Comments at the top of a script can hold these settings (the comment markers `;`
 | `@altrun.selection Text, PDF` | [Content types](Usage#actions-on-selected-content) (built-in or your own, separated by commas): the script is offered in the actions panel (`Ctrl+Alt+\`) of such a selection, after the custom commands, and the selection is passed to it as its first argument (several files: one argument each) |
 | `@altrun.types Text, PDF` | Another name for `@altrun.selection` (the settings call them `ContentTypes`); with both lines, the types of both count |
 
+### Examples
+
 Example (`Scripts\Hash.ps1`):
 ```powershell
 # @altrun.title    File hash
@@ -42,7 +50,8 @@ A script that runs in the background and shows the last line it prints as a noti
 FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")
 ```
 
-**Scripts for selected content**: with `@altrun.selection`, select something of that type in any program and press `Ctrl+Alt+\`; the script is in the list.
+## Scripts for selected content
+With `@altrun.selection`, select something of that type in any program and press `Ctrl+Alt+\`; the script is in the list.
 
 What a script receives (since test build 2026.11.23.23; the same for text in the [clipboard history](Clipboard)'s `→` panel):
 
@@ -56,11 +65,15 @@ A refused script stays in the list with the reason in gray and doesn't run. Wind
 
 The "Types" column of Preferences → Scripts shows each script's types.
 
-**A hotkey for a script**: in Preferences → Hotkeys, **Choose...** lists the scripts too (stored as `"Action": "script:<file name>"`, for example `script:hash.ps1`). A script with `@altrun.argument` or `@altrun.selection` gets the selection as its argument, with the same checks; with nothing selected, one with an argument and a keyword opens the search window with the keyword typed. Renaming the file breaks the hotkey: it is shown in red as `(script not found) script:<file name>` until you choose the script again.
+## A hotkey for a script
+In Preferences → Hotkeys, **Choose...** lists the scripts too (stored as `"Action": "script:<file name>"`, for example `script:hash.ps1`). A script with `@altrun.argument` or `@altrun.selection` gets the selection as its argument, with the same checks; with nothing selected, one with an argument and a keyword opens the search window with the keyword typed. Renaming the file breaks the hotkey: it is shown in red as `(script not found) script:<file name>` until you choose the script again.
+
+## Output, editing and reloading
 
 In `.ahk` scripts, write output with `FileAppend("text", "*")`. Adding, removing or changing scripts takes effect right away without reloading; select a script and press `F3` to edit it in Notepad.
 
-**Background scripts** (`silent` / `output`) are started directly, not through cmd, so `&`, `|`, `>` or quotes in the argument are just text (`.bat` / `.cmd` still run through cmd, so a double quote in their argument is refused). They get the same variables as [results that run the script](#live-results): `ALTRUN_ACTION` (`run`), `ALTRUN_ARG` (the first argument), `ALTRUN_KEYWORD`, `ALTRUN_VERSION` and the window in front before (`ALTRUN_HWND`, `ALTRUN_PID`, `ALTRUN_PROCESS`); scripts that run normally (`window`) don't. A background script may run for at most 2 minutes, then it is stopped (what it started keeps running). Its output is read as UTF-8 when it is; otherwise an `.ahk` script's as the system's ANSI code page (what `FileAppend("text", "*")` writes) and the others' as the console's code page.
+## Background scripts
+Background scripts (`silent` / `output`) are started directly, not through cmd, so `&`, `|`, `>` or quotes in the argument are just text (`.bat` / `.cmd` still run through cmd, so a double quote in their argument is refused). They get the same variables as [results that run the script](#live-results): `ALTRUN_ACTION` (`run`), `ALTRUN_ARG` (the first argument), `ALTRUN_KEYWORD`, `ALTRUN_VERSION` and the window in front before (`ALTRUN_HWND`, `ALTRUN_PID`, `ALTRUN_PROCESS`); scripts that run normally (`window`) don't. A background script may run for at most 2 minutes, then it is stopped (what it started keeps running). Its output is read as UTF-8 when it is; otherwise an `.ahk` script's as the system's ANSI code page (what `FileAppend("text", "*")` writes) and the others' as the console's code page.
 
 ## Live results
 
@@ -80,9 +93,11 @@ FileAppend(out, "*", "UTF-8-RAW")
 ```
 Type `proj alt`: the folders under `D:\Projects` whose names contain "alt" are listed; `Enter` opens one.
 
-**What the script gets**: the text after the keyword as its first argument (`""` when nothing is typed yet) and in the variable `ALTRUN_QUERY` (also `ALTRUN_KEYWORD` and `ALTRUN_VERSION`). In `.ps1` scripts use `$env:ALTRUN_QUERY`. The window that was in front before ALTRun was shown is in `ALTRUN_HWND` (its handle, a decimal number, the same as `{hwnd}` in custom commands), `ALTRUN_PID` and `ALTRUN_PROCESS` (its program's file name, e.g. `TOTALCMD64.EXE`); they aren't set when that window is gone. A script can list commands for that program, e.g. `if (EnvGet("ALTRUN_PROCESS") = "TOTALCMD64.EXE")`. The script is started directly, not through cmd, so `&`, `|`, `>` or quotes in the text are just text.
+### What the script gets
+It gets the text after the keyword as its first argument (`""` when nothing is typed yet) and in the variable `ALTRUN_QUERY` (also `ALTRUN_KEYWORD` and `ALTRUN_VERSION`). In `.ps1` scripts use `$env:ALTRUN_QUERY`. The window that was in front before ALTRun was shown is in `ALTRUN_HWND` (its handle, a decimal number, the same as `{hwnd}` in custom commands), `ALTRUN_PID` and `ALTRUN_PROCESS` (its program's file name, e.g. `TOTALCMD64.EXE`); they aren't set when that window is gone. A script can list commands for that program, e.g. `if (EnvGet("ALTRUN_PROCESS") = "TOTALCMD64.EXE")`. The script is started directly, not through cmd, so `&`, `|`, `>` or quotes in the text are just text.
 
-**What it prints**, either:
+### What it prints
+Either:
 - one result per line, separated by tabs: `title⇥subtitle⇥target⇥type⇥icon` (only the title is needed; the target is the title when left out), or
 - JSON, the same names as Alfred's Script Filter:
 ```json
@@ -107,9 +122,11 @@ Type `proj alt`: the folders under `D:\Projects` whose names contain "alt" are l
 
 Write UTF-8: in `.ahk` scripts `FileAppend(text, "*", "UTF-8-RAW")`; Python and PowerShell already write UTF-8 when run by ALTRun.
 
-**When it runs**: as soon as you type the keyword and the space, then each time you stop typing for a moment (0.15 s). A run still going is stopped when a new one starts, when you leave the keyword or close the search window, together with any program it started. While it runs, the last results stay; "Running..." shows only when there is nothing yet after 0.3 s. A run can take up to 10 s. Results are kept until the search window closes, so `Backspace` back to a text you already searched shows them at once.
+### When it runs
+It runs as soon as you type the keyword and the space, then each time you stop typing for a moment (0.15 s). A run still going is stopped when a new one starts, when you leave the keyword or close the search window, together with any program it started. While it runs, the last results stay; "Running..." shows only when there is nothing yet after 0.3 s. A run can take up to 10 s. Results are kept until the search window closes, so `Backspace` back to a text you already searched shows them at once.
 
-**Results that run the script** (`"type": "script"`): `Enter` closes the search window and runs the same script again in the background, with the result's `arg` as its first argument and in `ALTRUN_ARG` (in `.ps1` scripts `$env:ALTRUN_ARG`). `ALTRUN_ACTION` is then `run` (`filter` while it lists results); the text typed and the window variables are the same. So one script can be a command palette for the program in front: list the commands that fit `ALTRUN_PROCESS`, and run the one chosen on the window `ALTRUN_HWND`:
+### Results that run the script
+For a result with `"type": "script"`, `Enter` closes the search window and runs the same script again in the background, with the result's `arg` as its first argument and in `ALTRUN_ARG` (in `.ps1` scripts `$env:ALTRUN_ARG`). `ALTRUN_ACTION` is then `run` (`filter` while it lists results); the text typed and the window variables are the same. So one script can be a command palette for the program in front: list the commands that fit `ALTRUN_PROCESS`, and run the one chosen on the window `ALTRUN_HWND`:
 ```autohotkey
 ; @altrun.keyword np
 ; @altrun.mode    filter
@@ -127,11 +144,14 @@ if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; listing: only for Notepad
 ```
 The window closes first, so the program you came from is in front again. What the script starts (an editor, a folder window) keeps running when it ends. After it ends, the last line it printed, if any, is shown as a notification; when it fails (can't start, ends with an exit code other than 0, or is stopped after 2 minutes) the reason is shown. Arrow `→` on such a result: run it, or copy its `arg` (`Alt+Enter`).
 
-**A list ALTRun filters**: when the list doesn't depend on what you type (your projects, servers, bookmarks of a tool), add `@altrun.filter altrun`. The script then runs once, with an empty text, when you type the keyword and the space; ALTRun keeps what it printed until the search window closes and filters it as you type, the same way it matches other results (fuzzy, pinyin initials too), on `match` or else the title, best match first. Nothing runs while you type, so this suits slow starters such as PowerShell. Such a list can have up to 2,000 results (other live results: the first 200).
+### A list ALTRun filters
+When the list doesn't depend on what you type (your projects, servers, bookmarks of a tool), add `@altrun.filter altrun`. The script then runs once, with an empty text, when you type the keyword and the space; ALTRun keeps what it printed until the search window closes and filters it as you type, the same way it matches other results (fuzzy, pinyin initials too), on `match` or else the title, best match first. Nothing runs while you type, so this suits slow starters such as PowerShell. Such a list can have up to 2,000 results (other live results: the first 200).
 
-**When something goes wrong**: one row says what (the first line the script wrote to its error output, its exit code, the JSON problem, or the time-out). `Enter` on it edits the script, `Ctrl+L` shows all of the error output. A script that prints nothing shows "No results".
+### When something goes wrong
+One row says what went wrong (the first line the script wrote to its error output, its exit code, the JSON problem, or the time-out). `Enter` on it edits the script, `Ctrl+L` shows all of the error output. A script that prints nothing shows "No results".
 
-**Speed**: an `.ahk` or `.py` script starts in a fraction of a second; Windows PowerShell takes noticeably longer to start, so a `.ps1` script feels slower: use `@altrun.filter altrun` when you can. A hotkey for a live results script opens the search window with its keyword and the selected line of text. Live results scripts aren't offered for selected content.
+### Speed
+An `.ahk` or `.py` script starts in a fraction of a second; Windows PowerShell takes noticeably longer to start, so a `.ps1` script feels slower: use `@altrun.filter altrun` when you can. A hotkey for a live results script opens the search window with its keyword and the selected line of text. Live results scripts aren't offered for selected content.
 
 ### Example: live translation
 Type `fy` and some text: the translation appears as you type (Chinese → English, other languages → Chinese); `Enter` copies it, `Ctrl+Enter` pastes it into the window you came from. It uses [DeepL](https://www.deepl.com/pro-api) with your own API key (the free plan, 500,000 characters a month, is enough for this). **The text you type after `fy` is sent to DeepL** while you type; ALTRun itself sends nothing. DeepL counts the characters of every request, and each pause in typing sends the whole text again, so a sentence typed letter by letter can count several times its length; the hotkey below sends it once.

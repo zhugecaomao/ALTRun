@@ -16,36 +16,65 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 ![ALTRun: 输入即搜、操作面板、单位换算、文件搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo.png)
 
 ## 从这里开始
+
+### 入门
 | 页面 | 内容 |
 |---|---|
 | [5 分钟上手](Getting-Started-zh) | 第一次用: 呼出、打开程序、常用功能、加自己的命令 |
 | [安装与升级](Installation-zh) | 下载、winget / Scoop、开机启动、一键更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](Usage-zh) | 所有输入语法、快捷键、操作面板、学习排序、使用统计 |
+| [置顶和最近使用](Recent-zh) | 空搜索框显示的置顶项目和最近打开的项目 |
+
+### 搜索
+| 页面 | 内容 |
+|---|---|
+| [文件搜索](File-Search-zh) | Everything 联动、内置索引、排除规则 |
+| [网页搜索](Web-Search-zh) | `g` / `bd` 等关键字、自己加搜索引擎、兜底搜索 |
+| [浏览器书签](Bookmarks-zh) | 搜索、打开和复制书签 URL; 搜索浏览器历史记录 (`h`) |
+| [窗口切换](Window-Switching-zh) | 搜索已经打开的窗口并切换过去 |
+| [计算器](Calculator-zh) | 算式、单位和货币换算、附带的结构计算 |
+| [系统命令和终端](System-Commands-zh) | 锁屏、关机等系统命令的完整列表; `>` 运行命令 |
+
+### 自己的命令和文字
+| 页面 | 内容 |
+|---|---|
 | [自定义命令](Custom-Commands-zh) | 命令类型、带参数的命令、路径变量 |
 | [文字片段](Snippets-zh) | 占位符、自动展开、不展开的窗口、导入 / 导出 |
 | [剪贴板历史](Clipboard-zh) | 文字、图片和文件的历史, 粘贴、合并、排除的程序 |
-| [文件搜索](File-Search-zh) | Everything 联动、内置索引、排除规则 |
-| [主题](Themes-zh) | 22 套内置主题 (也可以跟随系统浅色 / 深色)、显示密度、自定义主题、全部可用的键 |
-| [浏览器书签](Bookmarks-zh) | 搜索、打开和复制书签 URL; 搜索浏览器历史记录 (`h`) |
-| [网页搜索](Web-Search-zh) | `g` / `bd` 等关键字、自己加搜索引擎、兜底搜索 |
-| [窗口切换](Window-Switching-zh) | 搜索已经打开的窗口并切换过去 |
-| [置顶和最近使用](Recent-zh) | 空搜索框显示的置顶项目和最近打开的项目 |
-| [对话框快速跳转](Quick-Switch-zh) | 跳到资源管理器、Total Commander、Directory Opus 或 Arke 已打开的文件夹 |
-| [文件管理器](File-Managers-zh) | 用 Total Commander、Directory Opus 或 Arke 打开文件夹; 各自支持什么 |
-| [对话框文件夹面板](Quick-Switch-Panel-zh) | 在打开 / 保存对话框附近搜索并选择文件夹 |
-| [一键加日期](Date-Stamp-zh) | 重命名文件或在文本末尾添加日期 |
-| [计算器](Calculator-zh) | 算式、单位和货币换算、附带的结构计算 |
-| [脚本扩展](Scripts-zh) | 把自己的脚本变成搜索结果里的命令 |
-| [系统命令和终端](System-Commands-zh) | 锁屏、关机等系统命令的完整列表; `>` 运行命令 |
 | [自定义热键](Hotkeys-zh) | 给热键指定系统命令、CapsLock 切换输入法、怎样设置热键 |
-| [延迟启动](Delayed-Start-zh) | 登录几分钟后再启动 OneDrive 等程序 (脚本库) |
+
+### 对话框和文件管理器
+| 页面 | 内容 |
+|---|---|
+| [对话框快速跳转](Quick-Switch-zh) | 跳到资源管理器、Total Commander、Directory Opus 或 Arke 已打开的文件夹 |
+| [对话框文件夹面板](Quick-Switch-Panel-zh) | 在打开 / 保存对话框附近搜索并选择文件夹 |
+| [文件管理器](File-Managers-zh) | 用 Total Commander、Directory Opus 或 Arke 打开文件夹; 各自支持什么 |
+| [一键加日期](Date-Stamp-zh) | 重命名文件或在文本末尾添加日期 |
+
+### 脚本和自动化
+| 页面 | 内容 |
+|---|---|
+| [脚本扩展](Scripts-zh) | 把自己的脚本变成搜索结果里的命令 |
 | [文件夹同步](Sync-Tasks-zh) | 用 robocopy 同步文件夹: 在搜索里运行、镜像前预览、日志 |
-| [扩展功能](Extensions-zh) | 各扩展页面的入口 |
+| [延迟启动](Delayed-Start-zh) | 登录几分钟后再启动 OneDrive 等程序 (脚本库) |
 | [PT 工具箱](PT-Tools-zh) | 钢筋和网片面积、所需钢筋根数、计算器; SPF2M 束线型计算 (脚本库里的两个脚本) |
+
+### 外观和设置
+| 页面 | 内容 |
+|---|---|
+| [主题](Themes-zh) | 22 套内置主题 (也可以跟随系统浅色 / 深色)、显示密度、自定义主题、全部可用的键 |
 | [设置文件参考](Configuration-zh) | ALTRun.json 每一项的含义和默认值 |
 | [数据文件](Data-Files-zh) | 数据文件夹在哪里、每个文件是什么、怎样备份和换电脑 |
+
+### 帮助
+| 页面 | 内容 |
+|---|---|
 | [隐私与网络访问](Privacy-zh) | ALTRun 什么时候联网、访问哪里、本机保存了什么 |
 | [常见问题](FAQ-zh) | 热键冲突、搜不到、杀毒软件误报、隐私... |
+
+### 开发
+| 页面 | 内容 |
+|---|---|
 | [开发指南](Development-zh) | 架构、新增搜索功能、代码规范、测试 |
 | [参与贡献](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md#%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE) | 贡献规范和 Pull Request 流程 |
 

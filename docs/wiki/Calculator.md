@@ -2,7 +2,11 @@
 
 # Calculator
 
+## Calculating
+
 Type an expression directly: `12*(3+4)`, `=2^10`; `Enter` copies the result. Supports `+ - * /` (or `×` `÷`; a letter `x` isn't a times sign, so `1920x1080` stays a file search), powers `^` (or `**`) and parentheses; results keep at most two decimals (`10/3` shows `3.33`; numbers below 0.005 keep one digit after the first significant digit, for example `0.004`).
+
+## Using the result
 
 What you can do with a result (`→` or right-click opens the actions panel):
 
@@ -15,6 +19,8 @@ What you can do with a result (`→` or right-click opens the actions panel):
 **Copy Calculation** is there for calculations with an operator (not for `=5` alone), and for the rows of the calculation history too (see below). The calculation is copied as you typed it (`3×4 = 12`, `1,000*2 = 2,000`).
 
 ![Calculator: the result shows as you type, unit conversions too](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-calculator.png)
+
+## Structural results
 
 With "Add structural results (main bars / rebar area)" (`Features.Calculator.StructuralCalc`) turned on in Preferences → Calculator, two lines of structural results are added below when the result is more than 2 × the cover:
 - The result as a **beam width (mm)**: number and spacing of main bars. Number = ⌈(width − 2 × cover) / max spacing⌉ + 1, spacing = (width − 2 × cover) / (number − 1)
@@ -31,7 +37,7 @@ For example `300*2` (600) shows `Beam width 600 mm: 3 main bars @ 260 c/c` and `
 
 ![Preferences → Calculator](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-calculator.png)
 
-### Calculation history
+## Calculation history
 Turn on "Remember calculations (on Enter)" (`Features.Calculator.History`, off by default) in Preferences → Calculator, and a calculation is remembered when you use its result (`Enter` to copy, `Ctrl+Enter` to paste, or an action), never while you type. Unit, number base and date conversions and single numbers aren't remembered.
 
 - While you type a calculation, the newest calculations are listed below its result ("Rows shown", `HistoryCount`, default 3)
@@ -43,7 +49,7 @@ Calculation results never go into the recently used items of the empty search bo
 
 ![Calculation history below the result](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/calculator-history.png)
 
-### Unit and currency conversion
+## Unit and currency conversion
 Syntax: number + unit + `in` / `to` / `=` / `->` / `转` + target unit; units are case-insensitive, and `m²` can be written `m2`. For example `10 km in mi`, `5ft to cm`, `100 f to c`, `3 亩 in m2`, `1 GB to MB`, `300 kN to kip`, `20 MPa in psi`. `Enter` copies the number.
 
 | Category | Units |
@@ -60,7 +66,8 @@ Syntax: number + unit + `in` / `to` / `=` / `->` / `转` + target unit; units ar
 | Energy / power | J kJ cal kcal Wh kWh / W kW hp |
 | Temperature | C F K |
 
-**Currency conversion** (`100 usd to sgd`) is off by default: tick "Currency conversion" in Preferences → Calculator (`Features.Calculator.Currency`). Once on, the reference rates published by the European Central Bank and other central banks are downloaded once a day from [Frankfurter](https://frankfurter.dev) (free, no sign-up) and saved in `Data\Currency.json`; apart from GitHub, this is the only website ALTRun contacts on its own (a web search's site is visited only when you click "Download Site Icon"). Results show the date of the rates.
+### Currency conversion
+Currency conversion (`100 usd to sgd`) is off by default: tick "Currency conversion" in Preferences → Calculator (`Features.Calculator.Currency`). Once on, the reference rates published by the European Central Bank and other central banks are downloaded once a day from [Frankfurter](https://frankfurter.dev) (free, no sign-up) and saved in `Data\Currency.json`; apart from GitHub, this is the only website ALTRun contacts on its own (a web search's site is visited only when you click "Download Site Icon"). Results show the date of the rates.
 
 About 160 currencies are covered, including TWD, VND and AED (since test build 2026.11.23.19; before that only the ECB's 30), plus a few crypto currencies and precious metals (BTC, ETH, XAU...), whose rates are a day behind. Write a currency as its 3-letter code (any case) or one of these Chinese names: 人民币 / 人民幣 / 元 / rmb, 美元 / 美金, 欧元 / 歐元, 日元 / 日圓 / 日幣, 英镑 / 英鎊, 港币 / 港幣 / 港元, 新币 / 新幣 / 新加坡元 / 新加坡幣, 马币 / 馬幣 / 令吉, 澳元 / 澳幣, 加元 / 加幣, 台币 / 台幣 / 臺幣 / 新台币 / 新台幣, 韩元 / 韓元, 泰铢 / 泰銖, 瑞士法郎.
 

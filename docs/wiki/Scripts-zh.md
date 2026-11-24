@@ -2,11 +2,17 @@
 
 # 脚本扩展
 
+## 脚本库
+
 **现成的脚本** (翻译、Total Commander 命令面板、文件哈希等) 在网站的 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts): 下载到 `Scripts\` 文件夹就能用。写了别人也用得上的脚本? 欢迎提交 Pull Request [投稿到脚本库](https://github.com/zhugecaomao/ALTRun/blob/main/docs/scripts/README.md#contributing-a-script--投稿脚本)。
+
+## 自己的脚本
 
 把自己的脚本放进 `Scripts\` 文件夹 (程序目录可写时在程序旁边; 否则使用 `%APPDATA%\ALTRun\Scripts`; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹"; 一开始是空的, 现成的脚本在 [脚本库](https://zhugecaomao.github.io/ALTRun/#scripts), 偏好设置 → 脚本 → "浏览脚本库"), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。只想看脚本时, 输入 **`script `** (列出全部) 或 **`script 名称`** (只输入 `script` 不带空格时, 显示一行提示 (名字以 script 开头的排在它前面), 在提示上按 `Enter` 补全成 `script `; 还没输完整时, 例如 `scr`, 提示在列表最后); 关键字在 偏好设置 → 脚本 → "搜索关键字" 修改。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。偏好设置 → 脚本会列出找到的脚本. 选中脚本后, 下方会显示说明 (如果有), 运行所需条件, 声明的联网情况和完整路径. 双击脚本会调用 Windows 为该文件类型登记的 **Edit** 编辑程序; 如果没有登记编辑程序, 才使用记事本. 右键单击脚本, 或按键盘菜单键 / `Shift+F10`, 可以选择 **编辑**、**运行**、**在文件管理器中显示**和**复制路径**:
 
 ![偏好设置 → 脚本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
+
+## 脚本里的设置
 
 脚本库还可以在文件前 30 行写可选说明信息: `@altrun.description`, `@altrun.description_zh`, `@altrun.requires`, `@altrun.requires_zh` 和 `@altrun.network`. 选中脚本后, 下方详情会显示说明, 运行所需条件和声明的联网主机; `@altrun.network none` 表示脚本不联网. 有中文界面时优先显示 `_zh` 字段. 这些信息用于说明脚本, 不会改变脚本的运行方式.
 
@@ -25,6 +31,8 @@
 | `@altrun.selection Text, PDF` | [内容类型](Usage-zh#选中内容的操作) (内置的或自己的, 用逗号分开): 选中这些类型的内容按 `Ctrl+Alt+\` 时, 操作面板里出现这个脚本 (排在自定义命令后面), 选中的内容作为第一个参数传给它 (多个文件: 每个一个参数) |
 | `@altrun.types Text, PDF` | `@altrun.selection` 的另一个写法 (设置里叫 `ContentTypes`); 两行都写时, 两行的类型都算 |
 
+### 例子
+
 例子 (`Scripts\Hash.ps1`):
 ```powershell
 # @altrun.title    文件哈希
@@ -42,7 +50,8 @@ Get-FileHash -Algorithm SHA256 $args[0] | Format-List
 FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")
 ```
 
-**选中内容用的脚本**: 写了 `@altrun.selection` 的脚本, 在任何程序里选中这种类型的内容按 `Ctrl+Alt+\`, 列表里就有它。
+## 选中内容用的脚本
+写了 `@altrun.selection` 的脚本, 在任何程序里选中这种类型的内容按 `Ctrl+Alt+\`, 列表里就有它。
 
 脚本收到什么 (测试版 2026.11.23.23 起; [剪贴板历史](Clipboard-zh) 里文字项的 `→` 面板也一样):
 
@@ -56,11 +65,15 @@ FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWee
 
 偏好设置 → 脚本 的 "类型" 列写出每个脚本的类型。
 
-**给脚本设热键**: 偏好设置 → 自定义热键 里 **选择...** 也列出脚本 (存成 `"Action": "script:<文件名>"`, 例如 `script:hash.ps1`)。写了 `@altrun.argument` 或 `@altrun.selection` 的脚本把选中的内容作为参数, 检查同上; 没有选中时, 有参数又有关键字的脚本打开搜索窗口并填好关键字。改了文件名热键就失效: 显示成红字 `(脚本不存在) script:<文件名>`, 重新选一次脚本就好。
+## 给脚本设热键
+偏好设置 → 自定义热键 里 **选择...** 也列出脚本 (存成 `"Action": "script:<文件名>"`, 例如 `script:hash.ps1`)。写了 `@altrun.argument` 或 `@altrun.selection` 的脚本把选中的内容作为参数, 检查同上; 没有选中时, 有参数又有关键字的脚本打开搜索窗口并填好关键字。改了文件名热键就失效: 显示成红字 `(脚本不存在) script:<文件名>`, 重新选一次脚本就好。
+
+## 输出、编辑和重新加载
 
 `.ahk` 脚本里用 `FileAppend("文字", "*")` 输出。增删、修改脚本后马上生效, 不用重新载入; 选中脚本按 `F3` 用记事本编辑。
 
-**后台脚本** (`silent` / `output`) 直接启动, 不经过 cmd, 所以参数里的 `&`、`|`、`>`、引号都只是文字 (`.bat` / `.cmd` 仍经过 cmd, 参数里有双引号时不运行)。它们和[运行脚本的结果](#实时结果)拿到同样的环境变量: `ALTRUN_ACTION` (`run`)、`ALTRUN_ARG` (第一个参数)、`ALTRUN_KEYWORD`、`ALTRUN_VERSION` 和之前在前面的窗口 (`ALTRUN_HWND`、`ALTRUN_PID`、`ALTRUN_PROCESS`); 正常运行 (`window`) 的脚本没有。后台脚本最多运行 2 分钟, 到时被结束 (它启动的程序照常运行)。输出是 UTF-8 就按 UTF-8 读; 否则 `.ahk` 脚本按系统的 ANSI 代码页读 (`FileAppend("文字", "*")` 写的就是它), 其他脚本按控制台代码页读。
+## 后台脚本
+后台脚本 (`silent` / `output`) 直接启动, 不经过 cmd, 所以参数里的 `&`、`|`、`>`、引号都只是文字 (`.bat` / `.cmd` 仍经过 cmd, 参数里有双引号时不运行)。它们和[运行脚本的结果](#实时结果)拿到同样的环境变量: `ALTRUN_ACTION` (`run`)、`ALTRUN_ARG` (第一个参数)、`ALTRUN_KEYWORD`、`ALTRUN_VERSION` 和之前在前面的窗口 (`ALTRUN_HWND`、`ALTRUN_PID`、`ALTRUN_PROCESS`); 正常运行 (`window`) 的脚本没有。后台脚本最多运行 2 分钟, 到时被结束 (它启动的程序照常运行)。输出是 UTF-8 就按 UTF-8 读; 否则 `.ahk` 脚本按系统的 ANSI 代码页读 (`FileAppend("文字", "*")` 写的就是它), 其他脚本按控制台代码页读。
 
 ## 实时结果
 
@@ -80,9 +93,11 @@ FileAppend(out, "*", "UTF-8-RAW")
 ```
 输入 `proj alt`: 列出 `D:\Projects` 下名字含 "alt" 的文件夹; `Enter` 打开。
 
-**脚本收到什么**: 关键字后面的文字作为第一个参数 (还没输入时是 `""`), 也在环境变量 `ALTRUN_QUERY` 里 (另外有 `ALTRUN_KEYWORD` 和 `ALTRUN_VERSION`)。`.ps1` 脚本用 `$env:ALTRUN_QUERY`。ALTRun 弹出前在前台的窗口在 `ALTRUN_HWND` (窗口句柄, 十进制, 和自定义命令的 `{hwnd}` 一样)、`ALTRUN_PID` 和 `ALTRUN_PROCESS` (程序文件名, 例如 `TOTALCMD64.EXE`) 里; 那个窗口已经不在时不设这三个变量。脚本可以按程序列出不同的命令, 例如 `if (EnvGet("ALTRUN_PROCESS") = "TOTALCMD64.EXE")`。脚本是直接启动的, 不经过 cmd, 所以文字里的 `&`、`|`、`>`、引号都只是文字。
+### 脚本收到什么
+关键字后面的文字作为第一个参数 (还没输入时是 `""`), 也在环境变量 `ALTRUN_QUERY` 里 (另外有 `ALTRUN_KEYWORD` 和 `ALTRUN_VERSION`)。`.ps1` 脚本用 `$env:ALTRUN_QUERY`。ALTRun 弹出前在前台的窗口在 `ALTRUN_HWND` (窗口句柄, 十进制, 和自定义命令的 `{hwnd}` 一样)、`ALTRUN_PID` 和 `ALTRUN_PROCESS` (程序文件名, 例如 `TOTALCMD64.EXE`) 里; 那个窗口已经不在时不设这三个变量。脚本可以按程序列出不同的命令, 例如 `if (EnvGet("ALTRUN_PROCESS") = "TOTALCMD64.EXE")`。脚本是直接启动的, 不经过 cmd, 所以文字里的 `&`、`|`、`>`、引号都只是文字。
 
-**脚本输出什么**, 两种都行:
+### 脚本输出什么
+两种都行:
 - 每行一个结果, 用 Tab 分开: `标题⇥副标题⇥目标⇥类型⇥图标` (只有标题必须写; 不写目标就是标题), 或
 - JSON, 字段名和 Alfred 的 Script Filter 一样:
 ```json
@@ -107,9 +122,11 @@ FileAppend(out, "*", "UTF-8-RAW")
 
 输出用 UTF-8: `.ahk` 脚本写 `FileAppend(text, "*", "UTF-8-RAW")`; Python 和 PowerShell 由 ALTRun 运行时已经输出 UTF-8。
 
-**什么时候运行**: 输入关键字和空格后马上运行一次, 之后每次停下输入一会儿 (0.15 秒) 再运行。新的一次开始、离开关键字、关掉搜索窗口时, 还在运行的那次会连同它启动的程序一起结束。运行期间保留上一次的结果; 0.3 秒后还什么都没有才显示 "正在运行…"。一次最多 10 秒。结果保留到搜索窗口关闭, 退格回到搜过的文字时马上显示。
+### 什么时候运行
+输入关键字和空格后马上运行一次, 之后每次停下输入一会儿 (0.15 秒) 再运行。新的一次开始、离开关键字、关掉搜索窗口时, 还在运行的那次会连同它启动的程序一起结束。运行期间保留上一次的结果; 0.3 秒后还什么都没有才显示 "正在运行…"。一次最多 10 秒。结果保留到搜索窗口关闭, 退格回到搜过的文字时马上显示。
 
-**运行脚本的结果** (`"type": "script"`): `Enter` 关掉搜索窗口, 在后台再运行这个脚本, 结果的 `arg` 作为第一个参数, 也在 `ALTRUN_ARG` 里 (`.ps1` 用 `$env:ALTRUN_ARG`)。这时 `ALTRUN_ACTION` 是 `run` (列结果时是 `filter`); 输入的文字和窗口变量都一样。所以一个脚本就能做前台程序的命令面板: 按 `ALTRUN_PROCESS` 列出适用的命令, 选中后对 `ALTRUN_HWND` 那个窗口执行:
+### 运行脚本的结果
+`"type": "script"` 的结果: `Enter` 关掉搜索窗口, 在后台再运行这个脚本, 结果的 `arg` 作为第一个参数, 也在 `ALTRUN_ARG` 里 (`.ps1` 用 `$env:ALTRUN_ARG`)。这时 `ALTRUN_ACTION` 是 `run` (列结果时是 `filter`); 输入的文字和窗口变量都一样。所以一个脚本就能做前台程序的命令面板: 按 `ALTRUN_PROCESS` 列出适用的命令, 选中后对 `ALTRUN_HWND` 那个窗口执行:
 ```autohotkey
 ; @altrun.keyword np
 ; @altrun.mode    filter
@@ -127,11 +144,14 @@ if (EnvGet("ALTRUN_PROCESS") = "notepad.exe")        ; 列结果: 只在记事�
 ```
 搜索窗口先关掉, 所以原来的程序又回到前台。脚本启动的东西 (编辑器、文件夹窗口) 在脚本结束后照常运行。脚本结束后, 有输出就把最后一行显示成通知; 失败时 (启动不了、退出码不是 0、2 分钟后还没结束被停掉) 显示原因。在这种结果上按 `→`: 运行, 或复制它的 `arg` (`Alt+Enter`)。
 
-**由 ALTRun 过滤的列表**: 列表和输入的文字无关时 (自己的项目、服务器、某个工具的书签), 加一行 `@altrun.filter altrun`。这样输入关键字和空格时脚本只运行一次 (文字为空), ALTRun 把输出留到搜索窗口关闭, 边输入边过滤, 匹配方式和其他结果一样 (模糊匹配, 也认拼音首字母), 用 `match`, 没有就用标题, 最匹配的排前面。输入时不再运行脚本, 所以适合 PowerShell 这种启动慢的。 这样的列表最多 2000 条结果 (其他实时结果只取前 200 条)。
+### 由 ALTRun 过滤的列表
+列表和输入的文字无关时 (自己的项目、服务器、某个工具的书签), 加一行 `@altrun.filter altrun`。这样输入关键字和空格时脚本只运行一次 (文字为空), ALTRun 把输出留到搜索窗口关闭, 边输入边过滤, 匹配方式和其他结果一样 (模糊匹配, 也认拼音首字母), 用 `match`, 没有就用标题, 最匹配的排前面。输入时不再运行脚本, 所以适合 PowerShell 这种启动慢的。 这样的列表最多 2000 条结果 (其他实时结果只取前 200 条)。
 
-**出错时**: 显示一行原因 (脚本写到错误输出的第一行、退出码、JSON 的问题或超时)。在这一行上 `Enter` 编辑脚本, `Ctrl+L` 显示全部错误输出。什么都没输出时显示 "没有结果"。
+### 出错时
+显示一行原因 (脚本写到错误输出的第一行、退出码、JSON 的问题或超时)。在这一行上 `Enter` 编辑脚本, `Ctrl+L` 显示全部错误输出。什么都没输出时显示 "没有结果"。
 
-**速度**: `.ahk` 和 `.py` 脚本启动很快; Windows PowerShell 启动明显慢, 所以 `.ps1` 脚本会感觉慢一些: 能用 `@altrun.filter altrun` 就用。给实时结果脚本设的热键会打开搜索窗口, 填好关键字和选中的那一行文字。实时结果脚本不出现在选中内容的操作面板里。
+### 速度
+`.ahk` 和 `.py` 脚本启动很快; Windows PowerShell 启动明显慢, 所以 `.ps1` 脚本会感觉慢一些: 能用 `@altrun.filter altrun` 就用。给实时结果脚本设的热键会打开搜索窗口, 填好关键字和选中的那一行文字。实时结果脚本不出现在选中内容的操作面板里。
 
 ### 例子: 实时翻译
 输入 `fy` 和文字, 边打字边显示译文 (中文 → 英文, 其他语言 → 中文); `Enter` 复制, `Ctrl+Enter` 粘贴到原来的窗口。用的是 [DeepL](https://www.deepl.com/pro-api) 和你自己的 API key (免费版每月 50 万字符, 够用)。**`fy` 后面输入的文字会在打字时发给 DeepL**; ALTRun 自己不发送任何东西。DeepL 按每次请求的字符数计费, 打字时每停顿一下就会把整段文字再发一次, 所以逐个字母打一句英文, 计费可能是它长度的好几倍; 用下面的热键只发一次。
