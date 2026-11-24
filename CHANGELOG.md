@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.16]
+
+测试版。
+
+Test build.
+
+### 修复
+- 对话框跳转: 企业微信等用地址栏跳转的对话框, 路径一次写进地址栏, 不再逐字输入; 跳转还没完成时又点了面板里的另一个文件夹, 第二次跳转等第一次完成后再进行, 两个路径不会拼在一起 (#600)
+
 ## [2026.11.23.15]
 
 测试版。
@@ -1703,7 +1712,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...HEAD
+[2026.11.23.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...2026.11.23.16
 [2026.11.23.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...2026.11.23.15
 [2026.11.23.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...2026.11.23.14
 [2026.11.23.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...2026.11.23.13

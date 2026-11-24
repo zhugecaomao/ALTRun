@@ -35,7 +35,9 @@ The extract windows of WinRAR ("Extraction path and options") and 7-Zip ("Extrac
 
 In standard Open / Save dialogs, ALTRun puts the folder into the file name box and presses OK: a normal dialog that gets OK with a folder in that box goes to the folder. Some programs take that as "this folder is chosen" instead: the send-file dialog of WeCom (`WXWork.exe`) adds the folder to the chat rather than opening it (#600).
 
-Dialogs of such programs jump through the address bar: ALTRun presses `Alt+D` to go to the address bar, types the folder and presses Enter. Enter in the address bar only goes to the folder, it never chooses it.
+Dialogs of such programs jump through the address bar: ALTRun presses `Alt+D` to go to the address bar, puts the whole folder path into it at once (it is typed only if that fails) and presses Enter. Enter in the address bar only goes to the folder, it never chooses it.
+
+One jump at a time: if you click another folder in the panel while a jump is still going on, the second jump waits until the first is done, so the two paths never get mixed up.
 
 - Only WeCom by default: the setting `AddressBarDialogs` is `["ahk_exe WXWork.exe"]`, nothing to set up.
 - It isn't in Preferences. If another program does the same (the dialog closes after a jump and the folder is taken as the chosen item), add a line to `Extensions.QuickSwitch.AddressBarDialogs` in ALTRun.json, for example `"AddressBarDialogs": ["ahk_exe WXWork.exe", "ahk_exe program.exe"]`, and restart ALTRun; please also tell me in [Issues](https://github.com/zhugecaomao/ALTRun/issues) so it can go into the default list.
