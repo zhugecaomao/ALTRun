@@ -39,6 +39,7 @@ class PreferencesWindow {
     static _dirty := false, _ready := false, ApplyButton := ""
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
     static _positionReset := false
+    static _tileOver := 0                                                  ; the most the page list's content was taller than the list while laying out its tiles (tests)
     ; pageIndex: the page's key (e.g. "Prefs.Page.Advanced"), or its number
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
@@ -86,14 +87,19 @@ class PreferencesWindow {
         if IsObject(tiles := PreferencesWindow._TileView(pageList)) {
             for index, name in names
                 pageList.Add("Icon" index, name)
-            ; the list's content (LVM_GETVIEWRECT) ends 4 px below the last tile (Windows 11), and when it is taller than the list both scroll bars appear:
-            ; lay out in less height until it fits (the gaps take the rounding, so it can take a second try)
-            height := tiles.Height, view := Buffer(16, 0)
-            Loop 5 {
-                layout := PreferencesWindow._PlaceTiles(pageList, tiles, height)
-                if (!SendMessage(0x1022, 0, view, pageList) || (over := NumGet(view, 12, "Int") - tiles.Height) <= 0)
-                    break
-                height -= over
+            ; The list's content (LVM_GETVIEWRECT) ends a few pixels below the last tile (4 on Windows 11). Once the content is taller than the list,
+            ; both scroll bars appear and stay even after the tiles fit again (each takes room the other then needs), so no layout may be too tall:
+            ; lay out with room to spare, measure that margin, then lay out once in the height it leaves (PageLayout never goes past the height it gets)
+            spare := Round(8 * A_ScreenDPI / 96), view := Buffer(16, 0)
+            PreferencesWindow._tileOver := 0
+            layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height - spare)
+            if SendMessage(0x1022, 0, view, pageList) {                    ; LVM_GETVIEWRECT
+                PreferencesWindow._tileOver := Max(0, NumGet(view, 12, "Int") - tiles.Height)
+                if ((margin := NumGet(view, 12, "Int") - layout.Bottom) != spare && margin >= 0) {
+                    layout := PreferencesWindow._PlaceTiles(pageList, tiles, tiles.Height - margin)
+                    if SendMessage(0x1022, 0, view, pageList)
+                        PreferencesWindow._tileOver := Max(PreferencesWindow._tileOver, NumGet(view, 12, "Int") - tiles.Height)
+                }
             }
             if (NavIcons.FontName() != "")
                 pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, Round(layout.RowH * 96 / A_ScreenDPI) - 2), 0)   ; tiles use the normal image list
@@ -185,7 +191,7 @@ class PreferencesWindow {
     }
 
     ; Where the rows of the page list go (pixels): rows as high as fit (at most 28 at 96 DPI) with a gap of 9 to 12 before each group start
-    ; (row numbers in starts), the rest of the height below the last row. -> {RowH, Gap, Tops (each row's top), Lines (the y of each gap's line)}
+    ; (row numbers in starts), the rest of the height below the last row. -> {RowH, Gap, Tops (each row's top), Lines (the y of each gap's line), Bottom (the last row's bottom, at most clientH)}
     static PageLayout(clientH, rows, starts, scale := 1) {
         gap := Round(9 * scale)
         rowH := Min(Round(28 * scale), (clientH - starts.Length * gap) // rows)
@@ -199,7 +205,7 @@ class PreferencesWindow {
                     lines.Push(y + gap // 2), y += gap
             tops.Push(y), y += rowH
         }
-        return {RowH: rowH, Gap: gap, Tops: tops, Lines: lines}
+        return {RowH: rowH, Gap: gap, Tops: tops, Lines: lines, Bottom: y}
     }
 
     ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles

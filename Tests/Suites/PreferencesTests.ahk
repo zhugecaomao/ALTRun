@@ -476,6 +476,7 @@ class PreferencesTests {
         eq("every page fits in the list, no scroll bar", "bottom " (last[4] <= NumGet(listRect, 12, "Int") ? "fits" : last[4] " > " NumGet(listRect, 12, "Int"))
             . ", scroll bars " ((style & 0x300000) ? Format("{:#x}", style & 0x300000) : "none"), "bottom fits, scroll bars none")   ; WS_VSCROLL | WS_HSCROLL
         if (SendMessage(0x108F, 0, 0, PreferencesWindow.PageList) = 4) {   ; LVM_GETVIEW: tiles (Windows; Wine has no tile view and shows a plain list)
+            eq("page list never taller than the list while laid out (else both scroll bars can stay)", PreferencesWindow._tileOver, 0)
             wrong := ""                                                     ; a gap before each group's first page, none inside a group
             Loop PreferencesWindow.PageKeys.Length - 1 {
                 row := A_Index                                              ; (A_Index inside the for loop below is the for loop's)
@@ -563,6 +564,9 @@ class PreferencesTests {
         eq("layout: tops", layout.Tops[5] "|" layout.Tops[6] "|" layout.Tops[7] "|" layout.Tops[23], "92|127|150|566")
         eq("layout: lines in the middle of the gaps", layout.Lines[1] "|" layout.Lines.Length, "121|5")
         eq("layout: fits", layout.Tops[23] + layout.RowH <= 591, true)
+        eq("layout: bottom", layout.Bottom, layout.Tops[23] + layout.RowH)
+        layout := PreferencesWindow.PageLayout(587, 22, [6, 13, 17, 20, 21])   ; 22 rows in 591 less the 4 px below the last tile (Windows 11): rounding leaves the bottom lower
+        eq("layout: 22 rows", layout.RowH "|" layout.Gap "|" layout.Bottom, "24|11|583")
         layout := PreferencesWindow.PageLayout(2000, 23, [6])
         eq("layout: tall list, rows at most 28 and the gap at most 12", layout.RowH "|" layout.Gap, "28|12")
         layout := PreferencesWindow.PageLayout(740, 23, [6, 13, 17, 20, 22], 1.25)
