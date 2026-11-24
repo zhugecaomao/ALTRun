@@ -50,15 +50,23 @@ class Units {
         table := Units._Table()
         if table.Has(unit)
             return table[unit]
-        code := StrUpper(unit)                                              ; currency code
-        static names := Map("rmb", "CNY", "人民币", "CNY", "元", "CNY", "美元", "USD", "欧元", "EUR", "日元", "JPY", "英镑", "GBP"
-            , "港币", "HKD", "港元", "HKD", "新币", "SGD", "新加坡元", "SGD", "马币", "MYR", "令吉", "MYR", "澳元", "AUD", "加元", "CAD"
-            , "台币", "TWD", "韩元", "KRW", "泰铢", "THB", "瑞士法郎", "CHF")
-        if names.Has(unit)
-            code := names[unit]
-        if (StrLen(code) = 3 && Units.Rates.Has(code))
+        code := Units.CurrencyCode(unit)
+        if (code != "" && Units.Rates.Has(code))
             return {Kind: "currency", Factor: 1 / Units.Rates[code], Name: code, Label: code}
         return ""
+    }
+
+    ; A currency code (3 letters) or Chinese name -> its upper-case code, whether or not there is a rate for it; "" otherwise
+    static CurrencyCode(unit) {
+        unit := StrLower(Trim(unit))
+        static names := Map("rmb", "CNY", "人民币", "CNY", "人民幣", "CNY", "元", "CNY", "美元", "USD", "美金", "USD", "欧元", "EUR", "歐元", "EUR"
+            , "日元", "JPY", "日圓", "JPY", "日幣", "JPY", "英镑", "GBP", "英鎊", "GBP", "港币", "HKD", "港幣", "HKD", "港元", "HKD"
+            , "新币", "SGD", "新幣", "SGD", "新加坡元", "SGD", "新加坡幣", "SGD", "马币", "MYR", "馬幣", "MYR", "令吉", "MYR"
+            , "澳元", "AUD", "澳幣", "AUD", "加元", "CAD", "加幣", "CAD", "台币", "TWD", "台幣", "TWD", "臺幣", "TWD", "新台币", "TWD", "新台幣", "TWD"
+            , "韩元", "KRW", "韓元", "KRW", "泰铢", "THB", "泰銖", "THB", "瑞士法郎", "CHF")
+        if names.Has(unit)
+            return names[unit]
+        return RegExMatch(unit, "^[a-z]{3}$") ? StrUpper(unit) : ""
     }
 
     static _Table() {
