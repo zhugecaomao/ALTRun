@@ -1516,15 +1516,26 @@ class ExtensionTests {
             dialog := WinWait("ALTRun pick probe ahk_class #32770 ahk_pid " dialogPid, , 10)
             hadAddressBar := QuickSwitch._hasAddressBar
             GroupAdd("ALTRunAddressBarDialogs", "ALTRun pick probe ahk_class #32770"), QuickSwitch._hasAddressBar := true
-            jumpMethod := "", open := "no dialog", shown := ""
+            jumpMethod := "", open := "no dialog", shown := "", typed := "", last := ""
+            first := target "\One", second := target "\Two"
+            DirCreate(first), DirCreate(second)
             try {
                 if dialog {
                     jumpMethod := FileDialogs.DialogJumpMethod(dialog)
                     WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(300)
                     FileDialogs.SetDialogPath(target "\", dialog)
+                    typed := FileDialogs.LastTyped
                     Sleep(800)
                     open := WinExist("ahk_id " dialog) ? "open" : "closed"
                     shown := (open = "open") ? FileDialogs.DialogFolder(dialog) : ""
+                    ; a second jump (a timer, like a second click in the panel) comes while the first one waits after Alt+D: it
+                    ; runs after the first is done (Jump is Critical), so the dialog ends in the second folder
+                    if (open = "open") {
+                        SetTimer(FileDialogs.SetDialogPath.Bind(FileDialogs, second "\", dialog), -30)
+                        FileDialogs.SetDialogPath(first "\", dialog)
+                        Sleep(1000)
+                        last := WinExist("ahk_id " dialog) ? FileDialogs.DialogFolder(dialog) : "the dialog closed"
+                    }
                     if (open = "open")
                         DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 2, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; Cancel
                 }
@@ -1537,6 +1548,8 @@ class ExtensionTests {
             eq("address bar jump: listed dialog", jumpMethod, "address")
             eq("address bar jump: the dialog stays open", open, "open")
             eq("address bar jump: the dialog shows the folder", shown, target)
+            eq("address bar jump: the folder is put in, not typed", typed, false)
+            eq("address bar jump: a second jump waits for the first", last, second)
             eq("address bar jump: nothing chosen after Cancel", chosen, "[]")
             try DirDelete(target, true)
             try FileDelete(helper)
