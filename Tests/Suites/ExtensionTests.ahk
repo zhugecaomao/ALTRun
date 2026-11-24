@@ -1531,10 +1531,14 @@ class ExtensionTests {
                     ; a second jump (a timer, like a second click in the panel) comes while the first one waits after Alt+D: it
                     ; runs after the first is done (Jump is Critical), so the dialog ends in the second folder
                     if (open = "open") {
-                        SetTimer(FileDialogs.SetDialogPath.Bind(FileDialogs, second "\", dialog), -30)
+                        static probeLog := ""
+                        probeLog := "critical " A_IsCritical ", start " A_TickCount
+                        SetTimer(() => (probeLog .= ", timer " A_TickCount, FileDialogs.SetDialogPath(second "\", dialog), probeLog .= ", timer done " A_TickCount), -30)
                         FileDialogs.SetDialogPath(first "\", dialog)
+                        probeLog .= ", first done " A_TickCount " typed " FileDialogs.LastTyped
                         Sleep(1000)
                         last := WinExist("ahk_id " dialog) ? FileDialogs.DialogFolder(dialog) : "the dialog closed"
+                        FileAppend("INFO jump probe: " probeLog ", last " last "`n", "*")
                     }
                     if (open = "open")
                         DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 2, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; Cancel
