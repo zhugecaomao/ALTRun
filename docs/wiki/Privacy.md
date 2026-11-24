@@ -7,7 +7,18 @@ ALTRun collects and uploads nothing: no statistics, telemetry or ads. Searches, 
 ## When ALTRun goes online
 ALTRun itself only goes online to check for updates and install one you choose, to download exchange rates when currency conversion is turned on (off by default), and to download a web search's icon when you click "Download Site Icon". When each happens, where to, and how to turn it off: [Security policy → Network connections](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#network-connections) (the one list, kept with the privacy policy).
 
+| What | Where to | When | Turn it off |
+|---|---|---|---|
+| Check for updates | api.github.com | 1 minute after start (if the last check is over an hour old), then every 6 hours, or when you check | Preferences → General → "Check for updates automatically" |
+| Download an update | api.github.com, github.com | Only after you choose to install one | Don't install from ALTRun |
+| Exchange rates | api.frankfurter.dev | Only with currency conversion on (off by default), when the rates are over 12 hours old | Preferences → Calculator → "Currency conversion" |
+| A web search's icon | That web search's site | Only when you click "Download Site Icon" | Don't click it |
+
+Each is a plain HTTPS request that sends no personal data (like any web request, it shows your IP address to the server).
+
 Apart from that, web searches, bookmarks, web address commands and help links are handed to your browser (the default one, or the one in Preferences → General → Browser); ALTRun itself does not contact those sites. Talking to Everything and Total Commander happens locally (Windows messages), not over the network.
+
+**Scripts** you put in the `Scripts\` folder run with your rights and can go online themselves; scripts in the [script library](https://zhugecaomao.github.io/ALTRun/#scripts) that do say so in `@altrun.network` (shown in Preferences → Scripts when you select one), see [Scripts](Scripts#script-library).
 
 ## What is stored on your PC
 Everything lives in the Data folder and a few local folders; what each file is, whether it can be deleted and how to back it up is in [Data files](Data-Files). Points related to privacy:

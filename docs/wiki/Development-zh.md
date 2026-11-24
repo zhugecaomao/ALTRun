@@ -18,7 +18,7 @@ ALTRun.ahk          入口: #Include 所有模块, 调用 App.Start()
 Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目用
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
                     Everything IPC, Arke IPC, HttpGet, ChildProcess, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
-                    TaskScheduler, TaskbarProgress, Sqlite: 通过 Windows 自带的 winsqlite3.dll 只读查询)
+                    FileDrag, StartupApproved, TaskbarProgress, Sqlite: 通过 Windows 自带的 winsqlite3.dll 只读查询)
 Src\Core\           App (启动、单实例、退出), ErrorHandler (未捕获的错误), I18n (界面文字),
                     AppSettings + SchemaMigration (设置和版本升级),
                     SearchQuery / ResultItem (搜索模型), FuzzyMatcher (匹配打分),
@@ -45,6 +45,28 @@ docs\               Wiki 源文件 (docs\wiki, 合并后自动发布)、截图 (
 site\               官网模板和生成脚本 (发布到 GitHub Pages)
 .github\            GitHub Actions (测试、截图、发布、Wiki、官网、同步到 Gitee)、Issue / PR 模板
 ```
+
+`Src\Providers\` 里的搜索功能 (`Id` 会写进它们结果的 `Provider`, 多数也是设置里 `Features` 下的键):
+
+| 文件 | `Id` | 搜索什么 | 使用说明 |
+|---|---|---|---|
+| `ApplicationProvider` | `Applications` | 应用: 开始菜单、桌面、Microsoft Store 应用 | [Usage](Usage-zh) |
+| `CustomCommandProvider` | `CustomCommands` | 自定义命令, `{query}` 参数 | [Custom-Commands](Custom-Commands-zh) |
+| `FileSearchProvider` | `FileSearch` | 文件和文件夹 (Everything 或 `FileIndex`)、浏览文件夹、`recent` | [File-Search](File-Search-zh) |
+| `SystemProvider` | `System` | 系统命令、Windows 工具、ALTRun 命令、文字工具 | [System-Commands](System-Commands-zh) |
+| `CalculatorProvider` | `Calculator` | 算式、单位、进制、日期、货币、计算历史 | [Calculator](Calculator-zh) |
+| `WebSearchProvider` | `WebSearch` | 网页搜索关键字和兜底搜索 | [Web-Search](Web-Search-zh) |
+| `BookmarkProvider` | `Bookmarks` | 浏览器书签 (`bm`) | [Bookmarks](Bookmarks-zh) |
+| `BrowserHistoryProvider` | `BrowserHistory` | 浏览器历史记录 (`h`), 用 `Lib\Sqlite` 读 | [Bookmarks](Bookmarks-zh) |
+| `ClipboardProvider` | `Clipboard` | 剪贴板历史 (`clip`); 记录也在这个文件 | [Clipboard](Clipboard-zh) |
+| `SnippetProvider` | `Snippets` | 文字片段 (`snip`); 展开在 `Extensions\SnippetExpander` | [Snippets](Snippets-zh) |
+| `WindowProvider` | `Windows` | 打开的窗口 (`w`) | [Window-Switching](Window-Switching-zh) |
+| `RecentProvider` | `Recent` | 空搜索框里的置顶和最近使用 | [Recent](Recent-zh) |
+| `ScriptProvider` | `Scripts` | `Scripts\` 文件夹里的脚本作为命令 | [Scripts](Scripts-zh) |
+| `ScriptFilter` | (Scripts) | `@altrun.mode filter` 脚本的实时结果 | [Scripts](Scripts-zh) |
+| `SyncProvider` | `Sync` | 结果里的文件夹同步任务 | [Sync-Tasks](Sync-Tasks-zh) |
+| `TerminalProvider` | `Terminal` | `>命令` 在终端里运行 | [System-Commands](System-Commands-zh) |
+| `HelpProvider` | `Help` | 速查表 (`?`) 和使用提示 | [Usage](Usage-zh) |
 
 分层: `Lib` 不用 `Src` 里的任何东西; `Src\Core` 不用 `UI`、`Providers`、`Extensions` (只有负责启动的 `App.ahk` 可以)。Core 需要上层的信息时, 由上层设置回调或调用 Core, 例如 `BackgroundWork.IsBusy` (搜索窗口设置) 和 `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (`App` 调用)。测试 `Layers` 检查这一点。Core 以上的 `UI`、`Providers`、`Extensions` 之间直接互相调用 (Provider 打开 `ItemEditor`, `SyncJobs` 打开同步窗口); 把各部分接起来的只有 `App`, 所以新模块在 `App.Start()` 里启动, 有需要保存或停止的东西就在 `App._OnExit()` 里处理。
 

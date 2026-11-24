@@ -42,7 +42,7 @@ Right-click the notification area icon → Preferences, or press `F2` / `Ctrl+,`
 ## Next steps
 - [Search and shortcuts](Usage): every search syntax, shortcut and the action panel
 - [Script library](Scripts): install ready-made scripts or add your own
-- [Content types](Usage#your-own-actions-for-a-selection): assign actions and an Open (Enter) command to selected files or text
+- [Content types](Content-Types): assign actions and an Open (Enter) command to selected files or text
 - [Dialog Folder Panel](Quick-Switch-Panel): search for and choose folders in Open / Save dialogs
 - [FAQ](FAQ): hotkey does nothing, things can't be found, antivirus false positives
 - [Privacy and network access](Privacy): when ALTRun goes online and where your data lives

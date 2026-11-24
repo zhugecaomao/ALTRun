@@ -36,7 +36,7 @@ Folders you use often work better as [custom commands](Custom-Commands): custom 
 
 `Enter` opens, `Ctrl+Enter` reveals in the file manager, `Alt+Enter` copies the path, `→` shows more actions (Open With, copy / cut the file, copy / move to the current folder in TC, Open Terminal Here, Properties, Move to Recycle Bin...), see the [action panel](Usage#action-panel).
 
-Custom commands set for a file's content type (for example `Markdown` = `md, markdown`) come right after Open in its action panel, and the type's **Open (Enter)** can name a command that opens its files on `Enter`, like Total Commander's internal associations: useful when Windows doesn't know the type, as in a portable setup. See [Your own actions for a selection](Usage#your-own-actions-for-a-selection).
+Custom commands set for a file's content type (for example `Markdown` = `md, markdown`) come right after Open in its action panel, and the type's **Open (Enter)** can name a command that opens its files on `Enter`, like Total Commander's internal associations: useful when Windows doesn't know the type, as in a portable setup. See [Content types](Content-Types#opening-a-type-of-file-with-a-program-of-your-choice).
 
 ### File types and their extensions
 
