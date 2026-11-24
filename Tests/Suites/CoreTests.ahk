@@ -1431,11 +1431,11 @@ class CoreTests {
     static ChildProcessKill() {
         eq := (n, a, e) => TestRunner.Equal("ChildProcessKill." n, a, e)
         dir := CoreTests._ChildDir()
-        grand := CoreTests._ChildScript("grand.ahk", 'FileAppend(ProcessExist(), A_Args[1])`nSleep(60000)`n')
+        grand := CoreTests._ChildScript("grand.ahk", CoreTests._WritePid(1) 'Sleep(60000)`n')
         parent := CoreTests._ChildScript("parent.ahk"
             , 'q := Chr(34)`nRun(q A_AhkPath q " " q A_Args[1] q " " q A_Args[2] q)`n'
             . 'while (!FileExist(A_Args[2]) && A_Index < 400)`n    Sleep(50)`n'   ; "end": end only once the other one runs
-            . 'FileAppend(ProcessExist(), A_Args[3])`n'
+            . CoreTests._WritePid(3)
             . 'if (A_Args[4] = "stay")`n    Sleep(60000)`n')
         for how in ["kill", "timeout", "ends"] {
             pidFiles := [dir "\grand-" how ".pid", dir "\parent-" how ".pid"]
@@ -1444,10 +1444,8 @@ class CoreTests {
             called := []
             child := ChildProcess.Start(CoreTests._AhkLine(parent, grand, pidFiles[1], pidFiles[2], how = "ends" ? "end" : "stay")
                 , (result) => called.Push(result), {TimeoutMs: (how = "timeout") ? 8000 : 30000})
-            TestRunner.True("ChildProcessKill." how ": both started", TestUtil.WaitFor(() => FileExist(pidFiles[1]) && FileExist(pidFiles[2]), 20000))
-            pids := []
-            for each in pidFiles
-                try pids.Push(Integer(FileRead(each)))
+            TestRunner.True("ChildProcessKill." how ": both started", TestUtil.WaitFor(() => CoreTests._PidsIn(pidFiles).Length = 2, 20000))
+            pids := CoreTests._PidsIn(pidFiles)
             if (how = "kill") {
                 eq("kill: was running", ChildProcess.Kill(child), true)
                 eq("kill: again", ChildProcess.Kill(child), false)
@@ -1470,11 +1468,11 @@ class CoreTests {
     static ChildProcessKeepStarted() {
         eq := (n, a, e) => TestRunner.Equal("ChildProcessKeepStarted." n, a, e)
         dir := CoreTests._ChildDir()
-        grand := CoreTests._ChildScript("keep-grand.ahk", 'FileAppend(ProcessExist(), A_Args[1])`nSleep(60000)`n')
+        grand := CoreTests._ChildScript("keep-grand.ahk", CoreTests._WritePid(1) 'Sleep(60000)`n')
         parent := CoreTests._ChildScript("keep-parent.ahk"
             , 'q := Chr(34)`nRun(q A_AhkPath q " " q A_Args[1] q " " q A_Args[2] q)`n'
             . 'while (!FileExist(A_Args[2]) && A_Index < 400)`n    Sleep(50)`n'
-            . 'FileAppend(ProcessExist(), A_Args[3])`n'
+            . CoreTests._WritePid(3)
             . 'if (A_Args[4] = "stay")`n    Sleep(60000)`n')
         for how in ["kill", "ends"] {
             pidFiles := [dir "\keep-grand-" how ".pid", dir "\keep-parent-" how ".pid"]
@@ -1484,9 +1482,8 @@ class CoreTests {
             try {
                 child := ChildProcess.Start(CoreTests._AhkLine(parent, grand, pidFiles[1], pidFiles[2], how = "ends" ? "end" : "stay")
                     , (result) => called.Push(result), {KeepStarted: true})
-                TestRunner.True("ChildProcessKeepStarted." how ": both started", TestUtil.WaitFor(() => FileExist(pidFiles[1]) && FileExist(pidFiles[2]), 20000))
-                for each in pidFiles
-                    try pids.Push(Integer(FileRead(each)))
+                TestRunner.True("ChildProcessKeepStarted." how ": both started", TestUtil.WaitFor(() => CoreTests._PidsIn(pidFiles).Length = 2, 20000))
+                pids := CoreTests._PidsIn(pidFiles)
                 if (how = "kill")
                     eq("kill: was running", ChildProcess.Kill(child), true)
                 else
@@ -1522,6 +1519,25 @@ class CoreTests {
         dir := A_Temp "\ALTRun-ChildProcess-test"
         DirCreate(dir)
         return dir
+    }
+
+    ; The test scripts' line that writes their process id to the file in A_Args[n]: written under another name and renamed, so the
+    ; file shows up whole. Written in place, the test could read it after FileAppend created it and before it wrote the number
+    ; (ChildProcessKeepStarted failed this way on CI), and a test reading it while it is written made that FileAppend fail
+    ; with a sharing violation (seen in Wine)
+    static _WritePid(n) => 'FileAppend(ProcessExist(), A_Args[' n '] ".tmp")`nFileMove(A_Args[' n '] ".tmp", A_Args[' n '], true)`n'
+
+    ; The process ids in the files, once every file holds one ([] until then)
+    static _PidsIn(files) {
+        pids := []
+        for each in files {
+            text := ""
+            try text := Trim(FileRead(each))
+            if !IsInteger(text)
+                return []
+            pids.Push(Integer(text))
+        }
+        return pids
     }
 
     static _ChildScript(name, code) {
