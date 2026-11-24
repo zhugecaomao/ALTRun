@@ -42,7 +42,19 @@ Get-FileHash -Algorithm SHA256 $args[0] | Format-List
 FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")
 ```
 
-**选中内容用的脚本**: 写了 `@altrun.selection` 的脚本, 在任何程序里选中这种类型的内容按 `Ctrl+Alt+\`, 列表里就有它。选中的文字有换行或双引号时不传, 有脚本所用 shell 的特殊字符时也不传 (`.bat` / `.cmd` 经过 cmd, `.ps1` 经过 PowerShell), 这时列表里不出现这个脚本。偏好设置 → 脚本 的 "类型" 列写出每个脚本的类型。
+**选中内容用的脚本**: 写了 `@altrun.selection` 的脚本, 在任何程序里选中这种类型的内容按 `Ctrl+Alt+\`, 列表里就有它。
+
+脚本收到什么 (测试版 2026.11.23.23 起; [剪贴板历史](Clipboard-zh) 里文字项的 `→` 面板也一样):
+
+| 脚本 | 有换行或 `"` 的文字 | shell 的特殊字符 |
+|---|---|---|
+| `.ahk` / `.py` | 原样传过去 (参数由 ALTRun 自己加引号) | 只是文字 (中间没有 shell) |
+| `.ps1` | 原样传过去 | 只是文字: 它是 `-File` 后面的参数, 不当代码执行 |
+| `.bat` / `.cmd` | 不传: cmd 没法安全地接收 | `& \| < > ^ % !` 不传 |
+
+不传时脚本仍在列表里, 灰字说明原因, 按了也不会运行. Windows 的命令行最长 32767 个字符: 很长的文字 (例如整篇文章) 请让脚本自己读剪贴板 (AutoHotkey 用 `A_Clipboard`, PowerShell 用 `Get-Clipboard`).
+
+偏好设置 → 脚本 的 "类型" 列写出每个脚本的类型。
 
 **给脚本设热键**: 偏好设置 → 自定义热键 里 **选择...** 也列出脚本 (存成 `"Action": "script:<文件名>"`, 例如 `script:hash.ps1`)。写了 `@altrun.argument` 或 `@altrun.selection` 的脚本把选中的内容作为参数, 检查同上; 没有选中时, 有参数又有关键字的脚本打开搜索窗口并填好关键字。改了文件名热键就失效: 显示成红字 `(脚本不存在) script:<文件名>`, 重新选一次脚本就好。
 

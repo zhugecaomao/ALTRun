@@ -125,7 +125,7 @@ class ScriptProvider {
         for script in ScriptProvider.Current() {
             if (script.Mode = "filter" || !ScriptProvider.ForTypes(script, info.Types))
                 continue
-            if IsObject(problem := SelectionActions.ArgumentProblem(info, ScriptProvider.ShellCommand(script))) {
+            if IsObject(problem := ScriptProvider.ArgumentProblem(info, script)) {
                 actions.Push(SelectionActions.RefusedRow(script.Title, ScriptProvider.IconOf(script), problem))
                 continue
             }
@@ -136,6 +136,11 @@ class ScriptProvider {
     }
 
     static _Runner(script, argument) => (*) => ScriptProvider.Run(script, argument)   ; each row keeps its own argument
+
+    ; Why a selection can't be given to the script, "" when it can (SelectionActions.ArgumentProblem). ALTRun builds the command line of
+    ; an .ahk / .ps1 / .py itself, quoting each argument by the rules every one of them reads arguments with (Win.QuoteArg), so text with
+    ; line breaks and double quotes arrives as it is (#653). A batch file goes through cmd, which has no reliable quoting: still refused
+    static ArgumentProblem(info, script) => SelectionActions.ArgumentProblem(info, ScriptProvider.ShellCommand(script), !ScriptProvider.ThroughCmd(script))
 
     ; What a script gets for a selection: the text, the path, or several paths (an argument each)
     static SelectionArgument(info) {
@@ -180,7 +185,7 @@ class ScriptProvider {
             selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture()
             if IsObject(selection) {
                 info := ContentTypes.Classify(selection)
-                if !SelectionActions.SafeArgument(info, ScriptProvider.ShellCommand(script))
+                if IsObject(ScriptProvider.ArgumentProblem(info, script))
                     return App.Notify(I18n.T("Hotkey.SelectionRefused", script.Title), 3000)
                 argument := ScriptProvider.SelectionArgument(info)
             } else if takesArgument {

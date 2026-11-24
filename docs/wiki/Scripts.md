@@ -42,7 +42,19 @@ A script that runs in the background and shows the last line it prints as a noti
 FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")
 ```
 
-**Scripts for selected content**: with `@altrun.selection`, select something of that type in any program and press `Ctrl+Alt+\`; the script is in the list. Selected text with a line break or a double quote isn't passed, nor characters the script's shell treats specially (`.bat` / `.cmd` run through cmd, `.ps1` through PowerShell); the script isn't listed then. The "Types" column of Preferences → Scripts shows each script's types.
+**Scripts for selected content**: with `@altrun.selection`, select something of that type in any program and press `Ctrl+Alt+\`; the script is in the list.
+
+What a script receives (since test build 2026.11.23.23; the same for text in the [clipboard history](Clipboard)'s `→` panel):
+
+| Script | Text with line breaks or `"` | Characters a shell treats specially |
+|---|---|---|
+| `.ahk` / `.py` | passed as it is (ALTRun quotes the argument itself) | passed as text (no shell in between) |
+| `.ps1` | passed as it is | passed as text: it is an argument after `-File`, not code |
+| `.bat` / `.cmd` | refused: cmd can't take them safely | `& \| < > ^ % !` refused |
+
+A refused script stays in the list with the reason in gray and doesn't run. Windows limits a command line to 32767 characters: for very long text (a whole article), let the script read the clipboard itself (`A_Clipboard` in AutoHotkey, `Get-Clipboard` in PowerShell).
+
+The "Types" column of Preferences → Scripts shows each script's types.
 
 **A hotkey for a script**: in Preferences → Hotkeys, **Choose...** lists the scripts too (stored as `"Action": "script:<file name>"`, for example `script:hash.ps1`). A script with `@altrun.argument` or `@altrun.selection` gets the selection as its argument, with the same checks; with nothing selected, one with an argument and a keyword opens the search window with the keyword typed. Renaming the file breaks the hotkey: it is shown in red as `(script not found) script:<file name>` until you choose the script again.
 
