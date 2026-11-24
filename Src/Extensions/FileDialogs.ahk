@@ -293,12 +293,31 @@ class FileDialogs {
             Sleep(60)
             if FileDialogs._FillFocusedBox(folder, dialog) {                ; the whole folder at once, nothing typed
                 SendInput("{Enter}")
-                return
+                return FileDialogs._WaitForFolder(folder, dialog)
             }
         }
         FileDialogs.LastTyped := true
         SendText(folder)                                                    ; dialogs a program draws itself (WPS / Qt, GTK, Java...): the
         SendInput("{Enter}")                                                ; file name box has the focus; a folder path + Enter goes there
+        if (method = "address")
+            return FileDialogs._WaitForFolder(folder, dialog)
+    }
+
+    ; After Enter in the address bar: wait until the dialog shows the folder (at most WaitForFolderMs), so the jump is over when Jump returns.
+    ; A jump right after it (a second click in the panel) otherwise ran while the dialog was still going to this folder: when it got there
+    ; it put this folder back into the address bar over the next one, and the dialog stayed here (measured on Windows CI)
+    static WaitForFolderMs := 1000
+
+    static _WaitForFolder(folder, dialog) {
+        folder := RTrim(folder, "\"), started := A_TickCount
+        while (A_TickCount - started < FileDialogs.WaitForFolderMs) {
+            if !WinExist("ahk_id " dialog)
+                return
+            if (FileDialogs.DialogFolder(dialog) = folder)
+                return
+            Sleep(30)
+        }
+        Logger.Debug("QuickSwitch: the dialog didn't show [" folder "] within " FileDialogs.WaitForFolderMs " ms after Enter in the address bar")
     }
 
     ; Puts the folder into the dialog's focused edit box (the address bar after Alt+D) with WM_SETTEXT; false if the focus isn't on an
