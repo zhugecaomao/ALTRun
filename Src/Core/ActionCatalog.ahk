@@ -322,6 +322,17 @@ class ActionCatalog {
     ; Web pages (http / https; an address without a scheme gets https://) open in General.Browser when it is set; other
     ; links (mailto:, ms-settings:, search-ms: ...), and web pages when it isn't, in the program Windows registered for them
     static OpenUrl(address) {
+        if InStr(address, "`n") {                                          ; several addresses, one per line (a web search with several URLs, #565)
+            opened := 0
+            for line in StrSplit(address, "`n", "`r `t") {
+                if (line = "")
+                    continue
+                if opened++
+                    Sleep(250)                                              ; a browser that is still starting may refuse a second address sent at once
+                ActionCatalog.OpenUrl(line)
+            }
+            return
+        }
         if !RegExMatch(address, "i)^[a-z][a-z0-9+.\-]*:")
             address := "https://" address
         if (RegExMatch(address, "i)^https?://") && (browser := ActionCatalog.BrowserCommand(AppSettings.General["Browser"])).Exe != "")

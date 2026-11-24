@@ -20,6 +20,7 @@
 ; OmitEmpty: true = an empty value removes the key instead of saving "" (an optional key most records don't have)
 ; A file field can have FolderWhen: ["Type", "Folder"] = when another field (Type) is set to Folder, "Browse" chooses a folder instead
 ; hotkey: a hotkey recording box (HotkeyBox, can record middle / side buttons) + a check box "keep the key's own function" (the ~ in front)
+; A multiline field can have EditOptions: the box's options instead of "r8 +WantTab" (e.g. "r3 -Wrap")
 ; Hint: gray description below the box; Check: (value, editedMap) => warning text; on OK a warning asks "Save anyway?"
 ;
 ; Usage:
@@ -64,7 +65,7 @@ class ItemEditor {
             value := item.Has(field.Key) ? item[field.Key] : ""
             switch field.Type {
                 case "multiline":
-                    ctrl := g.AddEdit("x+8 ys-3 w" inputW " r8 +Multi +WantTab", value)
+                    ctrl := g.AddEdit("x+8 ys-3 w" inputW " +Multi " (field.HasOwnProp("EditOptions") ? field.EditOptions : "r8 +WantTab"), value)
                 case "check":
                     ctrl := g.AddCheckbox("x+8 ys w" inputW, field.Label)
                     ctrl.Value := value ? 1 : 0

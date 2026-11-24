@@ -751,7 +751,7 @@ class PrefsPages {
     static BuildWebSearch() {
         PrefsForm.BeginPage("Prefs.Page.WebSearch", 130)
         PrefsForm.List("Features.WebSearch.Engines", 320
-            , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340]]
+            , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340, (value) => RegExReplace(Trim(value, " `t`r`n"), "\s*\R\s*", "  |  ")]]
             , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine(), "", "", true
             , {Label: "Prefs.AddBuiltins", Keys: (item) => PrefsPages.EngineKeys(item)})
         PrefsForm.Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")

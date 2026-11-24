@@ -33,7 +33,7 @@
 |---|---|
 | 名称 | 显示在结果里, 例如 "Search Google for ..." |
 | 关键字 | 输入这个词再加空格就用这个网站搜索。可以写几个, 用逗号分隔, 例如 `g, ㅎ, google` (经常切换键盘布局 / 输入法时, 输入哪个都行); 提示和补全用输入的那个。在操作面板里 (选中内容的热键、`→`) 输入关键字也能找到这个引擎那一行 (`g` → "用 Google 搜索") |
-| 网址 | 搜索结果页的地址, `{query}` 换成输入的搜索词 (自动编码). 写成非空的 `{query\|默认值}` 时, 输入关键字加空格, 不输入搜索词就搜索默认值, 例如 `https://www.bing.com/search?q={query\|天气}` 输入 `bing ` 就搜索 "天气"; 默认值写成 `clipboard` (`https://www.google.com/search?q={query\|clipboard}`) 时搜索剪贴板里的文字. 默认值为空 (`{query\|}`) 时直接打开网址, `{query}` 换成空: `https://www.baidu.com/s?wd={query\|}` 输入 `bd ` 就打开百度. 只输入关键字 (`bing`) 不会用默认值, 按 `Enter` 补全成 `bing `. [自定义命令](Custom-Commands-zh#带参数的命令-query) 的规则相同 |
+| 网址 | 搜索结果页的地址, `{query}` 换成输入的搜索词 (自动编码). 写成非空的 `{query\|默认值}` 时, 输入关键字加空格, 不输入搜索词就搜索默认值, 例如 `https://www.bing.com/search?q={query\|天气}` 输入 `bing ` 就搜索 "天气"; 默认值写成 `clipboard` (`https://www.google.com/search?q={query\|clipboard}`) 时搜索剪贴板里的文字. 默认值为空 (`{query\|}`) 时直接打开网址, `{query}` 换成空: `https://www.baidu.com/s?wd={query\|}` 输入 `bd ` 就打开百度. 只输入关键字 (`bing`) 不会用默认值, 按 `Enter` 补全成 `bing `. [自定义命令](Custom-Commands-zh#带参数的命令-query) 的规则相同. 可以写几行, 每行一个网址, 一次打开几个网页: 见 [一次打开几个网页](#一次打开几个网页) |
 | Id | 区分引擎用的名字 (英文字母), 兜底搜索里用它 |
 | 图标 | 可选: `.ico`、`.png` 或 `.exe` 文件, 相对路径从 Data 文件夹算起。点 **下载网站图标** 会访问网址所在的网站一次, 找到的图标存到 `Data\Icons` 并填好这一项。留空 = 自带的图标 (上面的几个引擎都有) 或浏览器的图标 |
 
@@ -44,6 +44,29 @@
 | 必应词典 | `dict` | `https://cn.bing.com/dict/search?q={query}` |
 | Amazon | `amz` | `https://www.amazon.com/s?k={query}` |
 | 本地开发服务器 | `lh` | `http://localhost:{query\|8000}` (8000 是端口号: `lh ` 打开 8000, `lh 3000` 打开 3000) |
+
+### 一次打开几个网页
+在 **网址** 里写几行, 每行一个网址 (在框里按 `Enter` 换行). 搜索一次就按顺序把它们都打开, 例如比价, 或者同时查两本词典:
+
+![一个引擎写两个网址](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch-editor.png)
+
+```text
+https://cn.bing.com/dict/search?q={query}
+https://www.youdao.com/result?word={query}&lang=en
+```
+
+| 输入 | 打开什么 |
+|---|---|
+| `dict hello` | 两个网页都搜索 "hello", 在浏览器里各开一个标签页 |
+| `dict` 再按 `Enter` | 补全成 `dict ` (还不打开) |
+
+![结果: 第一个网址和还有几个](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch-multi.png)
+
+- 最多 10 个网址; 空行跳过
+- 每一行都可以用 `{query}` / `{query\|默认值}`. 关键字加空格后什么都不输入时, 默认值用第一个 `{query\|...}` 的; 默认值为空 (`{query\|}`) 时每一行都直接打开, `{query}` 换成空
+- 结果下面显示第一个网址和还有几个, 例如 `https://cn.bing.com/dict/search?q=hello  (还有 1 个)`; `Alt+Enter` 复制所有网址, 每行一个
+- 网页之间隔 0.25 秒打开, 浏览器还在启动时也不会漏掉. 选中内容或剪贴板历史里的一条按 `→` 用这个引擎搜索, 也都会打开
+- 偏好设置的列表里几行用 `|` 隔开显示; **下载网站图标** 用第一个网址的网站
 
 ### 搜索剪贴板
 - 只在输入了关键字加空格 (`g `) 时才读取剪贴板; 只输入关键字 (`g`) 或引擎名称 (例如 `google`) 的补全提示不读

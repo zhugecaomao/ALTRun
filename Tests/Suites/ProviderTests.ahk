@@ -34,6 +34,19 @@ class ProviderTests {
         eq("typed value", WebSearchProvider.Fill(engine["Url"], "3000"), "http://localhost:3000/")
         eq("plain {query}", WebSearchProvider.Fill("https://x.com/?q={query}&r={query}", "a b"), "https://x.com/?q=a%20b&r=a%20b")
         eq("no default", WebSearchProvider.DefaultTerm("https://x.com/?q={query}"), "")
+        ; several addresses, one per line (#565): all filled, blank lines skipped, at most MaxUrls; the subtitle shows the first and how many more
+        multi := Map("Id", "multi", "Keyword", "mm", "Title", "Multi", "Url", "https://a.com/?q={query}`r`n`r`n  https://b.com/{query}  `n")
+        eq("several: urls", WebSearchProvider.Urls(multi["Url"]).Length, 2)
+        item := WebSearchProvider.ItemFor(multi, "a b")
+        eq("several: arg", item.Arg, "https://a.com/?q=a%20b`nhttps://b.com/a%20b")
+        eq("several: subtitle", item.Subtitle, I18n.T("Web.MoreUrls", "https://a.com/?q=a%20b", 1))
+        eq("one: subtitle is the url", WebSearchProvider.ItemFor(engine, "1").Subtitle, "http://localhost:1/")
+        eq("several: first url", WebSearchProvider.FirstUrl("`n https://a.com/{query}`nhttps://b.com"), "https://a.com/{query}")
+        eq("several: {query|} each line", WebSearchProvider.FillAll("https://a.com/{query|}`nhttps://b.com/{query|x}", ""), "https://a.com/`nhttps://b.com/x")
+        many := ""
+        Loop 12
+            many .= "https://s" A_Index ".com/{query}`n"
+        eq("several: at most MaxUrls", WebSearchProvider.Urls(many).Length, WebSearchProvider.MaxUrls)
         item := WebSearchProvider.ItemFor(engine, "")
         eq("keyword only with default", (item.Valid ? 1 : 0) "|" item.Arg "|" item.AutoComplete, "1|http://localhost:8000/|lh ")
         eq("keyword only with default: title", item.Title, I18n.T("Web.SearchFor", "Localhost", "8000"))
