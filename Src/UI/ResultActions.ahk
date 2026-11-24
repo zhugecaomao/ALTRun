@@ -144,12 +144,13 @@ class ResultActions {
         list := []
         add(title, icon, fn, hint := "") => list.Push(ResultItem(title, hint, {Icon: icon, OnRun: fn}))
         count := paths.Length
+        manager := FileManagers.FileManagerFolder()
+        hint := ResultActions._PasteHint(manager)
         add(I18n.T("Action.OpenAll", count), "res:imageres.dll,-5302", (*) => ResultActions.OpenAll(paths), "Enter")
-        add(I18n.T("Action.CopyFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths), I18n.T("Action.CopyFile.Hint"))
-        add(I18n.T("Action.CutFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths, true), I18n.T("Action.CopyFile.Hint"))
+        add(I18n.T("Action.CopyFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths), hint)
+        add(I18n.T("Action.CutFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths, true), hint)
         joined := TextTools.Join(paths)
         add(I18n.T("Action.CopyPaths", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(joined))
-        manager := FileManagers.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
         if (destination != "" && Path.ExistsOrRemote(destination)) {      ; no wait when the folder is on an offline server
             add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), Path.Compact(destination))
@@ -260,9 +261,10 @@ class ResultActions {
     static _FileActions(list, target) {
         if (!RegExMatch(target, "^([A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(target))
             return
-        list.Push(ResultItem(I18n.T("Action.CopyFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target])}))
-        list.Push(ResultItem(I18n.T("Action.CutFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target], true)}))
         manager := FileManagers.FileManagerFolder()
+        hint := ResultActions._PasteHint(manager)
+        list.Push(ResultItem(I18n.T("Action.CopyFile"), hint, {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target])}))
+        list.Push(ResultItem(I18n.T("Action.CutFile"), hint, {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target], true)}))
         destination := IsObject(manager) ? manager.Path : ""
         if (destination = "" || !Path.ExistsOrRemote(destination))
             return
@@ -274,4 +276,7 @@ class ResultActions {
         list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), shown, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))
         list.Push(ResultItem(I18n.T("Action.MoveTo", manager.Tag), shown, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination, true)}))
     }
+
+    ; Copy / Cut File puts the files on the clipboard, so any file manager can paste them: name the one used last, if any
+    static _PasteHint(manager) => IsObject(manager) ? I18n.T("Action.CopyFile.Hint", manager.Tag) : I18n.T("Action.CopyFile.HintFolder")
 }
