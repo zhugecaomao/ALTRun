@@ -112,6 +112,12 @@ class ResultActions {
                 add("Action.Run", item.Icon, (*) => ActionCatalog.RunDefault(item), enter)
         }
 
+        ; text in the clipboard history: after Copy / Paste, the commands and scripts for its content types, as for selected text
+        ; (#653: no need to select it again in a program). Built only when the panel opens; Enter still pastes
+        if (item.Provider = ClipboardProvider.Id && item.Source is Map && ClipboardProvider.TypeOf(item.Source) = "text")
+            for extra in SelectionActions.CommandActions(ContentTypes.Classify({Text: item.Arg}))
+                list.Push(extra)
+
         for extra in item.Actions
             list.Push(extra)
 

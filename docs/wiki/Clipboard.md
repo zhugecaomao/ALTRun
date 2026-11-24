@@ -8,9 +8,20 @@ Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied 
 
 | What was copied | Shown as | `Enter` | `F3` / `→` |
 |---|---|---|---|
-| Text | The beginning of the text | Pastes the text | Save as a snippet / copy, paste, large type |
+| Text | The beginning of the text | Pastes the text | Save as a snippet / copy, paste, your commands and scripts for its content types (see below), search with each web search engine, large type |
 | Files | The file names (separated by commas); one image file (a picture copied in QQ, WeChat and other chat programs is usually a file in their cache) with a thumbnail | Pastes the files (in Explorer that copies them there) | Add to custom commands / for one file: open, reveal in the file manager, copy path and more |
 | Image (screenshot, picture from a web page...) | "Image 1920 × 1080" with a thumbnail | Pastes the image | - / open in the image viewer, reveal in the file manager |
+
+**Running your commands on copied text** (since test build 2026.11.23.22): the `→` panel of a text item lists, right after Copy and Paste, the custom commands and scripts set for its [content types](Usage#actions-on-selected-content), the same rows as when you select that text in a program and press the selection hotkey. So text you copied earlier doesn't have to be found and selected again. `Enter` on the item itself still pastes.
+
+| Copied text | Your settings | In the `→` panel |
+|---|---|---|
+| `PO12345` | a content type "PO" (`^PO\d+$`) and a command "Open PO" `https://erp.example.com/po/{query}` set for it | "Open PO" opens `https://erp.example.com/po/PO12345` |
+| `https://example.com` | a command set for the built-in type Url | that command, with the address |
+| any text | nothing set for its types | only the usual rows (no "Add a Command for This Content...": that is in the selection's panel) |
+| several lines, or `"` / shell characters a command can't take | a command that would get them in its command line | the row is shown with the reason, as for a selection, and doesn't run |
+
+Images and files in the history don't get these rows.
 
 - Images are saved as PNG files in the `Clipboard\` folder (by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard`, so they aren't uploaded every time when `Data\` is in a synced folder), at most 50 by default (`MaxImages`), and only recorded while "Keep history after ALTRun quits" is on; to stop recording images, turn off "Also record images" in Preferences → Clipboard
 - Type `clip image` to see only images
