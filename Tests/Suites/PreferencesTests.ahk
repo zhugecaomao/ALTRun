@@ -476,6 +476,7 @@ class PreferencesTests {
         eq("every page fits in the list, no scroll bar", "bottom " (last[4] <= NumGet(listRect, 12, "Int") ? "fits" : last[4] " > " NumGet(listRect, 12, "Int"))
             . ", scroll bars " ((style & 0x300000) ? Format("{:#x}", style & 0x300000) : "none"), "bottom fits, scroll bars none")   ; WS_VSCROLL | WS_HSCROLL
         if (SendMessage(0x108F, 0, 0, PreferencesWindow.PageList) = 4) {   ; LVM_GETVIEW: tiles (Windows; Wine has no tile view and shows a plain list)
+            eq("page list never taller than the list while laid out (else both scroll bars can stay)", PreferencesWindow._tileOver, 0)
             wrong := ""                                                     ; a gap before each group's first page, none inside a group
             Loop PreferencesWindow.PageKeys.Length - 1 {
                 row := A_Index                                              ; (A_Index inside the for loop below is the for loop's)

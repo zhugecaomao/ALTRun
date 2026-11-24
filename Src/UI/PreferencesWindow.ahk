@@ -39,6 +39,7 @@ class PreferencesWindow {
     static _dirty := false, _ready := false, ApplyButton := ""
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
     static _positionReset := false
+    static _tileOver := 0                                                  ; the most the page list's content was taller than the list while laying out its tiles (tests)
     ; pageIndex: the page's key (e.g. "Prefs.Page.Advanced"), or its number
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
@@ -89,9 +90,14 @@ class PreferencesWindow {
             ; the list's content (LVM_GETVIEWRECT) ends 4 px below the last tile (Windows 11), and when it is taller than the list both scroll bars appear:
             ; lay out in less height until it fits (the gaps take the rounding, so it can take a second try)
             height := tiles.Height, view := Buffer(16, 0)
+            PreferencesWindow._tileOver := 0
             Loop 5 {
                 layout := PreferencesWindow._PlaceTiles(pageList, tiles, height)
-                if (!SendMessage(0x1022, 0, view, pageList) || (over := NumGet(view, 12, "Int") - tiles.Height) <= 0)
+                if !SendMessage(0x1022, 0, view, pageList)
+                    break
+                over := NumGet(view, 12, "Int") - tiles.Height
+                PreferencesWindow._tileOver := Max(PreferencesWindow._tileOver, over)
+                if (over <= 0)
                     break
                 height -= over
             }
