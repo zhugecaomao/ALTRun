@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.20]
+
+测试版。
+
+Test build.
+
+### 改进
+- 资源管理器 "发送到 → ALTRun" 发送快捷方式时, 快捷方式有参数, 起始位置不是目标所在文件夹, 或设了 "用管理员身份运行", 就添加快捷方式本身, 保留这些设置; 其他快捷方式仍添加它指向的程序 (#651)
+
 ## [2026.11.23.19]
 
 测试版。
@@ -1739,7 +1748,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...HEAD
+[2026.11.23.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...2026.11.23.20
 [2026.11.23.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...2026.11.23.19
 [2026.11.23.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...2026.11.23.18
 [2026.11.23.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...2026.11.23.17

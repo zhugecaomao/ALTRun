@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.23.19"
+    static Version := "2026.11.23.20"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -774,17 +774,8 @@ class App {
     static _HandleCommandLine(args, forwarded := false) {
         if (args.Length >= 2 && args[1] = "-SendTo") {
             paths := []                                                     ; with several files selected, all their paths come in at once
-            Loop args.Length - 1 {
-                target := args[A_Index + 1]
-                if (SubStr(target, -4) = ".lnk") {
-                    try {
-                        FileGetShortcut(target, &linkTarget)
-                        if (linkTarget != "")
-                            target := linkTarget
-                    }
-                }
-                paths.Push(target)
-            }
+            Loop args.Length - 1
+                paths.Push(CustomCommandProvider.SendToTarget(args[A_Index + 1]))
             CustomCommandProvider.AddFromPaths(paths)
             return
         }

@@ -9,6 +9,15 @@ Add the files, folders, programs or web addresses you use often to ALTRun and op
 - In the search results, select an app / file / folder / URL and press `F3` (or `→` → "Add to Custom Commands...")
 - When nothing is found, press `F3` to create one from the text you typed
 - In Explorer, right-click → Send to → ALTRun. With **one** file / folder selected, the edit dialog opens with the name, type and target already filled in; adjust the name or add a keyword and press `Enter` (Cancel adds nothing). With **several** selected, they're all added at once (no dialog for each one), and commands that already exist aren't added twice. Sending a file / folder that already has a command opens that command for editing. If Preferences is open, the new commands are added to the list in Preferences → Custom Commands and saved when you press OK / Apply
+  - Sending a shortcut (`.lnk`) adds the program it points to, unless the shortcut starts it differently: then the shortcut itself is added, so its settings are kept (since test build 2026.11.23.20):
+
+    | The shortcut has | The command's target |
+    |---|---|
+    | only a target (the working folder empty or the target's own folder) | the program it points to |
+    | arguments, e.g. `--profile Work` | the shortcut |
+    | another working folder ("Start in") | the shortcut |
+    | Properties → Shortcut → Advanced → "Run as administrator" | the shortcut |
+
 - Preferences → Custom Commands → Add...
 - Preferences → Custom Commands → More ▾ → **Add Examples**: adds the default commands you don't have yet (a command with the same title or keyword counts as already there) and tells you how many were added and skipped; saved when you press OK / Apply
 

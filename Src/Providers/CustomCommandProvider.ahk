@@ -19,6 +19,7 @@
 ;
 ; Usage:
 ;   CustomCommandProvider.AddFromPaths(paths)            "Send to" menu: one opens the edit dialog, several are added directly
+;   CustomCommandProvider.SendToTarget(path)             what "Send to" adds for a path (a shortcut: its target or the shortcut itself)
 ;   CustomCommandProvider.Edit(command [, prefill])      opens the edit dialog; command = "" creates a new one
 ;   CustomCommandProvider.EditDialog(owner, title, item, settings)   the edit dialog with its "Triggers" line and "Set Hotkey..."
 ;       (Preferences and Edit use it; the hotkeys set there are saved with the command on OK)
@@ -730,6 +731,35 @@ class CustomCommandProvider {
     }
 
     ; File / folder path -> a new command (name = file name without extension, or folder name)
+    ; What "Send to" adds for a path: a shortcut becomes its target, unless the target alone would start differently (#651):
+    ; the shortcut has arguments, a working folder other than the target's own folder, or "Run as administrator"
+    static SendToTarget(target) {
+        if (SubStr(target, -4) != ".lnk")
+            return target
+        try FileGetShortcut(target, &linkTarget, &linkDir, &linkArgs)
+        catch
+            return target
+        if (linkTarget = "" || linkArgs != "" || CustomCommandProvider.ShortcutRunsAsAdmin(target))
+            return target
+        SplitPath(linkTarget, , &targetDir)
+        if (linkDir != "" && RTrim(Path.Resolve(linkDir), "\") != RTrim(targetDir, "\"))
+            return target
+        return linkTarget
+    }
+
+    ; "Run as administrator" (Properties → Advanced) isn't returned by FileGetShortcut: it is the RunAsUser bit (0x2000) of the
+    ; LinkFlags at byte 0x14 of the .lnk file (MS-SHLLINK)
+    static ShortcutRunsAsAdmin(lnk) {
+        try {
+            handle := FileOpen(lnk, "r")
+            handle.Seek(0x14)
+            flags := handle.ReadUInt()
+            handle.Close()
+            return (flags & 0x2000) ? true : false
+        }
+        return false
+    }
+
     static FromPath(target) {
         target := RTrim(target, "\/")
         if RegExMatch(target, "^[A-Za-z]:$")                                ; a whole drive "D:"
