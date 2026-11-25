@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.25.3]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 通用: "文件管理器" 和 "在新标签页打开文件夹" 下面的说明精简到两行
+
+### 修复
+- 在终端打开当前文件夹却找不到文件夹时, 提示里只写了资源管理器和 Total Commander, 现在写全支持的四个: Total Commander、Directory Opus、Arke 和资源管理器
+
 ## [2026.11.25.2]
 
 测试版。
@@ -1667,7 +1679,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.3...HEAD
+[2026.11.25.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.2...2026.11.25.3
 [2026.11.25.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.1...2026.11.25.2
 [2026.11.25.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25...2026.11.25.1
 [2026.11.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.25
