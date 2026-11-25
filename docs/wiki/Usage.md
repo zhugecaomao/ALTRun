@@ -87,7 +87,7 @@ ALTRun watches the application index folders: the current user's and all users' 
 
 If software is installed while ALTRun isn't running, a fallback rebuild happens when the cache is more than an hour old. Microsoft Store apps aren't in these folders and are rescanned at most once an hour.
 
-You normally don't need to do anything. If an app still doesn't appear, check **Folders** and the exclusion rules in Preferences → Applications, then click **Rebuild Index**. Changing the indexed folders, file types, exclusions or depth and clicking Apply also starts a background rebuild. The previous index remains available until the new one is ready.
+You normally don't need to do anything. If an app still doesn't appear, check **Folders** and the exclusion rules in Preferences → Applications, then click **Rebuild Index**. Settings from before 2026.11.25.2 list only the Start menu's Programs folder (`A_Programs`, `A_ProgramsCommon`): a shortcut placed directly in the Start menu (for example by UniGetUI) is found after adding the lines `A_StartMenu` and `A_StartMenuCommon`; a folder listed inside another is still scanned only once. Changing the indexed folders, file types, exclusions or depth and clicking Apply also starts a background rebuild. The previous index remains available until the new one is ready.
 
 ![Preferences → Applications](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-applications.png)
 

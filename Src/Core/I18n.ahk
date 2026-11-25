@@ -435,7 +435,7 @@ class I18n {
         s["Sys.ConfirmHide"]           := "Remove '{1}' from search results?`n`nYou can restore it in Preferences > Features."
         s["Sys.NoIP"]                  := "No IP address found."
         s["Sys.IPCopied"]              := "IP address (the first one is copied)"
-        s["Sys.NoFolder"]              := "No Explorer or Total Commander folder found."
+        s["Sys.NoFolder"]              := "No Total Commander, Directory Opus, Arke or File Explorer folder found."
         s["Text.Upper"]                := "Clipboard: UPPERCASE"
         s["Text.Lower"]                := "Clipboard: lowercase"
         s["Text.Title"]                := "Clipboard: Title Case"
@@ -857,9 +857,9 @@ class I18n {
         s["Prefs.SaveLog"]             := "Write a debug log"
         s["Prefs.SaveLog.Desc"]        := "Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off."
         s["Prefs.FileManager"]         := "File manager"
-        s["Prefs.FileManager.Desc"]     := 'Program that opens folders, e.g. Total Commander, Directory Opus or Arke; parameters can follow, {path} = the path. Default: explorer.exe. <a href="{1}">Examples and what each supports</a>'
+        s["Prefs.FileManager.Desc"]     := 'Program that opens folders, e.g. Total Commander, Directory Opus or Arke; parameters allowed, {path} = the path. Default: explorer.exe. <a href="{1}">Examples</a>'
         s["Prefs.FolderNewTab"] := "Open folders in a new tab"
-        s["Prefs.FolderNewTab.Desc"] := "File Explorer (Windows 11 22H2 or later) and Arke (0.8.0 or later): a new tab of the window used last. Total Commander: adds /O /T. Others: put their own parameters above."
+        s["Prefs.FolderNewTab.Desc"] := "File Explorer (Windows 11 22H2+) and Arke (0.8.0+): a new tab in the last window used. Total Commander: adds /O /T. Others: add their parameters above."
         s["Prefs.Browser"]             := "Browser"
         s["Prefs.Browser.Empty"]     := "Default browser"
         s["Prefs.HistorySize"]         := "Search history size"
@@ -1021,7 +1021,7 @@ class I18n {
         ; Applications
         s["Prefs.AppFolders"]           := "Folders"
         s["Prefs.AppFolders.Desc"]     := "Folders searched for apps and shortcuts. Variables such as A_Desktop or %AppData% work."
-        s["Prefs.AppFolders.Help"]     := 'One folder per line. ALTRun indexes the apps and shortcuts in these folders and their subfolders (as deep as "Subfolder depth" on the page), and updates the index when something in them changes.`n`nVariables work: A_Programs and A_ProgramsCommon (Start menu), A_Desktop and A_DesktopCommon (desktop), and environment variables such as %AppData% or %OneDrive%. A network folder works too, but makes indexing slower.'
+        s["Prefs.AppFolders.Help"]     := 'One folder per line. ALTRun indexes the apps and shortcuts in these folders and their subfolders (as deep as "Subfolder depth" on the page), and updates the index when something in them changes.`n`nVariables work: A_StartMenu and A_StartMenuCommon (Start menu), A_Programs and A_ProgramsCommon (its Programs folder), A_Desktop and A_DesktopCommon (desktop), and environment variables such as %AppData% or %OneDrive%. A network folder works too, but makes indexing slower.'
         s["Prefs.AppFileTypes"]        := "File types"
         s["Prefs.AppFileTypes.Desc"]   := "Separate with commas, e.g. *.lnk, *.exe"
         s["Prefs.AppDepth"]             := "Subfolder depth"

@@ -5,6 +5,27 @@
 
 ## [未发布]
 
+## [2026.11.25.3]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 通用: "文件管理器" 和 "在新标签页打开文件夹" 下面的说明精简到两行
+
+### 修复
+- 在终端打开当前文件夹却找不到文件夹时, 提示里只写了资源管理器和 Total Commander, 现在写全支持的四个: Total Commander、Directory Opus、Arke 和资源管理器
+
+## [2026.11.25.2]
+
+测试版。
+
+Test build.
+
+### 修复
+- 应用搜索漏扫开始菜单根目录: 直接放在开始菜单里 (不在 "程序" 文件夹里) 的快捷方式搜不到, 例如 UniGetUI。新安装默认也扫 `A_StartMenu` / `A_StartMenuCommon`; 已有的设置不自动改, 在 偏好设置 → 应用搜索 → "文件夹" 里加这两行即可。一个文件夹在另一个列出的文件夹里时只扫一次, 深度从它自己算起 (#673)
+
 ## [2026.11.25.1]
 
 测试版。
@@ -1658,7 +1679,9 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.3...HEAD
+[2026.11.25.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.2...2026.11.25.3
+[2026.11.25.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.1...2026.11.25.2
 [2026.11.25.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25...2026.11.25.1
 [2026.11.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.25
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23
