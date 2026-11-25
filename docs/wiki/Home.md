@@ -20,6 +20,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 ### Getting started
 | Page | Contents |
 |---|---|
+| [Features](Features) | Everything ALTRun does, each with a screenshot |
 | [Getting started](Getting-Started) | First steps: open the window, launch programs, everyday features, your own commands |
 | [Installation and upgrades](Installation) | Download, winget / Scoop, start with Windows, one-key updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](Usage) | Every search syntax, shortcuts, action panel, learned ranking, usage statistics |
