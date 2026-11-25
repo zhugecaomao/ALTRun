@@ -1403,6 +1403,14 @@ class ProviderTests {
             while !ApplicationProvider._Step(job, -1)                      ; root and Games, then Office, Tools, More, TooDeep (9 if Office were scanned twice)
                 scanned++
             eq("nested folder scanned once " A_Index, scanned, 6)
+            if (scanned != 6) {                                             ; diagnostics: what the roots are and what Loop Files gives
+                info := "roots"
+                for r in job.Roots
+                    info .= " [" r "]"
+                Loop Files, root "\*", "D"
+                    info .= " | [" A_LoopFileFullPath "] root: " job.IsRoot.Has(A_LoopFileFullPath)
+                FileAppend("NOTE AppIndexRefresh: " info "`n", "*")
+            }
         }
         options["Folders"] := [root, root]
         eq("same folder twice", ApplicationProvider._NewJob().Roots.Length, 1)
