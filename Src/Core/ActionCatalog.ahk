@@ -519,6 +519,6 @@ class ActionCatalog {
 
     static _Preview(text) {
         text := RegExReplace(text, "\s+", " ")
-        return (StrLen(text) > 60) ? SubStr(text, 1, 60) "..." : text
+        return (StrLen(text) > 60) ? TextTools.Head(text, 60) "..." : text
     }
 }

@@ -188,6 +188,14 @@ class SearchWindowTests {
         for start in FuzzyMatcher.WordStarts("my_file-Name AutoHotkey 记事本")
             starts .= start " "
         eq("word start list", RTrim(starts), "1 4 9 14 18 25")
+        emoji := Chr(0x1F600), extB := Chr(0x20000), half := Chr(0xD83D)      ; two UTF-16 units each; half: one of them alone (#653)
+        starts := ""
+        for start in FuzzyMatcher.WordStarts("clip " emoji " test " extB "x")
+            starts .= start " "
+        eq("word starts emoji", RTrim(starts), "1 9 14")
+        eq("emoji substring", str(FuzzyMatcher.MatchRanges("test", "clip " emoji " test")), "9+4")
+        eq("emoji initials", str(FuzzyMatcher.MatchRanges("ct", "clip " emoji " test")), "1+1 9+1")
+        eq("lone surrogate", str(FuzzyMatcher.MatchRanges("ab", "ab" half)), "1+2")
         segs(text, ranges) {
             out := ""
             for segment in FuzzyMatcher.Segments(text, ranges)
@@ -206,6 +214,12 @@ class SearchWindowTests {
         eq("item ranges updated", str(ResultRows.HighlightRanges(item)), "15+4")
         SearchWindow.Session.HighlightText := ""
         eq("no query", str(ResultRows.HighlightRanges(item)), "")
+        SearchWindow.Session.HighlightText := "note"
+        eq("item emoji", str(ResultRows.HighlightRanges(ResultItem(emoji " Note " emoji))), "4+4")
+        broken := ResultItem("zz" half)                                     ; a cut-off emoji: no highlight, and no error on repaint either
+        SearchWindow.Session.HighlightText := "xy"
+        eq("item lone surrogate", str(ResultRows.HighlightRanges(broken)), "")
+        eq("item lone surrogate repaint", str(ResultRows.HighlightRanges(broken)), "")
         SearchWindow.Session.HighlightText := savedText
     }
 

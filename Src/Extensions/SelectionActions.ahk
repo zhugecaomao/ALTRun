@@ -265,7 +265,7 @@ class SelectionActions {
         entry := edited.Clone()
         if (Trim(entry.Has("Name") ? entry["Name"] : "") = "")
             entry["Name"] := "?"
-        shown := (StrLen(sample) > 60) ? SubStr(sample, 1, 59) "…" : sample
+        shown := (StrLen(sample) > 60) ? TextTools.Head(sample, 59) "…" : sample
         return I18n.T((ContentTypes.SampleTypes(sample, [entry]).Length > 1) ? "SelType.Sample.Match" : "SelType.Sample.NoMatch", shown)
     }
 
@@ -645,7 +645,7 @@ class SelectionActions {
         chars := "", seen := Map()
         Loop Parse, text {
             char := (A_LoopField = "`r" || A_LoopField = "`n") ? I18n.T("Selection.LineBreak") : A_LoopField
-            if (!seen.Has(char) && RegExMatch(A_LoopField, pattern)) {
+            if (!seen.Has(char) && !TextTools.IsLoneSurrogate(A_LoopField) && RegExMatch(A_LoopField, pattern) > 0) {   ; half an emoji: RegExMatch throws
                 seen[char] := true
                 chars .= (chars = "" ? "" : " ") char
             }
@@ -715,7 +715,7 @@ class SelectionActions {
     static _TextItem(text) {
         preview := Trim(RegExReplace(text, "\s+", " "))
         if (StrLen(preview) > 80)
-            preview := SubStr(preview, 1, 80) "..."
+            preview := TextTools.Head(preview, 80) "..."
         actions := []
         ; an expression: give the result directly
         expression := StrReplace(StrReplace(StrReplace(Trim(text), ","), Chr(0xD7), "*"), Chr(0xF7), "/")    ; × ÷

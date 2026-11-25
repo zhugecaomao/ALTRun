@@ -248,7 +248,7 @@ class HotkeyEditor {
                 return {Text: I18n.T("HotkeyEditor.Detail.Missing"), Missing: true}
             target := Trim(RegExReplace((command.Has("Target") ? command["Target"] : "") " " (command.Has("Arguments") ? command["Arguments"] : ""), "\s+", " "))
             if (StrLen(target) > 80)
-                target := SubStr(target, 1, 79) "…"
+                target := TextTools.Head(target, 79) "…"
             rule := CustomCommandProvider.TakesQuery(command) ? "HotkeyEditor.Detail.Query"
                 : ContentTypes.CommandTypes(command).Length ? "HotkeyEditor.Detail.Types" : "HotkeyEditor.Detail.Plain"
             return {Text: I18n.T("CommandPicker.Kind.Custom") " · " target " · " I18n.T(rule), Missing: false}

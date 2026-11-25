@@ -216,7 +216,7 @@ class ClipboardProvider {
         for filePath in files {
             names .= (names = "" ? "" : ", ") Path.Leaf(RTrim(filePath, "\"))
             if (StrLen(names) > 100)
-                return SubStr(names, 1, 100) "..."
+                return TextTools.Head(names, 100) "..."
         }
         return names
     }
@@ -229,7 +229,7 @@ class ClipboardProvider {
             case "files": return CustomCommandProvider.AddFromPaths(item.Source["Files"])
             case "image": return false
         }
-        return SnippetProvider.Edit("", Map("Name", SubStr(ClipboardProvider._Preview(item.Arg), 1, 40), "Text", item.Arg))
+        return SnippetProvider.Edit("", Map("Name", TextTools.Head(ClipboardProvider._Preview(item.Arg), 40), "Text", item.Arg))
     }
 
     static DeleteItem(item) {
@@ -537,7 +537,7 @@ class ClipboardProvider {
     ;---------------------------------------------------------------------------
     static _Preview(text) {
         text := Trim(RegExReplace(text, "\s+", " "))
-        return (StrLen(text) > 120) ? SubStr(text, 1, 120) "..." : text
+        return (StrLen(text) > 120) ? TextTools.Head(text, 120) "..." : text
     }
 
     static _FormatTime(timestamp) {
