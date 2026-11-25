@@ -5,237 +5,93 @@
 
 ## [未发布]
 
-## [2026.11.23.25]
+## [2026.11.25]
 
-测试版。
+### Summary
 
-Test build.
+**Arke file manager support**: Open / Save dialogs jump to the folder of Arke's current pane (`Ctrl+G`, automatic jumps, the folder panel), and folders open in Arke tabs. **Search in Everything** with `Ctrl+F` hands what you typed to Everything's own window for sorting and filtering. **Web searches can open several pages at once**, and **custom commands take a default value** (`{query|127.0.0.1}`) or the clipboard text (`{query|clipboard}`). The calculator can **remember calculations** (off by default) and copy "expression = result". Snippets can press real Enter / Tab keys (`{enter}`, `{tab}`), the clipboard history's text items get the commands of their content type in the → panel, and lists in Preferences can be reordered with `Alt+↑` / `Alt+↓`. Quick Switch fills the target folder of WinRAR and 7-Zip extract windows. Fixes: currency conversion now covers about 160 currencies (TWD and more), searching `clip` no longer shows "PCRE execution error" again and again when the clipboard history has emoji, snippets expand correctly in Windows 11 Notepad, WeCom's Send File dialog no longer adds the folder to the chat, and Scoop installs no longer get two ALTRun entries in the Start menu.
 
-### 修复
-- 偏好设置里快速切换页面 (按住 ↓ 或连续点击) 后, 别的页面的部分控件有时留在当前页面上, 界面叠在一起: 切换时被下一次切换打断, 那一页只隐藏了一半; 现在以最后一次切换为准, 其它页面的控件都会隐藏
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file is upgraded to version 8 the first time this version starts: the old file is backed up as `Data\ALTRun.v7.backup.json` and a message says so once. `SelectionTypes` in `ALTRun.json` and a custom command's `Selection` are renamed `ContentTypes`, as "Content Types" in the interface; `DelayedStart` and `Extensions.PTTools`, no longer used since Delayed Start and PT Tools became scripts, are removed. Going back to an older version and upgrading again is fine: when both names are there, `ContentTypes` wins and the old one is removed. `@altrun.selection` at the top of a script works as before and can also be written `@altrun.types` (#176)
+- The upgrade also removes `ahk_exe 7zG.exe` from Quick Switch's "Never in" windows, so Quick Switch works in 7-Zip's extract window (new installations already had it removed) (#609), and adds ToDesk, Sunlogin, AnyDesk, TeamViewer and RustDesk to the windows snippets don't expand in (only the missing ones; your own entries stay, and an emptied list is left alone)
 
-## [2026.11.23.24]
+### New
+- **Arke file manager** (0.8.0 or later, through its own interface, not the clipboard): in Open / Save dialogs `Ctrl+G`, automatic jumps and jumps when a dialog opens go to the folder of Arke's current pane; the dialog's folder panel lists the current pane of each Arke window, and the other pane in split view. "Open Terminal Here" and the actions panel's "Copy / Move to ... current folder" know Arke too. With the file manager set to `arke.exe` and "Open folders in a new tab" checked, folders open in a new tab of the Arke window used last, and "Reveal in File Manager" also selects the file. The description in Preferences and the new wiki page "File Managers" say what each file manager supports (#564)
+- **Search in Everything**: press `Ctrl+F` in the search window to hand what you typed to Everything's own window, to filter there and sort by size or date; the actions panel (`→`) of a file or folder found by file search has it too. Keywords are turned into Everything's syntax (`folder budget` → `folder:budget`, `doc report` → `ext:doc;docx;... report`); with nothing typed it opens Everything; without Everything it uses Windows Search. See the wiki "File Search → Continue in Everything" (#566)
+- **A web search can open several pages at once**: in Preferences → Web Search, write several lines in "URL", one address per line (at most 10); typing the keyword and a search term opens them all. The result shows the first address and how many more (#565)
+- **Custom commands take `{query|default}`**, with the same rules as web searches: only the keyword (`ping`) + `Enter` completes to `ping `; the keyword and a space with nothing after it (`ping `) runs with the default, for example `/k ping {query|127.0.0.1}`; with an argument typed, that is used. `{query|clipboard}` uses the text on the clipboard (checked as selected text is for files, folders and command lines: with a line break, a double quote or characters cmd / PowerShell would read as code it doesn't run and says why); `{query|}` runs without an argument too, for example Notepad with `{query|}`: type `np ` to open Notepad at once. Run from a hotkey with nothing selected, a command with a default runs with it instead of opening the search window; the "Status" column no longer says `{query}` gets nothing for commands with a default (#611, #617)
+- **Calculation history** (off by default, Preferences → Calculator → "Remember calculations (on Enter)"): when a result is used (`Enter` copies, `Ctrl+Enter` pastes, the actions panel) the calculation is remembered; not while typing, and not unit / base / date conversions or single numbers. Typing a calculation lists the newest few below the result ("Rows shown", 3 by default), `=` alone lists them all (at most 50); on a history row `Enter` copies the result, `Tab` puts the calculation back into the search box, `Ctrl+Del` deletes it; "Clear..." deletes all. Stored in `Data\CalcHistory.json`; calculator results don't go into Recent (thanks to @sfcboy for the idea, #583)
+- Calculator: the actions panel (`→`) of a result or history row has "Copy Calculation", copying `12*(3+4) = 84` for notes and reports; only for real calculations with an operator (#583)
+- Snippets: new placeholders `{enter}` / `{tab}` press a real Enter / Tab key there (after the text before it is pasted), for example the snippet `Arial{enter}` fills and confirms PowerPoint's font box, or `{tab}` fills several boxes of a form at once. Unlike a line break or tab in the text: a line break doesn't confirm a single-line box (#591)
+- Quick Switch supports the extract windows of WinRAR and 7-Zip (WinRAR "Extraction path and options", 7-Zip "Extract", the 7-Zip File Manager's "Copy" / "Move"): `Ctrl+G` or the folder panel only fills the folder into the target path box, without pressing Enter or OK (that would start extracting at once), so you check the other options and click OK yourself; these windows never jump automatically. Preferences → Quick Switch → Works in → "WinRAR / 7-Zip extract windows (fills in the folder only)" (`ExtractDialogs`, on by default) (#609)
+- Clipboard history: → on a text item opens the actions panel and lists, after Copy / Paste, the custom commands and scripts set for its content type (as when that text is selected), so text copied earlier needn't be found and selected again; `Enter` on the item still pastes (#653)
+- Lists in Preferences (custom commands, content types, snippets, web search, custom hotkeys, folder sync) can be reordered: select a row and press `Alt+↑` / `Alt+↓`, or Move Up / Move Down in the right-click menu (with the shortcut shown); not while the list is filtered (#653)
 
-测试版。
+### Improvements
+- Selected text and clipboard history text with line breaks or double quotes can go to `.ahk` / `.ps1` / `.py` scripts too (ALTRun quotes the argument itself by Windows' rules, and it arrives as it is); `.bat` / `.cmd` go through cmd and still don't get it (#653)
+- Explorer "Send to → ALTRun" with a shortcut: when the shortcut has arguments, a start-in folder other than the target's folder, or "Run as administrator", the shortcut itself is added, keeping these settings; other shortcuts still add the program they point to (#651)
+- Actions panel: the hint next to "Copy File" / "Cut File" names the file manager used last (Arke, Directory Opus, Explorer...), no longer always "Then paste in Total Commander"; with no file manager open it says "Then paste in a folder" (#564)
+- Calculator: `3×4`, `8÷2`, `2×(3+4)` give a result without `=` in front (before, only `*` `/` did); selecting such a calculation offers "= result" too. The letter `x` is not a multiplication sign, so `1920x1080` still searches files
+- Web search: with `{query|}` (an empty default) the keyword and a space now open the address at once (`{query}` replaced by nothing); before, it still asked for a search term (#611)
+- The custom command editor: the note below Arguments mentions `{query|clipboard}` (the text on the clipboard), as in web search; the wiki "Custom Commands" field table says target and arguments can use `{query}` and defaults, with a step-by-step example of a Ping command
+- Dialog folder panel: a magnifier icon left of the search box (Windows' icon font, following the theme's colors; clicking it also goes to the search box)
 
-Test build.
+### Fixes
+- Currency conversion uses Frankfurter v2 rates and covers about 160 currencies, including the New Taiwan dollar (TWD) (before, only the ECB's 30); currencies can be written with Chinese names such as 新台幣 / 台幣 / 臺幣 / 美金; when rates are downloaded but have no such currency it says "No exchange rate for XXX", no longer that the rates haven't been downloaded yet (#649)
+- With emoji in the clipboard history (or other result titles), searching `clip` and the like showed "PCRE execution error" again and again: highlighting the matched characters split the emoji in two. Emoji and CJK Extension B characters now count as one character, and a highlighting error no longer repeats on every repaint; shortened previews no longer cut an emoji in half, and "Reverse Text" keeps emoji whole (#653)
+- Snippets in Windows 11 Notepad: pasting gave a lone `v`, and typing turned every character into the last one. The new Notepad reads keys later than they arrive, so a whole string of keys sent at once doesn't line up; in its text box keys are now sent one by one with a short pause (other programs unchanged). Pasting from the clipboard history too (#572)
+- Quick Switch in WeCom's Send File dialog: jumping no longer adds the folder to the chat as a file to send; it uses the address bar (`Alt+D`, the path, Enter), with the whole path written at once instead of typed. A second click in the panel while a jump is still going waits until the first is done, so the two paths no longer run together. Other programs with the same problem can be added to `Extensions.QuickSwitch.AddressBarDialogs` in ALTRun.json (#600)
+- Installed with Scoop, the Start menu had two ALTRun entries: Scoop's in "Scoop Apps", and ALTRun's own. With Scoop's shortcut there, ALTRun no longer creates its own and removes the one it made before at start (only its own); Preferences → General → "Add to Start menu" is greyed out with the reason, the setting itself kept. Scoop installs never updated themselves (they only point to `scoop update altrun`); the wiki says so now (#575)
+- Preferences: switching pages fast (holding ↓ or clicking quickly) sometimes left part of another page's controls on the current page: a switch interrupted by the next one hid only half the page. Now the last switch wins and every other page's controls are hidden
+- Preferences: the page list on the left sometimes had both scroll bars at once, hiding the last page (while laying out, the list's content was once 1 px taller than the list, and the scroll bars then never went away)
+- Dialog folder panel: "Edit Favorites..." in the ☆ menu didn't open Preferences. The chosen item was handled after the menu closed, when the menu was already freed and the choice lost; now it runs right after the menu closes (the other ☆ menu items too)
 
-### 修复
-- 剪贴板历史 (或其它结果的标题) 里有 emoji 时, 输入 `clip` 等搜索会反复弹出 "PCRE execution error": 高亮匹配的字时 emoji 被拆成了两半; 现在 emoji 和扩展 B 区汉字当作一个字处理, 高亮出错时也不再每次重绘都报错; 截断的预览不再把 emoji 切成两半, "反转文字" 保持 emoji 完整 (#653)
+---
 
-## [2026.11.23.23]
+### 中文说明
 
-测试版。
+**支持 Arke 文件管理器**: 打开 / 保存对话框能跳到 Arke 当前窗格的文件夹 (`Ctrl+G`, 自动跳转, 文件夹面板), 文件夹也能在 Arke 的标签页里打开. **在 Everything 中搜索**: 按 `Ctrl+F` 把输入的内容交给 Everything 自己的窗口, 在那里排序和筛选. **网页搜索可以一次打开几个网页**, **自定义命令可以写默认值** (`{query|127.0.0.1}`) 或用剪贴板里的文字 (`{query|clipboard}`). 计算器能**记住计算** (默认关), 也能复制 "算式 = 结果". 文字片段能真的按 Enter / Tab 键 (`{enter}`, `{tab}`), 剪贴板历史的文字项在 → 面板里列出它的内容类型的命令, 偏好设置的列表可以用 `Alt+↑` / `Alt+↓` 调整顺序. Quick Switch 能给 WinRAR 和 7-Zip 的解压窗口填目标文件夹. 修复: 货币换算支持约 160 种货币 (包括新台币), 剪贴板历史里有 emoji 时搜索 `clip` 不再反复弹出 "PCRE execution error", Windows 11 记事本里文字片段正常展开, 企业微信的发送文件对话框不再把文件夹加到聊天里, 用 Scoop 安装时开始菜单不再有两个 ALTRun.
 
-Test build.
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 第一次启动这个版本时设置文件升级到版本 8: 原来的文件备份为 `Data\ALTRun.v7.backup.json`, 并提示一次. `ALTRun.json` 里的 `SelectionTypes` 和自定义命令的 `Selection` 改名 `ContentTypes`, 和界面上的 "内容类型" 一致; 延迟启动和 PT 工具箱改成脚本后不再使用的 `DelayedStart` 和 `Extensions.PTTools` 删掉. 退回旧版后再升级回来也没问题: 两个名字都在时以 `ContentTypes` 为准, 旧的删掉. 脚本开头的 `@altrun.selection` 照常可用, 也可以写成 `@altrun.types` (#176)
+- 升级时还会: 从 Quick Switch "不生效的窗口" 去掉 `ahk_exe 7zG.exe`, 7-Zip 的解压窗口也能用 Quick Switch 了 (新安装早已去掉) (#609); 文字片段 "不展开的窗口" 补上 ToDesk, 向日葵, AnyDesk, TeamViewer, RustDesk (只补缺的, 自己加的保留, 清空了的列表不动)
 
-### 改进
-- 选中内容和剪贴板历史的文字有换行或双引号时, 也能交给 .ahk / .ps1 / .py 脚本 (参数由 ALTRun 自己按 Windows 规则加引号, 原样传过去); .bat / .cmd 要经过 cmd, 仍然不传 (#653)
-
-## [2026.11.23.22]
-
-测试版。
-
-Test build.
-
-### 新增
+#### 新增
+- **支持 Arke 文件管理器** (0.8.0 及以上, 通过它的接口读写, 不经过剪贴板): 对话框里 `Ctrl+G`, 自动跳转和对话框打开时跳转都能跳到 Arke 当前窗格的文件夹; 对话框面板列出每个 Arke 窗口的当前窗格, 分屏时还有另一个窗格. "在此处打开终端" 和动作面板的 "复制 / 移动到 ... 当前的文件夹" 也认 Arke. 文件管理器设成 `arke.exe` 并勾选 "在新标签页中打开文件夹" 时, 文件夹在最近用过的 Arke 窗口里开新标签页打开, "在文件管理器中显示" 还会选中文件. 偏好设置的说明和 Wiki 新页面 "文件管理器" 写了各文件管理器支持什么 (#564)
+- **在 Everything 中搜索**: 在搜索窗口按 `Ctrl+F`, 把输入的内容交给 Everything 自己的窗口, 在那里筛选, 按大小或日期排序; 文件搜索找到的文件或文件夹, 操作面板 (`→`) 里也有这一项. 关键字换成 Everything 的写法 (`folder 预算` → `folder:预算`, `doc 报告` → `ext:doc;docx;... 报告`); 什么都没输入时打开 Everything; 没装 Everything 时用 Windows 搜索. 见 Wiki "文件搜索 → 在 Everything 里继续找" (#566)
+- **网页搜索可以一次打开几个网页**: 在 偏好设置 → 网页搜索 的 "网址" 里写几行, 每行一个网址 (最多 10 个), 输入关键字和搜索词后全部打开; 结果下面显示第一个网址和还有几个 (#565)
+- **自定义命令支持 `{query|默认值}`**, 规则和网页搜索一样: 只输入关键字 (`ping`) 按 `Enter` 补全成 `ping `; 关键字加空格后不再输入 (`ping `) 就用默认值运行, 例如 `/k ping {query|127.0.0.1}`; 输入了参数用输入的. `{query|clipboard}` 用剪贴板里的文字 (文件, 文件夹和命令行里和选中的文字一样检查, 有换行, 双引号或 cmd / PowerShell 会当成代码的字符时不运行并说明原因); `{query|}` 不带参数也能运行, 例如记事本 `{query|}` 输入 `np ` 直接打开记事本. 热键运行时没有选中内容, 写了默认值的命令直接用默认值运行, 不再打开搜索窗口; 有默认值的命令 "状态" 列不再显示 `{query}` 收不到 (#611, #617)
+- **计算历史** (默认关, 偏好设置 → 计算器 → "记住计算 (按 Enter 时)"): 用到计算结果时 (`Enter` 复制, `Ctrl+Enter` 粘贴, 动作面板) 记下算式, 打字过程中不记, 单位 / 进制 / 日期换算和单个数字不记. 输入算式时结果下面列出最近几条 ("显示条数", 默认 3), 只输入 `=` 列出全部 (最多 50 条); 历史上 `Enter` 复制结果, `Tab` 把算式填回搜索框, `Ctrl+Del` 删除; "清空..." 删除全部. 保存在 `Data\CalcHistory.json`; 计算结果不进 "最近使用" (感谢 @sfcboy 提议, #583)
+- 计算器: 结果和计算历史的行在动作面板 (`→`) 里多一行 "复制算式和结果", 复制成 `12*(3+4) = 84`, 方便写笔记和报告; 只有带运算符的算式才有 (#583)
+- 文字片段新占位符 `{enter}` / `{tab}`: 在那里真的按一下 Enter / Tab 键 (前面的文字贴好之后), 例如片段 `微软雅黑{enter}` 在 PowerPoint 的字体框里填入并确认, 或者用 `{tab}` 一次填好表单的几个框. 和文字里的换行 / 制表符不同, 换行在单行输入框里不起确认作用 (#591)
+- Quick Switch 支持 WinRAR 和 7-Zip 的解压窗口 (WinRAR "解压路径和选项", 7-Zip "解压", 7-Zip 文件管理器的 "复制" / "移动"): `Ctrl+G` 或文件夹面板只把文件夹填进目标路径框, 不按回车, 不点确定 (那样会直接开始解压), 由你检查其它选项后自己点确定; 这些窗口不会自动跳转. 偏好设置 → Quick Switch → 生效的窗口 → "WinRAR / 7-Zip 解压窗口" (`ExtractDialogs`, 默认打开) (#609)
 - 剪贴板历史的文字项按 `→` 打开操作面板, 在 复制 / 粘贴 后面列出为它的内容类型设置的自定义命令和脚本 (和选中这段文字时一样), 以前复制过的文字不用再找出来重新选中; 在这一项上按 `Enter` 仍是粘贴 (#653)
-
-## [2026.11.23.21]
-
-测试版。
-
-Test build.
-
-### 新增
 - 偏好设置的列表 (自定义命令, 内容类型, 片段, 网页搜索, 自定义热键, 文件夹同步) 可以调整顺序: 选中一行按 `Alt+↑` / `Alt+↓`, 或右键菜单 "上移" / "下移" (菜单里标着快捷键); 筛选时不能移动 (#653)
 
-## [2026.11.23.20]
-
-测试版。
-
-Test build.
-
-### 改进
+#### 改进
+- 选中内容和剪贴板历史的文字有换行或双引号时, 也能交给 .ahk / .ps1 / .py 脚本 (参数由 ALTRun 自己按 Windows 规则加引号, 原样传过去); .bat / .cmd 要经过 cmd, 仍然不传 (#653)
 - 资源管理器 "发送到 → ALTRun" 发送快捷方式时, 快捷方式有参数, 起始位置不是目标所在文件夹, 或设了 "用管理员身份运行", 就添加快捷方式本身, 保留这些设置; 其他快捷方式仍添加它指向的程序 (#651)
-
-## [2026.11.23.19]
-
-测试版。
-
-Test build.
-
-### 修复
-- 货币换算改用 Frankfurter v2 汇率, 支持新台币 (TWD) 等约 160 种货币 (之前只有欧洲央行的 30 种); 货币可写 新台幣 / 台幣 / 臺幣 / 美金 等繁简中文名; 汇率已下载但没有某个货币时提示 "没有 XXX 的汇率", 不再说 "还没有下载汇率" (#649)
-
-## [2026.11.23.18]
-
-测试版。
-
-Test build.
-
-### 修复
-- 偏好设置: 左侧页面列表偶尔同时出现横竖两个滚动条, 最后一页被挡住 (排版过程中列表内容一度比列表高 1 px, 滚动条出现后就不再消失)
-
-## [2026.11.23.17]
-
-测试版。
-
-Test build.
-
-### 改进
-- 动作面板: "复制文件" / "剪切文件" 右边的提示显示最近用过的文件管理器 (Arke、Directory Opus、资源管理器等), 不再总是 "然后在 Total Commander 里粘贴"; 没有打开文件管理器时显示 "然后在文件夹里粘贴" (#564)
-
-## [2026.11.23.16]
-
-测试版。
-
-Test build.
-
-### 修复
-- 对话框跳转: 企业微信等用地址栏跳转的对话框, 路径一次写进地址栏, 不再逐字输入; 跳转还没完成时又点了面板里的另一个文件夹, 第二次跳转等第一次完成后再进行, 两个路径不会拼在一起 (#600)
-
-## [2026.11.23.15]
-
-测试版。
-
-Test build.
-
-### 修复
-- 企业微信的发送文件对话框: 对话框跳转不再把文件夹当成要发送的文件加到聊天窗口, 改用地址栏跳转 (`Alt+D`, 输入路径, 回车)。其它程序有同样问题时可以加到 ALTRun.json 的 `Extensions.QuickSwitch.AddressBarDialogs` (#600)
-
-## [2026.11.23.14]
-
-测试版。
-
-Test build.
-
-### 新增
-- 在 Everything 中搜索: 在搜索窗口按 `Ctrl+F`, 把输入的内容交给 Everything 自己的窗口, 在那里筛选, 按大小或日期排序; 文件搜索找到的文件或文件夹, 操作面板 (`→`) 里也有这一项. 关键字换成 Everything 的写法 (`folder 预算` → `folder:预算`, `doc 报告` → `ext:doc;docx;... 报告`); 什么都没输入时打开 Everything; 没装 Everything 时用 Windows 搜索. 见 Wiki "文件搜索 → 在 Everything 里继续找" (#566)
-
-## [2026.11.23.13]
-
-测试版。
-
-Test build.
-
-### 新增
-- 网页搜索可以一次打开几个网页: 在偏好设置 → 网页搜索的 "网址" 里写几行, 每行一个网址 (最多 10 个), 输入关键字和搜索词后全部打开; 结果下面显示第一个网址和还有几个. 见 Wiki "网页搜索 → 一次打开几个网页" (#565)
-
-## [2026.11.23.12]
-
-测试版。
-
-Test build.
-
-### 修复
-- 用 Scoop 安装时开始菜单里有两个 ALTRun: Scoop 已经在 "Scoop Apps" 里建了一个, ALTRun 又在开始菜单里建一个. 现在用 Scoop 安装、Scoop 的快捷方式也在时, ALTRun 不再自己建, 以前建的启动时删掉 (只删 ALTRun 自己建的); 偏好设置 → 通用 → "添加到开始菜单" 变灰并说明原因, 设置本身保留. 用 Scoop 安装时 ALTRun 本来就不会自己更新 (只提示 `scoop update altrun`), Wiki 写明了 (#575)
-
-## [2026.11.23.11]
-
-测试版。
-
-Test build.
-
-### 修复
-- 文字片段在 Windows 11 的记事本里展开出错: 粘贴时只出来一个 `v`, 逐字输入时全变成最后一个字. 新版记事本读取按键比按键到达晚, 一次发出的一整串按键对不上; 现在在它的文本框里一个一个发送, 中间稍停 (其他程序不变). 剪贴板历史粘贴也一样 (#572)
-
-## [2026.11.23.10]
-
-测试版。
-
-Test build.
-
-### 新增
-- 计算器: 结果和计算历史的行在动作面板 (`→`) 里多一行 "复制算式和结果", 复制成 `12*(3+4) = 84`, 方便写笔记和报告; 只有带运算符的算式才有 (#583)
-
-## [2026.11.23.9]
-
-测试版。
-
-Test build.
-
-### 新增
-- 文字片段新占位符 `{enter}` / `{tab}`: 在那里真的按一下 Enter / Tab 键 (前面的文字贴好之后), 例如片段 `微软雅黑{enter}` 在 PowerPoint 的字体框里填入并确认, 或者用 `{tab}` 一次填好表单的几个框. 和文字里的换行 / 制表符不同, 换行在单行输入框里不起确认作用 (#591)
-
-## [2026.11.23.8]
-
-测试版。
-
-Test build.
-
-### 改进
+- 动作面板: "复制文件" / "剪切文件" 右边的提示显示最近用过的文件管理器 (Arke, Directory Opus, 资源管理器等), 不再总是 "然后在 Total Commander 里粘贴"; 没有打开文件管理器时显示 "然后在文件夹里粘贴" (#564)
+- 计算器: `3×4`, `8÷2`, `2×(3+4)` 不用在前面加 `=` 也直接出结果 (以前只有 `*` `/` 可以); 选中这样的算式时 "= 结果" 也能用. 字母 `x` 不当乘号, `1920x1080` 照常搜索文件
+- 网页搜索的 `{query|}` (默认值为空) 现在关键字加空格就直接打开网址 (`{query}` 换成空), 以前仍提示输入搜索词 (#611)
 - 自定义命令编辑窗口: 参数下面的说明补上 `{query|clipboard}` (用剪贴板里的文字), 和网页搜索的说明一致; Wiki "自定义命令" 的字段表写明目标和参数可以用 `{query}` 和默认值, 并加了一步步建 Ping 命令的示例
-
-## [2026.11.23.7]
-
-测试版。
-
-Test build.
-
-### 新增
-- 支持 Arke 文件管理器 (0.8.0 及以上, 通过它的接口读写, 不经过剪贴板): 对话框里 `Ctrl+G`, 自动跳转和对话框打开时跳转都能跳到 Arke 当前窗格的文件夹; 对话框面板列出每个 Arke 窗口的当前窗格, 分屏时还有另一个窗格; "在此处打开终端" 和动作面板的 "复制 / 移动到 ... 当前的文件夹" 也认 Arke. 文件管理器设成 `arke.exe` 并勾选 "在新标签页中打开文件夹" 时, 文件夹在最近用过的 Arke 窗口里开新标签页打开, "在文件管理器中显示" 还会选中文件. 偏好设置的说明和 Wiki 新页面 "文件管理器" 写了各文件管理器支持什么 (#564)
-
-## [2026.11.23.6]
-
-测试版。
-
-Test build.
-
-### 改进
-- 设置格式升到版本 8, 第一次启动时自动转换 (先备份成 `Data\ALTRun.v7.backup.json`): `ALTRun.json` 里的 `SelectionTypes` 改名 `ContentTypes`, 自定义命令的 `Selection` 也改名 `ContentTypes`, 和界面上的 "内容类型" 一致; 不再使用的 `DelayedStart` 和 `Extensions.PTTools` (延迟启动和 PT 工具箱已改成脚本) 删掉. 退回旧版后再升级回来也没问题: 两个名字都在时以 `ContentTypes` 为准, 旧的删掉. 脚本开头的 `@altrun.selection` 照常可用, 也可以写成 `@altrun.types` (#176)
-- 老用户的设置升级时: Quick Switch "不生效的窗口" 去掉 `ahk_exe 7zG.exe`, 7-Zip 的解压窗口也能用 Quick Switch 了 (新安装早已去掉) (#609); 文字片段 "不展开的窗口" 补上 ToDesk, 向日葵, AnyDesk, TeamViewer, RustDesk 这几个远程桌面 (只补缺的, 自己加的保留, 清空了的列表不动)
-
-## [2026.11.23.5]
-
-测试版。
-
-Test build.
-
-### 改进
 - 对话框面板: 搜索框左边加了放大镜图标 (Windows 的图标字体, 跟随主题颜色; 点它也进入搜索框)
 
-### 修复
+#### 修复
+- 货币换算改用 Frankfurter v2 汇率, 支持新台币 (TWD) 等约 160 种货币 (之前只有欧洲央行的 30 种); 货币可写 新台幣 / 台幣 / 臺幣 / 美金 等繁简中文名; 汇率已下载但没有某个货币时提示 "没有 XXX 的汇率", 不再说 "还没有下载汇率" (#649)
+- 剪贴板历史 (或其它结果的标题) 里有 emoji 时, 输入 `clip` 等搜索会反复弹出 "PCRE execution error": 高亮匹配的字时 emoji 被拆成了两半; 现在 emoji 和扩展 B 区汉字当作一个字处理, 高亮出错时也不再每次重绘都报错; 截断的预览不再把 emoji 切成两半, "反转文字" 保持 emoji 完整 (#653)
+- 文字片段在 Windows 11 的记事本里展开出错: 粘贴时只出来一个 `v`, 逐字输入时全变成最后一个字. 新版记事本读取按键比按键到达晚, 一次发出的一整串按键对不上; 现在在它的文本框里一个一个发送, 中间稍停 (其他程序不变). 剪贴板历史粘贴也一样 (#572)
+- 企业微信的发送文件对话框: 对话框跳转不再把文件夹当成要发送的文件加到聊天窗口, 改用地址栏跳转 (`Alt+D`, 路径, 回车), 路径一次写进地址栏, 不再逐字输入; 跳转还没完成时又点了面板里的另一个文件夹, 第二次跳转等第一次完成后再进行, 两个路径不会拼在一起. 其它程序有同样问题时可以加到 ALTRun.json 的 `Extensions.QuickSwitch.AddressBarDialogs` (#600)
+- 用 Scoop 安装时开始菜单里有两个 ALTRun: Scoop 已经在 "Scoop Apps" 里建了一个, ALTRun 又在开始菜单里建一个. 现在用 Scoop 安装, Scoop 的快捷方式也在时, ALTRun 不再自己建, 以前建的启动时删掉 (只删 ALTRun 自己建的); 偏好设置 → 通用 → "添加到开始菜单" 变灰并说明原因, 设置本身保留. 用 Scoop 安装时 ALTRun 本来就不会自己更新 (只提示 `scoop update altrun`), Wiki 写明了 (#575)
+- 偏好设置里快速切换页面 (按住 ↓ 或连续点击) 后, 别的页面的部分控件有时留在当前页面上, 界面叠在一起: 切换时被下一次切换打断, 那一页只隐藏了一半; 现在以最后一次切换为准, 其它页面的控件都会隐藏
+- 偏好设置: 左侧页面列表偶尔同时出现横竖两个滚动条, 最后一页被挡住 (排版过程中列表内容一度比列表高 1 px, 滚动条出现后就不再消失)
 - 对话框面板: ☆ 菜单的 "编辑收藏..." 没有打开偏好设置. 原因是菜单关闭后才处理选中的项, 那时菜单已经释放, 选中的项就丢了; 现在关菜单后马上执行选中的项 (☆ 菜单的其它项也一样)
-
-## [2026.11.23.4]
-
-测试版。
-
-Test build.
-
-### 新增
-- 计算历史 (默认关, 偏好设置 → 计算器 → "记住计算 (按 Enter 时)"): 用到计算结果时 (`Enter` 复制, `Ctrl+Enter` 粘贴, 动作面板) 记下算式, 打字过程中不记, 单位 / 进制 / 日期换算和单个数字不记. 输入算式时结果下面列出最近几条 ("显示条数", 默认 3), 只输入 `=` 列出全部 (最多 50 条); 历史上 `Enter` 复制结果, `Tab` 把算式填回搜索框, `Ctrl+Del` 删除; "清空..." 删除全部. 保存在 `Data\CalcHistory.json`; 计算结果不进 "最近使用" (感谢 @sfcboy 提议, #583)
-
-## [2026.11.23.3]
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义命令支持 `{query|默认值}`, 规则和网页搜索一样: 只输入关键字 (`ping`) 按 `Enter` 补全成 `ping `; 关键字加空格后不再输入 (`ping `) 就用默认值运行, 例如 `/k ping {query|127.0.0.1}`; 输入了参数用输入的. `{query|clipboard}` 用剪贴板里的文字 (文件, 文件夹和命令行里和选中的文字一样检查, 有换行, 双引号或 cmd / PowerShell 会当成代码的字符时不运行并说明原因); `{query|}` 不带参数也能运行, 例如记事本 `{query|}` 输入 `np ` 直接打开记事本. 热键运行时没有选中内容, 写了默认值的命令直接用默认值运行, 不再打开搜索窗口; 有默认值的命令 "状态" 列不再显示 `{query} 收不到` (#611, #617)
-
-### 改进
-- 网页搜索的 `{query|}` (默认值为空) 现在关键字加空格就直接打开网址 (`{query}` 换成空), 以前仍提示输入搜索词 (#611)
-
-## [2026.11.23.2]
-
-测试版。
-
-Test build.
-
-### 改进
-- 计算器: `3×4`、`8÷2`、`2×(3+4)` 不用在前面加 `=` 也直接出结果 (以前只有 `*` `/` 可以); 选中这样的算式时 "= 结果" 也能用。字母 `x` 不当乘号, `1920x1080` 照常搜索文件
-
-## [2026.11.23.1]
-
-测试版。
-
-Test build.
-
-### 新增
-- Quick Switch 支持 WinRAR 和 7-Zip 的解压窗口 (WinRAR "解压路径和选项", 7-Zip "解压", 7-Zip 文件管理器的 "复制" / "移动"): `Ctrl+G` 或文件夹面板只把文件夹填进目标路径框, 不按回车、不点确定 (那样会直接开始解压), 由你检查其它选项后自己点确定; 这些窗口不会自动跳转。偏好设置 → Quick Switch → 生效的窗口 → "WinRAR / 7-Zip 解压窗口" (`ExtractDialogs`, 默认打开)。新安装的默认 "不生效的窗口" 去掉了 `ahk_exe 7zG.exe`; 老用户的设置里还有这一行, 7-Zip 的解压窗口要等下一次设置升级自动去掉 (或自己先删掉) (#609)
 
 ## [2026.11.23]
 
@@ -1793,32 +1649,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.25...HEAD
-[2026.11.23.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.24...2026.11.23.25
-[2026.11.23.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.23...2026.11.23.24
-[2026.11.23.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.22...2026.11.23.23
-[2026.11.23.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...2026.11.23.22
-[2026.11.23.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...2026.11.23.21
-[2026.11.23.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.19...2026.11.23.20
-[2026.11.23.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.18...2026.11.23.19
-[2026.11.23.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.17...2026.11.23.18
-[2026.11.23.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.16...2026.11.23.17
-[2026.11.23.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.15...2026.11.23.16
-[2026.11.23.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.14...2026.11.23.15
-[2026.11.23.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.13...2026.11.23.14
-[2026.11.23.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.12...2026.11.23.13
-[2026.11.23.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.11...2026.11.23.12
-[2026.11.23.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.10...2026.11.23.11
-[2026.11.23.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.9...2026.11.23.10
-[2026.11.23.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.8...2026.11.23.9
-[2026.11.23.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.7...2026.11.23.8
-[2026.11.23.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.6...2026.11.23.7
-[2026.11.23.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.5...2026.11.23.6
-[2026.11.23.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.4...2026.11.23.5
-[2026.11.23.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.3...2026.11.23.4
-[2026.11.23.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.2...2026.11.23.3
-[2026.11.23.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.1...2026.11.23.2
-[2026.11.23.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23...2026.11.23.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25...HEAD
+[2026.11.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.25
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16
 [2026.11.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.13

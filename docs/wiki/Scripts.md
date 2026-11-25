@@ -53,7 +53,7 @@ FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWee
 ## Scripts for selected content
 With `@altrun.selection`, select something of that type in any program and press `Ctrl+Alt+\`; the script is in the list.
 
-What a script receives (since test build 2026.11.23.23; the same for text in the [clipboard history](Clipboard)'s `→` panel):
+What a script receives (since 2026.11.25; the same for text in the [clipboard history](Clipboard)'s `→` panel):
 
 | Script | Text with line breaks or `"` | Characters a shell treats specially |
 |---|---|---|
