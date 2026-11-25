@@ -12,7 +12,7 @@ Press `Alt+Space` (or `Alt+R`), type a few letters and press `Enter`. Results ap
 ![Search window](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png)
 
 ### Matching and learned ranking
-Matches consecutive letters, word initials (`vsc` → Visual Studio Code) and pinyin initials (`jsb` → 记事本), and highlights them. ALTRun remembers which result you pick for what you type and puts it first next time. [More](Usage#how-matching-works)
+ALTRun matches consecutive letters, word initials (`vsc` → Visual Studio Code) and pinyin initials (`jsb` → 记事本), and highlights the matched characters. ALTRun remembers which result you pick for what you type and puts it first next time. [More](Usage#how-matching-works)
 
 ![Matching and learned ranking](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pinyin.png)
 
@@ -20,7 +20,7 @@ Matches consecutive letters, word initials (`vsc` → Visual Studio Code) and pi
 Start menu, desktop and Microsoft Store apps are indexed automatically, and new programs show up within seconds. `Ctrl+Del` hides one you don't want. [More](Usage#automatic-app-index-updates)
 
 ### Files and folders
-`Space` + a name (or `'name`) searches files: every disk in milliseconds with Everything running, the built-in index otherwise. `doc report`, `pdf invoice`, `folder name` limit the type; `recent report` searches files you opened recently in any program. [More](File-Search)
+`Space` + a name (or `'name`) searches files: every disk in milliseconds with Everything running, or the built-in index otherwise. `doc report`, `pdf invoice`, `folder name` limit the type; `recent report` searches files you opened recently in any program. [More](File-Search)
 
 ![Files and folders](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/files.png)
 
@@ -53,7 +53,7 @@ Type an expression: `12*(3+4)`, `10 km in mi`, `255 in hex`, `today + 30 days`, 
 ![Calculator](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-calculator.png)
 
 ### System commands and terminal
-Lock, sleep, shut down, empty the Recycle Bin, volume and media keys, Windows tools and 40+ Settings pages; text conversions; `>ipconfig /all` runs a command in a terminal. [More](System-Commands)
+Lock, sleep, shut down, empty the Recycle Bin, volume and media control, Windows tools and 40+ Settings pages; text conversions; `>ipconfig /all` runs a command in a terminal. [More](System-Commands)
 
 ![System commands and terminal](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/system.png)
 
@@ -83,12 +83,12 @@ When turned on, the action panel also opens the Explorer context menu, with the 
 ## Your commands and text
 
 ### Custom commands
-Files, folders, programs with arguments and web addresses, with keywords; `{query}` takes what you type after the keyword. Add them from Explorer with right-click → Send to → ALTRun. [More](Custom-Commands)
+Commands for files, folders, programs (with arguments) and web addresses, each with optional keywords; `{query}` takes what you type after the keyword. Add them from Explorer with right-click → Send to → ALTRun. [More](Custom-Commands)
 
 ![Custom commands](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-commands.png)
 
 ### Content types and actions on a selection
-Select text, files or a URL in any program and press `Ctrl+Alt+\`. Describe a kind of content once (an order number, PDF files...) and the commands you set for it come first, also for files in the results and copied text. [More](Content-Types)
+Select text, files or a URL in any program and press `Ctrl+Alt+\`. Describe a kind of content once (an order number, PDF files...) and the commands you set for it come first; the same goes for files in the results and copied text. [More](Content-Types)
 
 ![Content types and actions on a selection](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions-file-type.png)
 
@@ -108,7 +108,7 @@ Put any system command, custom command or script on a hotkey, optionally only in
 ![Custom hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/hotkey-editor.png)
 
 ### Caps Lock switches the input method
-Like on a Mac: a short press switches the input method or its Chinese / English mode; holding it turns caps lock on. [More](Hotkeys#caps-lock-switches-the-input-method)
+Like on a Mac: a short press switches the input method or its Chinese / English mode; holding it turns Caps Lock on or off. [More](Hotkeys#caps-lock-switches-the-input-method)
 
 ![Caps Lock switches the input method](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-keyboard.png)
 
@@ -125,12 +125,12 @@ A panel next to the dialog lists every open and recently used folder, with your 
 ![Dialog folder panel](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch-favorites.png)
 
 ### File managers
-Folders open in Total Commander, Directory Opus or Arke instead of Explorer if you like, in a new tab. [More](File-Managers)
+Open folders in Total Commander, Directory Opus or Arke instead of File Explorer, in a new tab if you like. [More](File-Managers)
 
-### Date Stamp
+### Date stamp
 While renaming, `Ctrl+D` adds or updates a date before the extension: `Report.docx` → `Report - 23.09.2026.docx`. [More](Date-Stamp)
 
-![Date Stamp](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-datestamp.png)
+![Date stamp](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-datestamp.png)
 
 ## Scripts and automation
 
@@ -162,7 +162,7 @@ For structural engineers: rebar and mesh areas, bars required, SPF2M post-tensio
 ## Appearance and settings
 
 ### Themes and languages
-22 built-in themes, each in three densities, following the Windows light / dark mode if you like, or your own; English, Simplified Chinese, Traditional Chinese and Japanese. [More](Themes)
+22 built-in themes in three densities, optionally following the Windows light / dark mode, plus themes of your own; the interface is in English, Simplified Chinese, Traditional Chinese or Japanese. [More](Themes)
 
 ![Themes and languages](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-appearance.png)
 
@@ -177,4 +177,4 @@ How many times you used each feature per day; only counts are kept. [More](Usage
 ![Usage statistics](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-usage.png)
 
 ### Updates, portable data, privacy
-One-key updates that keep your settings; data in the `Data\` folder next to the program; no telemetry. [More](Installation#one-key-updates)
+One-key updates that keep your settings; settings and data in the `Data\` folder (next to the program by default); no telemetry. [More](Installation#one-key-updates)

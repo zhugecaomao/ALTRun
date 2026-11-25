@@ -32,37 +32,80 @@
 
 ## 为什么选择 ALTRun
 - **小巧**: 约 2.5 MB, 一个 `ALTRun.exe` 加少量资源文件, 不用安装 .NET、Electron 等运行库。
-- **快**: 输入即出结果; 开着 [Everything](https://www.voidtools.com/) 时毫秒级搜遍全盘文件。
+- **快速**: 输入即出结果; 开着 [Everything](https://www.voidtools.com/) 时毫秒级搜遍全盘文件。
 - **越用越懂你**: 记住每次输入后选了哪一项, 常用的排在前面; 支持单词首字母 (`vsc` → Visual Studio Code) 和拼音首字母 (`wx` → 微信)。
 - **键盘优先**: `→` 打开操作面板, `F3` 直接编辑, `Ctrl+1`–`Ctrl+9` 直接打开结果, `?` 查看全部快捷键。
 - **便携、注重隐私**: 免安装、不写注册表、不需要管理员权限、没有后台服务; 数据留在你的电脑上, 不收集遥测数据。
-- **随时更新**: 新版本在搜索窗口里提示, 按 `Enter` 安装, 校验 SHA256, 保留设置; 也支持 winget 和 Scoop。
-- **免费开源**: GPL-3.0 许可, 每次改动都在 Windows 上自动跑几千项测试。
+- **随时更新**: 新版本在搜索窗口里提示, 按 `Enter` 安装, 先校验 SHA256, 设置不变; 也可以用 winget 和 Scoop。
+- **免费开源**: GPL-3.0 许可, 每次改动都在 Windows 上自动运行几千项测试。
 
 
 ## 亮点
-| **一个框搜索一切**: 程序、文件、自定义命令、窗口、系统命令, 输入即出 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh)) | **操作面板**: 按 `→` 用管理员身份运行、打开所在文件夹、复制路径、在这里打开终端... ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh#操作面板)) |
-|:---:|:---:|
-| <img src="docs/images/screenshots/search.png" alt="搜索窗口"> | <img src="docs/images/screenshots/actions.png" alt="操作面板"> |
-| **对话框快速跳转 (Quick Switch)**: 打开 / 保存对话框一键跳到资源管理器、Total Commander、Directory Opus 或 Arke 里打开的文件夹 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Quick-Switch-zh)) | **对任何内容运行自己的命令**: 在任何程序里选中文字、文件或网址, 按 `Ctrl+Alt+\`, 为这类内容设的命令排在最前 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Content-Types-zh)) |
-| <img src="docs/images/screenshots/demo-quickswitch.png" alt="对话框快速跳转: Ctrl+G 和文件夹面板把对话框跳到打开的文件夹"> | <img src="docs/images/screenshots/actions-file-type.png" alt="Markdown 文件: 自己的命令排在最前"> |
-| **剪贴板历史**: `Ctrl+Alt+C` 找回复制过的文字、文件和图片, 筛选后粘贴 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Clipboard-zh)) | **文字片段**: 在任何程序里输入 `;thx` 展开回复、签名或地址 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh)) |
-| <img src="docs/images/screenshots/demo-clipboard.png" alt="剪贴板历史: Ctrl+Alt+C, 筛选, Enter 粘贴"> | <img src="docs/images/screenshots/demo-snippets.png" alt="文字片段: ;thx 展开成一封回复"> |
-| **计算器**: `12*(3+4)`、`10 km in mi`、`255 in hex`、`today + 30 days`、`100 usd to cny`, 输入即出结果 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Calculator-zh)) | **文件搜索**: `空格` + 名称; 有 Everything 时搜遍全盘, 否则用内置索引 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh)) |
-| <img src="docs/images/screenshots/demo-calculator.png" alt="计算器: 输入即出结果, 也能换算单位"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
-| **浏览文件夹**: 输入路径, `Tab` 进入, `Backspace` 返回上一级 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh#浏览文件夹)) | **拼音首字母**: `jsb` 找到记事本; 文件名也可以 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh#怎样匹配)) |
-| <img src="docs/images/screenshots/demo-browse.png" alt="浏览文件夹: 输入路径, Tab, 筛选, Backspace"> | <img src="docs/images/screenshots/pinyin.png" alt="拼音首字母"> |
-| **网页搜索**: `g 关键词`、`bd 关键词` 或自己加的搜索引擎; 一个关键字可以同时打开几个网站 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Web-Search-zh)) | **窗口切换**: `w` + 标题或程序名, 切换到已经打开的窗口 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Window-Switching-zh)) |
-| <img src="docs/images/screenshots/websearch.png" alt="网页搜索"> | <img src="docs/images/screenshots/windows.png" alt="窗口切换"> |
-| **脚本实时结果**: `.ahk`、`.ps1` 或 `.py` 脚本可以在你打字时列出结果 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Scripts-zh#实时结果)) | **22 套主题**, 每套三种密度, 可以跟随 Windows 浅色 / 深色模式 ([详情](https://github.com/zhugecaomao/ALTRun/wiki/Themes-zh)) |
-| <img src="docs/images/screenshots/script-filter.png" alt="脚本的实时结果"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="主题"> |
+<table>
+<tr>
+<td width="50%" align="center"><b>搜索一切</b>: 程序、文件、自定义命令、窗口、系统命令都在一个搜索框里, 输入即出 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh">详情</a>)</td>
+<td width="50%" align="center"><b>操作面板</b>: 按 <code>→</code> 用管理员身份运行、打开所在文件夹、复制路径、在这里打开终端... (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh#操作面板">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/search.png" alt="搜索窗口"></td>
+<td width="50%"><img src="docs/images/screenshots/actions.png" alt="操作面板"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>对话框快速跳转 (Quick Switch)</b>: 打开 / 保存对话框一键跳到资源管理器、Total Commander、Directory Opus 或 Arke 里打开的文件夹 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Quick-Switch-zh">详情</a>)</td>
+<td width="50%" align="center"><b>选中内容的操作</b>: 在任何程序里选中文字、文件或网址, 按 <code>Ctrl+Alt+\</code>, 为这类内容设的命令排在最前 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Content-Types-zh">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-quickswitch.png" alt="对话框快速跳转: Ctrl+G 和文件夹面板把对话框跳到打开的文件夹"></td>
+<td width="50%"><img src="docs/images/screenshots/actions-file-type.png" alt="Markdown 文件: 自己的命令排在最前"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>剪贴板历史</b>: <code>Ctrl+Alt+C</code> 找回复制过的文字、文件和图片, 筛选后粘贴 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Clipboard-zh">详情</a>)</td>
+<td width="50%" align="center"><b>文字片段</b>: 在任何程序里输入 <code>;thx</code>, 展开成回复、签名或地址 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-clipboard.png" alt="剪贴板历史: Ctrl+Alt+C, 筛选, Enter 粘贴"></td>
+<td width="50%"><img src="docs/images/screenshots/demo-snippets.png" alt="文字片段: ;thx 展开成一封回复"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>计算器</b>: <code>12*(3+4)</code>、<code>10 km in mi</code>、<code>255 in hex</code>、<code>today + 30 days</code>、<code>100 usd to cny</code>, 输入即出结果 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Calculator-zh">详情</a>)</td>
+<td width="50%" align="center"><b>文件搜索</b>: <code>空格</code> + 名称; 开着 Everything 时搜遍全盘, 否则用内置索引 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-calculator.png" alt="计算器: 输入即出结果, 也能换算单位"></td>
+<td width="50%"><img src="docs/images/screenshots/files.png" alt="文件搜索"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>浏览文件夹</b>: 输入路径; <code>Tab</code> 进入, <code>Backspace</code> 返回上一级 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh#浏览文件夹">详情</a>)</td>
+<td width="50%" align="center"><b>拼音首字母</b>: <code>jsb</code> 找到记事本, 文件名也可以 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh#怎样匹配">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-browse.png" alt="浏览文件夹: 输入路径, Tab, 筛选, Backspace"></td>
+<td width="50%"><img src="docs/images/screenshots/pinyin.png" alt="拼音首字母"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>网页搜索</b>: <code>g 关键词</code>、<code>bd 关键词</code> 或自己加的搜索引擎; 一个关键字可以同时打开几个网站 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Web-Search-zh">详情</a>)</td>
+<td width="50%" align="center"><b>窗口切换</b>: <code>w</code> + 标题或程序名, 切换到已经打开的窗口 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Window-Switching-zh">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/websearch.png" alt="网页搜索"></td>
+<td width="50%"><img src="docs/images/screenshots/windows.png" alt="窗口切换"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>脚本</b>: <code>.ahk</code>、<code>.ps1</code>、<code>.py</code> 脚本变成命令, 还能在你打字时列出实时结果 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Scripts-zh#实时结果">详情</a>)</td>
+<td width="50%" align="center"><b>主题</b>: 22 套内置主题, 每套三种密度, 可以跟随 Windows 浅色 / 深色模式 (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Themes-zh">详情</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/script-filter.png" alt="脚本的实时结果"></td>
+<td width="50%"><img src="docs/images/screenshots/prefs-appearance.png" alt="主题"></td>
+</tr>
+</table>
 
 截图由 [Tests/Screenshots](Tests/Screenshots/TakeScreenshots.ahk) 在 GitHub Actions 的 Windows 机器上自动生成。
 
 
 ## 更多功能
-- **搜索**: 浏览器书签和历史记录、最近的文件、置顶和最近使用、40 多个 Windows 设置页面和系统命令、终端 (`>ipconfig`)、大字显示
-- **按自己的需要**: 带参数的自定义命令、内容类型、自定义热键、在资源管理器里 "发送到 ALTRun"、[脚本库](https://zhugecaomao.github.io/ALTRun/#scripts)
+- **搜索**: 浏览器书签和历史记录、最近的文件、置顶和最近使用、系统命令和 40 多个 Windows 设置页面、终端 (`>ipconfig`)、大字显示
+- **自定义**: 带参数的自定义命令、内容类型、自定义热键、在资源管理器里 "发送到 ALTRun"、[脚本库](https://zhugecaomao.github.io/ALTRun/#scripts)
 - **工具**: 重命名时一键加日期 (`Ctrl+D`)、用 robocopy 同步文件夹、延迟启动、CapsLock 切换输入法、给结构工程师的 PT 工具箱
 - **界面**: 简体中文、繁體中文、English、日本語
 

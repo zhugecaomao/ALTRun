@@ -34,35 +34,78 @@
 - **Tiny**: about 2.5 MB, one `ALTRun.exe` and a few resource files; no .NET, Electron or other runtime to install.
 - **Fast**: results appear as you type; with [Everything](https://www.voidtools.com/) running, file searches cover all disks in milliseconds.
 - **Smart**: learns which result you pick for what you type; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信).
-- **Keyboard first**: `→` for actions, `F3` to edit in place, `Ctrl+1`–`Ctrl+9` to open a result, `?` for every shortcut.
+- **Keyboard-first**: `→` for actions, `F3` to edit in place, `Ctrl+1`–`Ctrl+9` to open a result, `?` for every shortcut.
 - **Portable and private**: no installer, registry entries, admin rights or background service; your data stays on your PC, with no telemetry.
-- **Always up to date**: new versions show up in the search window and install with `Enter`, SHA256-verified, settings kept; winget and Scoop too.
+- **Always up to date**: a new version shows up in the search window and installs with `Enter`, checked against its SHA256 and keeping your settings; winget and Scoop work too.
 - **Free and open source**: GPL-3.0, with thousands of automated tests run on Windows for every change.
 
 
 ## Highlights
-| **Search everything** from one box: apps, files, custom commands, windows and system commands, as you type ([more](https://github.com/zhugecaomao/ALTRun/wiki/Usage)) | **Action panel**: press `→` to run as administrator, open the containing folder, copy the path, open a terminal there... ([more](https://github.com/zhugecaomao/ALTRun/wiki/Usage#action-panel)) |
-|:---:|:---:|
-| <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/actions.png" alt="Action panel"> |
-| **Quick Switch**: jump any Open / Save dialog to a folder open in File Explorer, Total Commander, Directory Opus or Arke ([more](https://github.com/zhugecaomao/ALTRun/wiki/Quick-Switch)) | **Your actions for any content**: select text, files or a URL anywhere and press `Ctrl+Alt+\`; your commands for that kind of content come first ([more](https://github.com/zhugecaomao/ALTRun/wiki/Content-Types)) |
-| <img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"> | <img src="docs/images/screenshots/actions-file-type.png" alt="Your own commands first for a Markdown file"> |
-| **Clipboard history**: `Ctrl+Alt+C` brings back copied text, files and images; filter and paste ([more](https://github.com/zhugecaomao/ALTRun/wiki/Clipboard)) | **Snippets**: type `;thx` in any program to expand a reply, a signature or an address ([more](https://github.com/zhugecaomao/ALTRun/wiki/Snippets)) |
-| <img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"> | <img src="docs/images/screenshots/demo-snippets.png" alt="Snippets: ;thx expands into an email reply"> |
-| **Calculator**: `12*(3+4)`, `10 km in mi`, `255 in hex`, `today + 30 days`, `100 usd to sgd`, as you type ([more](https://github.com/zhugecaomao/ALTRun/wiki/Calculator)) | **File search**: `Space` + a name searches every disk with Everything, or the built-in index ([more](https://github.com/zhugecaomao/ALTRun/wiki/File-Search)) |
-| <img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"> | <img src="docs/images/screenshots/files.png" alt="File search"> |
-| **Browse folders**: type a path, `Tab` goes in, `Backspace` goes up ([more](https://github.com/zhugecaomao/ALTRun/wiki/File-Search#browsing-folders)) | **Pinyin initials**: `jsb` finds 记事本 (Notepad); file names too ([more](https://github.com/zhugecaomao/ALTRun/wiki/Usage#how-matching-works)) |
-| <img src="docs/images/screenshots/demo-browse.png" alt="Browse folders: type a path, Tab, filter, Backspace"> | <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> |
-| **Web search**: `g keywords`, `bd keywords` or your own engines; one keyword can open several sites ([more](https://github.com/zhugecaomao/ALTRun/wiki/Web-Search)) | **Window switching**: `w` + a title or program name switches to an open window ([more](https://github.com/zhugecaomao/ALTRun/wiki/Window-Switching)) |
-| <img src="docs/images/screenshots/websearch.png" alt="Web search"> | <img src="docs/images/screenshots/windows.png" alt="Window switching"> |
-| **Scripts with live results**: an `.ahk`, `.ps1` or `.py` script can list results while you type ([more](https://github.com/zhugecaomao/ALTRun/wiki/Scripts#live-results)) | **22 themes**, each in three densities, following the Windows light / dark mode if you like ([more](https://github.com/zhugecaomao/ALTRun/wiki/Themes)) |
-| <img src="docs/images/screenshots/script-filter.png" alt="Live results of a script"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
+<table>
+<tr>
+<td width="50%" align="center"><b>Search everything</b>: apps, files, custom commands, windows and system commands in one box, as you type (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Usage">more</a>)</td>
+<td width="50%" align="center"><b>Action panel</b>: press <code>→</code> to run as administrator, open the containing folder, copy the path, open a terminal there... (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Usage#action-panel">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/search.png" alt="Search window"></td>
+<td width="50%"><img src="docs/images/screenshots/actions.png" alt="Action panel"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>Quick Switch</b>: jump any Open / Save dialog to a folder open in File Explorer, Total Commander, Directory Opus or Arke (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Quick-Switch">more</a>)</td>
+<td width="50%" align="center"><b>Actions on selected content</b>: select text, files or a URL in any program and press <code>Ctrl+Alt+\</code>; the commands you set for that kind of content come first (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Content-Types">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"></td>
+<td width="50%"><img src="docs/images/screenshots/actions-file-type.png" alt="Your own commands first for a Markdown file"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>Clipboard history</b>: <code>Ctrl+Alt+C</code> brings back copied text, files and images; filter and paste (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Clipboard">more</a>)</td>
+<td width="50%" align="center"><b>Snippets</b>: type <code>;thx</code> in any program to expand a reply, a signature or an address (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Snippets">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"></td>
+<td width="50%"><img src="docs/images/screenshots/demo-snippets.png" alt="Snippets: ;thx expands into an email reply"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>Calculator</b>: <code>12*(3+4)</code>, <code>10 km in mi</code>, <code>255 in hex</code>, <code>today + 30 days</code>, <code>100 usd to sgd</code>, as you type (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Calculator">more</a>)</td>
+<td width="50%" align="center"><b>File search</b>: <code>Space</code> + a name searches every disk with Everything running, or the built-in index otherwise (<a href="https://github.com/zhugecaomao/ALTRun/wiki/File-Search">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"></td>
+<td width="50%"><img src="docs/images/screenshots/files.png" alt="File search"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>Browse folders</b>: type a path; <code>Tab</code> goes in, <code>Backspace</code> goes up (<a href="https://github.com/zhugecaomao/ALTRun/wiki/File-Search#browsing-folders">more</a>)</td>
+<td width="50%" align="center"><b>Pinyin initials</b>: <code>jsb</code> finds 记事本 (Notepad), and file names work too (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Usage#how-matching-works">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/demo-browse.png" alt="Browse folders: type a path, Tab, filter, Backspace"></td>
+<td width="50%"><img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>Web search</b>: <code>g keywords</code>, <code>bd keywords</code> or your own engines; one keyword can open several sites (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Web-Search">more</a>)</td>
+<td width="50%" align="center"><b>Window switching</b>: <code>w</code> + a title or program name switches to an open window (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Window-Switching">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/websearch.png" alt="Web search"></td>
+<td width="50%"><img src="docs/images/screenshots/windows.png" alt="Window switching"></td>
+</tr>
+<tr>
+<td width="50%" align="center"><b>Scripts</b>: <code>.ahk</code>, <code>.ps1</code> and <code>.py</code> scripts become commands, and can show live results while you type (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Scripts#live-results">more</a>)</td>
+<td width="50%" align="center"><b>Themes</b>: 22 built-in themes in three densities, optionally following the Windows light / dark mode (<a href="https://github.com/zhugecaomao/ALTRun/wiki/Themes">more</a>)</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/screenshots/script-filter.png" alt="Live results of a script"></td>
+<td width="50%"><img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"></td>
+</tr>
+</table>
 
 The screenshots are made automatically by [Tests/Screenshots](Tests/Screenshots/TakeScreenshots.ahk) on a Windows runner in GitHub Actions.
 
 
 ## More features
-- **Search**: browser bookmarks and history, recent files, pinned and recent items, 40+ Windows Settings pages and system commands, terminal (`>ipconfig`), large type
-- **Your own**: custom commands with arguments, content types, custom hotkeys, Send to ALTRun from Explorer, a [script library](https://zhugecaomao.github.io/ALTRun/#scripts)
+- **Search**: browser bookmarks and history, recent files, pinned and recent items, system commands and 40+ Windows Settings pages, a terminal (`>ipconfig`), large type
+- **Customize**: custom commands with arguments, content types, custom hotkeys, Send to ALTRun from Explorer, a [script library](https://zhugecaomao.github.io/ALTRun/#scripts)
 - **Tools**: date stamp while renaming (`Ctrl+D`), folder sync with robocopy, delayed start, Caps Lock to switch the input method, PT Tools for structural engineers
 - **Interface**: English, Simplified Chinese, Traditional Chinese and Japanese
 
