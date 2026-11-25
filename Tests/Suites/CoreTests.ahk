@@ -402,6 +402,34 @@ class CoreTests {
         eq("head short", TextTools.Head("ab", 5), "ab")
         TestRunner.True("TextTools.lone surrogate", TextTools.IsLoneSurrogate(Chr(0xDE00)))
         TestRunner.True("TextTools.pair not lone", !TextTools.IsLoneSurrogate(emoji))
+        ; RegExMatch / RegExReplace throw on text starting with ，（Ａ or ending with 﨑 (#653); Match / Replace give the result for the text itself
+        compat := Chr(0xFA11)                                               ; 﨑, a CJK compatibility ideograph (U+F900-U+FAFF)
+        threw(text) {
+            try RegExMatch(text, "x")
+            catch
+                return true
+            return false
+        }
+        ; why Match / Replace exist; fails once AutoHotkey fixes it (the Monday run on the newest release), then they can go
+        TestRunner.True("AutoHotkey: RegExMatch throws on ，first / 﨑 last, not in between", threw("，a") && threw("a" compat) && !threw("a，" compat "a"))
+        TestRunner.True("TextTools.unsafe: fullwidth first", TextTools.RegExUnsafe("（a）") && TextTools.RegExUnsafe("Ａ") && TextTools.RegExUnsafe(Chr(0xFFFD)))
+        TestRunner.True("TextTools.unsafe: compat last", TextTools.RegExUnsafe("a" compat) && !TextTools.RegExUnsafe("a" compat "b"))
+        TestRunner.True("TextTools.safe: in between, emoji, CJK", !TextTools.RegExUnsafe("a（b") && !TextTools.RegExUnsafe(emoji "x" emoji) && !TextTools.RegExUnsafe("中文，"))
+        eq("match fullwidth first", TextTools.Match("（a）", "a"), 2)
+        eq("match none", TextTools.Match("（a）", "x"), 0)
+        eq("match anchored any", TextTools.Match("（a）", "^.+$"), 1)
+        eq("match anchored ascii", TextTools.Match("（http://x", "^https?://"), 0)
+        eq("match compat last", TextTools.Match("a" compat, compat), 2)
+        eq("match start pos", TextTools.Match("（a）a", "a", , 3), 4)
+        eq("match single", TextTools.Match("，", "[\r\n]"), 0)
+        TextTools.Match("（新）報告.docx", "^(.*)\.([A-Za-z0-9]{1,4})$", &m)
+        eq("match groups", m[1] "|" m[2] "|" m.Pos(1) "|" m.Len(1) "|" m.Pos(2) "|" m.Count, "（新）報告|docx|1|5|7|2")
+        TextTools.Match("x " compat, "(?<last>\S+)$", &m)
+        eq("match group at the end", m["last"] "|" m.last "|" m.Pos(0) "|" m.Len(0), compat "|" compat "|3|1")
+        eq("replace fullwidth first", TextTools.Replace("（a  b）", "\s+", " "), "（a b）")
+        eq("replace takes the start", TextTools.Replace("（測試）", "[^\p{L}\p{N}]+", " "), " 測試 ")
+        eq("replace compat last", TextTools.Replace("a b" compat, "\s"), "ab" compat)
+        eq("replace plain", TextTools.Replace("a  b", "\s+", " "), "a b")
         eq("regex ok", TextTools.RegexError("i)(uninstall|readme)"), "")
         eq("regex empty", TextTools.RegexError(""), "")
         TestRunner.True("TextTools.regex error", TextTools.RegexError("i)(uninstall|readme") != "")

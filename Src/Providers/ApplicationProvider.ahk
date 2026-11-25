@@ -100,7 +100,7 @@ class ApplicationProvider {
         if DirExist(fullPath)
             return true
         SplitPath(fullPath, &name, , &ext)
-        return (ext = "" || RegExMatch(name, types)) ? true : false
+        return (ext = "" || TextTools.Match(name, types)) ? true : false
     }
 
     ; FileTypes ("*.lnk"...) -> one regex ("i)^(?:.*\.lnk|...)$")
@@ -322,10 +322,10 @@ class ApplicationProvider {
                         subfolders.Push(A_LoopFileFullPath)
                     continue
                 }
-                if !RegExMatch(A_LoopFileName, job.Types)
+                if !TextTools.Match(A_LoopFileName, job.Types)
                     continue
                 SplitPath(A_LoopFileName, , , &ext, &title)
-                if (exclude != "" && RegExMatch(title, exclude))
+                if (exclude != "" && TextTools.Match(title, exclude))
                     continue
                 detail := ""
                 if (ext = "lnk") {                                          ; a program with shortcuts in several places is kept once
@@ -400,7 +400,7 @@ class ApplicationProvider {
                 if !InStr(id, "!")                                          ; only real Store apps of the form "package!app"; normal programs are already indexed from the Start menu
                     continue
                 name := item.Name
-                if (name = "" || (exclude != "" && RegExMatch(name, exclude)))  ; an empty pattern matches everything
+                if (name = "" || (exclude != "" && TextTools.Match(name, exclude)))  ; an empty pattern matches everything
                     continue
                 storeApps.Push(ApplicationProvider._Entry(name, "shell:AppsFolder\" id, "", options))
             }

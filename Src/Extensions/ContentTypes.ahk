@@ -45,9 +45,9 @@ class ContentTypes {
         }
         text := selection.Text
         trimmed := Trim(text, " `t`r`n")
-        if RegExMatch(trimmed, "i)^https?://\S+$")
+        if TextTools.Match(trimmed, "i)^https?://\S+$")
             return {Kind: "url", Types: ContentTypes._TextTypes(trimmed, "Url", userTypes), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: trimmed}
-        if (!InStr(trimmed, "`n") && RegExMatch(trimmed, "^(?:[A-Za-z]:\\|\\\\)") && FileExist(trimmed))   ; the selection is one path
+        if (!InStr(trimmed, "`n") && TextTools.Match(trimmed, "^(?:[A-Za-z]:\\|\\\\)") && FileExist(trimmed))   ; the selection is one path
             return ContentTypes._PathInfo(trimmed, userTypes)
         return {Kind: "text", Types: ContentTypes._TextTypes(trimmed, "Text", userTypes), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: text}
     }
@@ -70,7 +70,7 @@ class ContentTypes {
             if (userType.Kind != "Text")
                 continue
             try {
-                if (RegExMatch(text, userType.Pattern) > 0)
+                if (TextTools.Match(text, userType.Pattern) > 0)
                     types.Push(userType.Name)
             } catch as err {
                 if !badPatterns.Has(userType.Pattern) {
@@ -187,7 +187,7 @@ class ContentTypes {
     ; there (a path on a network drive counts as there without asking the network: Path.ExistsOrRemote)
     static ForResult(item) {
         if (!IsObject(item) || !(item.Kind = "file" || item.Kind = "folder") || item.Provider = "Selection" || IsObject(item.OnRun)
-            || item.Arguments != "" || item.WindowArgs || !RegExMatch(item.Arg, "^(?:[A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(item.Arg))
+            || item.Arguments != "" || item.WindowArgs || !TextTools.Match(item.Arg, "^(?:[A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(item.Arg))
             return ""
         return ContentTypes.Classify({Files: [item.Arg]})
     }
@@ -209,7 +209,7 @@ class ContentTypes {
         trimmed := Trim(text, " `t`r`n")
         if (trimmed = "")
             return []
-        if (!InStr(trimmed, "`n") && RegExMatch(trimmed, "^(?:[A-Za-z]:\\|\\\\)"))
+        if (!InStr(trimmed, "`n") && TextTools.Match(trimmed, "^(?:[A-Za-z]:\\|\\\\)"))
             return ContentTypes._PathInfo(trimmed, userTypes).Types
         return ContentTypes.Classify({Text: text}, userTypes).Types
     }

@@ -179,17 +179,17 @@ class SelectionActions {
         guess := ""
         switch info.Kind {
             case "url":
-                if RegExMatch(info.Term, "i)^https?://(?:www\.)?([^/?#:]+)", &m)
+                if TextTools.Match(info.Term, "i)^https?://(?:www\.)?([^/?#:]+)", &m)
                     guess := Map("Name", StrLower(m[1]), "Kind", "Text", "Pattern", "^https?://(www\.)?" SelectionActions.RegexEscape(StrLower(m[1])) "(/|$)")
             case "text":
                 text := info.Term
                 if (text = "" || InStr(text, "`n") || StrLen(text) > 100)
                     return ""
-                if RegExMatch(text, "^\d+$")
+                if TextTools.Match(text, "^\d+$")
                     guess := Map("Name", "", "Kind", "Text", "Pattern", "^\d{" StrLen(text) "}$")
-                else if RegExMatch(text, "^([A-Za-z]+)([-_ ]?)\d+$", &m)
+                else if TextTools.Match(text, "^([A-Za-z]+)([-_ ]?)\d+$", &m)
                     guess := Map("Name", m[1], "Kind", "Text", "Pattern", "^" SelectionActions.RegexEscape(m[1] m[2]) "\d+$")
-                else if RegExMatch(text, "^[^@\s]+@[^@\s]+\.[^@\s]+$")
+                else if TextTools.Match(text, "^[^@\s]+@[^@\s]+\.[^@\s]+$")
                     guess := Map("Name", "", "Kind", "Text", "Pattern", "^[\w.+-]+@[\w-]+(\.[\w-]+)+$")
                 else
                     guess := Map("Name", "", "Kind", "Text", "Pattern", "^" SelectionActions.RegexEscape(text) "$")
@@ -213,7 +213,7 @@ class SelectionActions {
     }
 
     ; Text matched literally by a regular expression
-    static RegexEscape(text) => RegExReplace(text, "[\\.*?+\[\]{}()|^$]", "\$0")
+    static RegexEscape(text) => TextTools.Replace(text, "[\\.*?+\[\]{}()|^$]", "\$0")
 
     ; "Add a Command for This Content...": the command edit dialog with "Content types" set to typeName (in Preferences when it is open)
     static AddCommandFor(typeName) {
@@ -456,7 +456,7 @@ class SelectionActions {
         }
         term := info.Term
         if (takesQuery && SelectionActions.PowerShellMode(command) = "quoted")
-            term := RegExReplace(term, "['‘’‚‛]", "$0$0")                  ; inside PowerShell's single quotes: a quote doubled is one quote
+            term := TextTools.Replace(term, "['‘’‚‛]", "$0$0")                  ; inside PowerShell's single quotes: a quote doubled is one quote
         item := CustomCommandProvider._ToItem(command, 0, takesQuery ? term : "")
         item.Title := command["Title"]
         item.CommandId := command.Has("Id") ? command["Id"] : ""            ; which command the row runs (the open command is found by it)
@@ -494,7 +494,7 @@ class SelectionActions {
     ; directly takes them where the selection is only text to it (PowerShellMode). quoted: ALTRun itself quotes the selection as one
     ; argument (Win.QuoteArg, a script started directly), so a line break or a double quote arrives as it is; the shell checks still apply
     static ArgumentProblem(info, command, quoted := false) {
-        if (!quoted && (info.Kind = "text" || info.Kind = "url") && RegExMatch(info.Term, '[\r\n"]'))
+        if (!quoted && (info.Kind = "text" || info.Kind = "url") && TextTools.Match(info.Term, '[\r\n"]'))
             return {Chars: SelectionActions._CharsIn(info.Term, '[\r\n"]'), Shell: ""}
         target := SearchQuery.PlainPlaceholder(command.Has("Target") ? command["Target"] : "")   ; a {query|default} isn't read as part of the command line
         arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
@@ -504,7 +504,7 @@ class SelectionActions {
             case "":    return ""
             default:    special := "[&|<>^%!``$;(){}@']"                  ; PowerShell / Unix shells: also cmd's characters (cmd may be in between)
         }
-        if (!RegExMatch(info.Term, special) || shell = "powershell" && SelectionActions._TextToPowerShell(info, command))
+        if (!TextTools.Match(info.Term, special) || shell = "powershell" && SelectionActions._TextToPowerShell(info, command))
             return ""
         names := ""
         for name in SelectionActions.ShellNames(line)
@@ -568,7 +568,7 @@ class SelectionActions {
         code := ""
         while (index <= args.Length)
             code .= (code = "" ? "" : " ") args[index++]
-        if RegExMatch(code, "i)(?<![\w-])(iex|invoke-expression|invoke-command|icm|scriptblock|expandstring|start-process|saps|start|powershell|pwsh)(?![\w-])")
+        if TextTools.Match(code, "i)(?<![\w-])(iex|invoke-expression|invoke-command|icm|scriptblock|expandstring|start-process|saps|start|powershell|pwsh)(?![\w-])")
             return ""
         return SelectionActions.InSingleQuotes(code) ? "quoted" : ""
     }
@@ -645,7 +645,7 @@ class SelectionActions {
         chars := "", seen := Map()
         Loop Parse, text {
             char := (A_LoopField = "`r" || A_LoopField = "`n") ? I18n.T("Selection.LineBreak") : A_LoopField
-            if (!seen.Has(char) && !TextTools.IsLoneSurrogate(A_LoopField) && RegExMatch(A_LoopField, pattern) > 0) {   ; half an emoji: RegExMatch throws
+            if (!seen.Has(char) && TextTools.Match(A_LoopField, pattern) > 0) {    ; one character alone: a fullwidth ， or half an emoji makes RegExMatch throw
                 seen[char] := true
                 chars .= (chars = "" ? "" : " ") char
             }
@@ -665,11 +665,11 @@ class SelectionActions {
     ; a false match only refuses more selections
     static ShellNames(commandLine) {
         names := []
-        if RegExMatch(commandLine, "i)(?<![\w.-])(powershell|powershell_ise|pwsh)(\.exe)?(?![\w.-])|\.ps1(?![\w.])")
+        if TextTools.Match(commandLine, "i)(?<![\w.-])(powershell|powershell_ise|pwsh)(\.exe)?(?![\w.-])|\.ps1(?![\w.])")
             names.Push("PowerShell")
-        if RegExMatch(commandLine, "i)(?<![\w.-])(bash|sh|wsl|zsh)(\.exe)?(?![\w.-])", &unix)
+        if TextTools.Match(commandLine, "i)(?<![\w.-])(bash|sh|wsl|zsh)(\.exe)?(?![\w.-])", &unix)
             names.Push(StrLower(unix[1]))
-        if RegExMatch(commandLine, "i)(?<![\w.-])(cmd|command)(\.exe|\.com)?(?![\w.-])|\.(bat|cmd)(?![\w.])")
+        if TextTools.Match(commandLine, "i)(?<![\w.-])(cmd|command)(\.exe|\.com)?(?![\w.-])|\.(bat|cmd)(?![\w.])")
             names.Push("cmd")
         return names
     }
@@ -685,7 +685,7 @@ class SelectionActions {
 
     ; One command-line argument in double quotes; trailing backslashes are doubled so "C:\" doesn't escape the closing quote
     static Quote(value) {
-        if RegExMatch(value, "\\+$", &m)
+        if TextTools.Match(value, "\\+$", &m)
             value .= m[0]
         return '"' value '"'
     }
@@ -713,7 +713,7 @@ class SelectionActions {
     }
 
     static _TextItem(text) {
-        preview := Trim(RegExReplace(text, "\s+", " "))
+        preview := Trim(TextTools.Replace(text, "\s+", " "))
         if (StrLen(preview) > 80)
             preview := TextTools.Head(preview, 80) "..."
         actions := []

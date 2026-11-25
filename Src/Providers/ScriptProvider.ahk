@@ -155,7 +155,7 @@ class ScriptProvider {
     ; file runs through cmd (named as cmd.exe: only looked at, and %ComSpec% may be any path)
     static ShellCommand(script) {
         line := ScriptProvider.ThroughCmd(script) ? "cmd.exe /c " ScriptProvider.CommandLine(script) : ScriptProvider.CommandLine(script)
-        RegExMatch(line, '^("[^"]*"|\S+)\s*(.*)$', &part)
+        TextTools.Match(line, '^("[^"]*"|\S+)\s*(.*)$', &part)
         return Map("Target", part[1], "Arguments", part[2])
     }
 
@@ -175,7 +175,7 @@ class ScriptProvider {
             text := ""
             if (ScriptFilter.Problem(script) = "" && IsObject(selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture())) {
                 info := ContentTypes.Classify(selection)
-                if (info.Kind = "text" || info.Kind = "url") && StrLen(info.Term) <= 200 && !RegExMatch(info.Term, "[\r\n]")
+                if (info.Kind = "text" || info.Kind = "url") && StrLen(info.Term) <= 200 && !TextTools.Match(info.Term, "[\r\n]")
                     text := info.Term
             }
             return ScriptProvider.Run(script, text)
@@ -390,7 +390,7 @@ class ScriptProvider {
             for line in StrSplit(ScriptProvider.HeadText(path), "`n", "`r") {
                 if (A_Index > 30)
                     break
-                if RegExMatch(line, "i)^\s*(?:;|#|//|::|rem\b)\s*@altrun\.(\w+)\s+(.*?)\s*$", &m)
+                if TextTools.Match(line, "i)^\s*(?:;|#|//|::|rem\b)\s*@altrun\.(\w+)\s+(.*?)\s*$", &m)
                     meta[StrLower(m[1])] := m[2]
             }
         } catch

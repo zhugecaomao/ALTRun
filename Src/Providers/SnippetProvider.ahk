@@ -100,7 +100,7 @@ class SnippetProvider {
         if (edited.Has("AutoExpand") && !edited["AutoExpand"])
             return ""
         for each in SearchQuery.Keywords(keyword)
-            if (StrLen(prefix each) > SnippetExpander.MaxAbbreviation || RegExMatch(each, "\s"))
+            if (StrLen(prefix each) > SnippetExpander.MaxAbbreviation || TextTools.Match(each, "\s"))
                 return I18n.T("Snippet.KeywordTooLong", prefix, SnippetExpander.MaxAbbreviation)
         return ""
     }
@@ -239,7 +239,7 @@ class SnippetProvider {
     ; A key, not a character: a line break typed or pasted doesn't confirm a combo box (PowerPoint's font box) or move to the next field
     static KeyParts(text) {
         parts := [], pos := 1
-        while (found := RegExMatch(text, "i)\{(enter|tab)\}", &m, pos)) {
+        while (found := TextTools.Match(text, "i)\{(enter|tab)\}", &m, pos)) {
             parts.Push({Text: SubStr(text, pos, found - pos), Key: StrTitle(m[1])})
             pos := found + m.Len
         }
@@ -263,7 +263,7 @@ class SnippetProvider {
         dateFormat := AppSettings.Extension("AutoDate")["DateFormat"]
         ; {date} {time} {datetime}, optionally with +N / -N days and :format
         pos := 1
-        while (pos := RegExMatch(text, "\{(datetime|date|time)([+-]\d+)?(?::([^{}]*))?\}", &m, pos)) {
+        while (pos := TextTools.Match(text, "\{(datetime|date|time)([+-]\d+)?(?::([^{}]*))?\}", &m, pos)) {
             stamp := (m[2] != "") ? DateAdd(A_Now, Integer(m[2]), "Days") : A_Now
             fmt := (m[3] != "") ? m[3] : (m[1] = "date") ? dateFormat : (m[1] = "time") ? "HH:mm" : dateFormat " HH:mm"
             value := FormatTime(stamp, fmt)
@@ -273,7 +273,7 @@ class SnippetProvider {
         while InStr(text, "{uuid}")                                        ; each {uuid} differs
             text := StrReplace(text, "{uuid}", SnippetProvider.NewUuid(), , , 1)
         pos := 1                                                            ; {clipboard:N}: the Nth entry back in the clipboard history
-        while (pos := RegExMatch(text, "\{clipboard:(\d+)\}", &m, pos)) {
+        while (pos := TextTools.Match(text, "\{clipboard:(\d+)\}", &m, pos)) {
             index := Integer(m[1]) + 1                                      ; only text counts (copied files and images are skipped)
             value := (index = 1) ? A_Clipboard : ClipboardProvider.TextAt(index)
             text := SubStr(text, 1, pos - 1) value SubStr(text, pos + m.Len)
@@ -311,7 +311,7 @@ class SnippetProvider {
     static _Preview(text, found := 0) {
         if (found > 60)
             text := "..." SubStr(text, found - 20)
-        text := RegExReplace(text, "\s+", " ")
+        text := TextTools.Replace(text, "\s+", " ")
         return (StrLen(text) > 80) ? TextTools.Head(text, 80) "..." : text
     }
 }

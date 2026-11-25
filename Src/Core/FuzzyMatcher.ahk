@@ -50,7 +50,7 @@ class FuzzyMatcher {
     ; Initials = the initials of the words (camel case counts as words)
     static Key(text) {
         lower := StrLower(text)
-        words := " " RegExReplace(lower, "[\s\-_.\\/()\[\]]+", " ")
+        words := " " TextTools.Replace(lower, "[\s\-_.\\/()\[\]]+", " ")
         return {Lower: lower, Words: words, Initials: FuzzyMatcher.Initials(text), Length: StrLen(lower)}
     }
 
@@ -112,7 +112,7 @@ class FuzzyMatcher {
     ; failing those, by pinyin initials (one letter per Chinese character, same positions). When several words don't match as a whole (e.g. "snip 报价",
     ; where the first is a keyword), the words that are found are marked on their own. [] if nothing is found
     static MatchRanges(needle, text) {
-        needle := StrLower(Trim(RegExReplace(needle, "\s+", " ")))
+        needle := StrLower(Trim(TextTools.Replace(needle, "\s+", " ")))
         if (needle = "" || text = "")
             return []
         ranges := FuzzyMatcher._Ranges(needle, text, true)
@@ -122,7 +122,7 @@ class FuzzyMatcher {
                     for range in FuzzyMatcher._Ranges(token, text, false)
                         ranges.Push(range)
         }
-        if (!ranges.Length && RegExMatch(text, "[^\x{00}-\x{ff}]")) {
+        if (!ranges.Length && TextTools.Match(text, "[^\x{00}-\x{ff}]")) {
             initials := Pinyin.Initials(text)
             if (initials != text && StrLen(initials) = StrLen(text))
                 ranges := FuzzyMatcher._Ranges(needle, initials, true)
@@ -187,14 +187,14 @@ class FuzzyMatcher {
         while (i <= length) {
             char := TextTools.CharAt(text, i)
             isWord := FuzzyMatcher._IsWordChar(char)
-            if (isWord && (previous = "" || !FuzzyMatcher._IsWordChar(previous) || (RegExMatch(previous, "^[a-z]$") > 0 && RegExMatch(char, "^[A-Z]$") > 0)))
+            if (isWord && (previous = "" || !FuzzyMatcher._IsWordChar(previous) || (Ord(previous) >= 0x61 && Ord(previous) <= 0x7A && Ord(char) >= 0x41 && Ord(char) <= 0x5A)))
                 starts.Push(i)
             previous := char, i += StrLen(char)
         }
         return starts
     }
 
-    static _IsWordChar(char) => !TextTools.IsLoneSurrogate(char) && RegExMatch(char, "^[\p{L}\p{N}]$") > 0
+    static _IsWordChar(char) => !TextTools.IsLoneSurrogate(char) && RegExMatch(" " char " ", "^ [\p{L}\p{N}] $") > 0   ; spaces around: Ａ or 﨑 alone would throw (TextTools.RegExUnsafe)
 
     static _Has(list, value) {
         for item in list
@@ -242,9 +242,9 @@ class FuzzyMatcher {
 
     ; "Visual Studio Code" -> "vsc"; "my_file-name" -> "mfn"; "AutoHotkey" -> "ah" (camel case counts as words)
     static Initials(text) {
-        text := RegExReplace(text, "([a-z])([A-Z])", "$1 $2")
+        text := TextTools.Replace(text, "([a-z])([A-Z])", "$1 $2")
         initials := ""
-        for word in StrSplit(RegExReplace(text, "[^\p{L}\p{N}]+", " "), " ")
+        for word in StrSplit(TextTools.Replace(text, "[^\p{L}\p{N}]+", " "), " ")
             if (word != "")
                 initials .= SubStr(word, 1, 1)
         return StrLower(initials)

@@ -131,9 +131,9 @@ class CalculatorProvider {
         return [ResultItem(I18n.T("Action.CopyCalculation"), line, {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyText(line)})]
     }
 
-    static IsCalculation(expr) => RegExMatch(expr, "[^\s+\-(]\s*[\+\-\*/\^×÷]") > 0
+    static IsCalculation(expr) => TextTools.Match(expr, "[^\s+\-(]\s*[\+\-\*/\^×÷]") > 0
 
-    static _Key(expr) => StrLower(RegExReplace(expr, "\s"))
+    static _Key(expr) => StrLower(TextTools.Replace(expr, "\s"))
 
     ; A result was used (Enter / an action in the search window): its calculation goes to the top of the history.
     ; Only calculations with an operator (not "=5"); a history row moves its entry to the top
@@ -232,7 +232,7 @@ class CalculatorProvider {
     ; Number bases: a prefixed number (0x / 0b / 0o) typed alone lists the three forms; "n in hex|bin|oct|dec" converts to that base
     static _Bases(text) {
         static names := Map("hex", 16, "bin", 2, "oct", 8, "dec", 10)
-        if !RegExMatch(Trim(text), "i)^(0x[0-9a-f]+|0b[01]+|0o[0-7]+|\d+)(?:\s+(?:in|to)\s+(hex|bin|oct|dec))?$", &m)
+        if !TextTools.Match(Trim(text), "i)^(0x[0-9a-f]+|0b[01]+|0o[0-7]+|\d+)(?:\s+(?:in|to)\s+(hex|bin|oct|dec))?$", &m)
             return []
         if (m[2] = "" && !RegExMatch(m[1], "i)^0[xbo]"))                   ; plain numbers aren't base conversions
             return []
@@ -250,7 +250,7 @@ class CalculatorProvider {
     ; "0xff" / "0b101" / "0o17" / "255" -> an integer ("" when too big)
     static ParseInteger(text) {
         base := 10, digits := text
-        if RegExMatch(text, "i)^0([xbo])(.+)$", &m)
+        if TextTools.Match(text, "i)^0([xbo])(.+)$", &m)
             base := (StrLower(m[1]) = "x") ? 16 : (StrLower(m[1]) = "b") ? 2 : 8, digits := m[2]
         if (StrLen(digits) > ((base = 2) ? 62 : (base = 8) ? 20 : 15))     ; at most a 64-bit integer
             return ""
@@ -277,7 +277,7 @@ class CalculatorProvider {
     static _Dates(text, today := "") {
         static dateRe := "(today|now|今天|\d{4}-\d{1,2}-\d{1,2})"
         text := Trim(StrLower(text)), today := (today != "") ? today : FormatTime(, "yyyyMMdd")
-        if RegExMatch(text, "^" dateRe "\s*([+-])\s*(\d+)\s*(d|days?|天|w|weeks?|周|星期|m|months?|个月|月|y|years?|年)$", &m) {
+        if TextTools.Match(text, "^" dateRe "\s*([+-])\s*(\d+)\s*(d|days?|天|w|weeks?|周|星期|m|months?|个月|月|y|years?|年)$", &m) {
             start := CalculatorProvider._ParseDate(m[1], today)
             if (start = "")
                 return []
@@ -292,7 +292,7 @@ class CalculatorProvider {
             label := FormatTime(result, "yyyy-MM-dd") " (" FormatTime(result, "ddd") ")"
             return [CalculatorProvider._Item(label, I18n.T("Calc.Subtitle") " · " text)]
         }
-        if RegExMatch(text, "^" dateRe "\s*-\s*" dateRe "$", &m) {
+        if TextTools.Match(text, "^" dateRe "\s*-\s*" dateRe "$", &m) {
             a := CalculatorProvider._ParseDate(m[1], today), b := CalculatorProvider._ParseDate(m[2], today)
             if (a = "" || b = "")
                 return []
@@ -303,9 +303,9 @@ class CalculatorProvider {
     }
 
     static _ParseDate(text, today) {
-        if RegExMatch(text, "^(today|now|今天)$")
+        if TextTools.Match(text, "^(today|now|今天)$")
             return today
-        if !RegExMatch(text, "^(\d{4})-(\d{1,2})-(\d{1,2})$", &m)
+        if !TextTools.Match(text, "^(\d{4})-(\d{1,2})-(\d{1,2})$", &m)
             return ""
         stamp := Format("{:04}{:02}{:02}", m[1], m[2], m[3])
         try {

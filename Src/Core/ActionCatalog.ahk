@@ -57,7 +57,7 @@ class ActionCatalog {
 
     ; text with {hwnd} / {pid} (any case) replaced by the window's handle and process id; both empty when the window is gone or hwnd is 0
     static FillWindow(text, hwnd) {
-        if !RegExMatch(text, "i)\{(hwnd|pid)\}")
+        if !TextTools.Match(text, "i)\{(hwnd|pid)\}")
             return text
         alive := hwnd && WinExist("ahk_id " hwnd)
         pid := ""
@@ -70,7 +70,7 @@ class ActionCatalog {
     ; Target / Arguments contain {hwnd} or {pid}
     static UsesWindow(texts*) {
         for text in texts
-            if RegExMatch(text, "i)\{(hwnd|pid)\}")
+            if TextTools.Match(text, "i)\{(hwnd|pid)\}")
                 return true
         return false
     }
@@ -442,7 +442,7 @@ class ActionCatalog {
             return true
         if (mode != "Auto")
             return false
-        return StrLen(text) <= ActionCatalog.AutoTypeMax && !RegExMatch(text, "[\r\n\t]|[^\x{0}-\x{FFFF}]")
+        return StrLen(text) <= ActionCatalog.AutoTypeMax && !TextTools.Match(text, "[\r\n\t]|[^\x{0}-\x{FFFF}]")
     }
 
     ; Puts files on the clipboard (the clipboard history records them as usual), to paste with Ctrl+V in TC / Explorer
@@ -518,7 +518,7 @@ class ActionCatalog {
     }
 
     static _Preview(text) {
-        text := RegExReplace(text, "\s+", " ")
+        text := TextTools.Replace(text, "\s+", " ")
         return (StrLen(text) > 60) ? TextTools.Head(text, 60) "..." : text
     }
 }

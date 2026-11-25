@@ -337,6 +337,7 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 - 要知道文件夹里的变化, 用 `FolderWatcher` (`Lib\FolderWatcher.ahk`, 定时 `Poll()` 不等待), 不要定时扫描整个文件夹; 关闭时它会等异步读取结束再放掉缓冲区
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)
 - 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行 (有测试检查)
+- 文字以 U+F800-U+FFFF 的字符 (全角 `，（Ａ１`、半角片假名、U+FFFD) 或半个 emoji 开头, 或以 U+F800-U+FBFF 的字符 (`﨑` 等 CJK 兼容汉字) 结尾时, 不管从哪里开始匹配, `RegExMatch` / `RegExReplace` 都会报 PCRE 错误 -10; 这些字符在中间没问题。用户输入、选中、复制或命名的文字 (搜索框、选中内容、剪贴板、标题、文件名) 用 `TextTools.Match(text, pattern, &m, start)` / `TextTools.Replace(text, pattern, replacement)`, 只要模式不要求 `^` 之后或 `$` 之前正好是这种字符, 结果就和原来一样。不要对从文字里取出的单个字符跑正则 (`Loop Parse`、`SubStr(text, i, 1)`): 用 `Ord()` 判断范围, 或者两边加空格 (`RegExMatch(" " char " ", "^ [\p{L}] $")`)
 - `#Warn All` 的警告都当作错误处理
 
 ## 提交 Pull Request

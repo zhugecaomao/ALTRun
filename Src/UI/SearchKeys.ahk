@@ -336,7 +336,7 @@ class SearchKeys {
     static DeletePreviousWord() {
         text := SearchWindow.Input.Value
         caret := (SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd) >> 16) & 0xFFFF
-        before := RegExReplace(SubStr(text, 1, caret), "\S*\s*$")
+        before := TextTools.Replace(SubStr(text, 1, caret), "\S*\s*$")
         SearchWindow.Input.Value := before SubStr(text, caret + 1)
         len := StrLen(before)
         SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)

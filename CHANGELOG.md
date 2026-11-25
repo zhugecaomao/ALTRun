@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.25.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 文字以全角标点或字母 (`，` `（` `！` `Ａ` `１`)、半角片假名、`�` 开头, 或以 `﨑` 等兼容汉字结尾时, 多处会弹出 "PCRE execution error" 或少了结果: 选中多行文字后按 "选中内容的操作" 热键, 这类标题的高亮和搜索 (应用、剪贴板历史、片段等), 计算器、单位换算、文件搜索、在文件名上加日期等; 2026.11.23.24 只修了 emoji 的情况。原因是 AutoHotkey 的正则函数在文字的第一个或最后一个字符是这些字符时会报错, 现在这些地方都绕开了 (#653)
+
 ## [2026.11.25]
 
 ### Summary
@@ -1649,7 +1658,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.1...HEAD
+[2026.11.25.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25...2026.11.25.1
 [2026.11.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.25
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23
 [2026.11.16]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.16

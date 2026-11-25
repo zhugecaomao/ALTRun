@@ -111,7 +111,7 @@ class BrowserHistoryProvider {
                         continue
                     }
                     title := (row[2] != "") ? row[2] : pageUrl
-                    pages.Push({Title: title, Url: pageUrl, Time: row[3], Text: StrLower(title " " pageUrl), Cjk: RegExMatch(title, "[\x{2E80}-\x{9FFF}]") > 0, Initials: ""})
+                    pages.Push({Title: title, Url: pageUrl, Time: row[3], Text: StrLower(title " " pageUrl), Cjk: TextTools.Match(title, "[\x{2E80}-\x{9FFF}]") > 0, Initials: ""})
                     seen[pageUrl] := pages.Length
                 }
             } catch as e {

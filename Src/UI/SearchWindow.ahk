@@ -608,8 +608,8 @@ class SearchWindow {
         if (text = "" && Logger.Enabled)
             SearchWindow._LogEmptied(SearchWindow._inputLen, "by an edit")
         SearchWindow._inputLen := StrLen(text)
-        if RegExMatch(text, "[`r`n`t]") {                                   ; multi-line text was pasted: join it into one line, the search box always has one line
-            SearchWindow.Input.Value := RegExReplace(text, "\s*[`r`n`t]+\s*", " ")
+        if TextTools.Match(text, "[`r`n`t]") {                                   ; multi-line text was pasted: join it into one line, the search box always has one line
+            SearchWindow.Input.Value := TextTools.Replace(text, "\s*[`r`n`t]+\s*", " ")
             len := StrLen(SearchWindow.Input.Value)
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)
         }

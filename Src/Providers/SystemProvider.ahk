@@ -40,7 +40,7 @@ class SystemProvider {
             return template
         if !IsSet(selection)
             selection := SelectionActions.Capture()
-        text := (IsObject(selection) && selection.HasOwnProp("Text")) ? Trim(RegExReplace(selection.Text, "\s+", " ")) : ""
+        text := (IsObject(selection) && selection.HasOwnProp("Text")) ? Trim(TextTools.Replace(selection.Text, "\s+", " ")) : ""
         if (StrLen(text) > 100)
             text := RTrim(SubStr(text, 1, 100))
         return RegExReplace(template, "i)\{selection\}", StrReplace(text, "$", "$$"))

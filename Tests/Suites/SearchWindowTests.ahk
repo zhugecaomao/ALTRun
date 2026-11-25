@@ -196,6 +196,15 @@ class SearchWindowTests {
         eq("emoji substring", str(FuzzyMatcher.MatchRanges("test", "clip " emoji " test")), "9+4")
         eq("emoji initials", str(FuzzyMatcher.MatchRanges("ct", "clip " emoji " test")), "1+1 9+1")
         eq("lone surrogate", str(FuzzyMatcher.MatchRanges("ab", "ab" half)), "1+2")
+        starts := ""                                                        ; fullwidth first / CJK compatibility last: RegExMatch alone throws (#653)
+        for start in FuzzyMatcher.WordStarts("（測試）Ａbc")
+            starts .= start " "
+        eq("word starts fullwidth", RTrim(starts), "2 5")
+        eq("fullwidth title", str(FuzzyMatcher.MatchRanges("bc", "（測試）Ａbc")), "6+2")
+        eq("fullwidth needle", str(FuzzyMatcher.MatchRanges("（測", "（測試）")), "1+2")
+        eq("fullwidth comma title", str(FuzzyMatcher.MatchRanges("首銷", "售價公布，首銷")), "6+2")
+        eq("compat last", str(FuzzyMatcher.MatchRanges("ab", "ab " Chr(0xFA11))), "1+2")
+        TestRunner.True("FuzzyMatcher.fullwidth score", FuzzyMatcher.Score("ab", "（ab）") > 0 && FuzzyMatcher.Key("，x").Words = " ，x")
         segs(text, ranges) {
             out := ""
             for segment in FuzzyMatcher.Segments(text, ranges)
