@@ -237,7 +237,7 @@ StopApp() {
     DetectHiddenWindows(true)
     try WinClose("ahk_class AutoHotkey ahk_pid " AppPid)
     DetectHiddenWindows(false)
-    if !ProcessWaitClose(AppPid, 10)
+    if ProcessWaitClose(AppPid, 10)
         try ProcessClose(AppPid)
     AppPid := 0
 }

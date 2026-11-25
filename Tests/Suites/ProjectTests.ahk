@@ -470,6 +470,24 @@ class ProjectTests {
         TestRunner.Equal("RawRegex.RegExMatch / RegExReplace / ~= on text (use TextTools.Match / Replace)", found, "")
     }
 
+    ; ProcessWaitClose returns the PID while the process is still running at the timeout and 0 once it has ended, so ProcessClose under
+    ; "if !ProcessWaitClose(...)" only ever ran for a process already gone and left the hung one open (an Open dialog stayed open after
+    ; a failed check and failed three more)
+    static WaitCloseKill() {
+        found := ""
+        for folder in ["Src", "Lib", "Tests"]
+            Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R" {
+                previous := ""
+                Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
+                    code := TextTools.Replace(A_LoopField, "(^|\s);.*$")
+                    if (InStr(code, "ProcessClose(") && TextTools.Match(previous, "\bif\b.*!\s*ProcessWaitClose\("))
+                        found .= A_LoopFileName ":" A_Index " "
+                    previous := code
+                }
+            }
+        TestRunner.Equal("WaitCloseKill.ProcessClose under if !ProcessWaitClose (it returns the PID while still running)", found, "")
+    }
+
     ; The log never holds what was typed in the search box, only its length (Privacy: the debug log is attached to bug reports).
     ; Flags Input.Value in a Logger call (its line or the ". " lines that continue it) unless it is inside StrLen(
     static NoInputTextInLog() {
