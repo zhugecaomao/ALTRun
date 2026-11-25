@@ -38,7 +38,7 @@ Lists that use the standard Preferences list editor share the same context menu.
 - With a row selected: **Edit** (the default command, also available by double-clicking), **Delete**, **Move Up** / **Move Down**, **Add**, then any actions specific to that page.
 - With no row selected: **Add** and the page-specific actions remain available; **Edit**, **Delete** and the moves are omitted.
 
-**Changing the order** (since test build 2026.11.23.21): select a row and press `Alt+↑` / `Alt+↓`, or use **Move Up** / **Move Down** in the menu (the menu shows the keys). The order is the order in the settings file, and for example the order of your commands in the [actions panel of a selection](Usage#actions-on-selected-content) and of the "Search with" rows. Moving works in every list on this page's editor (custom commands, content types, snippets, web search engines, hotkeys, folder sync), and is saved with OK / Apply like any other change.
+**Changing the order** (since 2026.11.25): select a row and press `Alt+↑` / `Alt+↓`, or use **Move Up** / **Move Down** in the menu (the menu shows the keys). The order is the order in the settings file, and for example the order of your commands in the [actions panel of a selection](Usage#actions-on-selected-content) and of the "Search with" rows. Moving works in every list on this page's editor (custom commands, content types, snippets, web search engines, hotkeys, folder sync), and is saved with OK / Apply like any other change.
 
 | Situation | Move Up / Move Down |
 |---|---|

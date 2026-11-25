@@ -53,7 +53,7 @@ FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWee
 ## 选中内容用的脚本
 写了 `@altrun.selection` 的脚本, 在任何程序里选中这种类型的内容按 `Ctrl+Alt+\`, 列表里就有它。
 
-脚本收到什么 (测试版 2026.11.23.23 起; [剪贴板历史](Clipboard-zh) 里文字项的 `→` 面板也一样):
+脚本收到什么 (2026.11.25 起; [剪贴板历史](Clipboard-zh) 里文字项的 `→` 面板也一样):
 
 | 脚本 | 有换行或 `"` 的文字 | shell 的特殊字符 |
 |---|---|---|

@@ -69,7 +69,7 @@ Syntax: number + unit + `in` / `to` / `=` / `->` / `转` + target unit; units ar
 ### Currency conversion
 Currency conversion (`100 usd to sgd`) is off by default: tick "Currency conversion" in Preferences → Calculator (`Features.Calculator.Currency`). Once on, the reference rates published by the European Central Bank and other central banks are downloaded once a day from [Frankfurter](https://frankfurter.dev) (free, no sign-up) and saved in `Data\Currency.json`; apart from GitHub, this is the only website ALTRun contacts on its own (a web search's site is visited only when you click "Download Site Icon"). Results show the date of the rates.
 
-About 160 currencies are covered, including TWD, VND and AED (since test build 2026.11.23.19; before that only the ECB's 30), plus a few crypto currencies and precious metals (BTC, ETH, XAU...), whose rates are a day behind. Write a currency as its 3-letter code (any case) or one of these Chinese names: 人民币 / 人民幣 / 元 / rmb, 美元 / 美金, 欧元 / 歐元, 日元 / 日圓 / 日幣, 英镑 / 英鎊, 港币 / 港幣 / 港元, 新币 / 新幣 / 新加坡元 / 新加坡幣, 马币 / 馬幣 / 令吉, 澳元 / 澳幣, 加元 / 加幣, 台币 / 台幣 / 臺幣 / 新台币 / 新台幣, 韩元 / 韓元, 泰铢 / 泰銖, 瑞士法郎.
+About 160 currencies are covered, including TWD, VND and AED (since 2026.11.25; before that only the ECB's 30), plus a few crypto currencies and precious metals (BTC, ETH, XAU...), whose rates are a day behind. Write a currency as its 3-letter code (any case) or one of these Chinese names: 人民币 / 人民幣 / 元 / rmb, 美元 / 美金, 欧元 / 歐元, 日元 / 日圓 / 日幣, 英镑 / 英鎊, 港币 / 港幣 / 港元, 新币 / 新幣 / 新加坡元 / 新加坡幣, 马币 / 馬幣 / 令吉, 澳元 / 澳幣, 加元 / 加幣, 台币 / 台幣 / 臺幣 / 新台币 / 新台幣, 韩元 / 韓元, 泰铢 / 泰銖, 瑞士法郎.
 
 | You type | You get |
 |---|---|

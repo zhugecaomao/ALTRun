@@ -24,7 +24,7 @@ Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied 
 | Image (screenshot, picture from a web page...) | "Image 1920 × 1080" with a thumbnail | Pastes the image | - / open in the image viewer, reveal in the file manager |
 
 ## Running your commands on copied text
-(Since test build 2026.11.23.22.) The `→` panel of a text item lists, right after Copy and Paste, the custom commands and scripts set for its [content types](Content-Types), the same rows as when you select that text in a program and press the selection hotkey. So text you copied earlier doesn't have to be found and selected again. `Enter` on the item itself still pastes.
+(Since 2026.11.25.) The `→` panel of a text item lists, right after Copy and Paste, the custom commands and scripts set for its [content types](Content-Types), the same rows as when you select that text in a program and press the selection hotkey. So text you copied earlier doesn't have to be found and selected again. `Enter` on the item itself still pastes.
 
 | Copied text | Your settings | In the `→` panel |
 |---|---|---|
