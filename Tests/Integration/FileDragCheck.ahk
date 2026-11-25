@@ -194,7 +194,7 @@ TearDown() {
     if AppPid {
         DetectHiddenWindows(true)
         try WinClose("ahk_class AutoHotkey ahk_pid " AppPid)
-        if !ProcessWaitClose(AppPid, 10)
+        if ProcessWaitClose(AppPid, 10)
             try ProcessClose(AppPid)
         AppPid := 0
     }

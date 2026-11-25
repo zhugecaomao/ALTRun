@@ -315,7 +315,7 @@ OpenRound(n) {
         first.Hide(), second.Hide()
         if opened
             try WinClose(opened)
-        if (pid && !ProcessWaitClose(pid, 3))
+        if (pid && ProcessWaitClose(pid, 3))
             try ProcessClose(pid)
         Sleep(300)
     }
@@ -564,13 +564,13 @@ TearDown() {
             Say("     final log: " lines[lines.Length - Min(40, lines.Length) + A_Index])
     }
     try WinClose(Dialog)
-    if DialogPid && !ProcessWaitClose(DialogPid, 3)
+    if DialogPid && ProcessWaitClose(DialogPid, 3)
         try ProcessClose(DialogPid)
     try WinClose(Explorer)
     if AppPid {
         DetectHiddenWindows(true)
         try WinClose("ahk_class AutoHotkey ahk_pid " AppPid)
-        if !ProcessWaitClose(AppPid, 10)
+        if ProcessWaitClose(AppPid, 10)
             try ProcessClose(AppPid)
     }
 }

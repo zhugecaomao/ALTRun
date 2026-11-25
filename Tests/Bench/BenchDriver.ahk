@@ -186,7 +186,7 @@ Round_(label, appDir, outFile, seed, searches, others) {
     try B.Editor.Destroy()
     DetectHiddenWindows(true)
     WinClose("ahk_id " B.Main)                                              ; normal exit (saves the learned ranking and icon cache)
-    if !ProcessWaitClose(pid, 15)
+    if ProcessWaitClose(pid, 15)
         ProcessClose(pid)
     HarvestLog()
 }
@@ -463,7 +463,7 @@ Op_quickswitch() {
     else
         Rec("quickswitch fail", "folder not changed")
     try WinClose(dialog)
-    if !ProcessWaitClose(pid, 3)
+    if ProcessWaitClose(pid, 3)
         try ProcessClose(pid)
 }
 

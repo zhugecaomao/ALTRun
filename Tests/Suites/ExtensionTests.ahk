@@ -1442,7 +1442,7 @@ class ExtensionTests {
             FileAppend('#NoTrayIcon`nFileSelect(, A_WinDir, "Open")`n', helper, "UTF-8")
             Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
             waited := A_TickCount
-            dialog := WinWait("Open ahk_class #32770 ahk_pid " dialogPid, , 10)
+            dialog := WinWait("Open ahk_class #32770 ahk_pid " dialogPid, , 30)   ; a busy runner has taken more than 10 s to show it
             waited := A_TickCount - waited, inFront := dialog && WinWaitActive("ahk_id " dialog, , 2)
             if (dialog && !inFront) {                                       ; (a new process's window may not get the front): as a user clicks it
                 FileAppend("NOTE QuickSwitch: the Open dialog of another process wasn't in front (in front: " ExtensionTests._WindowText(WinExist("A")) "), activated`n", "*")
@@ -1457,11 +1457,16 @@ class ExtensionTests {
             Sleep(QuickSwitch.SettleMs + 300)
             pollingWhileOpen := QuickSwitch._polling, phaseWhileOpen := QuickSwitch._phase, comparedWhileOpen := QuickSwitch._openDialog = dialog
             if !(dialog && panelShown && comparedWhileOpen)                 ; what tells the causes apart (a failure seen once, #621)
-                FileAppend("NOTE QuickSwitch: Open dialog " ExtensionTests._WindowText(dialog) " found in " waited " ms, in front at first " (inFront ? 1 : 0)
+                FileAppend("NOTE QuickSwitch: Open dialog " ExtensionTests._WindowText(dialog) " found in " waited " ms (helper pid " dialogPid
+                    . ", running " (ProcessExist(dialogPid) ? 1 : 0) "), in front at first " (inFront ? 1 : 0)
                     . "; compared " ExtensionTests._WindowText(QuickSwitch._openDialog) "; in front " ExtensionTests._WindowText(WinExist("A"))
                     . "; panel " (IsObject(QuickSwitchPanel._panel) ? Format("0x{:X} visible {}", QuickSwitchPanel._panel.Hwnd, DllCall("IsWindowVisible", "Ptr", QuickSwitchPanel._panel.Hwnd)) : "none") "`n", "*")
-            try WinClose("ahk_id " dialog)
-            if !ProcessWaitClose(dialogPid, 3)
+            dialogSeen := dialog
+            if !dialog                                                      ; shown too late: closed all the same, not left open for the checks after
+                dialog := WinExist("ahk_class #32770 ahk_pid " dialogPid)
+            if dialog
+                try WinClose("ahk_id " dialog)
+            if ProcessWaitClose(dialogPid, 3)                               ; the PID: still running
                 try ProcessClose(dialogPid)
             Sleep(300)
             panelGone := !IsObject(QuickSwitchPanel._panel)
@@ -1472,10 +1477,14 @@ class ExtensionTests {
             SetTimer(QuickSwitch._pollTimer, 0), SetTimer(QuickSwitch._checkTimer, 0), QuickSwitch._polling := false
             SetTimer(QuickSwitch._foregroundTimer, 0), QuickSwitch._openDialog := 0
             QuickSwitchPanel.HidePanel()
-            TestRunner.True("QuickSwitch.panel below another process's Open dialog", dialog && panelShown)
-            eq("no polling while the dialog is open, only the window in front compared", pollingWhileOpen " " phaseWhileOpen " " comparedWhileOpen, "0 dialog 1")
-            eq("afterwards: no polling, not watched for longer than SettleMs, nothing compared", idleAfter, "0 0 0")
-            TestRunner.True("QuickSwitch.panel closed with the dialog", panelGone)
+            if !dialogSeen                                                  ; the checks below need the dialog: one failure, not four
+                TestRunner.True("QuickSwitch.another process's Open dialog shown within 30 s", false)
+            else {
+                TestRunner.True("QuickSwitch.panel below another process's Open dialog", panelShown)
+                eq("no polling while the dialog is open, only the window in front compared", pollingWhileOpen " " phaseWhileOpen " " comparedWhileOpen, "0 dialog 1")
+                eq("afterwards: no polling, not watched for longer than SettleMs, nothing compared", idleAfter, "0 0 0")
+                TestRunner.True("QuickSwitch.panel closed with the dialog", panelGone)
+            }
         }
         ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
         ; selected in its tree, and OK returns it
@@ -1564,7 +1573,7 @@ class ExtensionTests {
                     nameAfter := WinExist("ahk_id " dialog) ? ControlGetText("Edit1", "ahk_id " dialog) : "the dialog closed"
                     DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; OK
                 }
-                if !ProcessWaitClose(dialogPid, 5)
+                if ProcessWaitClose(dialogPid, 5)
                     try ProcessClose(dialogPid)
                 saved := ""
                 try saved := FileRead(result, "UTF-8")
@@ -1612,7 +1621,7 @@ class ExtensionTests {
                 }
             } finally
                 QuickSwitch._hasAddressBar := hadAddressBar
-            if !ProcessWaitClose(dialogPid, 5)
+            if ProcessWaitClose(dialogPid, 5)
                 try ProcessClose(dialogPid)
             chosen := ""
             try chosen := FileRead(result, "UTF-8")
