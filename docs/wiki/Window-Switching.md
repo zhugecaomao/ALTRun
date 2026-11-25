@@ -16,7 +16,7 @@ Type a window title or program name and `Enter` switches to that open window (re
 A window is matched by its title, its program name (`excel` for `EXCEL.EXE`) and the pinyin initials of its title, the same way as other results ([how matching works](Usage#how-matching-works)). Every window is a result of its own: three documents open in Word are three results, each with its title and "WINWORD.EXE - switch to this window" below it.
 
 ## Switching and closing
-- `Enter` (or a click) switches to the window, restoring it first if it is minimized
+- `Enter` (or a double-click) switches to the window, restoring it first if it is minimized
 - `→` on a window: **Close Window**. It is closed the normal way, as with its × button, so a program with unsaved changes still asks first
 - When the window was closed in the meantime, a notification says "That window has been closed"
 
