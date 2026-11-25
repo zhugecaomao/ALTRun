@@ -177,7 +177,7 @@ class HotkeyEditor {
         SetScope(scope) {                                                   ; the scope goes first, replacing one already there
             text := ui.SearchText.Value
             for known in HotkeyEditor.Scopes
-                if RegExMatch(text, "i)^\Q" known "\E(\s|$)")
+                if TextTools.Match(text, "i)^\Q" known "\E(\s|$)")
                     text := LTrim(SubStr(text, StrLen(known) + 1))
             ui.SearchText.Value := scope " " text
             ui.SearchText.Focus()
@@ -246,7 +246,7 @@ class HotkeyEditor {
             command := AppSettings.ItemById(HotkeyEditor._Commands(commands), SubStr(id, 8))
             if !IsObject(command)
                 return {Text: I18n.T("HotkeyEditor.Detail.Missing"), Missing: true}
-            target := Trim(RegExReplace((command.Has("Target") ? command["Target"] : "") " " (command.Has("Arguments") ? command["Arguments"] : ""), "\s+", " "))
+            target := Trim(TextTools.Replace((command.Has("Target") ? command["Target"] : "") " " (command.Has("Arguments") ? command["Arguments"] : ""), "\s+", " "))
             if (StrLen(target) > 80)
                 target := TextTools.Head(target, 79) "…"
             rule := CustomCommandProvider.TakesQuery(command) ? "HotkeyEditor.Detail.Query"
@@ -344,7 +344,7 @@ class HotkeyEditor {
         switch action {
             case "Search":
                 text := Trim(item.Has("SearchText") ? item["SearchText"] : "")
-                text := RegExReplace(text, "i)\{selection\}", I18n.T("HotkeyEditor.Summary.Selection"))
+                text := TextTools.Replace(text, "i)\{selection\}", I18n.T("HotkeyEditor.Summary.Selection"))
                 does := (text = "") ? I18n.T("HotkeyEditor.Summary.SearchEmpty", label) : I18n.T("HotkeyEditor.Summary.Search", label, text)
             case "ToggleWindow":
                 does := I18n.T("HotkeyEditor.Summary.Toggle", label)

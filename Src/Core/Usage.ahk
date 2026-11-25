@@ -35,7 +35,7 @@ class Usage {
         try {
             data := JSON.Parse(FileRead(Usage.File, "UTF-8"))
             Usage.Days := Usage.ValidDays(data.Has("Days") ? data["Days"] : "")
-            if (data.Has("Since") && !IsObject(data["Since"]) && RegExMatch(data["Since"], "^\d{4}-\d{2}-\d{2}$"))
+            if (data.Has("Since") && !IsObject(data["Since"]) && TextTools.Match(data["Since"], "^\d{4}-\d{2}-\d{2}$"))
                 Usage.Since := data["Since"]
         } catch as e {
             Logger.Error("Usage.Load: " e.Message)
@@ -47,7 +47,7 @@ class Usage {
         valid := Map()
         if (days is Map)
             for day, counts in days {
-                if !(counts is Map) || !RegExMatch(day, "^\d{4}-\d{2}-\d{2}$")
+                if !(counts is Map) || !TextTools.Match(day, "^\d{4}-\d{2}-\d{2}$")
                     continue
                 kept := Map()
                 for feature, count in counts

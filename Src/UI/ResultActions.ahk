@@ -98,7 +98,7 @@ class ResultActions {
                 ResultActions._FileActions(list, target)
                 ResultActions._ShellMenuAction(list, [target])
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
-                if (Path.ExistsOrRemote(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
+                if (Path.ExistsOrRemote(target) && !TextTools.Match(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "url":
                 add("Action.Open", "url:", (*) => ActionCatalog.OpenUrl(target), enter)
@@ -203,7 +203,7 @@ class ResultActions {
     static CanEdit(item) {
         if ResultActions._ProviderHas(item, "EditItem")                     ; the result's provider decides (images in the clipboard history can't be edited)
             return ResultActions._ProviderCan(item, "EditItem")
-        return item.Valid && item.Arg != "" && RegExMatch(item.Kind, "^(file|folder|url)$")
+        return item.Valid && item.Arg != "" && TextTools.Match(item.Kind, "^(file|folder|url)$")
     }
 
     static CanDelete(item) {
@@ -265,7 +265,7 @@ class ResultActions {
     ; Copy / cut the file, copy / move to the file manager's current folder (only for real local or network paths). Paths on the
     ; network aren't checked (the panel would wait for an offline server's timeout); copying reports a missing one
     static _FileActions(list, target) {
-        if (!RegExMatch(target, "^([A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(target))
+        if (!TextTools.Match(target, "^([A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(target))
             return
         manager := FileManagers.FileManagerFolder()
         hint := ResultActions._PasteHint(manager)

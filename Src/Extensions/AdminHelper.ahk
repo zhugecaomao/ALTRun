@@ -158,7 +158,7 @@ class AdminHelper {
     static _FrontRequest(lines) {
         if !AdminHelper._dialogs
             return AdminHelper.Refused["option off"]
-        if (lines.Length != 2 || !RegExMatch(lines[2], "^\d{1,20}$"))
+        if (lines.Length != 2 || !TextTools.Match(lines[2], "^\d{1,20}$"))
             return AdminHelper.Refused["bad request"]
         window := Integer(lines[2])
         code := AdminHelper.CheckFront(AdminHelper.FrontFacts(window))
@@ -202,7 +202,7 @@ class AdminHelper {
     static _JumpRequest(lines) {
         if !AdminHelper._dialogs
             return AdminHelper.Refused["option off"]
-        if (lines.Length != 3 || !RegExMatch(lines[2], "^\d{1,20}$"))
+        if (lines.Length != 3 || !TextTools.Match(lines[2], "^\d{1,20}$"))
             return AdminHelper.Refused["bad request"]
         dialog := Integer(lines[2]), folder := lines[3]
         code := AdminHelper.CheckJump(folder, AdminHelper.JumpFacts(dialog, folder))
@@ -270,8 +270,8 @@ class AdminHelper {
     ; A full path: a drive (C:\...) or a network share (\\server\share\...); no wildcards, quotes, <>|, control characters or a second colon
     ; (a stream), nothing a dialog would take as a filter or a command
     static IsFolderPath(folder) {
-        return StrLen(folder) <= 1024 && RegExMatch(folder, "^(?:[A-Za-z]:\\|\\\\[^\\/]+\\[^\\/]+)") > 0
-            && !RegExMatch(folder, '[\x00-\x1F*?"<>|]') && !InStr(SubStr(folder, 3), ":")
+        return StrLen(folder) <= 1024 && TextTools.Match(folder, "^(?:[A-Za-z]:\\|\\\\[^\\/]+\\[^\\/]+)") > 0
+            && !TextTools.Match(folder, '[\x00-\x1F*?"<>|]') && !InStr(SubStr(folder, 3), ":")
     }
 
     ; To ALTRun: the Caps Lock on / off notice for it to show (-CapsLockState), a line for its log (-AdminHelperNote; the helper writes no files)

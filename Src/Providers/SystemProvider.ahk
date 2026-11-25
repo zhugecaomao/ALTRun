@@ -36,14 +36,14 @@ class SystemProvider {
     ; The selection is copied only when the text asks for it: with nothing selected, waiting for the copy takes up to 2 s (SelectionActions.WaitMs).
     ; selection: the copied selection ({Text} / {Files} / ""), given by the tests
     static FillSearchText(template, selection?) {
-        if !RegExMatch(template, "i)\{selection\}")
+        if !TextTools.Match(template, "i)\{selection\}")
             return template
         if !IsSet(selection)
             selection := SelectionActions.Capture()
         text := (IsObject(selection) && selection.HasOwnProp("Text")) ? Trim(TextTools.Replace(selection.Text, "\s+", " ")) : ""
         if (StrLen(text) > 100)
             text := RTrim(SubStr(text, 1, 100))
-        return RegExReplace(template, "i)\{selection\}", StrReplace(text, "$", "$$"))
+        return TextTools.Replace(template, "i)\{selection\}", StrReplace(text, "$", "$$"))
     }
 
     static Init() {

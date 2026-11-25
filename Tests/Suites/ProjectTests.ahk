@@ -448,6 +448,28 @@ class ProjectTests {
         TestRunner.Equal("ListFunctions.called without .Call", found, "")
     }
 
+    ; AutoHotkey's RegExMatch / RegExReplace / ~= throw (PCRE error -10) on text starting with ，（Ａ or ending with 﨑 (#653, #675), and
+    ; almost any text can be like that: file names, paths, window titles, settings, clipboard. TextTools.Match / Replace handle it; flags a
+    ; direct call whose text isn't a string literal. Not checked: TextTools.ahk itself, and Calc.Eval in Util.ahk, which stays the same
+    ; as PT Tools' copy (PTCalcSameAsCalc) and gets only text Calc.Looks / CalculatorProvider let through
+    static RawRegex() {
+        found := ""
+        for folder in ["Src", "Lib"]
+            Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R" {
+                if (A_LoopFileName = "TextTools.ahk")
+                    continue
+                inCalc := false
+                Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
+                    if (A_LoopFileName = "Util.ahk" && InStr(A_LoopField, "`; Returns the result (a float)") || InStr(A_LoopField, "`; Thousands separators"))
+                        inCalc := InStr(A_LoopField, "Returns the result") > 0
+                    code := TextTools.Replace(A_LoopField, "(^|\s);.*$")
+                    if (!inCalc && TextTools.Match(code, "(?<![\w.])RegEx(Match|Replace)\(\s*[^\s`"']|\s~=\s"))
+                        found .= A_LoopFileName ":" A_Index " "
+                }
+            }
+        TestRunner.Equal("RawRegex.RegExMatch / RegExReplace / ~= on text (use TextTools.Match / Replace)", found, "")
+    }
+
     ; The log never holds what was typed in the search box, only its length (Privacy: the debug log is attached to bug reports).
     ; Flags Input.Value in a Logger call (its line or the ". " lines that continue it) unless it is inside StrLen(
     static NoInputTextInLog() {

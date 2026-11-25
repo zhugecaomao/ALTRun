@@ -11,6 +11,7 @@
 ;===============================================================================
 
 #Include %A_LineFile%\..\SafeFile.ahk                                          ; JSON.WriteFile: included here so a script needs only JSON.ahk
+#Include %A_LineFile%\..\TextTools.ahk                                         ; TextTools.Match: strings starting with ， or ending with 﨑 (#675)
 
 class JSON {
 
@@ -65,7 +66,7 @@ class JSON {
         str := StrReplace(str, "`r", "\r")
         str := StrReplace(str, "`n", "\n")
         str := StrReplace(str, "`t", "\t")
-        if RegExMatch(str, "[\x00-\x1F]") {                                ; other control characters (rare, e.g. ESC copied from a terminal): \u00XX
+        if TextTools.Match(str, "[\x00-\x1F]") {                                ; other control characters (rare, e.g. ESC copied from a terminal): \u00XX
             out := ""
             Loop Parse, str
                 out .= (Ord(A_LoopField) < 32) ? Format("\u{:04X}", Ord(A_LoopField)) : A_LoopField
@@ -125,7 +126,7 @@ class JSON {
         while ((c := SubStr(text, stop, 1)) != "" && InStr("0123456789+-.eE", c, true))
             stop++
         numText := SubStr(text, pos, stop - pos)
-        if (numText != "" && RegExMatch(numText, "^-?\d+(\.\d+)?([eE][-+]?\d+)?$")) {
+        if (numText != "" && TextTools.Match(numText, "^-?\d+(\.\d+)?([eE][-+]?\d+)?$")) {
             pos := stop
             return numText + 0
         }

@@ -86,7 +86,7 @@ class AppSettings {
         if !FileExist(settingsFile)
             return ""
         try {
-            if !RegExMatch(SafeFile.ReadText(settingsFile), '"DataLocation"\s*:\s*("(?:[^"\\]|\\.)*")', &m)   ; a busy file is tried again
+            if !TextTools.Match(SafeFile.ReadText(settingsFile), '"DataLocation"\s*:\s*("(?:[^"\\]|\\.)*")', &m)   ; a busy file is tried again
                 return ""
             raw := Trim(JSON.Parse("[" m[1] "]")[1])
             if (raw = "" || (missing := Path.MissingEnv(raw)) != "")
@@ -262,7 +262,7 @@ class AppSettings {
         }
         AppSettings.MovedFrom := legacy
         Loop Files, fromDir "\ALTRun.*", "F" {
-            if (A_LoopFileName = "ALTRun.json.bad" || A_LoopFileName = "ALTRun.json.bak" || RegExMatch(A_LoopFileName, "i)^ALTRun\.(v\d+|reset)\.backup\.json$"))
+            if (A_LoopFileName = "ALTRun.json.bad" || A_LoopFileName = "ALTRun.json.bak" || TextTools.Match(A_LoopFileName, "i)^ALTRun\.(v\d+|reset)\.backup\.json$"))
                 if !FileExist(toDir "\" A_LoopFileName)
                     try FileMove(A_LoopFileFullPath, toDir "\" A_LoopFileName)
         }
@@ -412,7 +412,7 @@ class AppSettings {
             return false
         appearance := data["Appearance"]
         theme := appearance.Has("Theme") ? appearance["Theme"] : ""
-        appearance["Density"] := RegExMatch(theme, "i)^(Dark|Light|Midnight)Compact$") ? "Normal" : "Comfortable"
+        appearance["Density"] := TextTools.Match(theme, "i)^(Dark|Light|Midnight)Compact$") ? "Normal" : "Comfortable"
         return true
     }
 
@@ -494,7 +494,7 @@ class AppSettings {
     ; The lists whose items have an Id (see the file structure above)
     static IdLists := ["CustomCommands", "Snippets", "SyncTasks"]
 
-    static IsId(id) => (id is String) && RegExMatch(id, "^[a-z0-9]{8}$") > 0
+    static IsId(id) => (id is String) && TextTools.Match(id, "^[a-z0-9]{8}$") > 0
 
     ; Gives every item of the IdLists a valid Id of its own: a missing or malformed one is made; of two items with the same Id the first
     ; keeps it (a copy usually comes after its original; copying in Preferences drops the Id anyway). Valid Ids are never changed, since

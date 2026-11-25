@@ -30,7 +30,7 @@ class Knowledge {
     static MaxQueries  := 5000
     static Version     := 2          ; the version this ALTRun writes (see the top); a newer file keeps its own
     static FileVersion := 2          ; the version of the file loaded
-    static V1BackupFile => RegExReplace(Knowledge.File, "i)\.json$", ".v1.backup.json")   ; Knowledge.v1.backup.json next to it
+    static V1BackupFile => TextTools.Replace(Knowledge.File, "i)\.json$", ".v1.backup.json")   ; Knowledge.v1.backup.json next to it
     static _saveTimer  := ""
 
     static Load() {
@@ -100,7 +100,7 @@ class Knowledge {
     static NewUids(uid, uidMap) {
         if uidMap.Has(uid)
             return uidMap[uid]
-        if RegExMatch(uid, "^script:.*\\([^\\]+)$", &m)
+        if TextTools.Match(uid, "^script:.*\\([^\\]+)$", &m)
             return ["script:" m[1]]
         return [uid]
     }

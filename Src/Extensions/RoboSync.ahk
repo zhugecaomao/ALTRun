@@ -90,7 +90,7 @@ class RoboSync {
     ; An argument as robocopy reads it: quoted when it has spaces (or is empty). A backslash before the closing quote would escape it
     ; ("C:\" becomes C:" and the rest of the line), so a path ending in a backslash gets a second one inside the quotes
     static Quote(arg) {
-        if (arg != "" && !RegExMatch(arg, '[\s"]'))
+        if (arg != "" && !TextTools.Match(arg, '[\s"]'))
             return arg
         return '"' (SubStr(arg, -1) = "\" ? arg "\" : arg) '"'
     }
@@ -101,11 +101,11 @@ class RoboSync {
     ; Space-separated words, with "quoted parts" kept together (the Files field: *.docx "my report.*")
     static Words(text) => RoboSync.Tokens(text)
 
-    static TrimSlash(folder) => RegExMatch(folder, "^[A-Za-z]:\\$") ? folder : RTrim(folder, "\")
+    static TrimSlash(folder) => TextTools.Match(folder, "^[A-Za-z]:\\$") ? folder : RTrim(folder, "\")
 
     ; A name for a task that has none yet (the editor's Preview): the last folder of its path
     static SuggestName(folder) {
-        folder := RTrim(RegExReplace(folder, "%(\w+)%", "$1"), "\")
+        folder := RTrim(TextTools.Replace(folder, "%(\w+)%", "$1"), "\")
         SplitPath(folder, &leaf)
         return leaf
     }
@@ -195,18 +195,18 @@ class RoboSync {
     ; A path for comparing: variables expanded, lower case, no trailing backslash
     static Normal(folder) {
         folder := Trim(RoboSync.Expand(folder))
-        return (folder = "") ? "" : StrLower(RegExMatch(folder, "^[A-Za-z]:\\?$") ? SubStr(folder, 1, 2) : RTrim(folder, "\"))
+        return (folder = "") ? "" : StrLower(TextTools.Match(folder, "^[A-Za-z]:\\?$") ? SubStr(folder, 1, 2) : RTrim(folder, "\"))
     }
 
     static Inside(inner, outer) => (outer != "" && SubStr(inner, 1, StrLen(outer) + 1) = outer "\")
 
     ; A full path after expanding: a drive and a backslash (D:\..., D: from Normal for a drive root) or a share (\\server\share...).
     ; Not a relative path, "\folder" (the root of whatever drive is current) or "D:folder", and no %Name% left over
-    static IsAbsolute(folder) => (RegExMatch(folder, "i)^([a-z]:(\\|$)|\\\\[^\\]+\\[^\\]+)") && !RegExMatch(folder, "%[^%\s]+%")) ? true : false
+    static IsAbsolute(folder) => (TextTools.Match(folder, "i)^([a-z]:(\\|$)|\\\\[^\\]+\\[^\\]+)") && !TextTools.Match(folder, "%[^%\s]+%")) ? true : false
 
     ; A drive (C:), a share (\\server\share), the OneDrive folder or the user folder (lower case, from Normal)
     static IsRootLike(folder) {
-        if RegExMatch(folder, "^[a-z]:$") || RegExMatch(folder, "^\\\\[^\\]+(\\[^\\]+)?$")
+        if TextTools.Match(folder, "^[a-z]:$") || TextTools.Match(folder, "^\\\\[^\\]+(\\[^\\]+)?$")
             return true
         for root in [EnvGet("OneDrive"), EnvGet("OneDriveCommercial"), EnvGet("OneDriveConsumer"), EnvGet("UserProfile")]
             if (root != "" && folder = RoboSync.Normal(root))

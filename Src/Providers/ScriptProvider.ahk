@@ -239,7 +239,7 @@ class ScriptProvider {
 
     ; Whether the command line goes through cmd.exe: batch files (started directly, Windows still has cmd read the arguments).
     ; cmd doesn't know \" and ends the quoted argument there, so & | < > after it would run as commands: a quote in the argument is refused
-    static ThroughCmd(script) => !RegExMatch(script.Ext, "^(ahk|ps1|py)$")
+    static ThroughCmd(script) => !TextTools.Match(script.Ext, "^(ahk|ps1|py)$")
 
     ; The command line of a background run (silent / output): CommandLine, with /ErrorStdOut for an .ahk (a syntax error is printed
     ; instead of shown in a dialog; an error while it runs still is)

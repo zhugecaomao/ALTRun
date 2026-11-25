@@ -24,7 +24,7 @@ global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Fixture := A_ScriptDir "\..\Fixtures\ALTRun.v2026.08.12.ini"
 global StartupLink := A_Startup "\ALTRun.lnk"
 global Shortcuts := [StartupLink, RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk", A_Programs "\ALTRun.lnk"]
-global Kept := Map()                                                      ; shortcuts that were there before: path -> where they wait
+global KeptLinks := Map()                                                      ; shortcuts that were there before: path -> where they wait
 global Failures := 0, AppPid := 0
 OnError(Crashed)
 
@@ -60,7 +60,7 @@ Setup() {
     for path in Shortcuts {                                                 ; the user's own shortcuts wait aside until the end
         if FileExist(path) {
             FileMove(path, path ".firstrun-check", true)
-            Kept[path] := path ".firstrun-check"
+            KeptLinks[path] := path ".firstrun-check"
         }
     }
     DetectHiddenWindows(false)
@@ -246,7 +246,7 @@ TearDown() {
     StopApp()
     for path in Shortcuts
         try FileDelete(path)
-    for path, aside in Kept
+    for path, aside in KeptLinks
         try FileMove(aside, path, true)
     try DirDelete(AppDir "\Data", true)
 }

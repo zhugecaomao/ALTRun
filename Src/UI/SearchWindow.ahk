@@ -1232,7 +1232,7 @@ class SearchWindow {
         if (!IsObject(item) || SearchWindow.Session.Mode = "actions")
             return
         text := (item.AutoComplete != "") ? item.AutoComplete : item.Title
-        if (item.AutoComplete = "" && item.Kind = "folder" && RegExMatch(item.Arg, "^([A-Za-z]:\\|\\\\)"))
+        if (item.AutoComplete = "" && item.Kind = "folder" && TextTools.Match(item.Arg, "^([A-Za-z]:\\|\\\\)"))
             text := RTrim(item.Arg, "\") "\"                                ; folders: Tab enters them to browse their contents
         SearchWindow._SetInput(text)
     }
@@ -1282,7 +1282,7 @@ class SearchWindow {
     ; The file / folder paths dragging this result takes: all marked ones when it is marked, else its own path; [] when it isn't a
     ; local or network file / folder (Store apps, URLs, text, custom commands with {hwnd})
     static DragPaths(item) {
-        if (!SearchSession.CanMark(item) || item.WindowArgs || !RegExMatch(item.Arg, "^([A-Za-z]:\\|\\\\)"))
+        if (!SearchSession.CanMark(item) || item.WindowArgs || !TextTools.Match(item.Arg, "^([A-Za-z]:\\|\\\\)"))
             return []
         return SearchWindow.Session.IsMarked(item) ? SearchWindow.Session.MarkedPaths() : [item.Arg]
     }

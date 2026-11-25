@@ -81,7 +81,7 @@ class HelpProvider {
                 continue
             if (entry[1] = "FileTypes" && !FileSearchProvider.TypeFilters().Length)
                 continue
-            if (entry[1] ~= "^(Folders|FileKeyword|QuickSwitch)$" && HelpProvider._Args(entry[1])[1] = "")   ; no keyword / hotkey left
+            if (TextTools.Match(entry[1], "^(Folders|FileKeyword|QuickSwitch)$") && HelpProvider._Args(entry[1])[1] = "")   ; no keyword / hotkey left
                 continue
             if (entry[1] = "Pinyin" && I18n.Lang != "zh-CN")                ; pinyin initials only cover Simplified Chinese, so only that UI shows it
                 continue

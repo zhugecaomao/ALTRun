@@ -83,7 +83,7 @@ class UpdateChecker {
                        , ["i)tag_name|JSON", "Update.BadResponse"]]
         reason := I18n.T("Update.Unknown")
         for kind in kinds
-            if RegExMatch(message, kind[1]) {
+            if TextTools.Match(message, kind[1]) {
                 reason := I18n.T(kind[2])
                 break
             }
@@ -257,13 +257,13 @@ class UpdateChecker {
             release.Page := data["html_url"]
         if data.Has("assets") && data["assets"] is Array {
             for asset in data["assets"] {
-                if !(asset is Map) || !asset.Has("name") || !RegExMatch(asset["name"], "i)^ALTRun_v?[\d.]+\.zip$")
+                if !(asset is Map) || !asset.Has("name") || !TextTools.Match(asset["name"], "i)^ALTRun_v?[\d.]+\.zip$")
                     continue
                 release.ZipUrl := (asset.Has("browser_download_url") && UpdateChecker.InRepo(asset["browser_download_url"], "releases/download/"))
                     ? asset["browser_download_url"] : ""
-                if asset.Has("url") && (asset["url"] is String) && RegExMatch(asset["url"], "^\Q" UpdateChecker.AssetApiUrl "\E\d+$")
+                if asset.Has("url") && (asset["url"] is String) && TextTools.Match(asset["url"], "^\Q" UpdateChecker.AssetApiUrl "\E\d+$")
                     release.AssetUrl := asset["url"]
-                if asset.Has("digest") && RegExMatch(asset["digest"], "i)^sha256:([0-9a-f]{64})$", &m)
+                if asset.Has("digest") && TextTools.Match(asset["digest"], "i)^sha256:([0-9a-f]{64})$", &m)
                     release.Sha256 := StrLower(m[1])
                 break
             }
@@ -273,7 +273,7 @@ class UpdateChecker {
 
     ; An https address in this repository (under sub, e.g. "releases/download/"), with no tricks such as "..", spaces or quotes
     static InRepo(address, sub := "") {
-        return (address is String) && InStr(address, UpdateChecker.RepoUrl sub, true) = 1 && !RegExMatch(address, '\.\.|[\s"<>^|&]')
+        return (address is String) && InStr(address, UpdateChecker.RepoUrl sub, true) = 1 && !TextTools.Match(address, '\.\.|[\s"<>^|&]')
     }
 
     ; Whether it can update itself: a compiled exe, a Release with zip and SHA256, and a writable program folder
@@ -287,9 +287,9 @@ class UpdateChecker {
     ;   Scoop   ...\scoop\apps\altrun\current (or a version folder)
     ;   winget  %LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...
     static InstalledBy(dir) {
-        if RegExMatch(dir, "i)\\apps\\altrun\\[^\\]+$")
+        if TextTools.Match(dir, "i)\\apps\\altrun\\[^\\]+$")
             return "scoop"
-        if RegExMatch(dir, "i)\\WinGet\\Packages\\zhugecaomao\.ALTRun")
+        if TextTools.Match(dir, "i)\\WinGet\\Packages\\zhugecaomao\.ALTRun")
             return "winget"
         return ""
     }
@@ -332,7 +332,7 @@ class UpdateChecker {
             , (message) => UpdateChecker._DownloadFailed(job, message, zip), UpdateChecker.DownloadTimeoutMs, zip, true, source.Headers)
     }
 
-    static Host(url) => RegExReplace(url, "^[a-z]+://([^/]+).*$", "$1")
+    static Host(url) => TextTools.Replace(url, "^[a-z]+://([^/]+).*$", "$1")
 
     ; A background download failed. When the server answered with an error (the API refused, e.g. its hourly limit, or failed) and
     ; another address is left, that one is tried. A network error (no direct connection, a proxy script WinHTTP can't use) would
@@ -341,12 +341,12 @@ class UpdateChecker {
     static _DownloadFailed(job, message, zip) {
         if (UpdateChecker._installing != job)
             return
-        if (job.Source < job.Sources.Length && RegExMatch(message, "^HTTP ")) {
+        if (job.Source < job.Sources.Length && TextTools.Match(message, "^HTTP ")) {
             next := job.Sources[job.Source + 1]
             Logger.Warn("UpdateChecker: download from " job.Via " failed (" message "), trying " UpdateChecker.Host(next.Url))
             return UpdateChecker._StartDownload(job, zip, job.Source + 1)
         }
-        if RegExMatch(message, "^HTTP 4\d\d")
+        if TextTools.Match(message, "^HTTP 4\d\d")
             return UpdateChecker._InstallFailed(job, message)
         Logger.Warn("UpdateChecker: background download failed (" message "), trying again with AutoHotkey's Download")
         try job.Progress["Cancel"].Enabled := false

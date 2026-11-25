@@ -66,7 +66,7 @@ class QuickSwitchFavorites {
     ; One entry of the setting as a folder: environment variables expanded, no trailing backslash ("D:\" for a drive root); "" if empty
     static _FavoritePath(folder) {
         folder := Trim(Path.ExpandEnv(folder))
-        return RegExMatch(folder, "^[A-Za-z]:\\?$") ? SubStr(folder, 1, 2) "\" : RTrim(folder, "\")
+        return TextTools.Match(folder, "^[A-Za-z]:\\?$") ? SubStr(folder, 1, 2) "\" : RTrim(folder, "\")
     }
 
     ; Position of folder in the setting (however it is written there), 0 if it isn't a favorite
@@ -211,7 +211,7 @@ class QuickSwitchFavorites {
 
     ; Whether the menu reads the subfolders of folder: on a fixed, removable or RAM drive of this PC (GetDriveType doesn't touch the drive)
     static ReadsSubfolders(folder) {
-        if !RegExMatch(folder, "^[A-Za-z]:\\", &root)
+        if !TextTools.Match(folder, "^[A-Za-z]:\\", &root)
             return false
         driveType := DllCall("GetDriveType", "Str", root[0], "UInt")
         return (driveType = 2 || driveType = 3 || driveType = 6)        ; DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_RAMDISK

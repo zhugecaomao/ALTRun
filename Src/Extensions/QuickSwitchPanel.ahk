@@ -306,7 +306,7 @@ class QuickSwitchPanel {
     ; "D:\Projects\Tower" -> "Tower"; drive roots show as "D:\"
     static FolderName(folder) {
         trimmed := RTrim(folder, "\")
-        if (trimmed ~= "^[A-Za-z]:$")
+        if TextTools.Match(trimmed, "^[A-Za-z]:$")
             return trimmed "\"
         SplitPath(trimmed, &name)
         return (name != "") ? name : folder

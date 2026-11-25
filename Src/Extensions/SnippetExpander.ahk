@@ -86,7 +86,7 @@ class SnippetExpander {
         if (snippet.Has("AutoExpand") && !snippet["AutoExpand"])
             return abbreviations
         for keyword in SearchQuery.Keywords(snippet["Keyword"]) {
-            if RegExMatch(keyword, "[\s``]")                                ; white space and backticks can't be used in abbreviations
+            if TextTools.Match(keyword, "[\s``]")                                ; white space and backticks can't be used in abbreviations
                 continue
             if (StrLen(prefix keyword) > SnippetExpander.MaxAbbreviation)   ; too long to register: search only (the editor already warned)
                 continue

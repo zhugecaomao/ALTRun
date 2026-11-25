@@ -44,10 +44,10 @@ class WindowsRecent {
                 links[key] := {Time: parts[1], Target: target}
             }
             target := links[key].Target
-            if !(target ~= "^([A-Za-z]:\\|\\\\)")                          ; shell items without a path (Control Panel...)
+            if !TextTools.Match(target, "^([A-Za-z]:\\|\\\\)")                          ; shell items without a path (Control Panel...)
                 continue
             target := RTrim(target, "\")
-            if (target ~= "^[A-Za-z]:$")
+            if TextTools.Match(target, "^[A-Za-z]:$")
                 target .= "\"
             if seen.Has(StrLower(target))
                 continue

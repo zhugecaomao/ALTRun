@@ -96,9 +96,9 @@ class Arke {
         if !(location.Has("kind") && location["kind"] = "folder" && location.Has("path"))
             return ""
         folder := RTrim(location["path"], "\")
-        if (folder ~= "^[A-Za-z]:$")
+        if TextTools.Match(folder, "^[A-Za-z]:$")
             return folder "\"                                                   ; a drive: D:\ (D: alone means the current folder on D)
-        return (folder ~= "^([A-Za-z]:\\|\\\\)") ? folder : ""
+        return TextTools.Match(folder, "^([A-Za-z]:\\|\\\\)") ? folder : ""
     }
 
     ; The folder of a given Arke window (hwnd), or of the one used last (hwnd = 0, or a window the reply doesn't list)

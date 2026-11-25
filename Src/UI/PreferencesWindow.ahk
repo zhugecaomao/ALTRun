@@ -467,7 +467,7 @@ class PreferencesWindow {
     }
 
     ; A page's name on the command line: its key without "Prefs.Page." ("Prefs.Page.Hotkeys" -> "Hotkeys")
-    static PageName(key) => RegExReplace(key, "^Prefs\.Page\.")
+    static PageName(key) => TextTools.Replace(key, "^Prefs\.Page\.")
 
     ; The regular expression boxes (Exclude on Applications and Search Sources): the first one that isn't valid -> {Page (index in PageKeys),
     ; Label, Error}; "" when they all are
@@ -674,7 +674,7 @@ class PreferencesWindow {
 
     ; "~<!^C" -> {Key: "c", Mods: Map("^", "", "!", "<")}: the key in lower case and each modifier with its side ("<" left, ">" right, "" either)
     static HotkeyParts(hk) {
-        hk := StrLower(RegExReplace(Trim(hk), "^[~*$]+")), mods := Map(), side := "", i := 1
+        hk := StrLower(TextTools.Replace(Trim(hk), "^[~*$]+")), mods := Map(), side := "", i := 1
         while (i < StrLen(hk) && InStr("<>^!+#", c := SubStr(hk, i, 1))) {
             if InStr("<>", c)
                 side := c

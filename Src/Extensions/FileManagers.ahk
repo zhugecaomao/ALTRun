@@ -18,7 +18,7 @@ class FileManagers {
         if !(hwnd := hwnd ? hwnd : WinExist("ahk_class TTOTAL_CMD"))
             return ""
         folder := RTrim(FileManagers.TotalCmdAsk(hwnd, otherPanel ? "TP" : "SP"), "\")
-        return (folder ~= "^([A-Za-z]:|\\\\)") ? folder : ""               ; only real paths (no FTP, inside archives etc.)
+        return TextTools.Match(folder, "^([A-Za-z]:|\\\\)") ? folder : ""               ; only real paths (no FTP, inside archives etc.)
     }
 
     ; Sends WM_COPYDATA (dwData = "GW", an ANSI command) to TC, which replies at once with WM_COPYDATA (dwData = "RW", UTF-16)
@@ -58,7 +58,7 @@ class FileManagers {
             return folders
         for item in WindowsRecent.Items(limit * 6, recentDir) {
             folder := RTrim(item.IsFolder ? item.Path : FileManagers._Parent(item.Path), "\")
-            if (folder ~= "^[A-Za-z]:$")
+            if TextTools.Match(folder, "^[A-Za-z]:$")
                 folder .= "\"
             if (folder = "" || seen.Has(StrLower(folder)))
                 continue
@@ -169,8 +169,8 @@ class FileManagers {
     ; tab_state: 1 = the source (focused) tab of its lister, 2 = the tab shown on the other side of a dual lister
     static ParseDOpusPaths(xml) {
         tabs := [], pos := 1, attrs := ""
-        value(name) => RegExMatch(attrs, "\b" name '="([^"]*)"', &a) ? a[1] : ""
-        while (pos := RegExMatch(xml, "s)<path\b([^>]*)>(.*?)</path>", &m, pos)) {
+        value(name) => TextTools.Match(attrs, "\b" name '="([^"]*)"', &a) ? a[1] : ""
+        while (pos := TextTools.Match(xml, "s)<path\b([^>]*)>(.*?)</path>", &m, pos)) {
             pos += m.Len
             attrs := m[1], folder := m[2]
             for entity in [["&lt;", "<"], ["&gt;", ">"], ["&quot;", '"'], ["&apos;", "'"], ["&amp;", "&"]]   ; &amp; last

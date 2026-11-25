@@ -245,7 +245,7 @@ class QuickSwitch {
         return DllCall("GetClassNameW", "Ptr", hwnd, "Ptr", name, "Int", 256) ? StrGet(name) : ""
     }
 
-    static IsTransientWindow(className) => RegExMatch(className, "i)^(Shell_TrayWnd|Shell_SecondaryTrayWnd|MultitaskingViewFrame|XamlExplorerHostIslandWindow|TaskSwitcherWnd|ForegroundStaging)$") > 0
+    static IsTransientWindow(className) => TextTools.Match(className, "i)^(Shell_TrayWnd|Shell_SecondaryTrayWnd|MultitaskingViewFrame|XamlExplorerHostIslandWindow|TaskSwitcherWnd|ForegroundStaging)$") > 0
 
     ; WM_KEYDOWN rather than a hotkey: while a Chinese IME is composing (not yet committed) keys are VK_PROCESSKEY and aren't taken for Enter / Esc
     ; compare only the window handles noted: after the panel closes its control objects are destroyed and their Hwnd can't be read

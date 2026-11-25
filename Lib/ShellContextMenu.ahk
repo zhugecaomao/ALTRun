@@ -36,7 +36,7 @@ class ShellContextMenu {
             return false
         parent := ""
         for item in paths {
-            if !(RegExMatch(item, "i)^shell:AppsFolder\\.") || RegExMatch(item, "^([A-Za-z]:\\|\\\\)") && Path.ExistsOrRemote(item))
+            if !(TextTools.Match(item, "i)^shell:AppsFolder\\.") || TextTools.Match(item, "^([A-Za-z]:\\|\\\\)") && Path.ExistsOrRemote(item))
                 return false
             folder := ShellContextMenu._Parent(item)
             if (A_Index = 1)
@@ -223,7 +223,7 @@ class ShellContextMenu {
     ; The parent folder of a path ("" for a drive root: it has no folder to share with another item)
     static _Parent(fullPath) {
         fullPath := RTrim(fullPath, "\")
-        if RegExMatch(fullPath, "^[A-Za-z]:$")
+        if TextTools.Match(fullPath, "^[A-Za-z]:$")
             return ""
         SplitPath(fullPath, , &dir)
         return dir

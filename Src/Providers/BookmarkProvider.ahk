@@ -134,9 +134,9 @@ class BookmarkProvider {
     static _Walk(node, list) {
         if !(node is Map)
             return
-        if (node.Has("type") && node["type"] = "url" && node.Has("url") && RegExMatch(node["url"], "i)^https?://")) {
+        if (node.Has("type") && node["type"] = "url" && node.Has("url") && TextTools.Match(node["url"], "i)^https?://")) {
             title := (node.Has("name") && node["name"] != "") ? node["name"] : node["url"]
-            host := RegExReplace(node["url"], "i)^https?://(www\.)?([^/:?#]+).*$", "$2")
+            host := TextTools.Replace(node["url"], "i)^https?://(www\.)?([^/:?#]+).*$", "$2")
             pinyinText := Pinyin.Initials(title)
             list.Push({Title: title, Url: node["url"], Keys: [FuzzyMatcher.Key(title), FuzzyMatcher.Key(host), (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]})
             return
