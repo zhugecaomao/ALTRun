@@ -48,6 +48,62 @@ class TextTools {
     static _UnsafeEnd(text) => ((u := Ord(SubStr(text, -1))) >= 0xD800 && u <= 0xDBFF) || (u >= 0xF800 && u <= 0xFBFF)
 
     static Match(text, pattern, &m := "", start := 1) {
+        try
+            return TextTools._Match(text, pattern, &m, start)
+        catch as e
+            if !(masked := TextTools._LoneMasked(e, text, pattern))
+                throw e
+        inner := ""
+        found := TextTools._Match(masked.Text, pattern, &inner, start)
+        m := found ? TextTools.UnmaskedInfo(inner, masked.Originals) : inner
+        return found
+    }
+
+    ; A search that starts on half a surrogate pair standing alone (right after a match, at StartingPos) throws PCRE error -11 on every
+    ; AutoHotkey version. Match / Replace then search again with each lone half swapped for the private-use character at the same
+    ; offset (U+D800-U+DFFF -> U+E000-U+E7FF: one UTF-16 unit each, so positions stay) and swap it back in the result; not when the
+    ; text, pattern or replacement already holds one of those (the error is thrown as before). Returns {Text, Originals} or ""
+    static _LoneMasked(e, text, others) {
+        if (e.Extra != -11)
+            return ""
+        originals := Map(), out := "", from := 1, i := 1, length := StrLen(text)
+        while (i <= length) {
+            u := Ord(SubStr(text, i, 1))
+            if (u >= 0xD800 && u <= 0xDBFF && i < length && (low := Ord(SubStr(text, i + 1, 1))) >= 0xDC00 && low <= 0xDFFF) {
+                i += 2                                                      ; a whole pair: left as it is
+                continue
+            }
+            if (u >= 0xD800 && u <= 0xDFFF)
+                out .= SubStr(text, from, i - from) (mask := Chr(u - 0xD800 + 0xE000)), from := i + 1, originals[mask] := Chr(u)
+            i++
+        }
+        if !originals.Count
+            return ""
+        for mask in originals
+            if InStr(text others, mask, true)
+                return ""
+        return {Text: out SubStr(text, from), Originals: originals}
+    }
+
+    static _Unmask(str, originals) {
+        for mask, original in originals
+            str := StrReplace(str, mask, original, true)
+        return str
+    }
+
+    ; The match of the masked text (_LoneMasked): the same positions, the values with the lone halves back
+    class UnmaskedInfo {
+        __New(inner, originals) => (this._inner := inner, this._originals := originals)
+        Pos(n := 0) => this._inner.Pos(n)
+        Len(n := 0) => this._inner.Len(n)
+        Name(n) => this._inner.Name(n)
+        Count => this._inner.Count
+        Mark => this._inner.Mark
+        __Item[n := 0] => TextTools._Unmask(this._inner[n], this._originals)
+        __Get(name, params) => TextTools._Unmask(this._inner[name], this._originals)
+    }
+
+    static _Match(text, pattern, &m, start) {
         if !TextTools.RegExUnsafe(text)
             return RegExMatch(text, pattern, &m, start)
         before := TextTools._UnsafeStart(text) ? 1 : 0
@@ -75,6 +131,15 @@ class TextTools {
     }
 
     static Replace(text, pattern, replacement := "") {
+        try
+            return TextTools._Replace(text, pattern, replacement)
+        catch as e
+            if !(masked := TextTools._LoneMasked(e, text, pattern replacement))
+                throw e
+        return TextTools._Unmask(TextTools._Replace(masked.Text, pattern, replacement), masked.Originals)
+    }
+
+    static _Replace(text, pattern, replacement) {
         if !TextTools.RegExUnsafe(text)
             return RegExReplace(text, pattern, replacement)
         before := TextTools._UnsafeStart(text), after := TextTools._UnsafeEnd(text)

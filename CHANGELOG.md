@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.26.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 文字里有孤立的半个 emoji 或罕用字 (代理项只剩一半, 例如来自截断的文字或个别文件名) 时, 搜索、高亮、文字处理等可能弹出 "PCRE execution error" (错误码 -11, AutoHotkey 各版本都会): 现在照常处理
+
 ## [2026.11.26]
 
 ### Summary
@@ -1689,7 +1698,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.1...HEAD
+[2026.11.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26...2026.11.26.1
 [2026.11.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.26
 [2026.11.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.25
 [2026.11.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.23

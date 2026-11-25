@@ -410,12 +410,17 @@ class CoreTests {
                 return true
             return false
         }
+        threwReplace(text, pattern, replacement) {
+            try TextTools.Replace(text, pattern, replacement)
+            catch
+                return true
+            return false
+        }
         ; why Match / Replace exist; fails once AutoHotkey fixes it (the Monday run on the newest release), then they can go
         TestRunner.True("AutoHotkey: RegExMatch throws on ，first / 﨑 last, not in between", threw("，a") && threw("a" compat) && !threw("a，" compat "a"))
         ; Every UTF-16 code unit first or last: Match / Replace never throw and give the result of the text itself, whatever AutoHotkey
         ; rejects. The INFO line lists what RegExMatch itself rejects, so a release that changes it shows up (the Monday run on the newest
-        ; release; compare it before pinning a new version). Not checked here: Replace on text ending with a lone second half
-        ; (U+DC00-U+DFFF) right after a match: PCRE error -11 on every version, a different problem (Backlog)
+        ; release; compare it before pinning a new version). A lone second half right after a match is the -11 case below
         rejected := Map(), wrong := ""
         for where in ["first", "last"] {
             runStart := 0, ranges := ""
@@ -424,10 +429,8 @@ class CoreTests {
                 if (cp <= 0xFFFF) {
                     text := (where = "first") ? Chr(cp) "a" : "a" Chr(cp)
                     bad := threw(text)
-                    loneLast := where = "last" && cp >= 0xDC00 && cp <= 0xDFFF                 ; the -11 case above: Replace not checked
                     try {
-                        if (TextTools.Match(text, "a") != InStr(text, "a", true)
-                            || !loneLast && TextTools.Replace(text, "a", "b") != StrReplace(text, "a", "b", true))
+                        if (TextTools.Match(text, "a") != InStr(text, "a", true) || TextTools.Replace(text, "a", "b") != StrReplace(text, "a", "b", true))
                             wrong .= Format("{} {:04X} ", where, cp)
                     } catch
                         wrong .= Format("{} {:04X} threw ", where, cp)
@@ -441,6 +444,21 @@ class CoreTests {
         }
         FileAppend("INFO AutoHotkey " A_AhkVersion " RegExMatch rejects code units first: " rejected["first"] "; last: " rejected["last"] "`n", "*")
         eq("Match / Replace: every code unit first or last", wrong, "")
+        ; A search starting on a lone half (right after a match, at StartingPos) throws -11 on every version: searched again with the
+        ; half swapped for a private-use character, swapped back in the result
+        lone := Chr(0xDC00), mask := Chr(0xE400)
+        eq("replace: lone half right after a match", TextTools.Replace("a" lone "b", "a", "x"), "x" lone "b")
+        eq("replace: lone half at the end", TextTools.Replace("a" lone, "a", "x"), "x" lone)
+        eq("replace: lone first halves", TextTools.Replace("ab" Chr(0xD800) "b" Chr(0xDBFF), "b", "c"), "ac" Chr(0xD800) "c" Chr(0xDBFF))
+        eq("replace: a pair stays a pair", TextTools.Replace("a" emoji "a" lone, "a", "x"), "x" emoji "x" lone)
+        eq("match from a lone half", TextTools.Match("a" lone "b", "b", , 2), 3)
+        TextTools.Match("a" lone "b", "(\S+)$", &m, 2)
+        eq("match group with a lone half", m[1] "|" m.Pos(1) "|" m.Len(1) "|" m[0], lone "b|2|2|" lone "b")
+        TextTools.Match("a" lone "b", "(?<rest>\S+)$", &m, 2)
+        eq("match named group with a lone half", m["rest"] "|" m.rest "|" m.Name(1) "|" m.Count, lone "b|" lone "b|rest|1")
+        eq("match from a lone half, no match", TextTools.Match("a" lone "b", "x", &m, 2) "|" m, "0|")
+        TestRunner.True("TextTools.text holding the private-use character too: the error as before", threwReplace("a" lone mask, "a", "x"))
+        TestRunner.True("TextTools.replacement holding it: the error as before", threwReplace("a" lone, "a", mask))
         TestRunner.True("TextTools.unsafe: fullwidth first", TextTools.RegExUnsafe("（a）") && TextTools.RegExUnsafe("Ａ") && TextTools.RegExUnsafe(Chr(0xFFFD)))
         TestRunner.True("TextTools.unsafe: compat last", TextTools.RegExUnsafe("a" compat) && !TextTools.RegExUnsafe("a" compat "b"))
         TestRunner.True("TextTools.safe: in between, emoji, CJK", !TextTools.RegExUnsafe("a（b") && !TextTools.RegExUnsafe(emoji "x" emoji) && !TextTools.RegExUnsafe("中文，"))
