@@ -701,7 +701,7 @@ class AppSettings {
             "Features", Map(
                 "Applications", Map(
                     "Enabled"       , 1,
-                    "Folders"       , ["A_Programs", "A_ProgramsCommon", "A_Desktop", "A_DesktopCommon"],
+                    "Folders"       , ["A_Programs", "A_ProgramsCommon", "A_StartMenu", "A_StartMenuCommon", "A_Desktop", "A_DesktopCommon"],
                     "FileTypes"     , ["*.lnk", "*.exe", "*.url", "*.appref-ms"],
                     "Depth"         , 3,
                     "Exclude"       , "i)(uninstall|卸载|readme|help|documentation)",
