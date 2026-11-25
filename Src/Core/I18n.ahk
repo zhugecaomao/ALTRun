@@ -1021,7 +1021,7 @@ class I18n {
         ; Applications
         s["Prefs.AppFolders"]           := "Folders"
         s["Prefs.AppFolders.Desc"]     := "Folders searched for apps and shortcuts. Variables such as A_Desktop or %AppData% work."
-        s["Prefs.AppFolders.Help"]     := 'One folder per line. ALTRun indexes the apps and shortcuts in these folders and their subfolders (as deep as "Subfolder depth" on the page), and updates the index when something in them changes.`n`nVariables work: A_Programs and A_ProgramsCommon (Start menu), A_Desktop and A_DesktopCommon (desktop), and environment variables such as %AppData% or %OneDrive%. A network folder works too, but makes indexing slower.'
+        s["Prefs.AppFolders.Help"]     := 'One folder per line. ALTRun indexes the apps and shortcuts in these folders and their subfolders (as deep as "Subfolder depth" on the page), and updates the index when something in them changes.`n`nVariables work: A_StartMenu and A_StartMenuCommon (Start menu), A_Programs and A_ProgramsCommon (its Programs folder), A_Desktop and A_DesktopCommon (desktop), and environment variables such as %AppData% or %OneDrive%. A network folder works too, but makes indexing slower.'
         s["Prefs.AppFileTypes"]        := "File types"
         s["Prefs.AppFileTypes.Desc"]   := "Separate with commas, e.g. *.lnk, *.exe"
         s["Prefs.AppDepth"]             := "Subfolder depth"

@@ -1396,6 +1396,17 @@ class ProviderTests {
         eq("background", titles(), expected)
         eq("bad Exclude ignored", ApplicationProvider._Exclude(Map("Exclude", "(uninstall")), "")
         eq("valid Exclude used", ApplicationProvider._Exclude(Map("Exclude", "i)uninstall")), "i)uninstall")
+        for folders in [[root, root "\Office"], [root "\office\", root]] {  ; a listed folder inside another (Programs in the Start menu, #673)
+            options["Folders"] := folders                                   ; scanned once, from its own depth: Hidden is 3 below Office
+            eq("nested folder " A_Index, ApplicationProvider.Rebuild() " " titles(), "6 Chess|Draw|Editor|Hidden|Sheet|Writer")
+            job := ApplicationProvider._NewJob(), scanned := 0
+            while !ApplicationProvider._Step(job, -1)                      ; root and Games, then Office, Tools, More, TooDeep (9 if Office were scanned twice)
+                scanned++
+            eq("nested folder scanned once " A_Index, scanned, 6)
+        }
+        options["Folders"] := [root, root]
+        eq("same folder twice", ApplicationProvider._NewJob().Roots.Length, 1)
+        options["Folders"] := [root]
 
         ; Watching folders: a new file rebuilds in the background (after a short quiet); the cache of a background rebuild is written when idle
         savedQuiet := ApplicationProvider.WatchQuietMs, savedGap := ApplicationProvider.WatchMinGapMs

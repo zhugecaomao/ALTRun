@@ -278,16 +278,16 @@ class ApplicationProvider {
     ; Each folder is listed once and the file names compared with FileTypes (wildcards) here (listing once per type is several times slower)
     static _NewJob() {
         options := AppSettings.Feature("Applications")
-        roots := []
+        roots := [], isRoot := Map(), isRoot.CaseSense := "Off"
         for folder in options["Folders"] {
             folder := RTrim(Path.Resolve(folder), "\")
-            if (folder != "" && DirExist(folder))
-                roots.Push(folder)
+            if (folder != "" && DirExist(folder) && !isRoot.Has(folder))
+                roots.Push(folder), isRoot[folder] := true
         }
         found := Map()
         found.CaseSense := "Off"
         return {Options: options, Roots: roots, Next: 1, Stack: [], Types: ApplicationProvider._TypesPattern(options), Found: found
-            , Exclude: ApplicationProvider._Exclude(options)}
+            , Exclude: ApplicationProvider._Exclude(options), IsRoot: isRoot}
     }
 
     ; Exclude when it is a valid regular expression; "" (nothing excluded) when it isn't, with a warning in the log once. Preferences
@@ -318,8 +318,8 @@ class ApplicationProvider {
             subfolders := []
             Loop Files, folder "\*", "FD" {
                 if InStr(A_LoopFileAttrib, "D") {
-                    if (depth < maxDepth)
-                        subfolders.Push(A_LoopFileFullPath)
+                    if (depth < maxDepth && !job.IsRoot.Has(A_LoopFileFullPath))   ; a listed folder inside another (Programs in the Start menu, #673)
+                        subfolders.Push(A_LoopFileFullPath)                  ; is scanned once, as its own root with the full depth
                     continue
                 }
                 if !TextTools.Match(A_LoopFileName, job.Types)

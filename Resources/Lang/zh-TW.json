@@ -285,7 +285,7 @@
   "Prefs.AppFileTypes.Desc": "用逗號分隔, 例如 *.lnk, *.exe",
   "Prefs.AppFolders": "資料夾",
   "Prefs.AppFolders.Desc": "在這些資料夾裡找應用和捷徑; 可以用 A_Desktop、%AppData% 等變數",
-  "Prefs.AppFolders.Help": "每行一個資料夾。ALTRun 索引這些資料夾及其子資料夾 (深度見設定頁上的 \"子資料夾深度\") 裡的應用和捷徑, 裡面有變化時自動更新。\n\n可以用變數: A_Programs、A_ProgramsCommon (開始功能表), A_Desktop、A_DesktopCommon (桌面), 以及 %AppData%、%OneDrive% 等環境變數。網路資料夾也可以, 但索引會慢一些。",
+  "Prefs.AppFolders.Help": "每行一個資料夾。ALTRun 索引這些資料夾及其子資料夾 (深度見設定頁上的 \"子資料夾深度\") 裡的應用和捷徑, 裡面有變化時自動更新。\n\n可以用變數: A_StartMenu、A_StartMenuCommon (開始功能表), A_Programs、A_ProgramsCommon (開始功能表裡的 \"程式集\"), A_Desktop、A_DesktopCommon (桌面), 以及 %AppData%、%OneDrive% 等環境變數。網路資料夾也可以, 但索引會慢一些。",
   "Prefs.AppHidden": "已刪除的應用程式",
   "Prefs.AppHidden.Desc": "在搜尋結果裡按 Ctrl+Del 刪除的應用",
   "Prefs.AppHidden.Help": "在搜尋結果裡按 Ctrl+Del 刪除的應用, 每行一個路徑, 例如:\n  C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Administrative Tools\\Disk Cleanup.lnk\n  shell:AppsFolder\\...!... (Microsoft Store 的應用)\n\n刪掉一行, 這個應用就重新出現在搜尋結果裡。",
