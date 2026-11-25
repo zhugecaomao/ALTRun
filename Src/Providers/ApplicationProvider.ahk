@@ -281,13 +281,22 @@ class ApplicationProvider {
         roots := [], isRoot := Map(), isRoot.CaseSense := "Off"
         for folder in options["Folders"] {
             folder := RTrim(Path.Resolve(folder), "\")
-            if (folder != "" && DirExist(folder) && !isRoot.Has(folder))
-                roots.Push(folder), isRoot[folder] := true
+            if (folder != "" && DirExist(folder) && !isRoot.Has(key := ApplicationProvider._LongPath(folder)))
+                roots.Push(folder), isRoot[key] := true
         }
         found := Map()
         found.CaseSense := "Off"
         return {Options: options, Roots: roots, Next: 1, Stack: [], Types: ApplicationProvider._TypesPattern(options), Found: found
             , Exclude: ApplicationProvider._Exclude(options), IsRoot: isRoot}
+    }
+
+    ; The long form of a path (C:\Users\RUNNER~1\... -> C:\Users\runneradmin\...): Loop Files gives subfolders in their long form, so a
+    ; listed folder written with a short name (%Temp% can be one) is recognized inside another listed folder only this way
+    static _LongPath(path) {
+        if !(size := DllCall("GetLongPathNameW", "Str", path, "Ptr", 0, "UInt", 0, "UInt"))
+            return path
+        buf := Buffer(size * 2)
+        return DllCall("GetLongPathNameW", "Str", path, "Ptr", buf, "UInt", size, "UInt") ? StrGet(buf) : path
     }
 
     ; Exclude when it is a valid regular expression; "" (nothing excluded) when it isn't, with a warning in the log once. Preferences
