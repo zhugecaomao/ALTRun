@@ -1319,6 +1319,40 @@ class PreferencesTests {
         }
     }
 
+    ; Switching pages fast (holding ↓, quick clicks): a switch starts while another is still building or showing its page. Three timers select
+    ; rows so they interrupt each other as the user's clicks do; part of an interrupted page used to stay on screen under the next one
+    static PreferencesFastSwitch() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesFastSwitch." n, a, e)
+        PreferencesWindow.Show("Prefs.Page.General", -3000, -3000)
+        count := PreferencesWindow.Pages.Length, stray := 0, wrongRow := 0
+        tick() {
+            try PreferencesWindow.PageList.Modify(0, "-Select")
+            try PreferencesWindow.PageList.Modify(Random(1, count), "Select Focus")
+        }
+        tick2() => tick()
+        tick3() => tick()
+        switching(on) {
+            for each, fn in [tick, tick2, tick3]
+                SetTimer(fn, on ? [1, 3, 7][each] : 0)
+        }
+        try {
+            Loop 8 {
+                switching(true), Sleep(60)
+                switching(false), Sleep(150)
+                for index, page in PreferencesWindow.Pages
+                    for ctrl in page.Controls
+                        stray += (ctrl.Visible != (index = PreferencesWindow._page))
+                wrongRow += (PreferencesWindow.PageList.GetNext() != PreferencesWindow._page)
+            }
+            eq("only the current page is visible", stray, 0)
+            eq("the page of the selected row", wrongRow, 0)
+        } finally {
+            switching(false)
+            PreferencesWindow._dirty := false
+            PreferencesWindow.Close()
+        }
+    }
+
     ; Hotkey display (Alt+Space) and the rules of the recording box; duplicate global hotkeys checked before Preferences saves
     static HotkeyText() {
         eq := (n, a, e) => TestRunner.Equal("HotkeyText." n, a, e)

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.25]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置里快速切换页面 (按住 ↓ 或连续点击) 后, 别的页面的部分控件有时留在当前页面上, 界面叠在一起: 切换时被下一次切换打断, 那一页只隐藏了一半; 现在以最后一次切换为准, 其它页面的控件都会隐藏
+
 ## [2026.11.23.24]
 
 测试版。
@@ -1784,7 +1793,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.25...HEAD
+[2026.11.23.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.24...2026.11.23.25
 [2026.11.23.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.23...2026.11.23.24
 [2026.11.23.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.22...2026.11.23.23
 [2026.11.23.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...2026.11.23.22

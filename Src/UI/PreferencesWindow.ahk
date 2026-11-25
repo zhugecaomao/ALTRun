@@ -284,23 +284,26 @@ class PreferencesWindow {
 
     ; Switching pages only hides the old page's controls, shows the new one's and repaints just the page area on the right:
     ; the page list and bottom buttons aren't repainted, so switching doesn't flicker (no WM_SETREDRAW on the whole window: a top-level window that stops redrawing leaves its child controls unpainted)
+    ; Switching fast (holding ↓, quick clicks) starts a switch while another is still building or showing its page. The newest switch wins (_page),
+    ; and showing is Critical and checks every control: a switch interrupted halfway used to leave part of a page on screen under the next one
     static SelectPage(pageIndex) {
+        PreferencesWindow._page := pageIndex
         PreferencesWindow._BuildPage(pageIndex)
         if !IsObject(PreferencesWindow.Gui)
             return
-        hwnd := PreferencesWindow.Gui.Hwnd
-        previous := PreferencesWindow._page
-        PreferencesWindow._page := pageIndex
+        wasCritical := A_IsCritical
+        Critical
+        pageIndex := PreferencesWindow._page                                ; a newer switch that ran while this page was being built
         shown := PreferencesWindow.Pages[pageIndex]
         if (shown.HasOwnProp("OnShow") && IsObject(shown.OnShow))           ; a page that shows what other pages changed (Selection: the commands of each type)
             shown.OnShow.Call()
-        for index, page in PreferencesWindow.Pages {
-            if (index = pageIndex || index = previous || previous = 0)      ; right after building, every page has to be hidden once
-                for ctrl in page.Controls
+        for index, page in PreferencesWindow.Pages
+            for ctrl in page.Controls
+                if (ctrl.Visible != (index = pageIndex))
                     ctrl.Visible := (index = pageIndex)
-        }
         ; check boxes and descriptions have a transparent background: repainting without erasing would draw the text twice, making it bold
-        DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", PreferencesWindow._PageArea(), "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+        DllCall("RedrawWindow", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", PreferencesWindow._PageArea(), "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+        Critical(wasCritical)
     }
 
     ; The RECT of the page area (in the window's client area, right of the page list, above the bottom buttons)
