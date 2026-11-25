@@ -2,7 +2,8 @@
 # are pinned, so the tests, the integration checks, the benchmarks and the release build all run on the same interpreter, and each
 # archive is checked against its SHA256 before it is used.
 # Moving to a new version: change the tag and the hash together. The weekly Tests run uses "latest" (the newest stable v2 release,
-# no hash check), so a problem with a new release shows there before it is pinned.
+# no hash check), so a problem with a new release shows there before it is pinned. Pin a release only after two weeks and the checks
+# in docs/wiki/Development.md (v2.0.32 broke regular expressions three days after it came out).
 name: Set up AutoHotkey
 description: Download the pinned AutoHotkey v2 (and Ahk2Exe) and check their SHA256
 

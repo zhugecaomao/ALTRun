@@ -412,6 +412,35 @@ class CoreTests {
         }
         ; why Match / Replace exist; fails once AutoHotkey fixes it (the Monday run on the newest release), then they can go
         TestRunner.True("AutoHotkey: RegExMatch throws on ，first / 﨑 last, not in between", threw("，a") && threw("a" compat) && !threw("a，" compat "a"))
+        ; Every UTF-16 code unit first or last: Match / Replace never throw and give the result of the text itself, whatever AutoHotkey
+        ; rejects. The INFO line lists what RegExMatch itself rejects, so a release that changes it shows up (the Monday run on the newest
+        ; release; compare it before pinning a new version). Not checked here: Replace on text ending with a lone second half
+        ; (U+DC00-U+DFFF) right after a match: PCRE error -11 on every version, a different problem (Backlog)
+        rejected := Map(), wrong := ""
+        for where in ["first", "last"] {
+            runStart := 0, ranges := ""
+            Loop 0x10000 {
+                cp := A_Index, bad := false
+                if (cp <= 0xFFFF) {
+                    text := (where = "first") ? Chr(cp) "a" : "a" Chr(cp)
+                    bad := threw(text)
+                    loneLast := where = "last" && cp >= 0xDC00 && cp <= 0xDFFF                 ; the -11 case above: Replace not checked
+                    try {
+                        if (TextTools.Match(text, "a") != InStr(text, "a", true)
+                            || !loneLast && TextTools.Replace(text, "a", "b") != StrReplace(text, "a", "b", true))
+                            wrong .= Format("{} {:04X} ", where, cp)
+                    } catch
+                        wrong .= Format("{} {:04X} threw ", where, cp)
+                }
+                if (bad && !runStart)
+                    runStart := cp
+                else if (!bad && runStart)
+                    ranges .= Format(" {:04X}-{:04X}", runStart, cp - 1), runStart := 0
+            }
+            rejected[where] := ranges ? LTrim(ranges) : "none"
+        }
+        FileAppend("INFO AutoHotkey " A_AhkVersion " RegExMatch rejects code units first: " rejected["first"] "; last: " rejected["last"] "`n", "*")
+        eq("Match / Replace: every code unit first or last", wrong, "")
         TestRunner.True("TextTools.unsafe: fullwidth first", TextTools.RegExUnsafe("（a）") && TextTools.RegExUnsafe("Ａ") && TextTools.RegExUnsafe(Chr(0xFFFD)))
         TestRunner.True("TextTools.unsafe: compat last", TextTools.RegExUnsafe("a" compat) && !TextTools.RegExUnsafe("a" compat "b"))
         TestRunner.True("TextTools.safe: in between, emoji, CJK", !TextTools.RegExUnsafe("a（b") && !TextTools.RegExUnsafe(emoji "x" emoji) && !TextTools.RegExUnsafe("中文，"))
