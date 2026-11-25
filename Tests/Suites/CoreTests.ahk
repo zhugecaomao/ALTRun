@@ -430,6 +430,7 @@ class CoreTests {
         eq("replace takes the start", TextTools.Replace("（測試）", "[^\p{L}\p{N}]+", " "), " 測試 ")
         eq("replace compat last", TextTools.Replace("a b" compat, "\s"), "ab" compat)
         eq("replace plain", TextTools.Replace("a  b", "\s+", " "), "a b")
+        eq("calculator: =（ gives nothing, no error", CalculatorProvider.Search(SearchQuery("=（1+2）")).Length, 0)
         eq("regex ok", TextTools.RegexError("i)(uninstall|readme)"), "")
         eq("regex empty", TextTools.RegexError(""), "")
         TestRunner.True("TextTools.regex error", TextTools.RegexError("i)(uninstall|readme") != "")

@@ -45,7 +45,7 @@ class CalculatorProvider {
         typed := Trim(expression)
         expression := StrReplace(StrReplace(StrReplace(expression, ","), "×", "*"), "÷", "/")
 
-        value := Calc.Eval(expression)
+        value := TextTools.RegExUnsafe(expression) ? "" : Calc.Eval(expression)   ; "=（1+2）": Calc.Eval (the same code as PT Tools) would throw (#653)
         if !IsNumber(value)
             return results
         text := CalculatorProvider.Format(value)

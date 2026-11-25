@@ -723,8 +723,8 @@ class Calc {
 
     ; Returns the result (a float); "" when it isn't a complete expression, divides by 0 or is out of range
     static Eval(expr) {
-        expr := TextTools.Replace(expr, "\s")
-        if !TextTools.Match(expr, "^[\d\+\-\*/\^\(\)\.]+$")
+        expr := RegExReplace(expr, "\s")
+        if !RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.]+$")
             return ""
         state := {Text: expr, Pos: 1}
         try {
@@ -784,7 +784,7 @@ class Calc {
             state.Pos += 1
             return value
         }
-        if !TextTools.Match(state.Text, "\G(\d+\.?\d*|\.\d+)", &m, state.Pos)
+        if !RegExMatch(state.Text, "\G(\d+\.?\d*|\.\d+)", &m, state.Pos)
             throw ValueError("Number expected")
         state.Pos += m.Len
         return Float(m[0])
