@@ -20,6 +20,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 ### 入门
 | 页面 | 内容 |
 |---|---|
+| [功能一览](Features-zh) | ALTRun 的全部功能, 每个配截图 |
 | [5 分钟上手](Getting-Started-zh) | 第一次用: 呼出、打开程序、常用功能、加自己的命令 |
 | [安装与升级](Installation-zh) | 下载、winget / Scoop、开机启动、一键更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](Usage-zh) | 所有输入语法、快捷键、操作面板、学习排序、使用统计 |

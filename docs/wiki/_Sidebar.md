@@ -3,6 +3,7 @@
 **English**
 
 *Getting started*
+- [Features](Features)
 - [Getting started](Getting-Started)
 - [Installation and upgrades](Installation)
 - [Search and shortcuts](Usage)
@@ -51,6 +52,7 @@
 **[中文](Home-zh)**
 
 *入门*
+- [功能一览](Features-zh)
 - [5 分钟上手](Getting-Started-zh)
 - [安装与升级](Installation-zh)
 - [搜索与快捷键](Usage-zh)
