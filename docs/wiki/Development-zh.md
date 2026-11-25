@@ -3,7 +3,7 @@
 # 开发指南
 
 ## 环境
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。所有 workflow (单元测试、集成检查、基准测试、发布构建) 使用同一个固定版本, 目前是 v2.0.32 和 Ahk2Exe 1.1.37.02a2, 版本和 SHA256 写在 `.github/actions/setup-ahk/action.yml` (版本和哈希一起改); Tests workflow 每周一还用最新的稳定版跑一次, 所以 AutoHotkey 新版本先经过测试再固定
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。所有 workflow (单元测试、集成检查、基准测试、发布构建) 使用同一个固定版本, 目前是 v2.0.32 和 Ahk2Exe 1.1.37.02a2, 版本和 SHA256 写在 `.github/actions/setup-ahk/action.yml` (版本和哈希一起改); Tests workflow 每周一还用最新的稳定版跑一次, 所以 AutoHotkey 新版本先经过测试再固定。新版本发布满两周、没有更新的修复版才固定 (只有 ALTRun 需要它修的问题时才提前, 理由写在 PR 里); 固定前逐条对照更新日志里 ALTRun 用到的部分 (碰到的都加测试)、看论坛 Bug Reports 有没有这个版本的报告、两个版本各跑一次单元测试并对比 `INFO AutoHotkey ... RegExMatch rejects` 这一行; 固定单独一个 PR, 之后至少出一个测试版再发正式版 (v2.0.32 发布三天就固定, 结果以 `，` 开头的文字跑正则会出错)
 - 任意编辑器; 推荐 VS Code + AutoHotkey v2 Language Support 插件
 
 ```
@@ -337,7 +337,7 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 - 要知道文件夹里的变化, 用 `FolderWatcher` (`Lib\FolderWatcher.ahk`, 定时 `Poll()` 不等待), 不要定时扫描整个文件夹; 关闭时它会等异步读取结束再放掉缓冲区
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)
 - 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行 (有测试检查)
-- 文字以 U+F800-U+FFFF 的字符 (全角 `，（Ａ１`、半角片假名、U+FFFD) 或半个 emoji 开头, 或以 U+F800-U+FBFF 的字符 (`﨑` 等 CJK 兼容汉字) 结尾时, 不管从哪里开始匹配, `RegExMatch` / `RegExReplace` 都会报 PCRE 错误 -10; 这些字符在中间没问题。几乎什么文字都可能这样 (文件名、路径、窗口标题、设置、剪贴板、保存的数据), 所以 `TextTools.ahk` 以外一律用 `TextTools.Match(text, pattern, &m, start)` / `TextTools.Replace(text, pattern, replacement)`, 只要模式不要求 `^` 之后或 `$` 之前正好是这种字符, 结果就和原来一样。不要对从文字里取出的单个字符跑正则 (`Loop Parse`、`SubStr(text, i, 1)`): 用 `Ord()` 判断范围, 或者两边加空格 (`RegExMatch(" " char " ", "^ [\p{L}] $")`) 项目测试 `RawRegex` 会找出文字不是字符串字面量的直接调用 (包括 `~=`)。
+- AutoHotkey v2.0.32 有个笔误 (论坛上已确认, v2.0.31 没有): 文字以 U+F800-U+FFFF 的字符 (全角 `，（Ａ１`、半角片假名、U+FFFD) 或半个 emoji 开头, 或以 U+F800-U+FBFF 的字符 (`﨑` 等 CJK 兼容汉字) 结尾时, 不管从哪里开始匹配, `RegExMatch` / `RegExReplace` 都会报 PCRE 错误 -10; 这些字符在中间没问题。几乎什么文字都可能这样 (文件名、路径、窗口标题、设置、剪贴板、保存的数据), 所以 `TextTools.ahk` 以外一律用 `TextTools.Match(text, pattern, &m, start)` / `TextTools.Replace(text, pattern, replacement)`, 只要模式不要求 `^` 之后或 `$` 之前正好是这种字符, 结果就和原来一样。不要对从文字里取出的单个字符跑正则 (`Loop Parse`、`SubStr(text, i, 1)`): 用 `Ord()` 判断范围, 或者两边加空格 (`RegExMatch(" " char " ", "^ [\p{L}] $")`) 项目测试 `RawRegex` 会找出文字不是字符串字面量的直接调用 (包括 `~=`)。
 - `#Warn All` 的警告都当作错误处理
 
 ## 提交 Pull Request
