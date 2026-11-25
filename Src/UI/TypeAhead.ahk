@@ -34,7 +34,7 @@ class TypeAhead {
         try ih.Stop()
         key := (ih.EndReason = "EndKey") ? ih.EndKey : ""
         modifier := (key = "") ? "" : InStr(ih.EndMods, "^") ? "ctrl" : InStr(ih.EndMods, "!") ? "alt" : ""
-        return {Text: RegExReplace(ih.Input, "[\x00-\x1F\x7F]"), Key: key, Modifier: modifier}   ; no Tab or other control characters
+        return {Text: TextTools.Replace(ih.Input, "[\x00-\x1F\x7F]"), Key: key, Modifier: modifier}   ; no Tab or other control characters
     }
 
     ; For the log: how much was typed, not what (the log never holds the search text), e.g. "5 chars (leading space) + Enter"

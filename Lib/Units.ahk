@@ -20,7 +20,7 @@ class Units {
 
     static Parse(text) {
         text := Trim(StrLower(text))
-        if !RegExMatch(text, "^([-+]?\d[\d,]*(?:\.\d+)?)\s*([^\s\d][^\s]*?)\s*(?:\s(?:in|to|as)\s|=|->|>|\s转|\s换成|转|换成|\s)\s*([^\s\d][^\s]*)$", &m)
+        if !TextTools.Match(text, "^([-+]?\d[\d,]*(?:\.\d+)?)\s*([^\s\d][^\s]*?)\s*(?:\s(?:in|to|as)\s|=|->|>|\s转|\s换成|转|换成|\s)\s*([^\s\d][^\s]*)$", &m)
             return ""
         value := StrReplace(m[1], ",")
         if !IsNumber(value)
@@ -46,7 +46,7 @@ class Units {
     ; unit -> {Kind, Factor (to the base unit), Name, Label}
     static _Lookup(unit) {
         unit := StrReplace(StrReplace(StrLower(Trim(unit)), "²", "2"), "³", "3")
-        unit := RegExReplace(unit, "^°")                                   ; °c / °f
+        unit := TextTools.Replace(unit, "^°")                                   ; °c / °f
         table := Units._Table()
         if table.Has(unit)
             return table[unit]
@@ -66,7 +66,7 @@ class Units {
             , "韩元", "KRW", "韓元", "KRW", "泰铢", "THB", "泰銖", "THB", "瑞士法郎", "CHF")
         if names.Has(unit)
             return names[unit]
-        return RegExMatch(unit, "^[a-z]{3}$") ? StrUpper(unit) : ""
+        return TextTools.Match(unit, "^[a-z]{3}$") ? StrUpper(unit) : ""
     }
 
     static _Table() {

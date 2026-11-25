@@ -286,6 +286,7 @@ class ExtensionTests {
         eq("with ext", AutoDate.AddDateToName("Report.docx", today), "Report - 23.09.2026.docx")
         eq("update date", AutoDate.AddDateToName("Report - 01.01.2020.docx", today), "Report - 23.09.2026.docx")
         eq("update dash date", AutoDate.AddDateToName("Report-01.01.2020.docx", today), "Report - 23.09.2026.docx")
+        eq("fullwidth first", AutoDate.AddDateToName("（新）報告.docx", today), "（新）報告 - 23.09.2026.docx")   ; RegExMatch alone throws (#653)
         eq("folder", AutoDate.AddDateToName("Project", today), "Project - 23.09.2026")
         eq("folder update", AutoDate.AddDateToName("Project - 01.01.2020", today), "Project - 23.09.2026")
         eq("numeric ext", AutoDate.AddDateToName("Version 1.2", today), "Version 1.2 - 23.09.2026")
@@ -2618,6 +2619,9 @@ class ExtensionTests {
             eq("powershell: $() refused, cmd fine", leads({Text: "$(calc)"}), "Ping")
             eq("double quote refused", leads({Text: 'say "hi"'}), "")
             eq("line break refused", leads({Text: "line one`nline two"}), "")
+            eq("refused: fullwidth text, line break named (#653)", refusedRows({Text: "，標題！`r`n（第二行）"}), "Ping: " I18n.T("Selection.Refused", I18n.T("Selection.LineBreak"))
+                "|PS: " I18n.T("Selection.Refused", I18n.T("Selection.LineBreak")))
+            eq("fullwidth first, one line", leads({Text: "（測試）"}), "Ping|PS")
             ; refused: the row stays, saying why; Enter only says so
             eq("refused rows say why", refusedRows({Text: "1.1.1.1 & calc"}), "Ping: " I18n.T("Selection.Refused.Shell", "&", "cmd") "|PS: "
                 I18n.T("Selection.Refused.Shell", "&", "PowerShell"))

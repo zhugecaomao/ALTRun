@@ -102,19 +102,19 @@ class FileSearchProvider {
     ;   "D：、" typed with a Chinese IME (full-width colon, ideographic comma) counts as "D:\" too
     static BrowsePath(text) {
         text := LTrim(text)
-        if RegExMatch(text, "^[A-Za-z][:：][\\、]")
+        if TextTools.Match(text, "^[A-Za-z][:：][\\、]")
             text := SubStr(text, 1, 1) ":\" StrReplace(SubStr(text, 4), "、", "\")
         if (text = "~")
             text := EnvGet("UserProfile") "\"
-        else if RegExMatch(text, "^~\\")
+        else if TextTools.Match(text, "^~\\")
             text := EnvGet("UserProfile") SubStr(text, 2)
-        else if RegExMatch(text, "^%[^%\\]+%\\") {
+        else if TextTools.Match(text, "^%[^%\\]+%\\") {
             size := DllCall("ExpandEnvironmentStringsW", "WStr", text, "Ptr", 0, "UInt", 0, "UInt")
             buf := Buffer(size * 2)
             DllCall("ExpandEnvironmentStringsW", "WStr", text, "Ptr", buf, "UInt", size, "UInt")
             text := StrGet(buf)
         }
-        if !RegExMatch(text, "^([A-Za-z]:\\|\\\\[^\\]+\\[^\\]+\\)")
+        if !TextTools.Match(text, "^([A-Za-z]:\\|\\\\[^\\]+\\[^\\]+\\)")
             return ""
         pos := InStr(text, "\", , -1)
         dir := SubStr(text, 1, pos), filter := SubStr(text, pos + 1)
@@ -335,7 +335,7 @@ class FileSearchProvider {
             ; plans_xxx.dwg), the first fetch results by modification time may all be files and the folder of that exact name is left out: fetch folders separately.
             ; Only then: with fewer results than asked for, every match is there already, folders included (it is the same search); and
             ; when Everything didn't answer (busy), not a second wait. Each query takes Everything 16-22 ms (1.4 / 1.5 on a CI runner)
-            if (answered && !complete && !IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; not when folder: / ext: etc. is already given
+            if (answered && !complete && !IsObject(scope) && !scope && !TextTools.Match(term, "i)(^|\s)(folder|file|files|ext):")) {   ; not when folder: / ext: etc. is already given
                 folderSearch := (preferPrefix ? "startwith:" : "") "folder:" FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
                 for item in Everything.Query(Trim(folderSearch), 50, Everything.SORT_DATE_MODIFIED_DESC, FileSearchProvider.EverythingTimeoutMs) {
                     if seen.Has(StrLower(item.Path))
@@ -383,7 +383,7 @@ class FileSearchProvider {
 
     ; Text used to score results: Everything syntax prefixes removed ("folder:budget" -> "budget", "ext:pdf report" -> "pdf report")
     static ScoreNeedle(needle) {
-        return Trim(RegExReplace(needle, "(^|\s)[a-z]+:", "$1"))
+        return Trim(TextTools.Replace(needle, "(^|\s)[a-z]+:", "$1"))
     }
 
     ; input with several words goes to Everything as it is (Everything splits at spaces itself); quotes are removed to avoid syntax errors

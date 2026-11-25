@@ -905,7 +905,7 @@ class PrefsForm {
         if !(item is Map) || !item.Has(key)
             return ""
         if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; custom commands: the arguments follow the target
-            return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
+            return TextTools.Replace(item["Target"] " " item["Arguments"], "\s+", " ")
         if (key = "Action")                                                 ; custom hotkeys: "Search: folder {selection}", "Run: Notepad", a system command's name
             return HotkeyEditor.ListText(item, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands"))   ; the commands being edited ("" outside Preferences: the saved ones)
         if (key = "Key")                                                    ; custom hotkeys: shown as Ctrl+Alt+P, Middle button
@@ -915,7 +915,7 @@ class PrefsForm {
             if (label != "Prefs.TypeShort." item[key])
                 return label
         }
-        return RegExReplace(item[key] "", "\s+", " ")
+        return TextTools.Replace(item[key] "", "\s+", " ")
     }
 
     ; Drop-downs in one column get one width: wide enough for the longest option of any of them, at least "M"

@@ -129,9 +129,9 @@ class FileIndex {
         if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\") "\") = 1)
             return false
         SplitPath(fullPath, &name)
-        if RegExMatch(name, FileIndex.TempNames)
+        if TextTools.Match(name, FileIndex.TempNames)
             return false
-        if (exclude != "" && RegExMatch(fullPath, exclude))
+        if (exclude != "" && TextTools.Match(fullPath, exclude))
             return false
         for root in roots {
             if (InStr(fullPath, root "\") != 1)
@@ -298,10 +298,10 @@ class FileIndex {
     }
 
     ; Pinyin initials only when the input is one English word (several words wouldn't match ScoreName anyway; input with Chinese matches the text itself)
-    static UsePinyin(needle) => !InStr(needle, " ") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
+    static UsePinyin(needle) => !InStr(needle, " ") && !TextTools.Match(needle, "[^\x{00}-\x{7f}]")
 
     ; Lower-case pinyin initials of a file name ("测试.bat" -> "cs.bat"); "" without Chinese (no separate match needed)
-    static InitialsOf(name) => RegExMatch(name, "[^\x{00}-\x{ff}]") ? StrLower(Pinyin.Initials(name)) : ""
+    static InitialsOf(name) => TextTools.Match(name, "[^\x{00}-\x{ff}]") ? StrLower(Pinyin.Initials(name)) : ""
 
     ; Score by pinyin initials: the same rules as ScoreName, 5 points lower (direct name matches of the same tier come first), at least 50; 0 if no match
     static PinyinScore(needle, initials) => (score := FileIndex.ScoreName(needle, initials)) ? Max(score - 5, 50) : 0

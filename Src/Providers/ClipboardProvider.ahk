@@ -536,7 +536,7 @@ class ClipboardProvider {
     ; Formatting
     ;---------------------------------------------------------------------------
     static _Preview(text) {
-        text := Trim(RegExReplace(text, "\s+", " "))
+        text := Trim(TextTools.Replace(text, "\s+", " "))
         return (StrLen(text) > 120) ? TextTools.Head(text, 120) "..." : text
     }
 

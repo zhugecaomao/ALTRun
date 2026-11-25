@@ -665,7 +665,7 @@ class Pinyin {
     ; Each character is looked up once (_cache): the same characters come up again and again in file and app names
     static _cache := Map(), _buf := Buffer(4)
     static Initials(str) {
-        if !RegExMatch(str, "[^\x{00}-\x{ff}]")     ; No Chinese: return it as it is
+        if !TextTools.Match(str, "[^\x{00}-\x{ff}]")     ; No Chinese: return it as it is
             return str
         out := "", cache := Pinyin._cache
         for ch in StrSplit(str) {
@@ -718,7 +718,7 @@ class Calc {
     ; a letter x doesn't (1920x1080 stays a file search)
     static Looks(expr) {
         ops := Chr(0xD7) Chr(0xF7)                                          ; × ÷
-        return RegExMatch(expr, "[\+\-\*/\^" ops "]") && RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.\s" ops "]+$")
+        return TextTools.Match(expr, "[\+\-\*/\^" ops "]") && TextTools.Match(expr, "^[\d\+\-\*/\^\(\)\.\s" ops "]+$")
     }
 
     ; Returns the result (a float); "" when it isn't a complete expression, divides by 0 or is out of range

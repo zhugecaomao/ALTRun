@@ -72,12 +72,12 @@ class SearchQuery {
     ;---------------------------------------------------------------------------
     static PlaceholderPattern := "i)\{query(?:\|[^}]*)?\}"
 
-    static HasPlaceholder(text) => RegExMatch(text, SearchQuery.PlaceholderPattern) > 0
+    static HasPlaceholder(text) => TextTools.Match(text, SearchQuery.PlaceholderPattern) > 0
 
     ; true when text has a {query|...}, its default put into value ("" for {query|}); false when there is only {query} or none
     static PlaceholderDefault(text, &value := "") {
         value := ""
-        if !RegExMatch(text, "i)\{query\|([^}]*)\}", &m)
+        if !TextTools.Match(text, "i)\{query\|([^}]*)\}", &m)
             return false
         value := m[1]
         return true
@@ -86,10 +86,10 @@ class SearchQuery {
     static IsClipboardDefault(value) => (value = "clipboard")
 
     ; every {query} / {query|...} replaced by term, as given (encode it first for URLs)
-    static FillPlaceholder(text, term) => RegExReplace(text, SearchQuery.PlaceholderPattern, StrReplace(term, "$", "$$"))
+    static FillPlaceholder(text, term) => TextTools.Replace(text, SearchQuery.PlaceholderPattern, StrReplace(term, "$", "$$"))
 
     ; {query|...} written as {query}: for code that looks at where {query} is in a command line (SelectionActions)
-    static PlainPlaceholder(text) => RegExReplace(text, "i)\{query\|[^}]*\}", "{query}")
+    static PlainPlaceholder(text) => TextTools.Replace(text, "i)\{query\|[^}]*\}", "{query}")
 
     ; true when it starts with prefix (no space needed after the prefix, e.g. ">dir" or "'report")
     MatchPrefix(prefix, &term) {

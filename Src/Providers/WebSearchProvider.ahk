@@ -149,7 +149,7 @@ class WebSearchProvider {
 
     ; Search words for the URL: white space collapsed to one space, at most MaxTermChars characters (search sites reject URLs that are too long)
     static Term(text) {
-        text := Trim(RegExReplace(text, "\s+", " "))
+        text := Trim(TextTools.Replace(text, "\s+", " "))
         return StrLen(text) > WebSearchProvider.MaxTermChars ? Trim(SubStr(text, 1, WebSearchProvider.MaxTermChars)) : text
     }
 
@@ -242,7 +242,7 @@ class WebSearchProvider {
     static IconCandidates(html, pageUrl) {
         found := []
         pos := 1
-        while (pos := RegExMatch(html, "is)<link\b[^>]*>", &m, pos)) {
+        while (pos := TextTools.Match(html, "is)<link\b[^>]*>", &m, pos)) {
             tag := m[0], pos += StrLen(tag)
             rel := WebSearchProvider._Attribute(tag, "rel"), href := WebSearchProvider._Attribute(tag, "href")
             if (href = "" || !RegExMatch(rel, "i)(^|\s)(apple-touch-icon(-precomposed)?|icon)(\s|$)"))
@@ -356,7 +356,7 @@ class WebSearchProvider {
     static _DownloadClicked(controls, g) {
         g.Opt("+OwnDialogs")
         address := WebSearchProvider.FirstUrl(controls["Url"].Value)
-        if !RegExMatch(address, "i)^https?://")
+        if !TextTools.Match(address, "i)^https?://")
             return MsgBox(I18n.T("Web.IconBadUrl"), App.Name, 48)
         name := controls.Has("Id") && Trim(controls["Id"].Value) != "" ? Trim(controls["Id"].Value) : (controls.Has("Keyword") ? Trim(controls["Keyword"].Value) : "")
         cursor := DllCall("SetCursor", "Ptr", DllCall("LoadCursor", "Ptr", 0, "Ptr", 32514, "Ptr"), "Ptr")   ; IDC_WAIT

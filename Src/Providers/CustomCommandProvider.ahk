@@ -251,7 +251,7 @@ class CustomCommandProvider {
             return ""
         }
         if (SelectionActions.PowerShellMode(command) = "quoted")
-            text := RegExReplace(text, "['‘’‚‛]", "$0$0")                  ; inside PowerShell's single quotes: a quote doubled is one quote
+            text := TextTools.Replace(text, "['‘’‚‛]", "$0$0")                  ; inside PowerShell's single quotes: a quote doubled is one quote
         return text
     }
 
@@ -336,7 +336,7 @@ class CustomCommandProvider {
         seen.CaseSense := false
         text := (command.Has("Target") ? command["Target"] : "") " " (command.Has("Arguments") ? command["Arguments"] : "")
         pos := 1
-        while (pos := RegExMatch(text, "\{([A-Za-z_]\w*)\}", &m, pos)) {
+        while (pos := TextTools.Match(text, "\{([A-Za-z_]\w*)\}", &m, pos)) {
             pos += m.Len
             name := m[1]
             if seen.Has(name)
