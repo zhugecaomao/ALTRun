@@ -90,7 +90,7 @@ class ThemeManager {
 
     ; Whether a color like "1E1E1E" is dark (luminance below half)
     static IsDarkColor(hex) {
-        if !RegExMatch(hex, "i)^[0-9a-f]{6}$")
+        if !TextTools.Match(hex, "i)^[0-9a-f]{6}$")
             return false
         value := Integer("0x" hex)
         return (((value >> 16) & 0xFF) * 299 + ((value >> 8) & 0xFF) * 587 + (value & 0xFF) * 114) / 1000 < 128

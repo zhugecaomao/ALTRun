@@ -57,7 +57,7 @@ class SelectionActions {
         saved := ClipboardAll(), result := ""
         try {                                                               ; the user's clipboard comes back even when this fails half way
             A_Clipboard := ""
-            Send(RegExMatch(className, SelectionActions.ConsoleClasses) ? "^{Insert}" : "^c")
+            Send(TextTools.Match(className, SelectionActions.ConsoleClasses) ? "^{Insert}" : "^c")
             result := SelectionActions.ReadCopied(className)
         } finally
             A_Clipboard := saved
@@ -460,9 +460,9 @@ class SelectionActions {
         item := CustomCommandProvider._ToItem(command, 0, takesQuery ? term : "")
         item.Title := command["Title"]
         item.CommandId := command.Has("Id") ? command["Id"] : ""            ; which command the row runs (the open command is found by it)
-        if RegExMatch(item.Arg, "\\\.\.?\\") {                            ; A_ScriptDir\..\Typora\Typora.exe: shown and run as C:\Typora\Typora.exe
+        if TextTools.Match(item.Arg, "\\\.\.?\\") {                            ; A_ScriptDir\..\Typora\Typora.exe: shown and run as C:\Typora\Typora.exe
             shown := CustomCommandProvider._Resolve(item.Arg)               ; what the subtitle shows (A_ and %variables% expanded)
-            if RegExMatch(shown, "^(?:[A-Za-z]:\\|\\\\)") {
+            if TextTools.Match(shown, "^(?:[A-Za-z]:\\|\\\\)") {
                 full := Path.Full(shown)
                 item.Subtitle := StrReplace(item.Subtitle, shown, full), item.Arg := full
             }
@@ -520,7 +520,7 @@ class SelectionActions {
                 return true
             case "quoted":
                 arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
-                return info.Kind != "files" && !(SubStr(info.Term, -1) = "\" && RegExMatch(arguments, 'i)\{query\}"'))
+                return info.Kind != "files" && !(SubStr(info.Term, -1) = "\" && TextTools.Match(arguments, 'i)\{query\}"'))
         }
         return false
     }
@@ -535,14 +535,14 @@ class SelectionActions {
         if InStr(target, "{query}")
             return ""
         SplitPath(CustomCommandProvider._Resolve(target), &name)
-        if !RegExMatch(name, "i)^(powershell|pwsh)(\.exe)?$", &program)
+        if !TextTools.Match(name, "i)^(powershell|pwsh)(\.exe)?$", &program)
             return ""
         arguments := SearchQuery.PlainPlaceholder(command.Has("Arguments") ? command["Arguments"] : "")
         args := Win.Args(Path.ExpandEnv(arguments) (CustomCommandProvider.TakesQuery(command) ? "" : " {query}"))
         index := 0
         while (++index <= args.Length) {
             arg := args[index]
-            if !RegExMatch(arg, "^-(.+)$", &parameter)                      ; the first word that isn't a parameter
+            if !TextTools.Match(arg, "^-(.+)$", &parameter)                      ; the first word that isn't a parameter
                 return (program[1] = "pwsh") ? SelectionActions._AfterScript(args, index) : SelectionActions._QuotedCode(args, index)
             if InStr(arg, "{query}")                                        ; in one of PowerShell's own parameters
                 return ""
@@ -729,7 +729,7 @@ class SelectionActions {
             , OnRun: (*) => SnippetProvider.Edit("", Map("Name", SubStr(preview, 1, 40), "Text", text))}))
         ; replace with converted text (pasted back into the program, where the text is still selected)
         for transform in SelectionActions.Transforms() {
-            name := RegExReplace(I18n.T(transform[1]), "^[^:：]+[:：]\s*")    ; drop the "Clipboard: " prefix
+            name := TextTools.Replace(I18n.T(transform[1]), "^[^:：]+[:：]\s*")    ; drop the "Clipboard: " prefix
             actions.Push(ResultItem(I18n.T("Action.ReplaceWith", name), "", {Icon: "res:imageres.dll,-5314", OnRun: SelectionActions._Replacer(text, transform[2])}))
         }
         return ResultItem(preview, I18n.T("Selection.Text", StrLen(text)), {Kind: "text", Arg: text, Icon: "res:imageres.dll,-5314"

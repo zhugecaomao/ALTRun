@@ -35,6 +35,8 @@
 ;                                                     window open, a key held, a folder that can't be reached), not Explorer failing
 ;===============================================================================
 
+#Include %A_LineFile%\..\TextTools.ahk                                         ; TextTools.Match, so a script needs only this file
+
 class ExplorerTabs {
     static MinVersion := "10.0.22621"
     static TabTimeout := 3000, NavigateTimeout := 3000                    ; ms; on CI a tab came in 100-800 ms, a navigation in 300-550 ms
@@ -218,7 +220,7 @@ class ExplorerTabs {
     static IsNetwork(path) {
         if (SubStr(path, 1, 2) = "\\")
             return true
-        return RegExMatch(path, "^[A-Za-z]:") > 0 && DllCall("GetDriveTypeW", "Str", SubStr(path, 1, 2) "\", "UInt") = 4   ; DRIVE_REMOTE
+        return TextTools.Match(path, "^[A-Za-z]:") > 0 && DllCall("GetDriveTypeW", "Str", SubStr(path, 1, 2) "\", "UInt") = 4   ; DRIVE_REMOTE
     }
 
     ; Whether a folder can be opened without waiting: local folders aren't checked here (PidlBytes tells a missing one quickly);

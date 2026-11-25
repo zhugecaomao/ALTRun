@@ -82,7 +82,7 @@ class ActionCatalog {
 
     ; Copy / move into a folder (Windows' own copy, with progress and name-conflict prompts); not into itself or its own subfolders
     static CopyMany(paths, destination, move := false) {
-        folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (RegExMatch(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
+        folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (TextTools.Match(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
         if !IsObject(folder)
             return false
         done := 0
@@ -116,7 +116,7 @@ class ActionCatalog {
     static OpenFile(target, arguments := "") {
         resolved := Path.Resolve(target)
         workDir := ActionCatalog.ParentDir(resolved)
-        if RegExMatch(resolved, "i)^(shell:|::\{|[a-z]+:\/\/)") || !FileExist(resolved)
+        if TextTools.Match(resolved, "i)^(shell:|::\{|[a-z]+:\/\/)") || !FileExist(resolved)
             return Run(Trim(resolved " " arguments))                        ; shell: paths / protocols / program names in PATH
         Run(Trim('"' resolved '" ' arguments), DirExist(workDir) ? workDir : "")
     }
@@ -136,13 +136,13 @@ class ActionCatalog {
     ; target fits "Run as administrator" (CanRunAsAdmin). A result with its own action (OnRun: snippets, system commands...) runs that
     static CanRunElevated(item) => (item.Kind = "file" && !IsObject(item.OnRun) && ActionCatalog.CanRunAsAdmin(item.Arg))
 
-    static IsPackagedApp(target) => RegExMatch(target, "i)^shell:AppsFolder\\[^\\]+$") ? true : false
+    static IsPackagedApp(target) => TextTools.Match(target, "i)^shell:AppsFolder\\[^\\]+$") ? true : false
 
     ; Whether "Run as administrator" fits the target: programs, shortcuts and scripts by their extension; a Store / packaged app when its
     ; context menu has the command, as in the Start menu (desktop apps such as Windows Terminal do, UWP apps such as Calculator don't).
     ; Asking the context menu takes some milliseconds, so the answer is kept per app (_runAs)
     static CanRunAsAdmin(target) {
-        if RegExMatch(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
+        if TextTools.Match(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
             return true
         if !ActionCatalog.IsPackagedApp(target)
             return false
@@ -210,7 +210,7 @@ class ActionCatalog {
         args := ActionCatalog.TabArgs(manager)
         if !(InStr(args, "{path}") > 0)
             return Trim('"' manager.Exe '" ' Trim(args " " legacyArgs))
-        if (flag != "" && !RegExMatch(args, "i)(^|\s)" flag "(\s|$)"))                ; /P=R is another switch
+        if (flag != "" && !TextTools.Match(args, "i)(^|\s)" flag "(\s|$)"))                ; /P=R is another switch
             args := flag " " args
         return '"' manager.Exe '" ' ActionCatalog.FillPath(args, target)
     }
@@ -220,7 +220,7 @@ class ActionCatalog {
     ; needs it, as Run starts the program without cmd.exe, and a Windows path can't contain ". Not RegExReplace: "$" in a path
     ; (C:\$Recycle.Bin, \\server\share$) would be read as a back-reference
     static FillPath(args, target) {
-        quoted := RegExMatch(target, "\s") > 0 ? '"' target '"' : target
+        quoted := TextTools.Match(target, "\s") > 0 ? '"' target '"' : target
         out := "", pos := 1
         while ((found := InStr(args, "{path}", false, pos)) > 0) {
             StrReplace(SubStr(args, 1, found - 1), '"', '"', , &quotes)
@@ -275,7 +275,7 @@ class ActionCatalog {
         if !(AppSettings.General["FolderNewTab"] && ActionCatalog.IsTotalCommander(manager))
             return args
         for flag in ["/O", "/T"]
-            if !RegExMatch(args, "i)(^|\s)" flag "(\s|$)")
+            if !TextTools.Match(args, "i)(^|\s)" flag "(\s|$)")
                 args := Trim(args " " flag)
         return args
     }
@@ -304,7 +304,7 @@ class ActionCatalog {
     ; after it, e.g. %OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S or "C:\My Apps\Vivaldi\vivaldi.exe" --new-window
     static SplitCommand(setting) {
         setting := Trim(setting)
-        if RegExMatch(setting, '^"([^"]+)"\s*(.*)$', &m) || RegExMatch(setting, "i)^(.+?\.exe)(?:\s+(.*))?$", &m)
+        if TextTools.Match(setting, '^"([^"]+)"\s*(.*)$', &m) || TextTools.Match(setting, "i)^(.+?\.exe)(?:\s+(.*))?$", &m)
             return {Program: m[1], Args: Trim(m.Count >= 2 ? m[2] : "")}
         return {Program: setting, Args: ""}
     }
@@ -333,9 +333,9 @@ class ActionCatalog {
             }
             return
         }
-        if !RegExMatch(address, "i)^[a-z][a-z0-9+.\-]*:")
+        if !TextTools.Match(address, "i)^[a-z][a-z0-9+.\-]*:")
             address := "https://" address
-        if (RegExMatch(address, "i)^https?://") && (browser := ActionCatalog.BrowserCommand(AppSettings.General["Browser"])).Exe != "")
+        if (TextTools.Match(address, "i)^https?://") && (browser := ActionCatalog.BrowserCommand(AppSettings.General["Browser"])).Exe != "")
             return Run(ActionCatalog.BrowserCommandLine(browser, address))
         Run(address)
     }
@@ -344,7 +344,7 @@ class ActionCatalog {
     ; %22, and backslashes before the closing quote are doubled, so they don't escape it)
     static BrowserCommandLine(browser, address) {
         address := StrReplace(address, '"', "%22")
-        if RegExMatch(address, "\\+$", &tail)
+        if TextTools.Match(address, "\\+$", &tail)
             address .= tail[0]
         return Trim('"' browser.Exe '" ' browser.Args) ' "' address '"'
     }
@@ -356,7 +356,7 @@ class ActionCatalog {
             Run('properties "' target '"')
     }
 
-    static IsShellItem(target) => RegExMatch(target, "i)^shell:") ? true : false
+    static IsShellItem(target) => TextTools.Match(target, "i)^shell:") ? true : false
 
     static CopyText(text) {
         A_Clipboard := text
@@ -414,7 +414,7 @@ class ActionCatalog {
         try className := ControlGetClassNN(ControlGetFocus("A"))
         return ActionCatalog.IsPacedClass(className)
     }
-    static IsPacedClass(className) => className != "" && RegExMatch(className, ActionCatalog.PacedClasses) > 0
+    static IsPacedClass(className) => className != "" && TextTools.Match(className, ActionCatalog.PacedClasses) > 0
 
     static _SendText(text, paced) {
         if !paced
@@ -493,7 +493,7 @@ class ActionCatalog {
 
     ; Windows' own copy / move (progress window, asks on name conflicts, can be undone), in the background so ALTRun doesn't hang
     static CopyTo(target, destination, move := false) {
-        folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (RegExMatch(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
+        folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (TextTools.Match(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
         if !IsObject(folder)
             return false
         move ? folder.MoveHere(target, 0) : folder.CopyHere(target, 0)
@@ -505,7 +505,7 @@ class ActionCatalog {
     static Recycle(target) {
         SplitPath(RTrim(target, "\"), &name, &dir)
         try {
-            folderItem := ComObject("Shell.Application").NameSpace(RegExMatch(dir, "^[A-Za-z]:$") ? dir "\" : dir).ParseName(name)
+            folderItem := ComObject("Shell.Application").NameSpace(TextTools.Match(dir, "^[A-Za-z]:$") ? dir "\" : dir).ParseName(name)
             folderItem.InvokeVerb("delete")
             return true
         }

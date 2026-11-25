@@ -37,7 +37,7 @@ class SyncJobs {
     static _pollTimer := () => SyncJobs._Poll()
 
     static Key(name) => StrLower(Trim(name))
-    static FileName(name) => RegExReplace(Trim(name), '[\\/:*?"<>|]', "_")
+    static FileName(name) => TextTools.Replace(Trim(name), '[\\/:*?"<>|]', "_")
     static IsRunning(name) => SyncJobs.Jobs.Has(SyncJobs.Key(name))
 
     ;---------------------------------------------------------------------------
@@ -173,7 +173,7 @@ class SyncJobs {
         copy := task.Clone()
         if preview {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_preview.log", copy["AppendLog"] := 0
-            copy["Extra"] := Trim(RegExReplace(RoboSync._Get(task, "Extra"), "i)(^|\s)/(NJS|NFL|NDL|V|X|TEE)(?=\s|$)"))   ; the summary and the list are read from the log
+            copy["Extra"] := Trim(TextTools.Replace(RoboSync._Get(task, "Extra"), "i)(^|\s)/(NJS|NFL|NDL|V|X|TEE)(?=\s|$)"))   ; the summary and the list are read from the log
         } else if (RoboSync._Get(task, "LogFile") = "") {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_{date}.log", copy["AppendLog"] := 1
         }
@@ -384,7 +384,7 @@ class SyncJobs {
     static Summary(logText) {
         rows := [], lines := StrSplit(StrReplace(logText, "`r"), "`n")
         for index, line in lines
-            if RegExMatch(line, "^\s*[^\d\s][^:：]*[:：]\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$", &m)
+            if TextTools.Match(line, "^\s*[^\d\s][^:：]*[:：]\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$", &m)
                 rows.Push({Index: index, Values: [m[1], m[2], m[3], m[4], m[5], m[6]]})
         found := 0
         Loop rows.Length - 1 {
@@ -400,9 +400,9 @@ class SyncJobs {
             , Failed: Integer(values[5]), Extras: Integer(values[6])}
         bytes := ""                                                         ; the row after Files: sizes, bytes or with a unit ("400.00 m")
         next := rows[found + 1].Index + 1
-        if (next <= lines.Length && RegExMatch(lines[next], "^\s*[^\d\s][^:：]*[:：](.*)$", &m)) {
+        if (next <= lines.Length && TextTools.Match(lines[next], "^\s*[^\d\s][^:：]*[:：](.*)$", &m)) {
             values := [], at := 1
-            while (at := RegExMatch(m[1], "i)(\d+(?:\.\d+)?)(?:\s([kmgt]))?(?=\s|$)", &v, at)) {
+            while (at := TextTools.Match(m[1], "i)(\d+(?:\.\d+)?)(?:\s([kmgt]))?(?=\s|$)", &v, at)) {
                 values.Push(SyncProgress.ParseSize(v[0])), at += StrLen(v[0])
             }
             if (values.Length = 6)

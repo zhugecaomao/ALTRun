@@ -206,9 +206,9 @@ class FileIndex {
             folder := entry[1], depth := entry[2]
             try {
                 Loop Files, folder "\*", "FD" {
-                    if (A_LoopFileAttrib ~= "[HS]")                             ; skip hidden / system files
+                    if TextTools.Match(A_LoopFileAttrib, "[HS]")                             ; skip hidden / system files
                         continue
-                    if (exclude != "" && RegExMatch(A_LoopFileFullPath, exclude))
+                    if (exclude != "" && TextTools.Match(A_LoopFileFullPath, exclude))
                         continue
                     isFolder := InStr(A_LoopFileAttrib, "D") ? true : false
                     found.Add(A_LoopFileDir, A_LoopFileName, isFolder)

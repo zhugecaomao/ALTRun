@@ -71,7 +71,7 @@ class WindowProvider {
             }
             exePath := ""
             try exePath := WinGetProcessPath("ahk_id " hwnd)
-            name := RegExReplace(process, "i)\.exe$")
+            name := TextTools.Replace(process, "i)\.exe$")
             pinyinText := Pinyin.Initials(title)
             list.Push({Hwnd: hwnd, Title: title, Process: process, Path: exePath
                 , Keys: [FuzzyMatcher.Key(title), FuzzyMatcher.Key(name), (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]})

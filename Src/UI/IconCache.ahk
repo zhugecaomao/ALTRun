@@ -286,7 +286,7 @@ class IconCache {
         return IconCache.DaysSince(entry.Saved) >= IconCache.DiskRecheckDays
     }
 
-    static IsFileKey(key) => !RegExMatch(key, "i)^(res|ext|url|folder|thumb|thumbfill|shell):|^::\{")
+    static IsFileKey(key) => !TextTools.Match(key, "i)^(res|ext|url|folder|thumb|thumbfill|shell):|^::\{")
 
     ; A file's "modified time|size" (folders have size 0); "" if it doesn't exist
     static Stamp(key) {
@@ -307,7 +307,7 @@ class IconCache {
 
     ; A newly read icon goes into the disk cache (thumbnails of clipboard images don't: each image is only used for a while)
     static _Remember(key, hIcon) {
-        if (!hIcon || IconCache.DiskDir = "" || RegExMatch(key, "i)^thumb(fill)?:"))
+        if (!hIcon || IconCache.DiskDir = "" || TextTools.Match(key, "i)^thumb(fill)?:"))
             return
         if !(pixels := IconCache.IconPixels(hIcon))
             return
@@ -441,7 +441,7 @@ class IconCache {
         if IconCache._folderIcons.Has(folder)
             return IconCache._folderIcons[folder]
         trimmed := RTrim(folder, "\/")
-        if (RegExMatch(trimmed, "^[A-Za-z]:$") || RegExMatch(folder, "i)^(shell:|::\{)"))
+        if (TextTools.Match(trimmed, "^[A-Za-z]:$") || TextTools.Match(folder, "i)^(shell:|::\{)"))
             return IconCache._folderIcons[folder] := folder
         if Path.IsRemote(folder)
             return IconCache._folderIcons[folder] := "folder:"
@@ -572,19 +572,19 @@ class IconCache {
     }
 
     static _CacheKey(spec) {
-        if RegExMatch(spec, "i)^(res|ext|url|folder|thumb|thumbfill):")
+        if TextTools.Match(spec, "i)^(res|ext|url|folder|thumb|thumbfill):")
             return StrLower(spec)
         ext := Path.Extension(spec)
         if Path.IsRemote(spec)
             return (ext = "") ? "folder:" : "ext:." StrLower(ext)
-        if (ext = "" || RegExMatch(ext, "i)^(exe|lnk|ico|url|appref-ms|msc|cpl|scr)$") || InStr(spec, "shell:") = 1)
+        if (ext = "" || TextTools.Match(ext, "i)^(exe|lnk|ico|url|appref-ms|msc|cpl|scr)$") || InStr(spec, "shell:") = 1)
             return StrLower(spec)                                           ; each file has its own icon
         return "ext:." StrLower(ext)
     }
 
     ; network locations load the generic icons (the cache key is "folder:" / "ext:.pdf"), others the original path
     static _LoadSpec(spec, key) {
-        return (Path.IsRemote(spec) && RegExMatch(key, "^(folder|ext):")) ? key : spec
+        return (Path.IsRemote(spec) && TextTools.Match(key, "^(folder|ext):")) ? key : spec
     }
 
     ; after reading, scale the icon to exactly Size x Size (see FitSize)
@@ -604,13 +604,13 @@ class IconCache {
             return IconCache._FromShell(".html", FILE_ATTRIBUTE_NORMAL, true)
         if (spec = "folder:")
             return IconCache._FromShell("folder", FILE_ATTRIBUTE_DIRECTORY, true)
-        if RegExMatch(spec, "i)^thumb(fill)?:(.*)$", &thumb)              ; an image that can't be read (no thumbnail, unknown format): the file's own icon
+        if TextTools.Match(spec, "i)^thumb(fill)?:(.*)$", &thumb)              ; an image that can't be read (no thumbnail, unknown format): the file's own icon
             return IconCache._FromImage(thumb[2], thumb[1] != "") || IconCache._FromShell(thumb[2], 0, false)
 
         target := Path.Resolve(spec)
-        if RegExMatch(target, "i)^(shell:|::\{)") {
+        if TextTools.Match(target, "i)^(shell:|::\{)") {
             ; Control Panel items (Devices and Printers etc.) given only as ::{CLSID} aren't found under the desktop; look under Control Panel too
-            if (!(hIcon := IconCache._FromPidl(target)) && RegExMatch(target, "^::\{[^\\]+\}$"))
+            if (!(hIcon := IconCache._FromPidl(target)) && TextTools.Match(target, "^::\{[^\\]+\}$"))
                 hIcon := IconCache._FromPidl("::{21EC2020-3AEA-1069-A2DD-08002B30309D}\" target)
             return hIcon
         }
@@ -634,7 +634,7 @@ class IconCache {
         if (!FileExist(file) || !ClipboardData.StartGdiplus())
             return 0
         image := 0, hbm := 0
-        if (FileGetSize(file) > IconCache.ShellThumbBytes || !RegExMatch(file, "i)\.(png|jpe?g|gif|bmp|tiff?|ico)$"))
+        if (FileGetSize(file) > IconCache.ShellThumbBytes || !TextTools.Match(file, "i)\.(png|jpe?g|gif|bmp|tiff?|ico)$"))
             image := IconCache._ShellThumbnail(file, IconCache.Size * 4, &hbm)   ; 4x: a 4:1 image still covers the square when filling
         if (!image && (DllCall("gdiplus\GdipLoadImageFromFile", "WStr", file, "Ptr*", &image) || !image))
             return 0

@@ -431,6 +431,13 @@ class CoreTests {
         eq("replace compat last", TextTools.Replace("a b" compat, "\s"), "ab" compat)
         eq("replace plain", TextTools.Replace("a  b", "\s+", " "), "a b")
         eq("calculator: =（ gives nothing, no error", CalculatorProvider.Search(SearchQuery("=（1+2）")).Length, 0)
+        ; the same text where ALTRun's code called RegExMatch / RegExReplace directly (#675): saving settings and data, file names, typed names
+        for text in ["（a）", "a" compat, "，"] {
+            eq("json round trip " A_Index, JSON.Parse(JSON.Stringify(Map("v", text)))["v"], text)
+            eq("csv cell " A_Index, RTrim(DelimitedText.ToCsv([[text]]), "`r`n"), text)
+        }
+        eq("sync job file name", SyncJobs.FileName("（备份）"), "（备份）")
+        eq("folder ending in 﨑", RoboSync.TrimSlash("D:\山" compat "\"), "D:\山" compat)
         eq("regex ok", TextTools.RegexError("i)(uninstall|readme)"), "")
         eq("regex empty", TextTools.RegexError(""), "")
         TestRunner.True("TextTools.regex error", TextTools.RegexError("i)(uninstall|readme") != "")

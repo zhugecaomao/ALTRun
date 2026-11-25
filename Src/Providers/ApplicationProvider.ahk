@@ -107,7 +107,7 @@ class ApplicationProvider {
     static _TypesPattern(options) {
         types := ""
         for pattern in options["FileTypes"]
-            types .= (types = "" ? "" : "|") StrReplace(StrReplace(RegExReplace(pattern, "[\\.^$+()\[\]{}|]", "\$0"), "*", ".*"), "?", ".")
+            types .= (types = "" ? "" : "|") StrReplace(StrReplace(TextTools.Replace(pattern, "[\\.^$+()\[\]{}|]", "\$0"), "*", ".*"), "?", ".")
         return "i)^(?:" types ")$"
     }
 

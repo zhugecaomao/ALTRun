@@ -234,7 +234,7 @@ class CalculatorProvider {
         static names := Map("hex", 16, "bin", 2, "oct", 8, "dec", 10)
         if !TextTools.Match(Trim(text), "i)^(0x[0-9a-f]+|0b[01]+|0o[0-7]+|\d+)(?:\s+(?:in|to)\s+(hex|bin|oct|dec))?$", &m)
             return []
-        if (m[2] = "" && !RegExMatch(m[1], "i)^0[xbo]"))                   ; plain numbers aren't base conversions
+        if (m[2] = "" && !TextTools.Match(m[1], "i)^0[xbo]"))                   ; plain numbers aren't base conversions
             return []
         value := CalculatorProvider.ParseInteger(m[1])
         if (value = "")
@@ -283,12 +283,12 @@ class CalculatorProvider {
                 return []
             amount := (m[2] = "-") ? -m[3] : m[3] + 0
             unit := m[4]
-            if RegExMatch(unit, "^(d|days?|天)$")
+            if TextTools.Match(unit, "^(d|days?|天)$")
                 result := DateAdd(start, amount, "Days")
-            else if RegExMatch(unit, "^(w|weeks?|周|星期)$")
+            else if TextTools.Match(unit, "^(w|weeks?|周|星期)$")
                 result := DateAdd(start, amount * 7, "Days")
             else
-                result := CalculatorProvider.AddMonths(start, RegExMatch(unit, "^(y|years?|年)$") ? amount * 12 : amount)
+                result := CalculatorProvider.AddMonths(start, TextTools.Match(unit, "^(y|years?|年)$") ? amount * 12 : amount)
             label := FormatTime(result, "yyyy-MM-dd") " (" FormatTime(result, "ddd") ")"
             return [CalculatorProvider._Item(label, I18n.T("Calc.Subtitle") " · " text)]
         }

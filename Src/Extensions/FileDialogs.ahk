@@ -37,7 +37,7 @@ class FileDialogs {
     ; Other programs ("other dialogs" added in Preferences) count with a plain list too; those whose controls can't be read (Qt etc.) are decided by title
     static LooksLikeFileDialog(winClass, controls, title := "") {
         if !controls.Length
-            return RegExMatch(title, "i)(open|save|select|import|export|browse|打开|另存|选择|导入|导出)") > 0
+            return TextTools.Match(title, "i)(open|save|select|import|export|browse|打开|另存|选择|导入|导出)") > 0
         hasNameEdit := FileDialogs._HasControl(controls, "^Edit\d+$")
         hasFileView := (winClass = "#32770")
             ? FileDialogs._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$")
@@ -74,7 +74,7 @@ class FileDialogs {
     ; be opened, and Windows blocks the message, UIPI): SetDialogPath hands those to AdminHelper; one that gets here anyway is logged, with a hint
     static SelectInBrowseDialog(folder, dialog) {
         folder := RTrim(folder, "\")
-        if RegExMatch(folder, "^[A-Za-z]:$")
+        if TextTools.Match(folder, "^[A-Za-z]:$")
             folder .= "\"                                                   ; a drive needs its backslash
         pid := 0
         try pid := WinGetPID("ahk_id " dialog)
@@ -151,7 +151,7 @@ class FileDialogs {
         exe := "", controls := []
         if DllCall("GetWindowThreadProcessId", "Ptr", dialog, "UInt*", &pid := 0, "UInt")   ; WinGetProcessName doesn't see hidden windows
             try exe := ProcessGetName(pid)
-        if !(RegExMatch(exe, "i)^(7zG|7zFM|WinRAR)\.exe$") && QuickSwitch.ClassOf(dialog) = "#32770")
+        if !(TextTools.Match(exe, "i)^(7zG|7zFM|WinRAR)\.exe$") && QuickSwitch.ClassOf(dialog) = "#32770")
             return 0
         try for control in WinGetControlsHwnd("ahk_id " dialog)
             controls.Push({Hwnd: control, Class: QuickSwitch.ClassOf(control), Id: DllCall("GetDlgCtrlID", "Ptr", control, "Int"), Parent: DllCall("GetParent", "Ptr", control, "Ptr")})
@@ -202,7 +202,7 @@ class FileDialogs {
     static _HasControl(controls, patterns*) {
         for name in controls
             for pattern in patterns
-                if RegExMatch(name, "i)" pattern)
+                if TextTools.Match(name, "i)" pattern)
                     return true
         return false
     }
@@ -217,7 +217,7 @@ class FileDialogs {
     ; fill the old name back only when the file name box held a normal file name (not when empty, a path or a filter like *.txt)
     static ShouldRestoreName(saved) {
         saved := Trim(saved)
-        return saved != "" && !RegExMatch(saved, "[\\/:*?]")
+        return saved != "" && !TextTools.Match(saved, "[\\/:*?]")
     }
 
     ; dialog: the dialog to jump in (the current window by default). A dialog of a program running as administrator, with ALTRun not
@@ -385,7 +385,7 @@ class FileDialogs {
         }
         try text := WinGetText("ahk_id " dialog)
         Loop Parse, text, "`n", "`r"
-            if RegExMatch(A_LoopField, "^[^:：\\]{1,40}[:：]\s*((?:[A-Za-z]:\\|\\\\)[^\r\n]*)$", &m)
+            if TextTools.Match(A_LoopField, "^[^:：\\]{1,40}[:：]\s*((?:[A-Za-z]:\\|\\\\)[^\r\n]*)$", &m)
                 return RTrim(m[1], "\")
         return ""
     }

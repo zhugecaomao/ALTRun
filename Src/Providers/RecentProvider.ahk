@@ -50,9 +50,9 @@ class RecentProvider {
     static Snapshot(item) {
         if (!IsObject(item) || item.Provider = "" || RecentProvider.Skip.Has(item.Provider) || !item.Valid)
             return ""
-        if RegExMatch(item.Uid, "^system:(.+)$", &m)
+        if TextTools.Match(item.Uid, "^system:(.+)$", &m)
             return Map("System", m[1], "Title", item.Title, "Uid", item.Uid)
-        if (RegExMatch(item.Kind, "^(file|folder|url)$") && item.Arg != "" && !IsObject(item.OnRun)) {
+        if (TextTools.Match(item.Kind, "^(file|folder|url)$") && item.Arg != "" && !IsObject(item.OnRun)) {
             entry := Map("Title", item.Title, "Subtitle", item.Subtitle, "Kind", item.Kind, "Arg", item.Arg, "Arguments", item.Arguments
                        , "Icon", IsObject(item.Icon) ? "" : item.Icon, "Uid", (item.Uid != "") ? item.Uid : item.Kind ":" StrLower(item.Arg))
             if item.WindowArgs                                              ; {hwnd} / {pid} stay as they are, filled in each time it runs

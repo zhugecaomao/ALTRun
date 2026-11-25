@@ -171,7 +171,7 @@ class CustomCommandProvider {
     ; The text for {query} in a URL: encoded; right after "mailto:" an address keeps its @ (mail programs don't all decode %40 there)
     static UrlTerm(target, term) {
         encoded := Url.Encode(term)
-        return RegExMatch(target, "i)^mailto:\{query[|}]") ? StrReplace(encoded, "%40", "@") : encoded
+        return TextTools.Match(target, "i)^mailto:\{query[|}]") ? StrReplace(encoded, "%40", "@") : encoded
     }
 
     ; Target / Arguments contain {query} / {query|...}
@@ -218,7 +218,7 @@ class CustomCommandProvider {
         }
         switch commandType, false {
             case "Folder": kind := "folder", icon := CustomCommandProvider._FolderIcon(CustomCommandProvider._Resolve(target))
-            case "Url"   : kind := "url",    icon := RegExMatch(target, "i)^ms-settings:") ? "res:imageres.dll,-114" : "url:"   ; system settings links use the gear icon
+            case "Url"   : kind := "url",    icon := TextTools.Match(target, "i)^ms-settings:") ? "res:imageres.dll,-114" : "url:"   ; system settings links use the gear icon
             default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
         displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
@@ -307,7 +307,7 @@ class CustomCommandProvider {
         if (SearchQuery.HasPlaceholder(raw) || ActionCatalog.UsesWindow(raw))   ; the path contains an argument, known only once typed or run
             return "Skipped"
         target := Path.Resolve(raw)
-        if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:, ms-settings:, http: etc. (not "C:")
+        if TextTools.Match(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:, ms-settings:, http: etc. (not "C:")
             return "Skipped"
         if !InStr(target, "\")                                              ; a bare file name not in PATH
             return CustomCommandProvider._InAppPaths(target) ? "OK" : "Missing"
@@ -762,7 +762,7 @@ class CustomCommandProvider {
 
     static FromPath(target) {
         target := RTrim(target, "\/")
-        if RegExMatch(target, "^[A-Za-z]:$")                                ; a whole drive "D:"
+        if TextTools.Match(target, "^[A-Za-z]:$")                                ; a whole drive "D:"
             target .= "\"
         isFolder := DirExist(target) != ""
         SplitPath(RTrim(target, "\"), &fileName, , , &nameNoExt)

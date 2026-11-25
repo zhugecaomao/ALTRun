@@ -71,7 +71,7 @@ class SyncProgress {
 
     ; One log line -> a change, or "" (a header, an unchanged folder, a summary row...)
     _Line(line) {
-        if RegExMatch(line, "\sERROR \d+ \(0x[0-9A-Fa-f]+\)") {               ; "2026/11/03 10:00:00 ERROR 5 (0x00000005) Copying File ..."
+        if TextTools.Match(line, "\sERROR \d+ \(0x[0-9A-Fa-f]+\)") {               ; "2026/11/03 10:00:00 ERROR 5 (0x00000005) Copying File ..."
             this.Errors++, this.LastError := Trim(line)
             return ""
         }
@@ -81,9 +81,9 @@ class SyncProgress {
         name := fields[fields.Length]
         if (Trim(name) = "")
             return ""
-        if (RegExMatch(name, "^(?:[A-Za-z]:\\|\\\\)") && SubStr(name, -1) = "\") {   ; a folder: C:\x\ or \\server\share\x\
+        if (TextTools.Match(name, "^(?:[A-Za-z]:\\|\\\\)") && SubStr(name, -1) = "\") {   ; a folder: C:\x\ or \\server\share\x\
             this._folder := name
-            label := Trim(RegExReplace(fields.Length >= 2 ? fields[fields.Length - 1] : "", "\s*-?\d+\s*$"))
+            label := Trim(TextTools.Replace(fields.Length >= 2 ? fields[fields.Length - 1] : "", "\s*-?\d+\s*$"))
             if (label = "")
                 return ""                                                   ; unchanged: only the folder the next files are in
             return {Kind: SubStr(label, 1, 1) = "*" ? "Delete" : "Copy", Folder: true, Path: name, Label: label, Size: ""}
@@ -91,12 +91,12 @@ class SyncProgress {
         label := "", size := 0
         Loop fields.Length - 1 {
             field := fields[A_Index]
-            if (label = "" && RegExMatch(field, "[^\d\s.,]{2,}"))           ; the label, not a size such as "1.5 m"
+            if (label = "" && TextTools.Match(field, "[^\d\s.,]{2,}"))           ; the label, not a size such as "1.5 m"
                 label := Trim(field)
             else if (Trim(field) != "" && (bytes := SyncProgress.ParseSize(field)) != "")
                 size := bytes
         }
-        full := RegExMatch(name, "^(?:[A-Za-z]:\\|\\\\)")                     ; /MT: the file's full path
+        full := TextTools.Match(name, "^(?:[A-Za-z]:\\|\\\\)")                     ; /MT: the file's full path
         if (label = "" || (!full && this._folder = ""))
             return ""
         return {Kind: SubStr(label, 1, 1) = "*" ? "Delete" : "Copy", Folder: false, Path: full ? name : this._folder name, Label: label, Size: size}
@@ -104,7 +104,7 @@ class SyncProgress {
 
     ; robocopy's size: bytes, or a number with k / m / g / t (units of 1024) -> bytes; "" when it isn't a size
     static ParseSize(text) {
-        if !RegExMatch(Trim(text), "i)^(\d+(?:\.\d+)?)(?:\s*([kmgt]))?$", &m)
+        if !TextTools.Match(Trim(text), "i)^(\d+(?:\.\d+)?)(?:\s*([kmgt]))?$", &m)
             return ""
         return Round(m[1] * (1024 ** (m[2] = "" ? 0 : InStr("kmgt", m[2]))))
     }

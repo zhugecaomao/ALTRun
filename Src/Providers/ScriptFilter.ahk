@@ -211,16 +211,16 @@ class ScriptFilter {
     ; file / folder / url / text / script: as given, else guessed from arg by its form only (a network path would make a check wait)
     static KindOf(type, arg) {
         type := StrLower(Trim(type))
-        if RegExMatch(type, "^(file|folder|url|text|script)$")
+        if TextTools.Match(type, "^(file|folder|url|text|script)$")
             return type
-        if RegExMatch(arg, "i)^([a-z][a-z0-9+.\-]*://|mailto:)")
+        if TextTools.Match(arg, "i)^([a-z][a-z0-9+.\-]*://|mailto:)")
             return "url"
-        if RegExMatch(arg, "^([A-Za-z]:\\|\\\\[^\\])")
+        if TextTools.Match(arg, "^([A-Za-z]:\\|\\\\[^\\])")
             return (SubStr(arg, -1) = "\") ? "folder" : "file"
         return "text"
     }
 
-    static _LocalIcon(icon) => RegExMatch(Trim(icon), "i)^[a-z][a-z0-9+.\-]*://") ? "" : Trim(icon)   ; no web addresses: nothing is downloaded for an icon
+    static _LocalIcon(icon) => TextTools.Match(Trim(icon), "i)^[a-z][a-z0-9+.\-]*://") ? "" : Trim(icon)   ; no web addresses: nothing is downloaded for an icon
 
     ; The rows for an entry (Read): the items, the error row or "No results"; new ResultItems each time (the search changes their scores).
     ; filterText: for a script ALTRun filters (@altrun.filter altrun), only the items matching it, best first

@@ -104,7 +104,7 @@ class I18n {
         Loop Files, I18n.LangDir "\*.json" {
             code := I18n.Normalize(SubStr(A_LoopFileName, 1, -5))
             name := code
-            try if RegExMatch(FileRead(A_LoopFileFullPath, "UTF-8"), '"_name"\s*:\s*"([^"]+)"', &m)
+            try if TextTools.Match(FileRead(A_LoopFileFullPath, "UTF-8"), '"_name"\s*:\s*"([^"]+)"', &m)
                 name := m[1]
             found[code] := name                                             ; Map sorted by key
         }

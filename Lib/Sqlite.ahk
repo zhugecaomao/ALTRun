@@ -12,6 +12,8 @@
 ; Throws an Error with SQLite's message when the file can't be opened or the query fails.
 ;===============================================================================
 
+#Include %A_LineFile%\..\TextTools.ahk                                         ; TextTools.Match, so a script needs only this file
+
 class Sqlite {
     static Dll := "winsqlite3.dll", _module := "", _tried := false
     static SQLITE_OK := 0, SQLITE_ROW := 100, SQLITE_DONE := 101
@@ -94,7 +96,7 @@ class Sqlite {
         uri := ""
         for ch in StrSplit(StrReplace(filePath, "\", "/")) {
             code := Ord(ch)
-            uri .= (code < 0x80 && !RegExMatch(ch, "[A-Za-z0-9/:._~-]")) ? Format("%{:02X}", code) : ch
+            uri .= (code < 0x80 && !TextTools.Match(ch, "[A-Za-z0-9/:._~-]")) ? Format("%{:02X}", code) : ch
         }
         return "file:///" uri                                               ; local files only (SQLite takes no server in a file URI)
     }

@@ -105,7 +105,7 @@ class AutoDate {
         today := (today != "") ? today : AutoDate.Today()
         datePattern := "\s?-\s?" AutoDate.DatePattern((format != "") ? format : AutoDate.Format()) "$"
         ; only "dot + 1~4 letters or digits" that aren't all digits count as an extension ("1. DWG" doesn't)
-        if TextTools.Match(fileName, "^(.*)\.([A-Za-z0-9]{1,4})$", &m) && !RegExMatch(m[2], "^\d+$")
+        if TextTools.Match(fileName, "^(.*)\.([A-Za-z0-9]{1,4})$", &m) && !TextTools.Match(m[2], "^\d+$")
             return TextTools.Replace(m[1], datePattern) " - " today "." m[2]
         if TextTools.Match(fileName, datePattern)
             return TextTools.Replace(fileName, datePattern) " - " today

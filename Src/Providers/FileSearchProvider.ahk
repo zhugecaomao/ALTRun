@@ -219,10 +219,10 @@ class FileSearchProvider {
 
     ; "doc = doc docx .pdf, xls" -> {Keyword: "doc", Extensions: Map, Everything: "ext:doc;docx;pdf;xls"}; "" if it is malformed
     static ParseTypeFilter(line) {
-        if !RegExMatch(line, "^\s*([^=\s]+)\s*=\s*(.+)$", &m)
+        if !TextTools.Match(line, "^\s*([^=\s]+)\s*=\s*(.+)$", &m)
             return ""
         extensions := Map(), list := ""
-        for ext in StrSplit(RegExReplace(m[2], "[\s,;]+", " "), " ") {
+        for ext in StrSplit(TextTools.Replace(m[2], "[\s,;]+", " "), " ") {
             ext := StrLower(LTrim(Trim(ext), "*."))
             if (ext = "" || extensions.Has(ext))
                 continue

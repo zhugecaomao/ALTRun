@@ -79,7 +79,7 @@ class Logger {
     static _Write(level, msg) {
         if !Logger.Enabled
             return
-        msg := RegExReplace(msg, "\R+", " | ")                               ; one entry per line, always ending in CRLF
+        msg := TextTools.Replace(msg, "\R+", " | ")                               ; one entry per line, always ending in CRLF
         Logger._buffer.Push(FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss") " [" level "] " msg "`r`n")
         if (Logger.Immediate || level != "DBG" || Logger._buffer.Length >= Logger._maxBuf)
             Logger.Flush()

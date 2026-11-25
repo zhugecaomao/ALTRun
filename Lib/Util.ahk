@@ -22,7 +22,7 @@ class Path {
         static drives := Map()
         if (SubStr(target, 1, 2) = "\\")
             return true
-        if !RegExMatch(target, "^([A-Za-z]):", &match)
+        if !TextTools.Match(target, "^([A-Za-z]):", &match)
             return false
         letter := StrUpper(match[1])
         if !drives.Has(letter)
@@ -34,7 +34,7 @@ class Path {
     ; folders with a dot in the name such as "26. Main Street (A)", "10.Project-2310", "Design.2019" have none
     static Extension(path) {
         SplitPath(RTrim(path, "\/"), , , &ext)
-        return (RegExMatch(ext, "^(?=.*[A-Za-z])[A-Za-z0-9]{1,6}$") || ext = "appref-ms") ? ext : ""
+        return (TextTools.Match(ext, "^(?=.*[A-Za-z])[A-Za-z0-9]{1,6}$") || ext = "appref-ms") ? ext : ""
     }
 
     ; The built-in variable table is filled on first use (reading it at start-up slows a cold start)
@@ -66,7 +66,7 @@ class Path {
         if (InStr(raw, "A_") = 1)
             raw := Path.Resolve(raw)
         raw := Path.ExpandEnv(raw)
-        if !RegExMatch(raw, "^([A-Za-z]:|\\\\)")
+        if !TextTools.Match(raw, "^([A-Za-z]:|\\\\)")
             raw := RTrim(base, "\") "\" raw
         buf := Buffer(32767 * 2)
         if DllCall("GetFullPathNameW", "WStr", raw, "UInt", 32767, "Ptr", buf, "Ptr", 0, "UInt")
@@ -88,7 +88,7 @@ class Path {
     ; those as they are, so "%OneDrive%\ALTRun" on a PC without OneDrive would become a folder named "%OneDrive%"
     static MissingEnv(text) {
         pos := 1
-        while (pos := RegExMatch(text, "%([^%\\/:*?`"<>|]+)%", &m, pos)) {
+        while (pos := TextTools.Match(text, "%([^%\\/:*?`"<>|]+)%", &m, pos)) {
             if (EnvGet(m[1]) = "")
                 return m[1]
             pos += m.Len
@@ -100,9 +100,9 @@ class Path {
     ; a mapped network drive) are taken as they are, since FileExist waits for the network timeout when the server is offline
     ; (seconds). For lists such as the actions panel; the action itself reports a path that turns out to be missing
     static ExistsOrRemote(fullPath) {
-        if RegExMatch(fullPath, "^\\\\[^\\]+\\")
+        if TextTools.Match(fullPath, "^\\\\[^\\]+\\")
             return true
-        if !RegExMatch(fullPath, "^[A-Za-z]:")
+        if !TextTools.Match(fullPath, "^[A-Za-z]:")
             return FileExist(fullPath) != ""
         if (DllCall("GetDriveTypeW", "Str", SubStr(fullPath, 1, 2) "\", "UInt") = 4)   ; DRIVE_REMOTE: answers without the network
             return true
@@ -201,7 +201,7 @@ class Path {
         if (StrLen(fullPath) <= maxLen)
             return fullPath
         trimmed := RTrim(fullPath, "\")
-        root := RegExMatch(trimmed, "^(\\\\[^\\]+\\[^\\]+\\|[A-Za-z]:\\)", &m) ? m[1] : ""
+        root := TextTools.Match(trimmed, "^(\\\\[^\\]+\\[^\\]+\\|[A-Za-z]:\\)", &m) ? m[1] : ""
         last := Path.Leaf(trimmed)
         dots := Chr(0x2026), room := maxLen - StrLen(root) - 2              ; "…\"
         if (StrLen(last) > room)
@@ -604,7 +604,7 @@ class Win {
         while (i < StrLen(hk) && InStr("~*$<>^!+#", SubStr(hk, i, 1)))
             mods .= SubStr(hk, i++, 1)
         key := SubStr(hk, i), up := ""
-        if RegExMatch(key, "i)^(.+?)\s+up$", &m)
+        if TextTools.Match(key, "i)^(.+?)\s+up$", &m)
             key := m[1], up := " Up"
         sides := Map(), side := ""                                          ; "<" / ">" before a modifier: only the left / right one ("<!" -> "LAlt")
         Loop Parse, mods
@@ -797,7 +797,7 @@ class Calc {
 
     ; Thousands separators (negative numbers too): -1234567.5 -> -1,234,567.5
     static Thousands(num) {
-        return RegExReplace(num "", "\G-?\d+?(?=(\d{3})+(?:\D|$))", "$0,")
+        return TextTools.Replace(num "", "\G-?\d+?(?=(\d{3})+(?:\D|$))", "$0,")
     }
 }
 

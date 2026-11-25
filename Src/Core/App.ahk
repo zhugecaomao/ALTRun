@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.25.3"
+    static Version := "2026.11.25.4"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -197,7 +197,7 @@ class App {
     static AdminSuffix() => A_IsAdmin ? " (" I18n.T("App.Admin") ")" : ""
 
     static IsRestart(commandLine) {
-        return RegExMatch(commandLine, 'i)^\s*("[^"]*"|\S+)\s+/restart(\s|$)') ? true : false
+        return TextTools.Match(commandLine, 'i)^\s*("[^"]*"|\S+)\s+/restart(\s|$)') ? true : false
     }
 
     ; The arguments are sent one per line; only a reply of 1 counts as received (false when it hangs for 3 s or an old version doesn't know it)
@@ -586,7 +586,7 @@ class App {
     ; reinstall the mouse hook too when custom hotkeys use mouse buttons (e.g. ~MButton)
     static UsesMouseHotkeys(hotkeys) {
         for entry in hotkeys
-            if (entry is Map && entry.Has("Key") && RegExMatch(entry["Key"], "i)(Button|Wheel)"))
+            if (entry is Map && entry.Has("Key") && TextTools.Match(entry["Key"], "i)(Button|Wheel)"))
                 return true
         return false
     }
@@ -616,7 +616,7 @@ class App {
     static TapKeys(setting) {
         if (setting = "Ctrl" || setting = "Shift")
             return ["L" setting, "R" setting]
-        return RegExMatch(setting, "i)^([LR](Ctrl|Shift)|LAlt)$") ? [setting] : []
+        return TextTools.Match(setting, "i)^([LR](Ctrl|Shift)|LAlt)$") ? [setting] : []
     }
 
     static _TapDown() {
@@ -626,7 +626,7 @@ class App {
 
     static _TapUp() {
         App._tapHeld := false
-        key := RegExReplace(A_ThisHotkey, "i)^~|\s+up$")                  ; "LCtrl" / "RShift"
+        key := TextTools.Replace(A_ThisHotkey, "i)^~|\s+up$")                  ; "LCtrl" / "RShift"
         switch App.TapDecision(A_PriorKey, key, A_TickCount - App._tapDownAt, A_TickCount - App._tapLast, App._tapKey) {
             case "show":
                 App._tapLast := 0
@@ -679,7 +679,7 @@ class App {
         target := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
         prefix := A_IsCompiled ? "" : '"' A_ScriptFullPath '" '
         icon := (!A_IsCompiled && FileExist(App.IconFile)) ? App.IconFile : ""   ; when running the source, the shortcuts don't use the AutoHotkey icon
-        sendTo := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
+        sendTo := TextTools.Replace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
         description := App.Name " - " I18n.T("App.Tagline")
         for shortcut in [
             [general["LaunchAtLogin"], A_Startup "\" App.StartupLinkName, "-Startup"],
@@ -767,7 +767,7 @@ class App {
     static IsOwnShortcut(arguments, description, flag) {
         if (SubStr(description, 1, StrLen(App.Name " - ")) = App.Name " - ")
             return true
-        return (flag != "" && RegExMatch(arguments, "i)(^|\s)\Q" flag "\E$")) ? true : false
+        return (flag != "" && TextTools.Match(arguments, "i)(^|\s)\Q" flag "\E$")) ? true : false
     }
 
     ; forwarded: arguments handed over by an ALTRun started later (no arguments = the exe was double-clicked: show the search window)

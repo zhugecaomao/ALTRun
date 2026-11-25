@@ -157,7 +157,7 @@ class ContentTypes {
             return true
         target := Trim(command.Has("Target") ? command["Target"] : "", '" ')
         SplitPath(target, &name, , &ext)
-        return commandType = "File" && (ext = "" || RegExMatch(ext, "i)^(exe|com|bat|cmd|ps1|lnk|ahk|py|pyw|vbs|js)$"))
+        return commandType = "File" && (ext = "" || TextTools.Match(ext, "i)^(exe|com|bat|cmd|ps1|lnk|ahk|py|pyw|vbs|js)$"))
     }
 
     ; The custom command that opens a file of this selection (Classify's result) with Enter: the OpenCommand of the first of the

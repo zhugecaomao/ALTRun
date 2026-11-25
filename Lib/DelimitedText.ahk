@@ -68,7 +68,7 @@ class DelimitedText {
             cells := []
             for cell in row {
                 cell := cell ""
-                if RegExMatch(cell, '[",\r\n]|^\s|\s$')
+                if TextTools.Match(cell, '[",\r\n]|^\s|\s$')
                     cell := '"' StrReplace(cell, '"', '""') '"'
                 cells.Push(cell)
             }

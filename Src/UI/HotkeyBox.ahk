@@ -85,19 +85,19 @@ class HotkeyBox {
     static Compose(mods, key) {
         ordered := ""
         for m in ["^", "!", "+", "#"]
-            if RegExMatch(mods, "[<>]?\" m, &found)
+            if TextTools.Match(mods, "[<>]?\" m, &found)
                 ordered .= found[0]
         return ordered ((StrLen(key) = 1) ? StrLower(key) : key)
     }
 
     ; Keys that would get in the way of typing (letters, digits, symbols, Space, Enter, numpad...) need Ctrl / Alt / Win; Shift doesn't count
     static IsAllowed(hk) {
-        if !RegExMatch(hk, "^((?:[<>]?[\^!+#])*)(.+)$", &m)
+        if !TextTools.Match(hk, "^((?:[<>]?[\^!+#])*)(.+)$", &m)
             return false
-        if RegExMatch(m[1], "[\^!#]")
+        if TextTools.Match(m[1], "[\^!#]")
             return true
         key := m[2]
-        return !(StrLen(key) = 1 || RegExMatch(key, "i)^(Space|Enter|Tab|Backspace|Delete|Escape|Numpad.*)$"))
+        return !(StrLen(key) = 1 || TextTools.Match(key, "i)^(Space|Enter|Tab|Backspace|Delete|Escape|Numpad.*)$"))
     }
 
     ;---------------------------------------------------------------------------
@@ -189,7 +189,7 @@ class HotkeyBox {
     }
 
     static IsModifier(name) {
-        return RegExMatch(name, "i)^[LR]?(Control|Ctrl|Shift|Alt|Win)$") ? true : false
+        return TextTools.Match(name, "i)^[LR]?(Control|Ctrl|Shift|Alt|Win)$") ? true : false
     }
 
     ; while modifiers are held, show "Ctrl+Alt+" first

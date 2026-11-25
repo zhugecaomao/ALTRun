@@ -230,7 +230,7 @@ class SchemaMigration {
         }
 
         appearance := SchemaMigration._Section(data, "Appearance")
-        if (appearance.Has("Theme") && RegExMatch(appearance["Theme"], "i)^(Dark|Light|Midnight)Compact$", &m)
+        if (appearance.Has("Theme") && TextTools.Match(appearance["Theme"], "i)^(Dark|Light|Midnight)Compact$", &m)
             && !FileExist(AppSettings.ThemesDir "\" appearance["Theme"] ".json")) {
             appearance["Theme"] := m[1]
             if (!appearance.Has("Density") || appearance["Density"] = "Comfortable")
@@ -429,7 +429,7 @@ class SchemaMigration {
         newType := typeMap[cmdType]
         arguments := ""
         if (newType = "Command") {                                          ; "cmd.exe /k ipconfig" -> program + arguments
-            if RegExMatch(target, "^(`"[^`"]+`"|\S+)\s+(.+)$", &m) {
+            if TextTools.Match(target, "^(`"[^`"]+`"|\S+)\s+(.+)$", &m) {
                 target := Trim(m[1], "`"")
                 arguments := m[2]
             }

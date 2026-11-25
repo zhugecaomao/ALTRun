@@ -162,21 +162,21 @@ class WebSearchProvider {
         spec := engine.Has("Icon") ? Trim(engine["Icon"], " `t`"") : ""
         if (spec = "")
             return WebSearchProvider.BuiltinIcon(engine)
-        if RegExMatch(spec, "i)^(res|ext|url|folder|thumb|shell):")
+        if TextTools.Match(spec, "i)^(res|ext|url|folder|thumb|shell):")
             return spec
-        if !RegExMatch(spec, "i)^([a-z]:\\|\\\\|%|A_)")                    ; relative paths start from the Data folder
+        if !TextTools.Match(spec, "i)^([a-z]:\\|\\\\|%|A_)")                    ; relative paths start from the Data folder
             spec := AppSettings.DataDir "\" spec
         iconFile := Path.Resolve(spec)
         if !FileExist(iconFile)
             return WebSearchProvider.BuiltinIcon(engine)
-        return RegExMatch(iconFile, "i)\.(png|jpe?g|bmp|gif)$") ? "thumb:" iconFile : iconFile
+        return TextTools.Match(iconFile, "i)\.(png|jpe?g|bmp|gif)$") ? "thumb:" iconFile : iconFile
     }
 
     ; Icons of the built-in engines (Google, Bing, GitHub...): Resources\Icons\Web\<Id>.png (each site's own icon), the default browser's icon if missing
     static BuiltinIconDir := A_ScriptDir "\Resources\Icons\Web", _builtinIcons := Map()
     static BuiltinIcon(engine) {
         id := (engine.Has("Id") && engine["Id"] != "") ? engine["Id"] : ""
-        if (id = "" || !RegExMatch(id, "^[\w-]+$"))
+        if (id = "" || !TextTools.Match(id, "^[\w-]+$"))
             return "url:"
         found := WebSearchProvider._builtinIcons
         if !found.Has(id) {
@@ -198,7 +198,7 @@ class WebSearchProvider {
     static DownloadIcon(address, name, fetch := "") {
         fetch := IsObject(fetch) ? fetch : (target) => WebSearchProvider._Fetch(target)
         page := WebSearchProvider.Fill(WebSearchProvider.FirstUrl(address), "", false)   ; the first address's site, no clipboard reading
-        if !RegExMatch(page, "i)^(https?://[^/?#{}]+)", &m)
+        if !TextTools.Match(page, "i)^(https?://[^/?#{}]+)", &m)
             return {Error: I18n.T("Web.IconBadUrl")}
         origin := RTrim(m[1], ":")
         candidates := []
@@ -211,9 +211,9 @@ class WebSearchProvider {
         for fallback in [origin "/apple-touch-icon.png", origin "/favicon.ico"]
             if !WebSearchProvider._Contains(candidates, fallback)
                 candidates.Push(fallback)
-        name := RegExReplace(name, "[^\w.-]", "_")
+        name := TextTools.Replace(name, "[^\w.-]", "_")
         if (name = "")
-            name := RegExReplace(RegExReplace(origin, "i)^https?://"), "[^\w.-]", "_")
+            name := TextTools.Replace(TextTools.Replace(origin, "i)^https?://"), "[^\w.-]", "_")
         for candidate in candidates {
             try response := fetch(candidate)
             catch
@@ -245,13 +245,13 @@ class WebSearchProvider {
         while (pos := TextTools.Match(html, "is)<link\b[^>]*>", &m, pos)) {
             tag := m[0], pos += StrLen(tag)
             rel := WebSearchProvider._Attribute(tag, "rel"), href := WebSearchProvider._Attribute(tag, "href")
-            if (href = "" || !RegExMatch(rel, "i)(^|\s)(apple-touch-icon(-precomposed)?|icon)(\s|$)"))
+            if (href = "" || !TextTools.Match(rel, "i)(^|\s)(apple-touch-icon(-precomposed)?|icon)(\s|$)"))
                 continue
             href := StrReplace(href, "&amp;", "&")
-            if (RegExMatch(href, "i)^data:|\.svgz?([?#]|$)") || InStr(WebSearchProvider._Attribute(tag, "type"), "svg"))
+            if (TextTools.Match(href, "i)^data:|\.svgz?([?#]|$)") || InStr(WebSearchProvider._Attribute(tag, "type"), "svg"))
                 continue
             apple := InStr(rel, "apple-touch-icon") > 0
-            size := RegExMatch(WebSearchProvider._Attribute(tag, "sizes"), "(\d+)x\d+", &sz) ? Integer(sz[1]) : (apple ? 180 : 32)
+            size := TextTools.Match(WebSearchProvider._Attribute(tag, "sizes"), "(\d+)x\d+", &sz) ? Integer(sz[1]) : (apple ? 180 : 32)
             found.Push({Url: WebSearchProvider._Absolute(href, pageUrl), Score: (apple ? 10000 : 0) + size})
         }
         ; by Score, highest first (insertion sort, usually only a few)
@@ -285,20 +285,20 @@ class WebSearchProvider {
     }
 
     static _Attribute(tag, name) {
-        return RegExMatch(tag, 'is)\s' name '\s*=\s*(?:"([^"]*)"|`'([^`']*)`'|([^\s>]+))', &m) ? Trim(m[1] m[2] m[3]) : ""
+        return TextTools.Match(tag, 'is)\s' name '\s*=\s*(?:"([^"]*)"|`'([^`']*)`'|([^\s>]+))', &m) ? Trim(m[1] m[2] m[3]) : ""
     }
 
     static _Absolute(href, base) {
-        if RegExMatch(href, "i)^https?://")
+        if TextTools.Match(href, "i)^https?://")
             return href
-        if !RegExMatch(base, "i)^(https?:)//([^/?#]+)", &b)
+        if !TextTools.Match(base, "i)^(https?:)//([^/?#]+)", &b)
             return href
         if (SubStr(href, 1, 2) = "//")
             return b[1] href
         if (SubStr(href, 1, 1) = "/")
             return b[1] "//" b[2] href
-        dir := RegExReplace(base, "[?#].*")
-        dir := RegExMatch(dir, "i)^https?://[^/]+$") ? dir "/" : RegExReplace(dir, "[^/]*$")
+        dir := TextTools.Replace(base, "[?#].*")
+        dir := TextTools.Match(dir, "i)^https?://[^/]+$") ? dir "/" : TextTools.Replace(dir, "[^/]*$")
         return dir href
     }
 

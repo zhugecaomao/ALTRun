@@ -207,7 +207,7 @@ class ClipboardProvider {
 
     ; Icon of one copied file: image files (a picture copied in a chat program is often a file in its cache) show a thumbnail like copied images;
     ; not on network locations, where IconCache reads no files
-    static FileIcon(file) => (RegExMatch(file, "i)\.(jpe?g|png|gif|bmp|webp|tiff?|heic|avif)$") && !Path.IsRemote(file)) ? ClipboardProvider.Thumbnail(file) : file
+    static FileIcon(file) => (TextTools.Match(file, "i)\.(jpe?g|png|gif|bmp|webp|tiff?|heic|avif)$") && !Path.IsRemote(file)) ? ClipboardProvider.Thumbnail(file) : file
 
     static _ImageTitle(entry) => I18n.T("Clipboard.Image", entry.Has("Width") ? entry["Width"] : "?", entry.Has("Height") ? entry["Height"] : "?")
 
@@ -674,7 +674,7 @@ class ClipboardProvider {
             }
             JSON.WriteFile(ClipboardProvider.File, Map("Entries", list))
             Loop Files, ClipboardProvider.Folder "\*.*" {                  ; Deletes long entries and images that are no longer in the history
-                if (RegExMatch(A_LoopFileName, "i)\.(txt|png)$") && !keep.Has(StrLower(A_LoopFileName)))
+                if (TextTools.Match(A_LoopFileName, "i)\.(txt|png)$") && !keep.Has(StrLower(A_LoopFileName)))
                     try FileDelete(A_LoopFileFullPath)
             }
         } catch as e {

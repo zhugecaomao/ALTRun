@@ -339,7 +339,7 @@ class PrefsPages {
             return
         PreferencesWindow.Gui.Opt("+OwnDialogs")
         answer := InputBox(I18n.T("Prefs.CopyThemePrompt"), I18n.T("Prefs.CopyTheme"), "w340 h130", source " Custom")
-        themeName := Trim(RegExReplace(answer.Value, '[\\/:*?"<>|]'))
+        themeName := Trim(TextTools.Replace(answer.Value, '[\\/:*?"<>|]'))
         if (answer.Result != "OK" || themeName = "")
             return
         themeFile := ThemeManager.UserDir "\" themeName ".json"
@@ -624,10 +624,10 @@ class PrefsPages {
 
     ; custom hotkeys: the key and the window it works in, together; the key as HotkeyBox writes it (Ctrl+Alt+F typed as !^f is ^!f)
     static HotkeyKeys(item) {
-        key := RegExReplace(PrefsPages._Field(item, "Key"), "^[~*$]+")      ; hotkey options that don't change the key
+        key := TextTools.Replace(PrefsPages._Field(item, "Key"), "^[~*$]+")      ; hotkey options that don't change the key
         if (key = "")
             return [""]
-        if RegExMatch(key, "^((?:[<>]?[\^!+#])*)(.+)$", &m)
+        if TextTools.Match(key, "^((?:[<>]?[\^!+#])*)(.+)$", &m)
             key := HotkeyBox.Compose(m[1], m[2])
         return [key "|" PrefsPages._Field(item, "WinTitle")]
     }
@@ -698,7 +698,7 @@ class PrefsPages {
         target := FileSelect("S16", "Snippets.csv", title, I18n.T("Snippet.Export.Filter"))
         if (target = "")
             return
-        if !RegExMatch(target, "i)\.(csv|txt)$")
+        if !TextTools.Match(target, "i)\.(csv|txt)$")
             target .= ".csv"
         rows := SnippetProvider.ExportRows(list.Items)
         try {
@@ -751,7 +751,7 @@ class PrefsPages {
     static BuildWebSearch() {
         PrefsForm.BeginPage("Prefs.Page.WebSearch", 130)
         PrefsForm.List("Features.WebSearch.Engines", 320
-            , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340, (value) => RegExReplace(Trim(value, " `t`r`n"), "\s*\R\s*", "  |  ")]]
+            , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340, (value) => TextTools.Replace(Trim(value, " `t`r`n"), "\s*\R\s*", "  |  ")]]
             , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine(), "", "", true
             , {Label: "Prefs.AddBuiltins", Keys: (item) => PrefsPages.EngineKeys(item)})
         PrefsForm.Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")
@@ -1401,7 +1401,7 @@ class PrefsPages {
             SplitPath(line, &name)
             if InStr(name, "!")                                             ; shell:AppsFolder\<family>!<app>
                 name := SubStr(name, InStr(name, "!", , -1) + 1)
-            names.Push(RegExReplace(name, "i)\.lnk$"))
+            names.Push(TextTools.Replace(name, "i)\.lnk$"))
         }
         return TextTools.JoinList(names)
     }
