@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.25.4]
+
+测试版。
+
+Test build.
+
+### 修复
+- 文字以全角标点或字母 (`（` `，` `Ａ`) 开头, 或以 `﨑` 等兼容汉字结尾时, 还有很多地方会弹出 "PCRE execution error": 保存这样的片段、自定义命令名等 (保存设置和数据都会出错)、复制主题或同步任务起这样的名字、以 `﨑` 这类文件夹结尾的路径 (文件搜索排除规则、资源管理器 / Arke / 最近文件夹)、文件对话框标题、进程名等。2026.11.25.1 只修了一部分, 现在所有地方都绕开了, 并加了检查防止以后再漏 (#675)
+
 ## [2026.11.25.3]
 
 测试版。
@@ -1679,7 +1688,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.4...HEAD
+[2026.11.25.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.3...2026.11.25.4
 [2026.11.25.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.2...2026.11.25.3
 [2026.11.25.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25.1...2026.11.25.2
 [2026.11.25.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.25...2026.11.25.1
