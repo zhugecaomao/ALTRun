@@ -192,8 +192,13 @@ class ResultRows {
         text := SearchWindow.Session.HighlightText
         if (Trim(text) = "" || item.Title = "")
             return []
-        if (!item.HasOwnProp("HighlightFor") || item.HighlightFor !== text)
-            item.HighlightFor := text, item.HighlightRanges := FuzzyMatcher.MatchRanges(text, item.Title)
+        if (!item.HasOwnProp("HighlightFor") || item.HighlightFor !== text) {
+            ranges := []
+            try ranges := FuzzyMatcher.MatchRanges(text, item.Title)
+            catch as e                                                      ; drawn without highlight: an error here would come back on every
+                Logger.Warn("Highlight failed: " e.Message)                 ; repaint. Not the title in the log: it may be clipboard text
+            item.HighlightRanges := ranges, item.HighlightFor := text       ; the ranges first: HighlightFor alone made the next paint read a missing property
+        }
         return item.HighlightRanges
     }
 

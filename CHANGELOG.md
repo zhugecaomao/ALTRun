@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.23.24]
+
+测试版。
+
+Test build.
+
+### 修复
+- 剪贴板历史 (或其它结果的标题) 里有 emoji 时, 输入 `clip` 等搜索会反复弹出 "PCRE execution error": 高亮匹配的字时 emoji 被拆成了两半; 现在 emoji 和扩展 B 区汉字当作一个字处理, 高亮出错时也不再每次重绘都报错; 截断的预览不再把 emoji 切成两半, "反转文字" 保持 emoji 完整 (#653)
+
 ## [2026.11.23.23]
 
 测试版。
@@ -1775,7 +1784,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.24...HEAD
+[2026.11.23.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.23...2026.11.23.24
 [2026.11.23.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.22...2026.11.23.23
 [2026.11.23.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.21...2026.11.23.22
 [2026.11.23.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.23.20...2026.11.23.21

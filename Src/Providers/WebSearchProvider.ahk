@@ -154,7 +154,7 @@ class WebSearchProvider {
     }
 
     ; Search words shown in the result title: shortened when too long
-    static Preview(text) => StrLen(text) > 60 ? SubStr(text, 1, 60) "..." : text
+    static Preview(text) => StrLen(text) > 60 ? TextTools.Head(text, 60) "..." : text
 
     ; The engine's Icon: image files as thumbnails, .ico / .exe etc. with their own icon; when not given or the file doesn't exist,
     ; built-in engines use their own icon (BuiltinIcon), others the default browser's icon

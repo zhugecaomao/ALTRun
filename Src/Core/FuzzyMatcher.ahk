@@ -181,16 +181,20 @@ class FuzzyMatcher {
     }
 
     ; Position of the first character of each word (split like Initials: characters other than letters and digits separate, camel case counts as words)
+    ; Positions are UTF-16 units like InStr / SubStr; an emoji is read as one character (TextTools.CharAt), not as two halves
     static WordStarts(text) {
-        starts := [], previous := ""
-        Loop Parse text {
-            isWord := RegExMatch(A_LoopField, "^[\p{L}\p{N}]$")
-            if (isWord && (previous = "" || !RegExMatch(previous, "^[\p{L}\p{N}]$") || (RegExMatch(previous, "^[a-z]$") && RegExMatch(A_LoopField, "^[A-Z]$"))))
-                starts.Push(A_Index)
-            previous := A_LoopField
+        starts := [], previous := "", i := 1, length := StrLen(text)
+        while (i <= length) {
+            char := TextTools.CharAt(text, i)
+            isWord := FuzzyMatcher._IsWordChar(char)
+            if (isWord && (previous = "" || !FuzzyMatcher._IsWordChar(previous) || (RegExMatch(previous, "^[a-z]$") > 0 && RegExMatch(char, "^[A-Z]$") > 0)))
+                starts.Push(i)
+            previous := char, i += StrLen(char)
         }
         return starts
     }
+
+    static _IsWordChar(char) => !TextTools.IsLoneSurrogate(char) && RegExMatch(char, "^[\p{L}\p{N}]$") > 0
 
     static _Has(list, value) {
         for item in list

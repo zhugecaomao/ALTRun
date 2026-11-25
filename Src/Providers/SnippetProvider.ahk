@@ -312,6 +312,6 @@ class SnippetProvider {
         if (found > 60)
             text := "..." SubStr(text, found - 20)
         text := RegExReplace(text, "\s+", " ")
-        return (StrLen(text) > 80) ? SubStr(text, 1, 80) "..." : text
+        return (StrLen(text) > 80) ? TextTools.Head(text, 80) "..." : text
     }
 }

@@ -13,10 +13,33 @@ class TextTools {
     static TitleCase(text) => StrTitle(text)
 
     static Reverse(text) {
-        out := ""
-        Loop Parse text
-            out := A_LoopField . out
+        out := "", i := 1
+        while (i <= StrLen(text)) {
+            char := TextTools.CharAt(text, i)                               ; an emoji stays one character, not two swapped halves
+            out := char . out, i += StrLen(char)
+        }
         return out
+    }
+
+    ; The character at UTF-16 position i: both halves of a surrogate pair (an emoji, a CJK Extension B character) together. Loop Parse and
+    ; SubStr count UTF-16 units and split such a pair, and a lone half makes RegExMatch throw (PCRE error -10, #653)
+    static CharAt(text, i) {
+        high := Ord(SubStr(text, i, 1))
+        if (high >= 0xD800 && high <= 0xDBFF) {
+            low := Ord(SubStr(text, i + 1, 1))
+            if (low >= 0xDC00 && low <= 0xDFFF)
+                return SubStr(text, i, 2)
+        }
+        return SubStr(text, i, 1)
+    }
+
+    ; True for half of a surrogate pair standing alone (cut off, or so in the data): not a character RegExMatch accepts
+    static IsLoneSurrogate(char) => StrLen(char) = 1 && Ord(char) >= 0xD800 && Ord(char) <= 0xDFFF
+
+    ; The first count UTF-16 units of text, one fewer when the last would be the first half of a surrogate pair (for "..." previews)
+    static Head(text, count) {
+        head := SubStr(text, 1, count), last := Ord(SubStr(head, -1))
+        return (StrLen(head) = count && last >= 0xD800 && last <= 0xDBFF) ? SubStr(head, 1, count - 1) : head
     }
 
     static Lines(text) => StrSplit(text, "`n", "`r")
