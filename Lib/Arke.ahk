@@ -1,5 +1,5 @@
 ;===============================================================================
-; Arke.ahk - asks the Arke file manager (0.8.0 or later) for its folders and to open one (AutoHotkey v2)
+; Arke.ahk - asks the Arke file manager (0.8.0 or later; 0.9.1+ leaves out the selection) for its folders and to open one (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Arke's integration interface (docs/integration.md in github.com/Koimsurai/Arke): a request is WM_COPYDATA with
 ; dwData = "ARKE" and UTF-8 JSON; Arke replies while handling it, as Total Commander does, with a WM_COPYDATA (same dwData,
@@ -16,6 +16,7 @@
 class Arke {
     static Id := 0x454B5241                                                    ; "ARKE"
     static _waiting := false, _reply := "", _listening := false
+    static _withoutSelection := true                                            ; state asked with "selection":false (Arke 0.9.1+)
 
     ; The reply to a JSON request, "" if Arke doesn't answer (not running, older than 0.8.0, hung, or running as administrator:
     ; Windows doesn't pass WM_COPYDATA up to a program with higher rights)
@@ -52,7 +53,15 @@ class Arke {
         if !(hwnd := WinExist("ahk_class ArkeWindow"))
             return []
         started := Logger.Ms()
-        windows := Arke.ParseState(Arke.Ask(hwnd, '{"v":1,"cmd":"state"}'))
+        ; Without the selection of every pane (Arke 0.9.1+): it isn't used, and thousands of selected files make the reply big and slow
+        ; to read. An Arke that answers it with an error is asked as before, and from then on in this run (unless that fails too)
+        reply := Arke.Ask(hwnd, Arke._withoutSelection ? '{"v":1,"cmd":"state","selection":false}' : '{"v":1,"cmd":"state"}')
+        if (Arke._withoutSelection && Arke._IsError(reply)) {
+            again := Arke.Ask(hwnd, '{"v":1,"cmd":"state"}')
+            if (again != "" && !Arke._IsError(again))
+                Arke._withoutSelection := false, reply := again
+        }
+        windows := Arke.ParseState(reply)
         if Logger.Enabled
             Logger.Debug(Format("Perf: Arke state {} ms, {} windows", Round(Logger.Ms() - started), windows.Length))
         return windows
@@ -84,6 +93,13 @@ class Arke {
             windows.Push({Hwnd: IsInteger(hwnd) ? Integer(hwnd) : 0, Folder: folder, Other: other})
         }
         return windows
+    }
+
+    static _IsError(text) {
+        try reply := JSON.Parse(text)
+        catch
+            return false
+        return reply is Map && reply.Has("error")
     }
 
     static _List(obj, key) => (obj is Map && obj.Has(key) && obj[key] is Array) ? obj[key] : []

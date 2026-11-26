@@ -39,7 +39,7 @@ ALTRun 怎么读当前文件夹 (都不经过剪贴板, 路径不会出现在 Wi
 | 资源管理器 | Shell 窗口列表 | - |
 | Total Commander | 它的 `WM_COPYDATA` 接口 (TC 8.0 及以上) | 0.5 秒 |
 | Directory Opus | 它自带的 `dopusrt.exe /info …,paths` (在正在运行的 `dopus.exe` 旁边); 结果 1.5 秒内重复使用 | 3 秒 |
-| Arke | 它的 `WM_COPYDATA` 接口 (`state`), 一次请求得到所有窗口 | 0.5 秒 |
+| Arke | 它的 `WM_COPYDATA` 接口 (`state`), 一次请求得到所有窗口; Arke 0.9.1 起不带选中的文件, 选中几千个文件时也很快 | 0.5 秒 |
 
 ## Arke
 [Arke](https://github.com/Koimsurai/Arke) 0.8.0 及以上提供给启动器和脚本用的接口, ALTRun 用的就是它, Arke 里不用做任何设置。更早的版本仍然可以打开文件夹 (`arke.exe "D:\Folder"`), 但 ALTRun 读不到它当前的文件夹。

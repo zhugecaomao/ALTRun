@@ -8,12 +8,13 @@
 ; Usage:
 ;   fake := FakeArke('{"v":1,"windows":[...]}')    ; the reply to "state"
 ;   fake.OpenReply := '{"v":1,"ok":true}'          ; the reply to "open" ("" = don't answer, as Arke before 0.8.0)
-;   ... Arke.Folder() ...   fake.Requests[1] = '{"v":1,"cmd":"state"}'
+;   fake.SelectionReply := '{"v":1,"error":...}'    ; the reply to "state" with "selection":false ("" = as to "state")
+;   ... Arke.Folder() ...   fake.Requests[1] = '{"v":1,"cmd":"state","selection":false}'
 ;   fake.Close()                                    ; always (try / finally): the class can be registered only once
 ;===============================================================================
 
 class FakeArke {
-    State := "", OpenReply := '{"v":1,"ok":true}', Requests := []
+    State := "", OpenReply := '{"v":1,"ok":true}', SelectionReply := "", Requests := []
     Hwnd := 0, _class := "", _proc := 0
 
     __New(state := "") {
@@ -51,7 +52,8 @@ class FakeArke {
             return DllCall("DefWindowProcW", "Ptr", hwnd, "UInt", msg, "UPtr", wParam, "Ptr", lParam, "Ptr")
         request := StrGet(NumGet(lParam, A_PtrSize * 2, "Ptr"), NumGet(lParam, A_PtrSize, "UInt"), "UTF-8")
         this.Requests.Push(request)
-        reply := InStr(request, '"cmd":"state"') ? this.State : InStr(request, '"cmd":"open"') ? this.OpenReply : ""
+        reply := InStr(request, '"cmd":"state"') ? ((this.SelectionReply != "" && InStr(request, '"selection":false')) ? this.SelectionReply : this.State)
+            : InStr(request, '"cmd":"open"') ? this.OpenReply : ""
         if (reply = "")
             return 0
         data := Buffer(StrPut(reply, "UTF-8"))

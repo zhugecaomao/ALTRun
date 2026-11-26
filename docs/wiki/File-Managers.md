@@ -39,7 +39,7 @@ How ALTRun reads the folder, without the clipboard (the paths don't appear in Wi
 | File Explorer | the Shell windows list | - |
 | Total Commander | its `WM_COPYDATA` interface (TC 8.0 or later) | 0.5 s |
 | Directory Opus | its own `dopusrt.exe /info …,paths` (next to the running `dopus.exe`); a result is reused for 1.5 s | 3 s |
-| Arke | its `WM_COPYDATA` interface (`state`), one request for all its windows | 0.5 s |
+| Arke | its `WM_COPYDATA` interface (`state`), one request for all its windows; from Arke 0.9.1 without the selected files, so it stays fast with thousands selected | 0.5 s |
 
 ## Arke
 [Arke](https://github.com/Koimsurai/Arke) 0.8.0 and later has an interface for launchers and scripts; ALTRun uses it, and there's nothing to turn on in Arke. Older versions still open folders (`arke.exe "D:\Folder"`), but ALTRun can't read their current folder.
