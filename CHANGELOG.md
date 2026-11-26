@@ -27,7 +27,7 @@ Test build.
 
 ### Summary
 
-**No more "PCRE execution error" with Chinese, Japanese or fullwidth text**: text that starts with a fullwidth character (`（` `，` `Ａ`) or ends with a character such as `﨑` could show this error in many places, including saving snippets, custom commands and other settings (the save failed), scanning apps, file dialogs and paths; every place handles it now. **App search finds shortcuts placed right in the Start menu** (UniGetUI and other installers put theirs there), not only those in its Programs folder. Also: Open Terminal Here's "no folder" message names all four supported file managers, and two descriptions in Preferences → General are shorter.
+**No more "PCRE execution error" with Chinese, Japanese or fullwidth text**: text that starts with a fullwidth character (`（` `，` `Ａ`) or ends with a character such as `﨑` could show this error in many places, including saving snippets, custom commands and other settings (the save failed), scanning apps, file dialogs and paths. The cause was a bug in AutoHotkey v2.0.32, which ALTRun is written in and which 2026.11.25 was the first release built with; ALTRun now works around it in every place. **App search finds shortcuts placed right in the Start menu** (UniGetUI and other installers put theirs there), not only those in its Programs folder. Also: Open Terminal Here's "no folder" message names all four supported file managers, and two descriptions in Preferences → General are shorter.
 
 ### Upgrade
 - One-click upgrade: tray icon → Check for Updates → Install Update
@@ -39,7 +39,7 @@ Test build.
 - Preferences → General: the descriptions under "File manager" and "Open folders in a new tab" fit in two lines each
 
 ### Fixes
-- "PCRE execution error" when text starts with fullwidth punctuation or letters (`，` `（` `！` `Ａ` `１`), halfwidth katakana or `�`, or ends with a CJK compatibility ideograph such as `﨑`: AutoHotkey's regular expression functions fail when the first or last character is one of these. It showed up in many places: saving snippets, custom command names and other settings or data with such text (the save failed), scanning apps whose shortcut names start that way, the actions for selected text with several lines, highlighting and searching such titles (apps, clipboard history, snippets), the calculator and unit conversion, file search, adding dates to file names, copying a theme or naming a sync job that way, paths ending with a folder such as `山﨑` (file search exclusions, Explorer / Arke / Recent folders), file dialog titles and process names. 2026.11.25 fixed only the emoji case; now every place handles it, and a test keeps new code from bringing it back (#653, #675)
+- "PCRE execution error" when text starts with fullwidth punctuation or letters (`，` `（` `！` `Ａ` `１`), halfwidth katakana or `�`, or ends with a CJK compatibility ideograph such as `﨑`: a bug in AutoHotkey v2.0.32 (confirmed by its author on the AutoHotkey forum, no fixed version yet) makes its regular expression functions fail when the first or last character is one of these. 2026.11.25 was the first release built with v2.0.32; 2026.11.23 and earlier use v2.0.31 and don't have the problem. It showed up in many places: saving snippets, custom command names and other settings or data with such text (the save failed), scanning apps whose shortcut names start that way, the actions for selected text with several lines, highlighting and searching such titles (apps, clipboard history, snippets), the calculator and unit conversion, file search, adding dates to file names, copying a theme or naming a sync job that way, paths ending with a folder such as `山﨑` (file search exclusions, Explorer / Arke / Recent folders), file dialog titles and process names. 2026.11.25 fixed only the emoji case; now every place handles it, and a test keeps new code from bringing it back (#653, #675)
 - App search missed shortcuts placed right in the Start menu (not in its Programs folder), for example UniGetUI's. New installations also index `A_StartMenu` / `A_StartMenuCommon`; a listed folder inside another listed folder is scanned only once, with its own subfolder depth, also when it is written as a short (8.3) path. For existing settings see Upgrade (#673)
 - Open Terminal Here when no folder is found: the message named only Explorer and Total Commander; now it names all four supported file managers (Total Commander, Directory Opus, Arke and File Explorer)
 
@@ -47,7 +47,7 @@ Test build.
 
 ### 中文说明
 
-**中日文和全角文字不再报 "PCRE execution error"**: 文字以全角字符 (`（` `，` `Ａ`) 开头, 或以 `﨑` 这类字结尾时, 很多地方会弹出这个错误, 包括保存片段、自定义命令和其他设置 (保存会失败)、扫描应用、文件对话框和路径; 现在所有地方都处理好了. **应用搜索能找到直接放在开始菜单里的快捷方式** (UniGetUI 等安装程序会放在那里), 不再只扫开始菜单的 "程序" 文件夹. 另外: "在终端打开当前文件夹" 找不到文件夹时的提示写全了支持的四个文件管理器, 偏好设置 → 通用里的两段说明更短了.
+**中日文和全角文字不再报 "PCRE execution error"**: 文字以全角字符 (`（` `，` `Ａ`) 开头, 或以 `﨑` 这类字结尾时, 很多地方会弹出这个错误, 包括保存片段、自定义命令和其他设置 (保存会失败)、扫描应用、文件对话框和路径. 原因是 ALTRun 所用的 AutoHotkey v2.0.32 有个 bug, 2026.11.25 是第一个用它构建的版本; 现在 ALTRun 在所有地方都绕开了它. **应用搜索能找到直接放在开始菜单里的快捷方式** (UniGetUI 等安装程序会放在那里), 不再只扫开始菜单的 "程序" 文件夹. 另外: "在终端打开当前文件夹" 找不到文件夹时的提示写全了支持的四个文件管理器, 偏好设置 → 通用里的两段说明更短了.
 
 #### 升级
 - 一键升级: 托盘图标 → 检查更新 → 安装更新
@@ -59,7 +59,7 @@ Test build.
 - 偏好设置 → 通用: "文件管理器" 和 "在新标签页打开文件夹" 下面的说明各精简到两行
 
 #### 修复
-- 文字以全角标点或字母 (`，` `（` `！` `Ａ` `１`)、半角片假名、`�` 开头, 或以 `﨑` 等兼容汉字结尾时会弹出 "PCRE execution error": AutoHotkey 的正则函数在第一个或最后一个字符是这些字符时会出错. 出现的地方很多: 保存含这类文字的片段、自定义命令名和其他设置或数据 (保存失败)、扫描以这类字符开头的快捷方式、选中多行文字后的 "选中内容的操作"、这类标题的高亮和搜索 (应用、剪贴板历史、片段)、计算器和单位换算、文件搜索、在文件名上加日期、复制主题或给同步任务起这样的名字、以 `山﨑` 这类文件夹结尾的路径 (文件搜索排除规则、资源管理器 / Arke / 最近文件夹)、文件对话框标题和进程名. 2026.11.25 只修了 emoji 的情况; 现在所有地方都处理好了, 并加了测试防止新代码再出现 (#653, #675)
+- 文字以全角标点或字母 (`，` `（` `！` `Ａ` `１`)、半角片假名、`�` 开头, 或以 `﨑` 等兼容汉字结尾时会弹出 "PCRE execution error": AutoHotkey v2.0.32 的 bug (作者已在 AutoHotkey 论坛确认, 还没有修复版) 让它的正则函数在第一个或最后一个字符是这些字符时出错. 2026.11.25 是第一个用 v2.0.32 构建的版本, 2026.11.23 及更早的版本用 v2.0.31, 没有这个问题. 出现的地方很多: 保存含这类文字的片段、自定义命令名和其他设置或数据 (保存失败)、扫描以这类字符开头的快捷方式、选中多行文字后的 "选中内容的操作"、这类标题的高亮和搜索 (应用、剪贴板历史、片段)、计算器和单位换算、文件搜索、在文件名上加日期、复制主题或给同步任务起这样的名字、以 `山﨑` 这类文件夹结尾的路径 (文件搜索排除规则、资源管理器 / Arke / 最近文件夹)、文件对话框标题和进程名. 2026.11.25 只修了 emoji 的情况; 现在所有地方都处理好了, 并加了测试防止新代码再出现 (#653, #675)
 - 应用搜索漏掉直接放在开始菜单里 (不在 "程序" 文件夹里) 的快捷方式, 例如 UniGetUI 的. 新安装默认也扫 `A_StartMenu` / `A_StartMenuCommon`; 一个列出的文件夹在另一个列出的文件夹里时只扫一次, 子文件夹深度从它自己算起, 写成短路径 (8.3) 时也一样. 已有设置见 "升级" (#673)
 - "在终端打开当前文件夹" 找不到文件夹时, 提示里只写了资源管理器和 Total Commander, 现在写全支持的四个: Total Commander、Directory Opus、Arke 和资源管理器
 
