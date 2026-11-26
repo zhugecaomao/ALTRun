@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.26.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- Arke: 读取当前文件夹时不再让 Arke 返回所有窗格选中的文件 (需要 Arke 0.9.1), 选中几千个文件时对话框跳转、文件夹面板、在此处打开终端也很快; 更早的 Arke 照旧可用 (#564)
+
 ## [2026.11.26.1]
 
 测试版。
@@ -1698,7 +1707,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.2...HEAD
+[2026.11.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.1...2026.11.26.2
 [2026.11.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26...2026.11.26.1
 [2026.11.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.26
 [2026.11.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.25

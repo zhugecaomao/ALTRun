@@ -1758,7 +1758,7 @@ class ExtensionTests {
         try {
             eq("window found by its class", WinExist("ahk_class ArkeWindow"), fake.Hwnd)
             eq("is a file manager", FileManagers.IsFileManager(fake.Hwnd), true)
-            eq("its folder, asked with state", Arke.Folder() "|" fake.Requests[1], "D:\Work\" cn '|{"v":1,"cmd":"state"}')
+            eq("its folder, asked with state", Arke.Folder() "|" fake.Requests[1], "D:\Work\" cn '|{"v":1,"cmd":"state","selection":false}')
             eq("a given window / other pane", Arke.Folder(0x2B3C4D) "|" Arke.Folder(0x1A2B3C, true), "|\\server\share")
             eq("terminal here", FileManagers.FolderOfWindow(fake.Hwnd), "D:\Work\" cn)
             folders := ""
@@ -1766,6 +1766,13 @@ class ExtensionTests {
                 if (entry.Group = "open" && InStr(entry.Tag, "Arke") = 1)
                     folders .= entry.Path " (" entry.Tag ") "
             eq("panel: both panes of every window", folders, "D:\Work\" cn " (Arke) \\server\share (" I18n.T("QuickSwitch.TagArkeOther") ") E:\ (" I18n.T("QuickSwitch.TagArkeOther") ") ")
+
+            ; An Arke older than 0.9.1 that answers "selection":false with an error: asked again without it, and so from then on
+            fake.Requests := [], fake.SelectionReply := '{"v":1,"error":{"code":"bad_request","message":"unknown field selection"}}'
+            last := () => fake.Requests.Length ? fake.Requests[fake.Requests.Length] : ""
+            eq("error: asked again without selection", Arke.Folder() "|" fake.Requests.Length "|" last(), "D:\Work\" cn '|2|{"v":1,"cmd":"state"}')
+            eq("then: without selection only", (Arke.Folder(), fake.Requests.Length "|" last()), '3|{"v":1,"cmd":"state"}')
+            Arke._withoutSelection := true, fake.SelectionReply := ""
 
             fake.Requests := []
             eq("open: accepted", Arke.Open("D:\My Work\" cn, true, 0), true)
