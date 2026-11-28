@@ -490,9 +490,34 @@ class PrefsPages {
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)}, ""
             , {DeletePrompt: (item) => CustomCommandProvider.DeleteQuestion(item, PrefsPages._WorkingHotkeys())   ; the hotkeys that run it go too
              , AfterDelete: (item) => CustomCommandProvider.RemoveHotkeys(item, PrefsPages._WorkingHotkeys())   ; (the Hotkeys page redraws when shown)
-             , Hint: (item) => CustomCommandProvider.PlaceholderStatus(item, PrefsPages._WorkingHotkeys())})   ; e.g. "{query} empty"
+             , Hint: (item) => CustomCommandProvider.PlaceholderStatus(item, PrefsPages._WorkingHotkeys())   ; e.g. "{query} empty"
+             , Duplicate: (item, items) => PrefsPages.DuplicateCommand(item, items)})
         PrefsForm._current.OnShow := () => list.Redraw.Call()               ; a hotkey set on the Hotkeys page meanwhile can give a {query} command its text
         PrefsForm.Note("Prefs.CommandsNote")
+    }
+
+    ; Duplicate on the Commands page (#695): a copy of the command named "<title> (2)" (the first number no other command has; "A (2)"
+    ; gives "A (3)", not "A (2) (2)"), without its Id (it gets one of its own: the hotkeys and content types that use the original keep
+    ; using it) and without its keyword (two commands with one keyword would both match it)
+    static DuplicateCommand(command, commands) {
+        copy := PreferencesWindow.DeepCopy(command)
+        if copy.Has("Id")
+            copy.Delete("Id")
+        copy["Keyword"] := ""
+        title := copy.Has("Title") ? Trim(copy["Title"]) : ""
+        if (title = "")
+            return copy
+        stem := TextTools.Replace(title, "\s\(\d{1,3}\)$")            ; not a year: "Report (2026)" stays
+        taken := Map()
+        taken.CaseSense := false
+        for each in commands
+            if (each is Map && each.Has("Title"))
+                taken[Trim(each["Title"])] := true
+        n := 2
+        while taken.Has(stem " (" n ")")
+            n++
+        copy["Title"] := stem " (" n ")"
+        return copy
     }
 
     ; A command's edit dialog in Preferences: hotkeys set there go to the Hotkeys list being edited (saved on Apply, as other changes)

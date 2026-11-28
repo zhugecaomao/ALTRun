@@ -45,7 +45,7 @@ class PreferencesTests {
             eq("help: " key, I18n.Strings.Has(key ".Help"), true)
     }
 
-    ; The right-click menu of a Preferences list (PrefsForm.ListMenuEntries): on a row Edit (default) and Delete first, then Add,
+    ; The right-click menu of a Preferences list (PrefsForm.ListMenuEntries): on a row Edit (default), Duplicate and Delete first, then Add,
     ; then the page's actions after a separator, keeping their own separators, check marks and buttons; on no row only Add and the actions
     static ListMenu() {
         eq := (n, a, e) => TestRunner.Equal("ListMenu." n, a, e)
@@ -69,6 +69,21 @@ class PreferencesTests {
         eq("move entries", show(entries), "Edit:" editText "* Delete:" deleteText " - MoveUp:" upText " MoveDown:" downText " - Add:" addText)
         eq("move up grayed on the first row", entries[4].Enabled "|" entries[5].Enabled, "0|1")
         eq("no move entries on no row", show(PrefsForm.ListMenuEntries(false, [], {Up: true, Down: true})), "Add:" addText)
+        ; Duplicate... after Edit, only where the list can copy an item, only on a row (#695)
+        dupText := I18n.T("Prefs.Duplicate")
+        eq("duplicate after edit", show(PrefsForm.ListMenuEntries(true, [], "", true)), "Edit:" editText "* Duplicate:" dupText " Delete:" deleteText " - Add:" addText)
+        eq("no duplicate on no row", show(PrefsForm.ListMenuEntries(false, [], "", true)), "Add:" addText)
+        commands := [Map("Id", "abc", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Keyword", "np", "Types", ["Text"]), Map("Title", "notepad (2)")]
+        dup := PrefsPages.DuplicateCommand(commands[1], commands)
+        eq("duplicate: the next free number, case-insensitive", dup["Title"], "Notepad (3)")
+        eq("duplicate: no Id, no keyword", dup.Has("Id") "|" dup["Keyword"], "0|")
+        eq("duplicate: the rest copied", dup["Type"] "|" dup["Target"] "|" dup["Types"][1], "File|notepad.exe|Text")
+        dup["Types"].Push("File")
+        eq("duplicate: a deep copy", commands[1]["Types"].Length, 1)
+        eq("duplicate: the original unchanged", commands[1]["Id"] "|" commands[1]["Keyword"] "|" commands[1]["Title"], "abc|np|Notepad")
+        eq("duplicate of a copy: no (2) (2)", PrefsPages.DuplicateCommand(Map("Title", "Notepad (2)"), commands)["Title"], "Notepad (3)")
+        eq("duplicate: a year in the title kept", PrefsPages.DuplicateCommand(Map("Title", "Report (2026)"), [])["Title"], "Report (2026) (2)")
+        eq("duplicate: no title", PrefsPages.DuplicateCommand(Map("Title", ""), [])["Title"], "")
         items := ["a", "b", "c"]
         eq("move down", PrefsForm.MoveIndex(items, 1, 1) "|" items[1] items[2] items[3], "2|bac")
         eq("move up", PrefsForm.MoveIndex(items, 3, -1) "|" items[1] items[2] items[3], "2|bca")

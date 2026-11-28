@@ -19,6 +19,7 @@ Add the files, folders, programs or web addresses you use often to ALTRun and op
     | Properties → Shortcut → Advanced → "Run as administrator" | the shortcut |
 
 - Preferences → Custom Commands → Add...
+- Preferences → Custom Commands → right-click a command → **Duplicate...**: the edit dialog opens with a copy of it, to change into a new command. The copy is named after it with the next free number (`Notepad (2)`; duplicating `Notepad (2)` gives `Notepad (3)`, not `Notepad (2) (2)`), its keyword is left empty (two commands with one keyword would both match it), and it doesn't take the original's hotkeys. OK adds it to the list (saved with OK / Apply in Preferences); Cancel adds nothing and the original stays as it was
 - Preferences → Custom Commands → More ▾ → **Add Examples**: adds the default commands you don't have yet (a command with the same title or keyword counts as already there) and tells you how many were added and skipped; saved when you press OK / Apply
 
 ![Explorer: right-click → Send to → ALTRun](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sendto.png)

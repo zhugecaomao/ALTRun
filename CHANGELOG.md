@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.26.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 自定义命令: 在命令上右键 → "复制一份...", 打开编辑对话框, 内容是这条命令的副本 (名称加编号, 关键字留空, 不带热键), 改好后保存为新命令 (#695)
+
 ## [2026.11.26.3]
 
 测试版。
@@ -1717,7 +1726,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.4...HEAD
+[2026.11.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.3...2026.11.26.4
 [2026.11.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.2...2026.11.26.3
 [2026.11.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.1...2026.11.26.2
 [2026.11.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26...2026.11.26.1

@@ -413,6 +413,7 @@
   "Prefs.DateFormat": "日期格式",
   "Prefs.DateFormat.Desc": "例如 dd.MM.yyyy、yyyy-MM-dd; 片段裡的 {date} 也用這個格式",
   "Prefs.Delete": "刪除",
+  "Prefs.Duplicate": "複製一份...",
   "Prefs.DiscardChanges": "放棄所做的修改嗎?",
   "Prefs.DoubleTap": "按兩下呼出",
   "Prefs.DoubleTap.Ctrl": "Ctrl",
