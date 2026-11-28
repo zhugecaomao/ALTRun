@@ -16,6 +16,8 @@ The folder panel is the visual way to use Quick Switch. It is enabled by default
 - The panel hides when the dialog is not in the foreground and uses the current ALTRun theme. It is as wide as the dialog (at least 420 pixels at 100% scaling, at most the width of the screen), and follows when the dialog is resized.
 - The panel never covers the dialog's buttons or file list. When there is not enough room below or above the dialog for the whole list, it shows fewer rows (at least 3; scroll for the rest). When even 3 rows don't fit (a tall or maximized dialog), only the search box is shown, below or above the dialog, or over the left part of its title bar (half its width, at least 420 px at 100%: the close button and the rest of the title bar stay free, so you can still drag the dialog or double-click the title bar to restore it); click it (or press `Ctrl+Shift+G`) to open the list, and it closes again when you go back to the dialog.
 
+![A maximized Open dialog: only the search box, over the left half of the title bar](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch-maximized.png)
+
 In a standard Open / Save dialog, `Ctrl+Shift+G` temporarily shows the panel and focuses its search box. This works even when automatic display is disabled.
 
 ## Favorite folders
