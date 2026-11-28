@@ -1235,10 +1235,11 @@ class ExtensionTests {
         eq("maximized: the search box at the top", panelAt(0, 0, 1040), "0,0,0")
         eq("maximized, caret in the panel: the list opens down", panelAt(0, 0, 1040, 8, true), "0,0,8")
         eq("search box below, caret in it: the list opens up", panelAt(100, 50, 930, 8, true), "100,820,8")
-        ; #693: over the title bar only titleW wide (the rest of the title bar, its close button, stays free); elsewhere as wide as the dialog
+        ; #693: over the title bar only titleW wide, in its middle (both ends of the title bar stay free); elsewhere as wide as the dialog
         widthAt := (x, w, h, titleW, open := false) => (placed := QuickSwitchPanel.PanelLayout(x, 0, w, h, w, 8, 60, 20, 40, area, open, titleW), placed.X "," placed.Y "," placed.Rows "," placed.W)
-        eq("maximized: the search box over part of the title bar", widthAt(0, 1920, 1040, 960), "0,0,0,960")
-        eq("maximized, caret in the panel: the list as wide", widthAt(0, 1920, 1040, 960, true), "0,0,8,960")
+        eq("maximized: the search box over the middle of the title bar", widthAt(0, 1920, 1040, 960), "480,0,0,960")
+        eq("maximized, caret in the panel: the list as wide", widthAt(0, 1920, 1040, 960, true), "480,0,8,960")
+        eq("tall dialog: the search box in the middle", widthAt(100, 800, 1040, 420), "290,0,0,420")
         eq("tall dialog at the right edge: the search box kept on screen", widthAt(1600, 600, 1040, 420), "1500,0,0,420")
         eq("title width never wider than the panel", widthAt(0, 600, 1040, 900), "0,0,0,600")
         eq("search box below: as wide as the dialog", widthAt(100, 800, 1000, 420), "100,1000,0,800")

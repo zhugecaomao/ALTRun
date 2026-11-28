@@ -518,8 +518,8 @@ class QuickSwitchPanel {
 
     ; Panel position, rows and width {X, Y, Rows, W} (as in Listary), never over the dialog's buttons and file list (#440): right below the dialog,
     ; left-aligned, else above it, with all wanted rows; else on the side with more room, with the rows that fit there (at least MinRows,
-    ; the list scrolls); else (a tall or maximized dialog) only the search box (Rows 0): below or above the dialog, or inside it at its top
-    ; over the title bar, titleW wide (0 = panelW). open = the caret is in the panel: then it opens its list with all rows from there, over the
+    ; the list scrolls); else (a tall or maximized dialog) only the search box (Rows 0): below or above the dialog, or inside it over the
+    ; middle of its title bar, titleW wide (0 = panelW). open = the caret is in the panel: then it opens its list with all rows from there, over the
     ; dialog where needed. The panel's height with n rows is rowsH + n * rowH, with none barH; all in real pixels
     static PanelLayout(x, y, w, h, panelW, wanted, rowsH, rowH, barH, area, open := false, titleW := 0) {
         left := Max(area.Left, Min(x, area.Right - panelW))
@@ -540,11 +540,13 @@ class QuickSwitchPanel {
         else if (barH <= above)
             barY := y - barH
         else {
-            ; over the title bar: as wide as a maximized dialog it hid all of it, the close button and the place to drag the dialog or
-            ; double-click it back to its size (#693), so only part of it (open too: a width that changes on focus would jump)
+            ; over the title bar: as wide as a maximized dialog it hid all of it, the buttons and the place to drag the dialog or
+            ; double-click it back to its size (#693), so only its middle: the title and the minimize / maximize / close buttons at
+            ; its ends stay free, and at the left end it would cover the Back / Up buttons below the title bar too. The open list keeps
+            ; this width (a width that changes on focus would jump)
             barY := Max(area.Top, y)
             width := titleW ? Min(panelW, titleW) : panelW
-            left := Max(area.Left, Min(x, area.Right - width))
+            left := Max(area.Left, Min(x + (w - width) // 2, area.Right - width))
         }
         if !open
             return {X: left, Y: barY, Rows: 0, W: width}

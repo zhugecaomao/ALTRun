@@ -93,7 +93,8 @@ class QuickSwitch {
     ; While a file dialog is open, the window in front is also compared every PollMs (one GetForegroundWindow call): when a program
     ; brings a window to the front (SetForegroundWindow), EVENT_SYSTEM_FOREGROUND sometimes doesn't come, or comes a moment before the
     ; window is in front (Windows CI, probe 11-16: Explorer's or the dialog's event missing in rounds 1 and 2 of 5 of 5 runs), so a
-    ; switch from Explorer to the dialog was noticed only SettleMs later, or not at all. A change no check has seen is checked then
+    ; switch from Explorer to the dialog was noticed only SettleMs later, or not at all. A change no check has seen is checked then.
+    ; The same check moves the panel along when the dialog is maximized, restored or snapped (Win+arrows): no MOVESIZE events then (#693)
     ;---------------------------------------------------------------------------
     static PollMs := 250, SettleMs := 1500, CheckDelayMs := 50, DragMs := 15
     static Phases := Map("candidate", [[0x8001, 0x8003], [0x800C, 0x800C]], "dialog", [[0xA, 0xB]], "settle", [[0x800C, 0x800C]], "panel", [[0x8001, 0x8001]])
@@ -111,6 +112,8 @@ class QuickSwitch {
     static _checkTimer := "", _settleTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
     ; The foreground check while a file dialog is open (see above): the dialog, the window in front at the last check, the timer
     static _openDialog := 0, _checkedForeground := 0, _foregroundTimer := ""
+    ; The panel's dialog's window rectangle at the last check ("hwnd,left,top,right,bottom"), and a buffer for it
+    static _dialogRect := "", _rectBuffer := Buffer(16, 0)
 
     static _StartWatching() {
         QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events), the end of settle
@@ -212,6 +215,13 @@ class QuickSwitch {
                 Logger.Debug(Format("QuickSwitch: 0x{:X} {} came to the front without an event", active, QuickSwitch.ClassOf(active)))
             QuickSwitch._checkedForeground := active                        ; once per change, also while the check is still to run
             SetTimer(QuickSwitch._checkTimer, -1)
+        }
+        if ((dialog := QuickSwitchPanel._panelFor) && DllCall("GetWindowRect", "Ptr", dialog, "Ptr", rect := QuickSwitch._rectBuffer)) {
+            key := dialog "," NumGet(rect, 0, "Int") "," NumGet(rect, 4, "Int") "," NumGet(rect, 8, "Int") "," NumGet(rect, 12, "Int")
+            if (key != QuickSwitch._dialogRect) {                           ; the dialog was resized or moved without MOVESIZE events
+                QuickSwitch._dialogRect := key
+                QuickSwitchPanel._PlacePanel(dialog)                         ; nothing changes when the panel is already there (new dialog, drag)
+            }
         }
     }
 

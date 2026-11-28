@@ -79,7 +79,7 @@ class Shots {
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
             ["quickswitch-favorites", "Light", "", () => Shots.QuickSwitchFavorites(), () => Shots.WriteRecentFolders()],   ; Wiki: the panel's star menu
-            ["quickswitch-maximized", "Light", "", () => Shots.QuickSwitchMaximized(), () => Shots.WriteRecentFolders()],   ; Wiki: only the search box, over part of the title bar (#693)
+            ["quickswitch-maximized", "Light", "", () => Shots.QuickSwitchMaximized(), () => Shots.WriteRecentFolders()],   ; Wiki: only the search box, over the middle of the title bar (#693)
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
             ["pttools",     "Light", "", () => Shots.ToolWindow("PT Tools.ahk", "PT Tools")],      ; Wiki: PT Tools (script library)
@@ -688,7 +688,7 @@ class Shots {
     }
     static HelperPid := 0
 
-    ; A maximized dialog: no room for the list, so only the search box, over the left part of the title bar (the close button stays free)
+    ; A maximized dialog: no room for the list, so only the search box, over the middle of the title bar (both ends stay free)
     static QuickSwitchMaximized() {
         windows := Shots.QuickSwitch()
         WinMaximize(windows[1])
