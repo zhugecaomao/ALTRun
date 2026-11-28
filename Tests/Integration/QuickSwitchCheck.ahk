@@ -10,6 +10,8 @@
 ; Then the folder panel's ☆ menu: opened with a click on the star, or with Alt+↓ in the panel's search box, and closed with Esc:
 ; the dialog must be in front again within 2 s (so typing goes on in the dialog); a failure prints the windows in front before
 ; and after Esc. Its last item, "Edit favorites", must open Preferences in front.
+; Then the dialog is maximized and restored (#693; no MOVESIZE events): within 2 s the panel must be only its search box over the
+; middle of the title bar, then back where it was.
 ; Then Explorer with a second tab at "Folder B", shown (#521; Windows 11 22H2 and later; opened with Ctrl+T as a user does):
 ; switching to the dialog must jump to Folder B, not to Folder A of the first tab, and so must the jump hotkey (Ctrl+G, sent at
 ; send level 1 like a person's keys); the tab is closed again (Ctrl+W) after each round.
@@ -54,6 +56,8 @@ try {
             MenuRound(how, A_Index)
     Loop Rounds
         MenuEditRound(A_Index)
+    Loop Rounds
+        MaximizeRound(A_Index)
     for program in ["7-Zip", "WinRAR"]
         ExtractRound(program)
 } catch as setupError {
@@ -400,6 +404,52 @@ ExtractRound(program) {
         return ""
     }
 }
+
+; The dialog maximized and restored again (#693): Windows sends no MOVESIZE events then, the panel must still follow within 2 s.
+; Maximized there is no room for the list: only the search box, over the middle of the title bar (neither end covered); restored,
+; the panel is back where it was
+MaximizeRound(n) {
+    name := "maximize"
+    WinActivate(Dialog)
+    if !WinWaitActive(Dialog, , 3)
+        return Fail(name, n, "the dialog didn't come to the front")
+    before := WaitPanel((p) => true, 3000)
+    if !IsObject(before)
+        return Fail(name, n, "the folder panel isn't shown")
+    try {
+        WinMaximize(Dialog)
+        start := A_TickCount
+        WinGetPos(&dx, &dy, &dw, , Dialog)                                 ; with the invisible borders: a little outside the screen
+        over := WaitPanel((p) => p.Y <= dy + 20 && p.X >= dx + 100 && p.X + p.W <= dx + dw - 100, 2000)
+        if !IsObject(over)
+            return Fail(name, n, "maximized (" dx "," dy " " dw " wide), the panel isn't over the middle of the title bar: " PanelText(WaitPanel((p) => true, 0)))
+        Say("PASS " name " " n ": over the middle of the title bar after " (A_TickCount - start) " ms (" PanelText(over) ")")
+    } finally WinRestore(Dialog)
+    start := A_TickCount
+    back := WaitPanel((p) => Abs(p.X - before.X) <= 2 && Abs(p.Y - before.Y) <= 2 && Abs(p.W - before.W) <= 2, 2000)
+    if !IsObject(back)
+        return Fail(name, n, "restored, the panel isn't back at " PanelText(before) ": " PanelText(WaitPanel((p) => true, 0)))
+    Say("PASS " name " restore " n ": the panel back after " (A_TickCount - start) " ms")
+}
+
+; The shown folder panel's window {X, Y, W, H} once ok(it) is true, within ms; "" when it isn't
+WaitPanel(ok, ms) {
+    start := A_TickCount
+    loop {
+        if (panel := WinExist("ALTRun Quick Switch ahk_pid " AppPid)) {
+            try {
+                WinGetPos(&x, &y, &w, &h, panel)
+                if ok(found := {X: x, Y: y, W: w, H: h})
+                    return found
+            }
+        }
+        if (A_TickCount - start >= ms)
+            return ""
+        Sleep(50)
+    }
+}
+
+PanelText(r) => IsObject(r) ? r.X "," r.Y " " r.W "x" r.H : "no panel"
 
 ; The panel's ☆ menu (how: "click" on the star, or "alt+down" in the search box), closed with Esc: the dialog is in front again
 MenuRound(how, n) {

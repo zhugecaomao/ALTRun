@@ -1235,6 +1235,15 @@ class ExtensionTests {
         eq("maximized: the search box at the top", panelAt(0, 0, 1040), "0,0,0")
         eq("maximized, caret in the panel: the list opens down", panelAt(0, 0, 1040, 8, true), "0,0,8")
         eq("search box below, caret in it: the list opens up", panelAt(100, 50, 930, 8, true), "100,820,8")
+        ; #693: over the title bar only titleW wide, in its middle (both ends of the title bar stay free); elsewhere as wide as the dialog
+        widthAt := (x, w, h, titleW, open := false) => (placed := QuickSwitchPanel.PanelLayout(x, 0, w, h, w, 8, 60, 20, 40, area, open, titleW), placed.X "," placed.Y "," placed.Rows "," placed.W)
+        eq("maximized: the search box over the middle of the title bar", widthAt(0, 1920, 1040, 960), "480,0,0,960")
+        eq("maximized, caret in the panel: the list as wide", widthAt(0, 1920, 1040, 960, true), "480,0,8,960")
+        eq("tall dialog: the search box in the middle", widthAt(100, 800, 1040, 420), "290,0,0,420")
+        eq("tall dialog at the right edge: the search box kept on screen", widthAt(1600, 600, 1040, 420), "1500,0,0,420")
+        eq("title width never wider than the panel", widthAt(0, 600, 1040, 900), "0,0,0,600")
+        eq("search box below: as wide as the dialog", widthAt(100, 800, 1000, 420), "100,1000,0,800")
+        eq("rows below: as wide as the dialog", widthAt(100, 800, 500, 420), "100,500,8,800")
         eq("rows fit: the caret changes nothing", panelAt(100, 100, 800, 8, true), "100,900,4")
         ; #567: the dialog's frame in ALTRun's coordinates. Same scale: DWM's frame as it is; ALTRun at 150% and the dialog on a
         ; 100% monitor (Windows gives ALTRun 1.5 times the physical size): the 8 px border and the size scaled by 1.5
@@ -1655,12 +1664,13 @@ class ExtensionTests {
         QuickSwitchPanel._SizeList(3)
         QuickSwitchPanel._panelList.GetPos(, , , &listH)
         eq("three rows: list shown", QuickSwitchPanel._panelList.Visible "|" QuickSwitchPanel._panelLine.Visible "|" listH, "1|1|" QuickSwitchPanel.ListHeight(3))
-        eq("resize before", QuickSwitchPanel._panelWidth, QuickSwitchPanel.PanelWidthFor(QuickSwitchPanel._panelDialogW ? QuickSwitchPanel._panelDialogW : 600))
-        QuickSwitchPanel._ResizePanel({X: 0, Y: 0, W: 900, H: 500})             ; the dialog gets wider: the panel follows
+        built := QuickSwitchPanel._FrameRect(A_ScriptHwnd)
+        eq("resize before", QuickSwitchPanel._panelWidth, IsObject(built) ? QuickSwitchPanel._PanelWidthAt(built) : QuickSwitchPanel.PanelWidthFor(600))
+        QuickSwitchPanel._ResizePanel(QuickSwitchPanel._PanelWidthAt({X: 0, Y: 0, W: 900, H: 500}))   ; the dialog gets wider: the panel follows
         QuickSwitchPanel._panelList.GetPos(, , &listW)
         eq("resize width", QuickSwitchPanel._panelWidth "|" listW, "900|900")
         area := Win.WorkAreaAt(0, 0), areaW := area.Right - area.Left
-        QuickSwitchPanel._ResizePanel({X: 0, Y: 0, W: areaW + 500, H: 500})     ; wider than the screen: as wide as the work area
+        QuickSwitchPanel._ResizePanel(QuickSwitchPanel._PanelWidthAt({X: 0, Y: 0, W: areaW + 500, H: 500}))   ; wider than the screen: as wide as the work area
         eq("resize to the work area", QuickSwitchPanel._panelWidth, areaW)
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
         eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitchPanel._panelSearch.Hwnd), 0)

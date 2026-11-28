@@ -35,7 +35,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "quickswitch-maximized", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-commands-placeholders", "command-editor-placeholders", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "delayedstart", "delayedstart-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands", "command-editor-hotkeys", "hotkey-editor-clash"
                          , "hotkey-editor-script", "command-picker-scripts", "selection-type-editor", "selection-type-editor-file"
                          , "prefs-window", "pinned-editor", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "websearch-editor", "prefs-usage", "prefs-advanced", "data-location", "data-location-list", "first-run"]   ; scenes shot at 100% (see screenshots.yml)
@@ -79,6 +79,7 @@ class Shots {
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
             ["quickswitch-favorites", "Light", "", () => Shots.QuickSwitchFavorites(), () => Shots.WriteRecentFolders()],   ; Wiki: the panel's star menu
+            ["quickswitch-maximized", "Light", "", () => Shots.QuickSwitchMaximized(), () => Shots.WriteRecentFolders()],   ; Wiki: only the search box, over the middle of the title bar (#693)
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
             ["pttools",     "Light", "", () => Shots.ToolWindow("PT Tools.ahk", "PT Tools")],      ; Wiki: PT Tools (script library)
@@ -686,6 +687,14 @@ class Shots {
         return [dialog, panel]
     }
     static HelperPid := 0
+
+    ; A maximized dialog: no room for the list, so only the search box, over the middle of the title bar (both ends stay free)
+    static QuickSwitchMaximized() {
+        windows := Shots.QuickSwitch()
+        WinMaximize(windows[1])
+        Sleep(1500)                                                         ; the panel follows the dialog
+        return windows
+    }
 
     ; The panel's star menu: the favorites, the first one's subfolders open (Down selects it, Right opens its submenu)
     static QuickSwitchFavorites() {

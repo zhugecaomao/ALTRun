@@ -89,7 +89,7 @@ class QuickSwitchPanel {
         panel.GetPos(, , , &outerH), panel.GetClientPos(, , , &clientH)
         QuickSwitchPanel._listY := listY, QuickSwitchPanel._frameH := outerH - clientH, QuickSwitchPanel._panelRows := -1
         QuickSwitchPanel._panel := panel, QuickSwitchPanel._panelList := list, QuickSwitchPanel._panelSearch := search, QuickSwitchPanel._panelWidth := width
-        QuickSwitchPanel._panelLine := line, QuickSwitchPanel._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitchPanel._panelColors := colors, QuickSwitchPanel._panelStar := star, QuickSwitchPanel._panelIcon := icon
+        QuickSwitchPanel._panelLine := line, QuickSwitchPanel._panelColors := colors, QuickSwitchPanel._panelStar := star, QuickSwitchPanel._panelIcon := icon
         QuickSwitchPanel._searchHwnd := search.Hwnd, QuickSwitchPanel._listHwnd := list.Hwnd
         if colors.Dark
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
@@ -109,7 +109,7 @@ class QuickSwitchPanel {
             QuickSwitchPanel._ShowFolders(QuickSwitchPanel._panelBase)
     }
 
-    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelIcon := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelIcon := "", _panelWidth := 600, _rowTop := 20, _rowHeight := 18
     static _listY := 40, _frameH := 2, _barHeight := 40, _panelRows := -1
 
     ; The search icon, the search box and the ☆ button right of it (real pixels): the box starts a gap after the icon (no icon font, e.g.
@@ -221,10 +221,8 @@ class QuickSwitchPanel {
         return "Segoe UI"
     }
 
-    ; the dialog's width changed: the panel follows
-    static _ResizePanel(rect) {
-        width := QuickSwitchPanel._PanelWidthAt(rect)
-        QuickSwitchPanel._panelDialogW := rect.W
+    ; the dialog's width changed, or the panel goes onto / leaves its title bar: the panel follows
+    static _ResizePanel(width) {
         if (width = QuickSwitchPanel._panelWidth)
             return
         QuickSwitchPanel._panelWidth := width
@@ -461,28 +459,29 @@ class QuickSwitchPanel {
         rect := QuickSwitchPanel._FrameRect(dialog)
         if !IsObject(rect)
             return QuickSwitchPanel.HidePanel()
-        if (QuickSwitchPanel._panelDialogW && rect.W != QuickSwitchPanel._panelDialogW)
-            return QuickSwitchPanel._ResizePanel(rect)
         layout := QuickSwitchPanel._Layout(rect)
+        if (layout.W != QuickSwitchPanel._panelWidth)                            ; while shown, _ResizePanel places it already (then nothing changes below)
+            QuickSwitchPanel._ResizePanel(layout.W)
         if (layout.Rows != QuickSwitchPanel._panelRows)                          ; more or less room (the dialog moved), or the caret came into / left the panel
             QuickSwitchPanel._SizeList(layout.Rows)
-        key := layout.X "," layout.Y "," layout.Rows
+        key := layout.X "," layout.Y "," layout.Rows "," layout.W
         if (key != QuickSwitchPanel._panelPos) {                                 ; reposition only when the dialog moved
             height := layout.Rows ? QuickSwitchPanel._listY + QuickSwitchPanel.ListHeight(layout.Rows) : QuickSwitchPanel._barHeight
-            QuickSwitchPanel._panel.Show("NA x" layout.X " y" layout.Y " w" QuickSwitchPanel._panelWidth " h" height)   ; client size
+            QuickSwitchPanel._panel.Show("NA x" layout.X " y" layout.Y " w" layout.W " h" height)   ; client size
             QuickSwitchPanel._panelPos := key
         }
     }
 
-    ; Where the panel goes for the dialog at rect, with how many rows ("" without a dialog); the caret in the panel opens its list
+    ; Where the panel goes for the dialog at rect, with how many rows and how wide ("" without a dialog); the caret in the panel opens its list
     static _Layout(rect) {
         if !(IsObject(rect) && IsObject(QuickSwitchPanel._panel))
             return ""
         area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
+        panelW := QuickSwitchPanel.PanelWidthFor(rect.W, area.Right - area.Left)
         rowsH := QuickSwitchPanel._frameH + QuickSwitchPanel._listY + QuickSwitchPanel.ListHeight(0)   ; the panel's height with 0 rows; each row adds _rowHeight
         open := DllCall("GetForegroundWindow", "Ptr") = QuickSwitchPanel._panel.Hwnd
-        return QuickSwitchPanel.PanelLayout(rect.X, rect.Y, rect.W, rect.H, QuickSwitchPanel._panelWidth, QuickSwitchPanel.WantedRows(QuickSwitchPanel._panelFolders.Length)
-            , rowsH, QuickSwitchPanel._rowHeight, QuickSwitchPanel._frameH + QuickSwitchPanel._barHeight, area, open)
+        return QuickSwitchPanel.PanelLayout(rect.X, rect.Y, rect.W, rect.H, panelW, QuickSwitchPanel.WantedRows(QuickSwitchPanel._panelFolders.Length)
+            , rowsH, QuickSwitchPanel._rowHeight, QuickSwitchPanel._frameH + QuickSwitchPanel._barHeight, area, open, QuickSwitchPanel.PanelWidthFor(rect.W // 2, panelW))
     }
 
     ; The window's visible frame (Win10/11 windows have an invisible resize border around them, which WinGetPos includes),
@@ -517,27 +516,40 @@ class QuickSwitchPanel {
               , W: Round((frame.Right - frame.Left) * scaleX), H: Round((frame.Bottom - frame.Top) * scaleY)}
     }
 
-    ; Panel position and rows {X, Y, Rows} (as in Listary), never over the dialog's buttons and file list (#440): right below the dialog,
+    ; Panel position, rows and width {X, Y, Rows, W} (as in Listary), never over the dialog's buttons and file list (#440): right below the dialog,
     ; left-aligned, else above it, with all wanted rows; else on the side with more room, with the rows that fit there (at least MinRows,
-    ; the list scrolls); else (a tall or maximized dialog) only the search box (Rows 0): below or above the dialog, or inside it at its top
-    ; (over the title bar). open = the caret is in the panel: then it opens its list with all rows from there, over the dialog where needed.
-    ; The panel's height with n rows is rowsH + n * rowH, with none barH; all in real pixels
-    static PanelLayout(x, y, w, h, panelW, wanted, rowsH, rowH, barH, area, open := false) {
+    ; the list scrolls); else (a tall or maximized dialog) only the search box (Rows 0): below or above the dialog, or inside it over the
+    ; middle of its title bar, titleW wide (0 = panelW). open = the caret is in the panel: then it opens its list with all rows from there, over the
+    ; dialog where needed. The panel's height with n rows is rowsH + n * rowH, with none barH; all in real pixels
+    static PanelLayout(x, y, w, h, panelW, wanted, rowsH, rowH, barH, area, open := false, titleW := 0) {
         left := Max(area.Left, Min(x, area.Right - panelW))
         below := area.Bottom - (y + h), above := y - area.Top
         fullH := rowsH + wanted * rowH
         if (fullH <= below)
-            return {X: left, Y: y + h, Rows: wanted}
+            return {X: left, Y: y + h, Rows: wanted, W: panelW}
         if (fullH <= above)
-            return {X: left, Y: y - fullH, Rows: wanted}
+            return {X: left, Y: y - fullH, Rows: wanted, W: panelW}
         fitBelow := (below - rowsH) // rowH, fitAbove := (above - rowsH) // rowH
         if (fitBelow >= QuickSwitchPanel.MinRows && fitBelow >= fitAbove)
-            return {X: left, Y: y + h, Rows: fitBelow}
+            return {X: left, Y: y + h, Rows: fitBelow, W: panelW}
         if (fitAbove >= QuickSwitchPanel.MinRows)
-            return {X: left, Y: y - (rowsH + fitAbove * rowH), Rows: fitAbove}
-        barY := (barH <= below) ? y + h : (barH <= above) ? y - barH : Max(area.Top, y)
+            return {X: left, Y: y - (rowsH + fitAbove * rowH), Rows: fitAbove, W: panelW}
+        width := panelW
+        if (barH <= below)
+            barY := y + h
+        else if (barH <= above)
+            barY := y - barH
+        else {
+            ; over the title bar: as wide as a maximized dialog it hid all of it, the buttons and the place to drag the dialog or
+            ; double-click it back to its size (#693), so only its middle: the title and the minimize / maximize / close buttons at
+            ; its ends stay free, and at the left end it would cover the Back / Up buttons below the title bar too. The open list keeps
+            ; this width (a width that changes on focus would jump)
+            barY := Max(area.Top, y)
+            width := titleW ? Min(panelW, titleW) : panelW
+            left := Max(area.Left, Min(x + (w - width) // 2, area.Right - width))
+        }
         if !open
-            return {X: left, Y: barY, Rows: 0}
-        return {X: left, Y: Max(area.Top, Min(barY, area.Bottom - fullH)), Rows: wanted}
+            return {X: left, Y: barY, Rows: 0, W: width}
+        return {X: left, Y: Max(area.Top, Min(barY, area.Bottom - fullH)), Rows: wanted, W: width}
     }
 }
