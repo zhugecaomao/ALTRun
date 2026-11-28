@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.26.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- 对话框跳转: 对话框最大化 (或很高) 时, 文件夹面板的搜索框盖在标题栏上, 不再占满整个标题栏: 只占对话框一半宽, 关闭按钮和标题栏的其余部分露出来, 可以拖动对话框、双击标题栏还原 (#693)
+
 ## [2026.11.26.2]
 
 测试版。
@@ -1707,7 +1716,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.3...HEAD
+[2026.11.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.2...2026.11.26.3
 [2026.11.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26.1...2026.11.26.2
 [2026.11.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.26...2026.11.26.1
 [2026.11.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.26
