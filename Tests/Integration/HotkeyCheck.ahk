@@ -170,10 +170,38 @@ ScriptSelection(n) {
     SendMessage(0xB1, 0, -1, SourceEdit)                                    ; EM_SETSEL: all of it selected
     SendInput("^!{F12}")
     text := WaitFor(ScriptMarker)
+    late := (text = "") ? ScriptDiagnostics() : ""                         ; occasional (11-16, 11-28): what was going on, before the log
     Sleep(300)
     clip := A_Clipboard
     Result("script", n, Trim(text, "`r`n ") == "hello123" && clip == "clipboard before script " n
-        , "marker: " (text = "" ? "not written in 5 s" : Trim(text, "`r`n ")) ", clipboard: " clip)
+        , "marker: " (text = "" ? "not written in 5 s" : Trim(text, "`r`n ")) ", clipboard: " clip late)
+}
+
+; The script round's marker didn't come (occasional on Windows CI, cause unknown; a #32770 of AutoHotkey64.exe came to the front
+; once just before): the window in front, the visible dialogs with their texts, the AutoHotkey processes running marker.ahk, and
+; whether the marker still comes within 10 s more (slow) or not (never ran, or stopped). Returns the last of these for the FAIL line
+ScriptDiagnostics() {
+    front := WinExist("A")
+    try Say("     in front: " WinGetClass(front) " of " WinGetProcessName(front) " (pid " WinGetPID(front) ") '" WinGetTitle(front) "'")
+    for hwnd in WinGetList("ahk_class #32770") {
+        texts := ""
+        try for ctl in WinGetControls(hwnd)
+            if ((t := Trim(ControlGetText(ctl, hwnd))) != "")
+                texts .= " [" ctl ": " StrReplace(t, "`n", " ") "]"
+        try Say("     dialog: '" WinGetTitle(hwnd) "' of " WinGetProcessName(hwnd) " (pid " WinGetPID(hwnd) ")" texts)
+    }
+    try for proc in ComObjGet("winmgmts:").ExecQuery("SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name LIKE 'AutoHotkey%'")
+        if InStr(proc.CommandLine, "marker.ahk")
+            Say("     running: pid " proc.ProcessId " " proc.CommandLine)
+    start := A_TickCount
+    while (A_TickCount - start < 10000) {
+        Sleep(100)
+        text := ""
+        try text := FileRead(ScriptMarker)
+        if InStr(text, "`n")
+            return " (written " (5000 + A_TickCount - start) " ms after the hotkey)"
+    }
+    return " (not written in 15 s either)"
 }
 
 ; Double-tap left Alt (hook hotkeys ignore other scripts' keys at SendLevel 0: sent at level 1, like a person's)
