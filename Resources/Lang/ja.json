@@ -412,6 +412,7 @@
   "Prefs.DateFormat": "日付の形式",
   "Prefs.DateFormat.Desc": "例: dd.MM.yyyy、yyyy-MM-dd。スニペット内の {date} でも使用されます。",
   "Prefs.Delete": "削除",
+  "Prefs.Duplicate": "複製...",
   "Prefs.DiscardChanges": "変更を破棄しますか?",
   "Prefs.DoubleTap": "ダブルタップ",
   "Prefs.DoubleTap.Ctrl": "Ctrl",

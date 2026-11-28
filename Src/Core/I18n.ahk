@@ -555,6 +555,7 @@ class I18n {
         s["Prefs.Add"]                 := "Add..."
         s["Prefs.Edit"]                := "Edit..."
         s["Prefs.Delete"]              := "Delete"
+        s["Prefs.Duplicate"]           := "Duplicate..."
         s["Prefs.Filter"]              := "Filter"
         s["Prefs.Browse"]              := "..."
         s["Prefs.EditList"]            := "Edit..."

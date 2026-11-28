@@ -510,10 +510,11 @@ class PrefsForm {
     ; menuActions: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu (not "menu":
     ; names are case-insensitive, and a parameter named menu hides the Menu class, so the right-click menu failed).
     ; Check paths, menuActions and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
-    ; options: optional {RowColor, DeletePrompt, AfterDelete, Hint}, each a function of the item:
+    ; options: optional {RowColor, DeletePrompt, AfterDelete, Hint, Duplicate}, each a function of the item:
     ;   RowColor: the row's text color as a COLORREF (0xBBGGRR), "" = the normal color (drawn with NM_CUSTOMDRAW)
     ;   Hint: a short text for the Status column, shown at once (no check needed) unless a check found the path missing / offline
     ;   DeletePrompt: the question before deleting it ("" = "Delete '<first column>'?"); AfterDelete: called once it is removed
+    ;   Duplicate: (item, items) => a copy to prefill the edit dialog with; given, the right-click menu has "Duplicate..." (#695)
     static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menuActions := "", options := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
@@ -566,6 +567,7 @@ class PrefsForm {
                 statuses[ObjPtr(item)] := check(item, Map())
         }
         AddItem(*) => Insert(newItem())
+        DuplicateItem() => IsObject(selected := SelectedItem()) ? Insert(options.Duplicate.Call(selected, items)) : ""   ; saved as a new item only on OK
         EditWith(item, original := "") {                                    ; fields: the editor's fields, or an editor of its own: (owner, title, item, original) => edited / ""
             if (fields is Array)
                 return ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, item)
@@ -710,12 +712,13 @@ class PrefsForm {
             for action in (actions is Array ? actions : actions.Call())
                 pageActions.Push(IsObject(action) ? {Label: action.Label, Click: action.Click, Button: actionButton, Checked: action.HasOwnProp("Checked") && action.Checked} : "-")
             popup := Menu()
-            for entry in PrefsForm.ListMenuEntries(row > 0, pageActions, {Up: CanMove(-1), Down: CanMove(1)}) {
+            for entry in PrefsForm.ListMenuEntries(row > 0, pageActions, {Up: CanMove(-1), Down: CanMove(1)}, Option("Duplicate")) {
                 if !IsObject(entry) {
                     popup.Add()
                     continue
                 }
                 popup.Add(entry.Label, ((entry, *) => (entry.Kind = "Edit") ? EditItem() : (entry.Kind = "Delete") ? DeleteItem()
+                    : (entry.Kind = "Duplicate") ? DuplicateItem()
                     : (entry.Kind = "Add") ? AddItem() : (entry.Kind = "MoveUp") ? MoveItem(-1) : (entry.Kind = "MoveDown") ? MoveItem(1)
                     : entry.Click.Call(list, entry.Button)).Bind(entry))
                 if !entry.Enabled
@@ -777,15 +780,19 @@ class PrefsForm {
         return list
     }
 
-    ; The right-click menu of a PrefsForm.List: onRow -> Edit (default) and Delete first, then Move Up / Move Down (with their keys;
-    ; grayed where move = {Up, Down} says it can't); then Add; then pageActions ([{Label, Click, Button[, Checked]} or "-"]), after a separator.
-    ; Entries: {Kind: Edit / Delete / MoveUp / MoveDown / Add / Page, Label, Default, Checked, Enabled, Click, Button} or "-"
-    static ListMenuEntries(onRow, pageActions, move := "") {
+    ; The right-click menu of a PrefsForm.List: onRow -> Edit (default), Duplicate (with duplicate: the list can copy an item) and Delete
+    ; first, then Move Up / Move Down (with their keys; grayed where move = {Up, Down} says it can't); then Add; then pageActions
+    ; ([{Label, Click, Button[, Checked]} or "-"]), after a separator.
+    ; Entries: {Kind: Edit / Duplicate / Delete / MoveUp / MoveDown / Add / Page, Label, Default, Checked, Enabled, Click, Button} or "-"
+    static ListMenuEntries(onRow, pageActions, move := "", duplicate := false) {
         entry(kind, label, action := "", enabled := true) => {Kind: kind, Label: label, Default: kind = "Edit", Checked: IsObject(action) && action.HasOwnProp("Checked") && action.Checked
             , Enabled: enabled, Click: IsObject(action) ? action.Click : "", Button: IsObject(action) && action.HasOwnProp("Button") ? action.Button : ""}
         entries := []
         if onRow {
-            entries.Push(entry("Edit", I18n.T("Prefs.Edit")), entry("Delete", I18n.T("Prefs.Delete")), "-")
+            entries.Push(entry("Edit", I18n.T("Prefs.Edit")))
+            if duplicate
+                entries.Push(entry("Duplicate", I18n.T("Prefs.Duplicate")))
+            entries.Push(entry("Delete", I18n.T("Prefs.Delete")), "-")
             if IsObject(move)
                 entries.Push(entry("MoveUp", I18n.T("Prefs.MoveUp") "`tAlt+↑", , move.Up), entry("MoveDown", I18n.T("Prefs.MoveDown") "`tAlt+↓", , move.Down), "-")
         }
